@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+**Thumbs.db
+**.cache/
+**.RData
+**.rds
+**.rdb
+**.rdx
