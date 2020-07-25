@@ -1,4 +1,5 @@
 
+extrafont::loadfonts(device = 'win', quiet = TRUE)
 library(tidyverse)
 library(ggtext)
 library(teamcolors)
