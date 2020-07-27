@@ -143,7 +143,7 @@ viz <-
     y = NULL
   )
 viz
-ggsave(plot = viz, filename = 'C:/users/aelhabr/desktop/nba_seed_p.png', device = 'png', type = 'cairo', width = 8, height = 7) 
-ggsave(plot = viz, filename = 'C:/users/aelhabr/desktop/nba_seed_p_nocairo.png', device = 'png', width = 8, height = 7) 
+ggsave(plot = viz, filename = here::here('plots', 'nba_seed_p.png'), device = 'png', type = 'cairo', width = 8, height = 7) 
+
  
  
