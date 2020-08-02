@@ -67,3 +67,31 @@ Points Scatter Plot](plots/epl_before_break_pts_vs_xpts.png
 ![English Premier League 2019-20 Last 9 Games Simulated Points
 vs. Actual Points Ridge Plot](plots/epl_after_break_pts_sim.png
 "English Premier League 2019-20 Last 9 Games Simulated Points vs. Actual Points Ridge Plot")
+
+<blockquote class="twitter-tweet">
+
+<p lang="en" dir="ltr">
+
+Simple and pertinent
+<a href="https://twitter.com/hashtag/viz?src=hash&amp;ref_src=twsrc%5Etfw">\#viz</a>
+this week. Which social justice messages are most
+<a href="https://twitter.com/hashtag/NBA?src=hash&amp;ref_src=twsrc%5Etfw">\#NBA</a>
+🏀players choosing to wear on their jerseys?
+<a href="https://twitter.com/hashtag/BLM?src=hash&amp;ref_src=twsrc%5Etfw">\#BLM</a>
+and “equality” are by far the most
+prevalent.<a href="https://twitter.com/hashtag/rstats?src=hash&amp;ref_src=twsrc%5Etfw">\#rstats</a>
+<a href="https://t.co/JXCEhZtvNg">pic.twitter.com/JXCEhZtvNg</a>
+
+</p>
+
+— Tony (@TonyElHabr)
+<a href="https://twitter.com/TonyElHabr/status/1289919973536616450?ref_src=twsrc%5Etfw">August
+2, 2020</a>
+
+</blockquote>
+
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
+![2020 NBA Restart Social Justice Message Bar
+Chart](plots/nba_social_justice.png
+"2020 NBA Restart Social Justice Message Bar Chart")
