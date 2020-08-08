@@ -127,15 +127,19 @@ shots_slim_filt <-
   arrange(date, minute, .by_group = TRUE) %>% 
   mutate(idx = row_number()) %>% 
   ungroup() %>% 
+  relocate(idx) %>% 
   arrange(player, date, minute)
 shots_slim_filt
 
 shots_slim_filt_agg <-
   shots_slim_filt %>% 
   group_by(player, match_id) %>% 
+  arrange(date, minute, .by_group = TRUE) %>% 
   summarize(across(c(xg, g), sum)) %>% 
+  mutate(idx = row_number()) %>% 
   ungroup() %>% 
-  mutate(overperform = ifelse(xg < g, 1L, 0L))
+  mutate(overperform = ifelse(xg < g, 1L, 0L)) %>% 
+  relocate(idx) 
 shots_slim_filt_agg
 
 shots_slim_filt_agg_n <-
@@ -190,40 +194,42 @@ do_kr20_at <- function(data, k, col) {
 
 do_kr20_g_at <- partial(do_kr20_at, shots_slim_filt, col = 'g', ... = )
 
-krs <-
+krs_g <-
   tibble(k = seq.int(10, 220, by = 10)) %>% 
-  mutate(kr20 = map_dbl(k, do_kr20_g_at))
-krs %>% filter(kr20 >= 0.7)
+  mutate(
+    n = map_int(k, ~filter(shots_slim_filt, idx >= .x) %>% distinct(player) %>% nrow()),
+    kr20 = map_dbl(k, do_kr20_g_at)
+  )
+krs_g %>% filter(kr20 >= 0.7)
 
-viz_kr20 <-
-  krs %>% 
+viz_krs_g <-
+  krs_g %>% 
   ggplot() +
   aes(x = k, y = kr20) +
   geom_point() +
-  geom_line()
-viz_kr20
+  geom_line() +
+  # geom_line(aes(y = n), color = 'blue') +
+  # scale_y_continuous(sec.axis = 
+  theme_minimal()
+viz_krs_g
 
-sigma2 <-
-  shots_filt %>% 
-  group_by(idx) %>% 
-  summarize(g = sum(g)) %>% 
+shots_slim_filt %>% 
+  group_by(player, match_id) %>% 
+  arrange(date, minute, .by_group = TRUE) %>% 
+  summarize(across(c(g), cumsum)) %>% 
+  mutate(idx = row_number()) %>% 
   ungroup() %>% 
-  pull(g) %>% 
-  var()
-sigma2
+  mutate(overperform = ifelse(xg < g, 1L, 0L)) %>% 
+  relocate(idx) 
 
-p_i <-
-  shots_filt %>% 
-  group_by(player) %>% 
-  summarize(g_mean = mean(g)) %>% 
-  ungroup() %>%
-  arrange(desc(g_mean)) %>% 
-  pull(g_mean)
-p_i
+do_kr20_xg_diff_at <- partial(do_kr20_at, shots_slim_filt_agg, col = 'overperform', ... = )
 
-q_i <- 1 - p_i
-scaler <- k / (k - 1)
-num <- sigma2 - sum(p_i * q_i)
-den <- sigma2
-res <- scaler * num / den
-res
+krs_xg_diff <-
+  tibble(k = seq.int(10, 40 * 3, by = 5)) %>% 
+  mutate(
+    n = map_int(k, ~filter(shots_slim_filt_agg, idx >= .x) %>% distinct(player) %>% nrow()),
+    kr20 = map_dbl(k, do_kr20_xg_diff_at)
+  )
+krs_xg_diff %>% filter(kr20 >= 0.7)
+
+
