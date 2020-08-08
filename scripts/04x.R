@@ -40,6 +40,7 @@ if(!stats_exists | !shots_exists) {
         )
       res
     }
+}
 
 if(!stats_exists) {
 
@@ -86,7 +87,7 @@ if(!stats_exists) {
   stats <- read_rds(path_stats)
 }
 
-if(!shot_exists) {
+if(!shots_exists) {
 
   shots_by_player <-
     stats %>%
@@ -125,33 +126,81 @@ shots_slim_filt <-
   filter(situation != 'Penalty') %>% 
   group_by(player) %>% 
   arrange(date, minute, .by_group = TRUE) %>% 
-  mutate(idx = row_number()) %>% 
+  mutate(
+    idx = row_number(),
+    n_match = n(),
+    g_cumu = cumsum(g)
+  ) %>% 
+  mutate(g_cumu_rate = g_cumu / idx) %>% 
   ungroup() %>% 
-  relocate(idx) %>% 
-  arrange(player, date, minute)
+  relocate(idx)
 shots_slim_filt
 
 shots_slim_filt_agg <-
   shots_slim_filt %>% 
+  # filter(player %>% str_detect('^L')) %>% 
   group_by(player, match_id) %>% 
   arrange(date, minute, .by_group = TRUE) %>% 
-  summarize(across(c(xg, g), sum)) %>% 
-  mutate(idx = row_number()) %>% 
+  summarize(across(c(xg, g), sum)) %>% # , across(c(g_cumu, g_rate), dplyr::last)) %>% 
   ungroup() %>% 
-  mutate(overperform = ifelse(xg < g, 1L, 0L)) %>% 
+  group_by(player) %>% 
+  mutate(
+    idx = row_number(),
+    n_match = n(), 
+    overperform = ifelse(xg < g, 1L, 0L),
+    g_cumu = cumsum(g),
+    xg_cumu = cumsum(xg)
+  ) %>% 
+  mutate(overperform_cumu = cumsum(overperform)) %>% 
+  mutate(overperform_cumu_rate = overperform_cumu / idx) %>% 
+  ungroup() %>% 
   relocate(idx) 
 shots_slim_filt_agg
 
 shots_slim_filt_agg_n <-
   shots_slim_filt_agg %>% 
-  count(player, overperform, sort = T) %>% 
+  count(player, overperform, n_match, sort = T) %>% 
   # pivot_wider(names_from = overperform, values_from = n)
-  group_by(player) %>% 
-  mutate(total = sum(n)) %>% 
-  mutate(frac = n / total) %>% 
+  group_by(player, n_match) %>% 
+  mutate(frac = n / n_match) %>% 
   ungroup() %>% 
   arrange(desc(frac))
-shots_slim_filt_agg_n %>% filter(overperform == 1L, total > 20L)
+
+library(gganimate)
+
+viz_overperform_cumu_rate <-
+  shots_slim_filt_agg %>% 
+  inner_join(
+    shots_slim_filt_agg_n %>% 
+      # filter(n_match >= 38L) %>% 
+      # sample_frac(0.1, weight = n_match) %>% 
+      arrange(-n_match) %>% 
+      head(10) %>% 
+      select(player)
+  ) %>% 
+  ggplot() +
+  aes(x = idx, y = overperform_cumu_rate, group = player) +
+  geom_step(alpha = 0.1) +
+  # geom_step(
+  #   data = shots_slim_filt_agg %>% filter(player %in% players_top),
+  #   aes(color = player),
+  #   show.legend = FALSE
+  # ) +
+  gganimate::transition_reveal(along = idx) +
+  geom_vline(
+    # data = tibble(x = 60),
+    # xintercept = 60,
+    data = tibble(idx = rep(60L, 200 - 60)),
+    aes(xintercept = idx)
+  ) +
+  theme_void() +
+  labs(
+    x = 'Match #',
+    y = 'Cumualitve Over-performance Rate'
+  )
+viz_overperform_cumu_rate
+gganimate::animate(viz_overperform_cumu_rate)
+
 
 kr20 <- function(x){
   x <- x %>% select(-matches('player'))
