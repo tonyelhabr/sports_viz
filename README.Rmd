@@ -34,11 +34,14 @@ This repo stores my code and plots for ports-related plots.
 
 + In which sport is the leading team most likely to further their lead near the end of the game due to an opposition error, overly-aggressive tactics by the opposition, etc.? (End of game depends on the sport. Ideally, we could use a win probability model to help idenitfy end-of-game context, although it would still need some adjustment.) Extension: In which sport are gamblers most likely to lose/win due to a back-door cover?
 
-+ Transfer market EDA with data from https://github.com/ewenme/transfers
-
 ## Future data sets
 
 + "Standardized" soccer shot data locations: https://kloppy.pysport.org/changelog/#110-2020-08-07
 
-+ https://github.com/ML-KULeuven/soccer_xg
++ xG soccer model: https://github.com/ML-KULeuven/soccer_xg
+
++ Transfer market data: https://github.com/ewenme/transfers
+
++ FIFA data: https://github.com/RobWHickman/fifadb
+
 
