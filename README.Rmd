@@ -44,4 +44,5 @@ This repo stores my code and plots for ports-related plots.
 
 + FIFA data: https://github.com/RobWHickman/fifadb
 
++ Champions League over-performers: https://cdn.substack.com/image/fetch/c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fbucketeer-e05bbc84-baa3-437e-9518-adb32be77984.s3.amazonaws.com%2Fpublic%2Fimages%2Fa1354a2f-8928-453f-a5ed-df142021ceb7_1004x935.png
 
