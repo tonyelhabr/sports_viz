@@ -25,20 +25,26 @@ shots_mini <-
   group_by(player) %>% 
   mutate(idx = row_number()) %>% 
   ungroup() %>% 
-  select(player, idx, fgm)
-shots_mini  
+  select(player, idx, fgm) %>%
+  group_by(player) %>% 
+  mutate(fgm_cumu = cumsum(fgm)) %>% 
+  mutate(fgm_rate_cumu = fgm_cumu / idx) %>% 
+  ungroup()
+shots_mini
 
 shots_n <- shots_mini %>% count(player, sort = TRUE)
 shots_n %>% skimr::skim()
+shots_mini_filt <- shots_mini %>% inner_join(shots_n %>% filter(n >= 100L))
+shots_mini_filt
 
 # shots_mini %>% group_by(player_id) %>% summarize(n = n()) %>% arrange(desc(n))
-kr20 <- function(x) {
-  # x <- x %>% select(-matches('player'))
-  # x <- data.matrix(x)
-  k <- ncol(x)
-  rs <- rowSums(x)
+kr20 <- function(data) {
+  # data <- data %>% select(-matches('player'))
+  # data <- data.matridata(data)
+  k <- ncol(data)
+  rs <- rowSums(data)
   sigma2 <- var(rs)
-  p_i <- colMeans(x)
+  p_i <- colMeans(data)
   q_i <- 1 - p_i
   scaler <- k / (k - 1)
   num <- sigma2 - sum(p_i * q_i)
@@ -46,8 +52,32 @@ kr20 <- function(x) {
   res
 }
 
-do_kr20_at <- function(data, k, col) {
+splithalf <- function(data) {
+  # browser()
+  m <- data %>% data.matrix()
+  score_e <- rowMeans(m[, c(TRUE, FALSE)])  # with even items
+  score_o <- rowMeans(m[, c(FALSE, TRUE)])  # with odd items
+  
+  # Correlating scores from even and odd items
+  r <- cor(score_e, score_o)
+  r
+  #> [1] 0.7681034
+  
+  # Adjusting with the Spearman-Brown prophecy formula
+  res <- (2 * r) / (1 + r)
+  # browser()
+  res
+}
+
+cralpha <- function(data) {
+  # browser()
+  res <- data %>% psych::alpha() %>% pluck('total') %>% pluck('std.alpha')
+  res
+}
+
+do_f_at <- function(data, k, col, f) {
   # cat(sprintf('k: %s', k), sep = '\n')
+  # browser()
   col_sym <- sym(col)
   
   data_k <-
@@ -66,36 +96,69 @@ do_kr20_at <- function(data, k, col) {
       names_from = idx,
       values_from = !!col_sym
     )
-  res <- data_wide %>% select(-player) %>% kr20()
+  
+  # browser()
+  res <- data_wide %>% select(-player) %>% f()
   res
 }
 
-do_kr20_fgm <- partial(do_kr20_at, shots_mini %>% filter(player != 'Kyle Korver'), col = 'fgm', ... = )
+# do_cralpha_fgm <- partial(do_f_at, shots_mini_filt, f = cralpha, col = 'fgm_rate_cumu', ... = )
+# do_splithalf_fgm_rate_cumu <- partial(do_f_at, shots_mini_filt, f = splithalf, col = 'fgm_rate_cumu', ... = )
+res <-
+  shots_mini_filt %>% 
+  # mutate(k = 1000L) %>%
+  # filter(n >= 10L) %>% 
+  filter(idx <= 30) %>% 
+  do_f_at(col = 'fgm_rate_cumu', f = splithalf, k = 30L)
+res
 
-k_max <- shots_mini %>% filter(idx == max(idx)) %>% pull(idx)
+# do_kr20_at <- partial(do_f_at, f = kr20, ... = )
+# do_cralpha_at <- partial(do_f_at, f = cralpha, ... = )
+# do_kr20_fgm <- partial(do_kr20_at, shots_min_filt %>% filter(player != 'Kyle Korver'), col = 'fgm', ... = )
+do_kr20_fgm <- partial(do_f_at, shots_mini_filt, f = kr20, col = 'fgm', ... = )
+do_splithalf_fgm_rate <- partial(do_f_at, shots_mini_filt, f = splithalf, col = 'fgm', ... = )
+
+k_max <- shots_mini_filt %>% filter(idx == max(idx)) %>% pull(idx)
 k_max
+
 krs_fgm <-
-  tibble(k = seq.int(50, k_max, by = 10)) %>% 
+  tibble(k = seq.int(100, k_max, by = 10)) %>% 
   mutate(
-    n = map_int(k, ~filter(shots_mini, idx >= .x) %>% distinct(player) %>% nrow()),
-    kr20 = map_dbl(k, do_kr20_fgm)
+    n = map_int(k, ~filter(shots_mini_filt, idx >= .x) %>% distinct(player) %>% nrow())
   ) %>% 
-  # Replace the infinite first value.
-  mutate(across(kr20, ~if_else(k == 1L, 0, .x))) %>% 
-  mutate(kr20_2 = kr20^2)
+  mutate(
+    value = map_dbl(k, do_kr20_fgm)
+  ) %>% 
+  mutate(value_2 = kr20^2)
 krs_fgm
 
-pull_kr20_threshhold <- function(data) {
+do_splithalf_fgm_rate_s <- safely(do_splithalf_fgm_rate, otherwise = NA_real_)
+splithalfs_fgm <-
+  tibble(k = seq.int(50, k_max - 50, by = 50)) %>% 
+  # tibble(k = 1050) %>% 
+  mutate(
+    n = map_int(k, ~filter(shots_mini_filt, idx >= .x) %>% distinct(player) %>% nrow())
+  ) %>% 
+  filter(n > 1L) %>% 
+  mutate(
+    value = map_dbl(k, do_splithalf_fgm_rate)
+  ) %>% 
+  # mutate(across(value, ~if_else(k == 1L, 0, .x))) %>% 
+  mutate(value_2 = value^2)
+splithalfs_fgm
+splithalfs_fgm %>% filter(is.na(value))
+
+pull_threshhold <- function(data) {
   res <-
     data %>% 
-    filter(kr20_2 >= 0.5) %>% 
+    filter(value_2 >= 0.5) %>% 
     filter(k != 1L) %>% 
     slice(1) %>% 
     pull(k)
   res
 }
 
-threshold_fgm <- krs_fgm %>% pull_kr20_threshhold()
+threshold_fgm <- krs_fgm %>% pull_threshhold()
 threshold_fgm
 
 krs_fgm_long <-
@@ -121,10 +184,60 @@ viz_fgm <-
 viz_fgm
 plotly::ggplotly(viz_fgm)
 
-z <-
-  shots_mini %>% 
-  group_by(player) %>% 
-  filter(idx == max(idx)) %>% 
+# z <-
+#   shots_mini %>% 
+#   group_by(player) %>% 
+#   filter(idx == max(idx)) %>% 
+#   ungroup() %>% 
+#   arrange(desc(idx)) # %>% 
+#   filter(idx >= 830L & idx < 850L)
+
+
+temp <- tempfile()
+download.file("http://personality-testing.info/_rawdata/BIG5.zip", temp, mode="wb")
+d <- read.table(unz(temp, "BIG5/data.csv"), header = TRUE, sep="\t")
+unlink(temp); rm(temp)
+d
+
+d <- d[1:500, paste0("E", 1:10)]
+str(d)
+
+d[, paste0("E", c(2, 4, 6, 8, 10))] <- 6 - d[, paste0("E", c(2, 4, 6, 8, 10))]
+# d$score <- rowMeans(d)
+head(d)
+
+psych::alpha(d)
+d
+psych::alpha(d)$total$std.alpha
+
+d2 <- d / 10
+# d2[1:10, c(TRUE, FALSE)] %>% rowMeans()
+splithalf(d2)
+psych::alpha(d2)$total$std.alpha
+
+d2 %>% as_tibble()
+d3 <-
+  d %>% 
+  as_tibble() %>% 
+  mutate(rn = row_number()) %>% 
+  pivot_longer(
+    matches('^E')
+  ) %>% 
+  group_by(rn) %>%
+  mutate(across(value, cumsum)) %>% 
   ungroup() %>% 
-  arrange(desc(idx)) # %>% 
-  filter(idx >= 830L & idx < 850L)
+  # mutate(across(value, ~{.x * 100} %>% as.integer())) %>% 
+  pivot_wider(
+    names_from = 'name',
+    values_from = 'value'
+  ) %>% 
+  select(-rn)
+d3
+# d2
+d3 %>% splithalf()
+# d3 %>% splithalf()
+d %>% as_tibble() %>% splithalf()
+d2 %>% as_tibble() %>% splithalf()
+d %>% kr20()
+d2 %>% kr20()
+d3 %>% kr20()
