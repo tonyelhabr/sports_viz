@@ -1,6 +1,6 @@
 
 # extrafont::font_import(prompt = FALSE, pattern = 'Fira')
-extrafont::loadfonts(device = 'win', quiet = TRUE)
+extrafont::loadfonts(device = 'win')
 library(tidyverse)
 library(ggtext)
 library(ggimage)
@@ -43,18 +43,18 @@ theme_update(
   panel.background = element_rect(fill = '#fffaf0', color = NA)
 )
 
-# iris %>%
-#   ggplot(aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
-#   geom_point(size = 4, alpha = 0.6) +
-#   theme(plot.tag.position = c(1, 0.02), plot.tag = element_text(hjust = 1)) +
-#   labs(
-#     title = 'Sepal Dimensions of Iris Flowers',
-#     subtitle = 'by Species',
-#     x = 'Sepal length',
-#     y = 'Sepal width',
-#     caption = 'Data: iris dataset',
-#     tag = 'Tony ElHabr'
-#   )
+iris %>%
+  ggplot(aes(x = Sepal.Length, y = Sepal.Width, color = Species)) +
+  geom_point(size = 4, alpha = 0.6) +
+  theme(plot.tag.position = c(1, 0.02), plot.tag = element_text(hjust = 1)) +
+  labs(
+    title = 'Sepal Dimensions of Iris Flowers',
+    subtitle = 'by Species',
+    x = 'Sepal length',
+    y = 'Sepal width',
+    caption = 'Data: iris dataset',
+    tag = 'Tony ElHabr'
+  )
 
 path_tm_stats_nested <- here::here('data-raw', 'epl_tm_stats_nested.rds')
 if(!fs::file_exists(path_tm_stats_nested)) {

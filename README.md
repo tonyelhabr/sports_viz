@@ -95,3 +95,38 @@ prevalent.<a href="https://twitter.com/hashtag/rstats?src=hash&amp;ref_src=twsrc
 ![2020 NBA Restart Social Justice Message Bar
 Chart](plots/nba_social_justice.png
 "2020 NBA Restart Social Justice Message Bar Chart")
+
+![](plots/04_ucl_npg90_adj.utf8.pdf)<!-- -->
+
+![Competition-Adjusted Non-Penalty Goals Per 90 Minutes Dumbbell
+Char](plots/ucl_npg90_adj.png
+"Competition-Adjusted Non-Penalty Goals Per 90 Minutes Dumbbell Chart")
+
+## Future Ideas
+
+  - Stability of goal-scoring rate and/or xG over-performance
+
+  - Madden rating EDA with UMAP + kmeans clustering (for optimal \# of
+    UMAP groups).
+
+  - In which sport is the leading team most likely to further their lead
+    near the end of the game due to an opposition error,
+    overly-aggressive tactics by the opposition, etc.? (End of game
+    depends on the sport. Ideally, we could use a win probability model
+    to help idenitfy end-of-game context, although it would still need
+    some adjustment.) Extension: In which sport are gamblers most likely
+    to lose/win due to a back-door cover?
+
+## Future data sets
+
+  - “Standardized” soccer shot data locations:
+    <https://kloppy.pysport.org/changelog/#110-2020-08-07>
+
+  - xG soccer model: <https://github.com/ML-KULeuven/soccer_xg>
+
+  - Transfer market data: <https://github.com/ewenme/transfers>
+
+  - FIFA data: <https://github.com/RobWHickman/fifadb>
+
+  - Champions League over-performers:
+    <https://cdn.substack.com/image/fetch/c_limit,f_auto,q_auto:good,fl_progressive:steep/https%3A%2F%2Fbucketeer-e05bbc84-baa3-437e-9518-adb32be77984.s3.amazonaws.com%2Fpublic%2Fimages%2Fa1354a2f-8928-453f-a5ed-df142021ceb7_1004x935.png>

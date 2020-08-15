@@ -9,7 +9,9 @@ knitr::opts_chunk$set(echo = FALSE, include = TRUE)
 
 ```{r funcs, echo=F, include=F}
 library(magrittr)
-library(readr)
+library(dplyr)
+require(readxl)
+require(viridis)
 library(reactable)
 library(htmltools)
 
@@ -30,7 +32,11 @@ pal_react <- viridis::magma(n = 5, begin = 0.6, end = 1) %>% make_color_pal(bias
 ```
 
 ```{r data, echo=F, include=F}
-df <- here::here('data-raw', '04_ucl_npg90_adj.xlsx') %>% readxl::read_excel()
+df <- 
+  here::here('data-raw', '04_ucl_npg90_adj.xlsx') %>% 
+  readxl::read_excel() %>% 
+  mutate(across(matches('^min'), ~{round(.x / 1000, 1)}))
+df
 cols <- c('domestic', 'ucl', 'npg90_change_perc', 'rnk')
 cols_adj <- sprintf('%s_adj', cols)
 # npg90 <- c(df[['npg90_change_perc']], df[['npg90_change_perc_adj']])
@@ -51,8 +57,9 @@ df_react <-
     defaultColGroup = colGroup(headerClass = 'group-header'),
     
     columnGroups = list(
+      colGroup(name = 'Un-Adjusted', columns = cols),
       colGroup(name = 'Adjusted', columns = cols_adj),
-      colGroup(name = 'Un-Adjusted', columns = cols)
+      colGroup(name = 'Minutes', columns = sprintf('min_%s', c('domestic', 'ucl')))
     ),
 
     # Emphasize borders between groups when sorting by group
@@ -144,6 +151,17 @@ df_react <-
       rnk_adj = colDef(
         name = 'Rank',
         maxWidth = 60
+      ),
+      
+      min_domestic = colDef(
+        name = 'Domestic',
+        cell = JS('function(cellInfo) {return cellInfo.value + "k"}'),
+      ),
+      
+      min_ucl = colDef(
+        name = 'UCL',
+        cell = JS('function(cellInfo) {return cellInfo.value + "k"}'),
+        maxWidth = 60
       )
     )
   )
@@ -154,7 +172,7 @@ div(
   class = 'rankings',
   div(
     class = 'title',
-    h2('Non-Penalty Goals Per 90, Adjusted for Competition'),
+    h2('Non-Penalty Goals Per 90 Minutes, Adjusted for Competition'),
   ),
   df_react,
   tags$span('2020 UCL statistics not included'),
