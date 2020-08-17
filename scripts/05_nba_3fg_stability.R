@@ -4,9 +4,13 @@
 # + 2015: https://www.kaggle.com/dansbecker/nba-shot-logs
 # + 2016(?): https://github.com/wh0801/NBA-shooting-rationality-2016-17-Regular-Season
 
+# Idea
+# + https://fansided.com/2014/08/29/long-take-three-point-shooting-stabilize/
+
 extrafont::loadfonts(device = 'win', quiet = TRUE)
 library(tidyverse)
-require(here)
+library(here)
+library(ggtext)
 library(patchwork)
 library(magick)
 
@@ -67,7 +71,7 @@ shots_2013_2014 <-
   set_names(., .) %>% 
   map_dfr(
     ~here::here('data-raw', '05', 'sportvu', glue::glue('joined_shots_{..1}.csv')) %>% 
-    # ~here::here('data-raw', '05', 'sportvu', glue::glue('all_chart_{..1}.csv')) %>%
+      # ~here::here('data-raw', '05', 'sportvu', glue::glue('all_chart_{..1}.csv')) %>%
       read_csv() %>% 
       # Get rid of first (index) column and duplicated columns (auto-renamed by `read_csv()`).
       select(-1, -matches('_1$')), 
@@ -164,19 +168,17 @@ kr20 <- function(data) {
   res
 }
 
+# I was trying this out with other data and columns, hence the partial function.
 do_f_at <- function(data, k, col, f) {
-  # cat(sprintf('k: %s', k), sep = '\n')
-  # browser()
+  
   col_sym <- sym(col)
   
   data_k <-
     data %>% 
     group_by(player) %>% 
     filter(n() >= k) %>% 
-    # slice(c(1:k)) %>% 
     ungroup() %>% 
     filter(idx <= k)
-  # browser()
   
   data_wide <-
     data_k %>%
@@ -186,7 +188,6 @@ do_f_at <- function(data, k, col, f) {
       values_from = !!col_sym
     )
   
-  # browser()
   res <- data_wide %>% select(-player) %>% f()
   res
 }
@@ -195,6 +196,7 @@ do_kr20_fgm <- partial(do_f_at, shots_mini_filt, f = kr20, col = 'fgm', ... = )
 
 k_max <- shots_mini_filt %>% filter(idx == max(idx)) %>% pull(idx)
 k_max
+# NOTE: This should be an integer sequence, and `k` and `idx` should be kept as integers. If it's just a double sequence, then the gif rendering may have issues to do mismtached classes!
 k_seq <- seq.int(10L, k_max, by = 10L)
 krs_fgm <-
   tibble(k = k_seq) %>% 
@@ -267,17 +269,36 @@ players_colors <-
   ) %>% 
   filter(player %in% players_filt) %>% 
   deframe()
-players_colors %>% scales::show_col()
+# players_colors %>% scales::show_col()
 
+n_player_viz <- 100L
 shots_viz <-
   shots_mini_filt %>% 
-  semi_join(shots_n_rnk %>% filter(rnk <= 100)) %>% 
+  semi_join(shots_n_rnk %>% filter(rnk <= n_player_viz)) %>% 
   mutate(is_tenth = idx %% 10 == 0) %>% 
   filter(is_tenth) %>% 
   select(-is_tenth)
 shots_viz
 
-shots_n_rnk %>% filter(rnk == 100)
+# shots_viz_dev <-
+#   shots_viz %>% 
+#   mutate(
+#     idx_viz = case_when(
+#       idx == cutoff_fgm ~ 20L,
+#       TRUE ~ 1L
+#     )
+#   ) %>% 
+#   uncount(idx_viz) # %>% 
+# # group_by(player) %>% 
+# # mutate(idx_new = 10L * row_number()) %>% 
+# # ungroup()
+# shots_viz_dev
+# shots_viz
+# shots_viz_dev %>% filter(idx == cutoff_fgm)
+# shots_viz %>% filter(idx == cutoff_fgm)
+
+# # Who is the last before the cutoff?
+# shots_n_rnk %>% filter(rnk == n_player_viz)
 
 shots_viz_top <-
   shots_viz %>% 
@@ -287,10 +308,11 @@ shots_viz_top
 
 x_pos_lab <- 1800L
 height <- 750
+nframe <- 150
 animate_partial <-
   partial(
     gganimate::animate,
-    nframe = 150,
+    nframe = nframe,
     end_pause = 50,
     fps = 20,
     width = 600,
@@ -306,7 +328,7 @@ add_common_layers <- function(...) {
       aes(xintercept = idx, group = NULL),
       size = 1.1
     ),
-    scale_x_continuous(labels = scales::comma_format(accuracy = 1), limits = c(0, 2200)),
+    scale_x_continuous(labels = scales::comma_format(accuracy = 1), limits = c(0L, 2300L)),
     scale_y_continuous(labels = scales::percent_format(accuracy = 1)),
     theme(
       panel.grid.major.y = element_blank()
@@ -346,24 +368,27 @@ viz_fgm_rate_cumu <-
   scale_color_manual(values = players_colors) +
   geom_text(
     data = tibble(idx = cutoff_fgm),
-    aes(x = idx, y = 0.55, label = glue::glue('Stability point'), group = NULL),
+    aes(x = idx, y = 0.55, label = glue::glue('Stability point: {cutoff_fgm}'), group = NULL),
     size = 4,
     hjust = 1.05,
     color = 'grey20'
   ) +
   gganimate::transition_reveal(along = idx) +
-  coord_cartesian(ylim = c(0.2, 0.6), clip = 'off') +
+  coord_cartesian(ylim = c(0.2, 0.6)) +
   theme(
+    plot.subtitle = ggtext::element_markdown(),
     axis.text.x = element_blank()
   ) +
   labs(
+    title = 'How many shots does it take for 3P% to stabilize?',
+    subtitle = glue::glue('2013 - 2016 NBA shot logs indicate the answer is ~**{cutoff_fgm}** shots.'),
     x = NULL,
-    y = 'Cumualitve 3FG% Average'
+    y = 'Cumulative 3P% Average'
   )
-viz_fgm_rate_cumu
+# viz_fgm_rate_cumu
 
 viz_fgm_rate_cumu_gif <- animate_partial(viz_fgm_rate_cumu, height = 0.75 * height)
-viz_fgm_rate_cumu_gif
+# viz_fgm_rate_cumu_gif
 
 krs_viz <- krs_fgm %>% rename(idx = k)
 viz_krs <-
@@ -393,26 +418,27 @@ viz_krs <-
   #   family = 'Karla',
   #   color = 'grey20',
   #   label = glue::glue('Stability Rate')
-  # ) +
-  labs(
-    y = 'Stability Rate',
-    x = 'Shot #'
-  )
-viz_krs
+# ) +
+labs(
+  tag = 'Viz: @TonyElHabr | Data: NBA',
+  y = 'Stability Rate',
+  x = 'Shot #'
+)
+# viz_krs
 
 viz_krs_gif <- animate_partial(viz_krs, height = 0.25 * height)
-viz_krs_gif
+# viz_krs_gif
 # viz_patched <- (viz_fgm_rate_cumu) + (viz_krs + plot_layout(ncol = 1, heights = c(3, 1))
 # viz_patched
 
-# https://github.com/thomasp85/gganimate/wiki/Animation-Composition
+# Feference: https://github.com/thomasp85/gganimate/wiki/Animation-Composition
 viz_fgm_rate_cumu_mgif <- magick::image_read(viz_fgm_rate_cumu_gif)
 viz_krs_mgif <- magick::image_read(viz_krs_gif)
 
 res_gif <- magick::image_append(c(viz_fgm_rate_cumu_mgif[1], viz_krs_mgif[1]), stack = TRUE)
-for(i in 2:100){
+for(i in 2:nframe){
   combo_gif <- magick::image_append(c(viz_fgm_rate_cumu_mgif[i], viz_krs_mgif[i]), stack = TRUE)
   res_gif <- c(res_gif, combo_gif)
 }
 res_gif
-
+magick::image_write(res_gif, path = here::here('plots', '05_viz_3p_stability.gif'))
