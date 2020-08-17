@@ -33,7 +33,7 @@ pal_react <- viridis::magma(n = 5, begin = 0.6, end = 1) %>% make_color_pal(bias
 
 ```{r data, echo=F, include=F}
 df <- 
-  here::here('data-raw', '04_ucl_npg90_adj.xlsx') %>% 
+  here::here('data-raw', '04', '04_ucl_npg90_adj.xlsx') %>% 
   readxl::read_excel() %>% 
   mutate(across(matches('^min'), ~{round(.x / 1000, 1)}))
 df

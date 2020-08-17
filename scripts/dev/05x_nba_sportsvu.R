@@ -112,11 +112,34 @@ res <-
   do_f_at(col = 'fgm_rate_cumu', f = splithalf, k = 30L)
 res
 
+col = 'fgm'
+col_sym <- sym(col)
+data = shots_mini_filt
+k = 100
+data_k <-
+  data %>% 
+  group_by(player) %>% 
+  filter(n() >= k) %>% 
+  # slice(c(1:k)) %>% 
+  ungroup() %>% 
+  filter(idx <= k)
+# browser()
+
+data_wide <-
+  data_k %>%
+  select(idx, player, !!col_sym) %>%
+  pivot_wider(
+    names_from = idx,
+    values_from = !!col_sym
+  )
+data_wide
+
+
 # do_kr20_at <- partial(do_f_at, f = kr20, ... = )
 # do_cralpha_at <- partial(do_f_at, f = cralpha, ... = )
 # do_kr20_fgm <- partial(do_kr20_at, shots_min_filt %>% filter(player != 'Kyle Korver'), col = 'fgm', ... = )
 do_kr20_fgm <- partial(do_f_at, shots_mini_filt, f = kr20, col = 'fgm', ... = )
-do_splithalf_fgm_rate <- partial(do_f_at, shots_mini_filt, f = splithalf, col = 'fgm', ... = )
+# do_splithalf_fgm_rate <- partial(do_f_at, shots_mini_filt, f = splithalf, col = 'fgm', ... = )
 
 k_max <- shots_mini_filt %>% filter(idx == max(idx)) %>% pull(idx)
 k_max
@@ -129,7 +152,7 @@ krs_fgm <-
   mutate(
     value = map_dbl(k, do_kr20_fgm)
   ) %>% 
-  mutate(value_2 = kr20^2)
+  mutate(value_2 = value^2)
 krs_fgm
 
 do_splithalf_fgm_rate_s <- safely(do_splithalf_fgm_rate, otherwise = NA_real_)

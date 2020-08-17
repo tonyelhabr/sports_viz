@@ -56,7 +56,7 @@ iris %>%
     tag = 'Tony ElHabr'
   )
 
-path_tm_stats_nested <- here::here('data-raw', 'epl_tm_stats_nested.rds')
+path_tm_stats_nested <- here::here('data-raw', '02', 'epl_tm_stats_nested.rds')
 if(!fs::file_exists(path_tm_stats_nested)) {
   
   require(understatr)

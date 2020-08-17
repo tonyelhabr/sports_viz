@@ -45,7 +45,7 @@ theme_update(
 )
 
 msgs <- 
-  here::here('data-raw', '2020-restart-nba-social-justice-jersey-messages.xlsx') %>% 
+  here::here('data-raw', '03', '2020-restart-nba-social-justice-jersey-messages.xlsx') %>% 
   readxl::read_excel() %>% 
   mutate(
     message = message %>% 

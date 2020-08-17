@@ -59,7 +59,7 @@ arw_annotate <- arrow(length = unit(3, 'pt'), type = 'closed')
 # References:
 # + https://rud.is/b/2019/06/11/makeover-jumbalaya-beating-dumbbells-into-slopegraphs-whilst-orchestrating-ethercalc/
 # + https://www.economist.com/graphic-detail/2020/07/25/empty-stadiums-have-shrunk-football-teams-home-advantage
-rnks <- here::here('data-raw', '04_ucl_npg90_adj.xlsx') %>% readxl::read_excel()
+rnks <- here::here('data-raw', '04', '04_ucl_npg90_adj.xlsx') %>% readxl::read_excel()
 rnks
 
 rnks_mini <-
@@ -178,14 +178,14 @@ viz <-
     # panel.grid.minor = element_blank(),
     panel.grid.major.y = element_blank(),
     axis.text.y = element_blank(),
-    plot.subtitle = element_text(size = 11, face = 'plain')
+    plot.subtitle = element_text(size = 14, face = 'plain')
     # axis.text.x = element_text(size = 14, face = 'bold', color = 'black')
   ) +
   labs(
     title = 'Domestic League vs. Champions League Competition-Adjusted Goals Per 90 Min.',
     subtitle = glue::glue(
-      'Although raw numbers indicate that the goal scoring rate of players declines in Champions League competion,
-      many of the best attacking players have stronger goal scoring rates when adjusting for competition.'
+      'Although raw goal scoring rates are generally lower in Champions League competion play,
+      many of the best attacking players actually have stronger rates when adjusting for competition.'
       ),
     caption = glue::glue('Players with >2k minutes played in UCL prior to 2020.'),
     tag = 'Viz: @TonyElHabr | Data: 21stClub',
