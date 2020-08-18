@@ -56,35 +56,26 @@ update_geom_defaults('text', list(family = 'Karla', size = 4))
 # shots_atl %>% count(shoot_player, sort = T)
 # shots_atl %>% count(date)
 
-path_shots_2015 <- here::here('data-raw', '05', 'shot_logs.csv')
-shots_2015 <- path_shots_2015 %>% read_csv() %>% janitor::clean_names()
+# path_shots_2015 <- here::here('data-raw', '05', 'shot_logs.csv')
+url_shots_2015 <- 'https://raw.githubusercontent.com/SergioLlana/nba-shot-analysis/master/data/shot_logs.csv'
+shots_2015 <- url_shots_2015 %>% read_csv() %>% janitor::clean_names()
 shots_2015
 
 # 'all_shots' doesn't have player name
 # 'all_chart' has player name, but not shot number (which is fine tbh). Also, would need to use `shot_type` to identify 3 pt shot instead of `PTS_TYPE` (from 'all_shots').
-# shots_all_2013 <- here::here('data-raw', '05', 'sportvu', 'all_chart_2013.csv') %>% read_csv()
-# shots_all_2013 %>% count(SHOT_TYPE)
-# shots_join <- path_shots_join %>% read_csv() %>% janitor::clean_names()
-# shots_join
 shots_2013_2014 <- 
   c(2013:2014) %>% 
   set_names(., .) %>% 
   map_dfr(
-    ~here::here('data-raw', '05', 'sportvu', glue::glue('joined_shots_{..1}.csv')) %>% 
-      # ~here::here('data-raw', '05', 'sportvu', glue::glue('all_chart_{..1}.csv')) %>%
-      read_csv() %>% 
-      # Get rid of first (index) column and duplicated columns (auto-renamed by `read_csv()`).
-      select(-1, -matches('_1$')), 
+    # ~here::here('data-raw', '05', 'sportvu', glue::glue('joined_shots_{..1}.csv')) %>%
+    ~glue::glue('https://raw.githubusercontent.com/hwchase17/sportvu/master/joined_shots_{..1}.csv') %>% 
+    read_csv() %>% 
+    # Get rid of first (index) column and duplicated columns (auto-renamed by `read_csv()`).
+    select(-1, -matches('_1$')), 
     .id = 'year'
   ) %>% 
   janitor::clean_names()
-shots_2013_2014$player_name
-
-# nms_x <- shots_2013_2014 %>% names()
-# nms_y <- shots_2015 %>% names()
-# intersect(nms_x, nms_y)
-# setdiff(nms_x, nms_y)
-# setdiff(nms_y, nms_x)
+shots_2013_2014
 
 # Found these by inspection.
 fix_player_names <- function(x) {
@@ -218,31 +209,6 @@ cutoff_fgm <-
   as.integer()
 cutoff_fgm
 
-# fit_lm <-
-#   krs_fgm %>% 
-#   lm(value_2 ~ k, data = .)
-# fit_lm
-# 
-# # fit_lm_sqrt <-
-# #   krs_fgm %>% 
-# #   lm(value ~ k^2, data = .)
-# # fit_lm_sqrt
-# 
-# pred_lm <-
-#   fit_lm %>% 
-#   broom::augment(new_data = tibble(k = k_seq)) %>% 
-#   full_join(krs_fgm)
-# pred_lm
-# 
-# cutoff_fgm_pred <-
-#   pred_lm %>% 
-#   filter(.fitted >= 0.5) %>% 
-#   filter(k != 1L) %>% 
-#   slice(1) %>% 
-#   pull(k) %>% 
-#   as.integer()
-# cutoff_fgm_pred
-
 shots_n_rnk <- 
   shots_mini_filt %>% 
   group_by(player) %>% 
@@ -280,26 +246,6 @@ shots_viz <-
   select(-is_tenth)
 shots_viz
 
-# shots_viz_dev <-
-#   shots_viz %>% 
-#   mutate(
-#     idx_viz = case_when(
-#       idx == cutoff_fgm ~ 20L,
-#       TRUE ~ 1L
-#     )
-#   ) %>% 
-#   uncount(idx_viz) # %>% 
-# # group_by(player) %>% 
-# # mutate(idx_new = 10L * row_number()) %>% 
-# # ungroup()
-# shots_viz_dev
-# shots_viz
-# shots_viz_dev %>% filter(idx == cutoff_fgm)
-# shots_viz %>% filter(idx == cutoff_fgm)
-
-# # Who is the last before the cutoff?
-# shots_n_rnk %>% filter(rnk == n_player_viz)
-
 shots_viz_top <-
   shots_viz %>% 
   inner_join(players_top) %>% 
@@ -307,7 +253,7 @@ shots_viz_top <-
 shots_viz_top
 
 x_pos_lab <- 1800L
-height <- 750
+height <- 825
 nframe <- 150
 animate_partial <-
   partial(
@@ -315,7 +261,7 @@ animate_partial <-
     nframe = nframe,
     end_pause = 50,
     fps = 20,
-    width = 600,
+    width = 750,
     ... = 
   )
 
@@ -407,30 +353,15 @@ viz_krs <-
   ) +
   geom_step() +
   gganimate::transition_reveal(along = idx) +
-  # # Add this like a title. Shouldn't be animated.
-  # annotate(
-  #   geom = 'text',
-  #   x = 20,
-  #   y = 0.9,
-  #   size = 5,
-  #   hjust = 0,
-  #   fontface = 'bold',
-  #   family = 'Karla',
-  #   color = 'grey20',
-  #   label = glue::glue('Stability Rate')
-# ) +
-labs(
-  tag = 'Viz: @TonyElHabr | Data: NBA',
-  y = 'Stability Rate',
-  x = 'Shot #'
-)
+  labs(
+    tag = 'Viz: @TonyElHabr | Data: NBA',
+    y = 'Stability Rate',
+    x = 'Shot #'
+  )
 # viz_krs
 
 viz_krs_gif <- animate_partial(viz_krs, height = 0.25 * height)
 # viz_krs_gif
-# viz_patched <- (viz_fgm_rate_cumu) + (viz_krs + plot_layout(ncol = 1, heights = c(3, 1))
-# viz_patched
-
 # Feference: https://github.com/thomasp85/gganimate/wiki/Animation-Composition
 viz_fgm_rate_cumu_mgif <- magick::image_read(viz_fgm_rate_cumu_gif)
 viz_krs_mgif <- magick::image_read(viz_krs_gif)
@@ -440,5 +371,4 @@ for(i in 2:nframe){
   combo_gif <- magick::image_append(c(viz_fgm_rate_cumu_mgif[i], viz_krs_mgif[i]), stack = TRUE)
   res_gif <- c(res_gif, combo_gif)
 }
-res_gif
 magick::image_write(res_gif, path = here::here('plots', 'nba_3p_stability.gif'))
