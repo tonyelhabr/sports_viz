@@ -48,7 +48,7 @@ theme_update(
   # legend.position = c(.85, .85))
   panel.background = element_rect(fill = '#fffaf0', color = NA)
 )
-update_geom_defaults('text', list(family = 'Karla', size = 3.5))
+update_geom_defaults('text', list(family = 'Karla', size = 4))
 
 # path <- 'https://raw.githubusercontent.com/wh0801/NBA-shooting-rationality-2016-17-Regular-Season/master/Project-Team%20shoot%20rationality%20-%20github/Shot%20data/shot%20log%20ATL.csv'
 # shots_atl <- path %>% read_csv() %>% janitor::clean_names()
@@ -359,7 +359,7 @@ viz_fgm_rate_cumu <-
     # Shift curry up to avoid conflict with Klay near the end.
     data = 
       shots_viz_top %>% 
-      mutate(y = case_when(player == 'stephen curry' ~ fgm_rate_cumu + 0.005, TRUE ~ fgm_rate_cumu)),
+      mutate(y = case_when(player == 'stephen curry' ~ fgm_rate_cumu + 0.009, TRUE ~ fgm_rate_cumu)),
     # data = shots_viz_top,
     aes(x = x_pos_lab + 1L, y = y, label = lab),
     # family = 'Karla',
@@ -441,4 +441,4 @@ for(i in 2:nframe){
   res_gif <- c(res_gif, combo_gif)
 }
 res_gif
-magick::image_write(res_gif, path = here::here('plots', '05_viz_3p_stability.gif'))
+magick::image_write(res_gif, path = here::here('plots', 'nba_3p_stability.gif'))

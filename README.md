@@ -100,9 +100,39 @@ Chart](plots/nba_social_justice.png
 Table](plots/04_ucl_npg90_adj.utf8.png
 "Competition-Adjusted Non-Penalty Goals Per 90 Minutes Table")
 
+<blockquote class="twitter-tweet">
+
+<p lang="en" dir="ltr">
+
+Scoring goals⚽️ in the Champions League
+<a href="https://twitter.com/hashtag/UCL?src=hash&amp;ref_src=twsrc%5Etfw">\#UCL</a>
+is harder due to stronger competition, but when you adjust for
+competition, most attackers actually have better goal scoring
+rates.<br><br>Data courtesy of
+<a href="https://twitter.com/21stClub?ref_src=twsrc%5Etfw">@21stClub</a>
++ h/t
+<a href="https://twitter.com/rwohan?ref_src=twsrc%5Etfw">@rwohan</a> and
+his weekly
+newsletter.<a href="https://twitter.com/hashtag/rstats?src=hash&amp;ref_src=twsrc%5Etfw">\#rstats</a>
+<a href="https://t.co/svLLxe3kJ4">pic.twitter.com/svLLxe3kJ4</a>
+
+</p>
+
+— Tony (@TonyElHabr)
+<a href="https://twitter.com/TonyElHabr/status/1294639229608263685?ref_src=twsrc%5Etfw">August
+15, 2020</a>
+
+</blockquote>
+
+<script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+
 ![Competition-Adjusted Non-Penalty Goals Per 90 Minutes Dumbbell
 Chart](plots/ucl_npg90_adj.png
 "Competition-Adjusted Non-Penalty Goals Per 90 Minutes Dumbbell Chart")
+
+![NBA 3P% Cumulative Average and Stability Rate Line Charts
+Animated](plots/nba_3p_stability.gif
+"NBA 3P% Cumulative Average and Stability Rate Line Charts Animated")
 
 ## Future Ideas
 
