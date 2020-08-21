@@ -252,15 +252,18 @@ shots_viz_top <-
   mutate(lab = sprintf('%s (%.1f%%)', player_pretty, round(100 * fgm_rate_cumu)))
 shots_viz_top
 
+n_sec <- 6
+fps <- 15
+n_sec_end <- 4
 x_pos_lab <- 1800L
 height <- 825
-nframe <- 150
+n_frame <- (n_sec + n_sec_end) * fps # 150
 animate_partial <-
   partial(
     gganimate::animate,
-    nframe = nframe,
-    end_pause = 50,
-    fps = 20,
+    nframe = n_frame,
+    end_pause = n_sec_end * fps,
+    fps = fps,
     width = 750,
     ... = 
   )
@@ -367,7 +370,7 @@ viz_fgm_rate_cumu_mgif <- magick::image_read(viz_fgm_rate_cumu_gif)
 viz_krs_mgif <- magick::image_read(viz_krs_gif)
 
 res_gif <- magick::image_append(c(viz_fgm_rate_cumu_mgif[1], viz_krs_mgif[1]), stack = TRUE)
-for(i in 2:nframe){
+for(i in 2:n_frame){
   combo_gif <- magick::image_append(c(viz_fgm_rate_cumu_mgif[i], viz_krs_mgif[i]), stack = TRUE)
   res_gif <- c(res_gif, combo_gif)
 }
