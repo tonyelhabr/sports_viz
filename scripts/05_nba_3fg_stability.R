@@ -329,8 +329,8 @@ viz_fgm_rate_cumu <-
     axis.text.x = element_blank()
   ) +
   labs(
-    title = 'How many shots does it take for 3P% to stabilize?',
-    subtitle = glue::glue('2013 - 2016 NBA shot logs indicate the answer is ~**{cutoff_fgm}** shots.'),
+    title = 'How many shots does it take for 3P% to stabilize in the NBA?',
+    subtitle = glue::glue('The Kuder-Richardson 20 measure and 2013-16 shot logs indicate ~**{cutoff_fgm}** shots (for any given player)'),
     x = NULL,
     y = 'Cumulative 3P% Average'
   )
@@ -357,6 +357,7 @@ viz_krs <-
   geom_step() +
   gganimate::transition_reveal(along = idx) +
   labs(
+    caption = 'Minimum: 100 shots',
     tag = 'Viz: @TonyElHabr | Data: NBA',
     y = 'Stability Rate',
     x = 'Shot #'

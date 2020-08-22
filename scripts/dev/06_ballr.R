@@ -4,14 +4,6 @@
 library(tidyverse)
 source(here::here("scripts", "dev", "06_ballr_helpers.R"))
 
-library(styler)
-names(tidyverse_style())
-str(tidyverse_style(), give.attr = FALSE, list.len = 3)
-s <- tidyverse_style()
-s$token$fix_quotes
-pd_flat <- 'this "Thing"'
-s$token$fix_quotes(pd_flat)
-
 df <- get_data(203081, "2019-20", "Regular Season") %>% as_tibble()
 df
 
