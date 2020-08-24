@@ -69,9 +69,9 @@ shots_2013_2014 <-
   map_dfr(
     # ~here::here('data-raw', '05', 'sportvu', glue::glue('joined_shots_{..1}.csv')) %>%
     ~glue::glue('https://raw.githubusercontent.com/hwchase17/sportvu/master/joined_shots_{..1}.csv') %>% 
-    read_csv() %>% 
-    # Get rid of first (index) column and duplicated columns (auto-renamed by `read_csv()`).
-    select(-1, -matches('_1$')), 
+      read_csv() %>% 
+      # Get rid of first (index) column and duplicated columns (auto-renamed by `read_csv()`).
+      select(-1, -matches('_1$')), 
     .id = 'year'
   ) %>% 
   janitor::clean_names()
@@ -257,6 +257,7 @@ fps <- 15
 n_sec_end <- 4
 x_pos_lab <- 1800L
 height <- 825
+width <- 750
 n_frame <- (n_sec + n_sec_end) * fps # 150
 animate_partial <-
   partial(
@@ -264,7 +265,7 @@ animate_partial <-
     nframe = n_frame,
     end_pause = n_sec_end * fps,
     fps = fps,
-    width = 750,
+    width = width,
     ... = 
   )
 
@@ -285,7 +286,136 @@ add_common_layers <- function(...) {
   )
 }
 
-# Reference: https://github.com/thomasp85/gganimate/wiki/Temperature-time-series
+plot_fgm_rate_cumu <- function(animate = TRUE) {
+  
+  if(!animate) {
+    shots_viz_top_lab <-
+      shots_viz_top %>% 
+      group_by(player) %>% 
+      filter(idx == max(idx)) %>% 
+      ungroup() 
+  } else {
+    shots_viz_top_lab <- shots_viz_top
+  }
+  
+  viz <-
+    shots_viz %>% 
+    ggplot() +
+    aes(x = idx, y = fgm_rate_cumu, group = player) +
+    add_common_layers() +
+    geom_step(alpha = 0.1) +
+    geom_step(
+      data = shots_viz_top,
+      aes(color = player),
+      size = 1.1,
+      show.legend = FALSE
+    ) +
+    # Reference: https://github.com/thomasp85/gganimate/wiki/Temperature-time-series
+    geom_segment(
+      data = shots_viz_top_lab,
+      aes(x = idx, y = fgm_rate_cumu, xend = x_pos_lab, yend = fgm_rate_cumu),
+      linetype = 2,
+      size = 1
+    ) +
+    geom_text(
+      # Shift curry up to avoid conflict with Klay near the end.
+      data = 
+        shots_viz_top_lab %>% 
+        mutate(y = case_when(player == 'stephen curry' ~ fgm_rate_cumu + 0.009, TRUE ~ fgm_rate_cumu)),
+      aes(x = x_pos_lab + 1L, y = y, label = lab),
+      hjust = 0
+    ) +
+    scale_color_manual(values = players_colors) +
+    geom_text(
+      data = tibble(idx = cutoff_fgm),
+      aes(x = idx, y = 0.55, label = glue::glue('Stability point: {cutoff_fgm}'), group = NULL),
+      size = 6,
+      hjust = 1.05,
+      color = 'grey20'
+    )
+  
+  if(animate) {
+    viz <- viz + gganimate::transition_reveal(along = idx)
+  }
+  viz <-
+    viz +
+    coord_cartesian(ylim = c(0.2, 0.6)) +
+    theme(
+      plot.subtitle = ggtext::element_markdown(),
+      axis.text.x = element_blank()
+    ) +
+    labs(
+      title = 'How many shots does it take for 3P% to stabilize in the NBA?',
+      subtitle = glue::glue('The Kuder-Richardson 20 measure and 2013-16 shot logs indicate ~**{cutoff_fgm}** shots (for any given player)'),
+      x = NULL,
+      y = 'Cumulative 3P% Average'
+    )
+  viz
+}
+viz_fgm_rate_cumu_static <- plot_fgm_rate_cumu(animate = FALSE)
+viz_fgm_rate_cumu <- plot_fgm_rate_cumu(animate = TRUE)
+
+viz_fgm_rate_cumu_gif <- animate_partial(viz_fgm_rate_cumu, height = 0.75 * height)
+# viz_fgm_rate_cumu_gif
+
+krs_viz <- krs_fgm %>% rename(idx = k)
+plot_krs <- function(animate = TRUE) {
+  krs_viz_lab <- krs_viz %>% mutate(x = 0, y = value_2, yend = value_2) %>% filter(idx <= cutoff_fgm)
+  if(!animate) {
+    krs_viz_lab <- krs_viz_lab %>% filter(idx == max(idx))
+  }
+  viz <-
+    krs_viz %>% 
+    # Last value_2 values are NAs because n = 1, so add dummy values to make the plot line up with the prior plot.
+    fill(value_2) %>% 
+    ggplot() +
+    aes(x = idx, y = value_2) +
+    add_common_layers() +
+    geom_segment(
+      data = krs_viz_lab,
+      aes(x = x, y = y, xend = idx, yend = yend),
+      linetype = 2,
+      size = 1.1,
+      color = 'grey20'
+    ) +
+    geom_step()
+  
+  if(animate) {
+    viz <- viz + gganimate::transition_reveal(along = idx)
+  }
+  viz <-
+    viz +
+    labs(
+      caption = 'Minimum: 100 shots',
+      tag = 'Viz: @TonyElHabr | Data: NBA',
+      y = 'Stability Rate',
+      x = 'Shot #'
+    )
+  viz
+}
+
+viz_krs_static <- plot_krs(animate = FALSE)
+viz_krs <- plot_krs(animate = TRUE)
+viz_krs_gif <- animate_partial(viz_krs, height = 0.25 * height)
+
+res_static <- (viz_fgm_rate_cumu_static + viz_krs_static) + plot_layout(ncol = 1, heights = c(0.75, 0.25))
+# res_static
+path_viz_static <- here::here('plots', 'nba_3p_stability.png')
+# Really, these should have been multiples of 72 (which is the dpi for `dpi = 'screen'`), but oh well.
+ggsave(plot = res_static, filename = path_viz_static, width = width / 75, height = height / 75, dpi = 'screen', type = 'cairo')
+
+# Feference: https://github.com/thomasp85/gganimate/wiki/Animation-Composition
+viz_fgm_rate_cumu_mgif <- magick::image_read(viz_fgm_rate_cumu_gif)
+viz_krs_mgif <- magick::image_read(viz_krs_gif)
+
+res_gif <- magick::image_append(c(viz_fgm_rate_cumu_mgif[1], viz_krs_mgif[1]), stack = TRUE)
+for(i in 2:n_frame){
+  combo_gif <- magick::image_append(c(viz_fgm_rate_cumu_mgif[i], viz_krs_mgif[i]), stack = TRUE)
+  res_gif <- c(res_gif, combo_gif)
+}
+path_viz_gif <- path_viz_static %>% str_replace('.png$', 'gif')
+magick::image_write(res_gif, path = path_viz_gif)
+
 viz_fgm_rate_cumu <-
   shots_viz %>% 
   ggplot() +
@@ -308,6 +438,9 @@ viz_fgm_rate_cumu <-
     # Shift curry up to avoid conflict with Klay near the end.
     data = 
       shots_viz_top %>% 
+      group_by(player) %>% 
+      filter(idx == max(idx)) %>% 
+      ungroup() %>% 
       mutate(y = case_when(player == 'stephen curry' ~ fgm_rate_cumu + 0.009, TRUE ~ fgm_rate_cumu)),
     # data = shots_viz_top,
     aes(x = x_pos_lab + 1L, y = y, label = lab),
@@ -318,11 +451,10 @@ viz_fgm_rate_cumu <-
   geom_text(
     data = tibble(idx = cutoff_fgm),
     aes(x = idx, y = 0.55, label = glue::glue('Stability point: {cutoff_fgm}'), group = NULL),
-    size = 4,
+    size = 6,
     hjust = 1.05,
     color = 'grey20'
   ) +
-  gganimate::transition_reveal(along = idx) +
   coord_cartesian(ylim = c(0.2, 0.6)) +
   theme(
     plot.subtitle = ggtext::element_markdown(),
@@ -334,45 +466,3 @@ viz_fgm_rate_cumu <-
     x = NULL,
     y = 'Cumulative 3P% Average'
   )
-# viz_fgm_rate_cumu
-
-viz_fgm_rate_cumu_gif <- animate_partial(viz_fgm_rate_cumu, height = 0.75 * height)
-# viz_fgm_rate_cumu_gif
-
-krs_viz <- krs_fgm %>% rename(idx = k)
-viz_krs <-
-  krs_viz %>% 
-  # Last value_2 values are NAs because n = 1, so add dummy values to make the plot line up with the prior plot.
-  fill(value_2) %>% 
-  ggplot() +
-  aes(x = idx, y = value_2) +
-  add_common_layers() +
-  geom_segment(
-    data = krs_viz %>% mutate(x = 0, y = value_2, yend = value_2) %>% filter(idx <= cutoff_fgm),
-    aes(x = x, y = y, xend = idx, yend = yend),
-    linetype = 2,
-    size = 1.1,
-    color = 'grey20'
-  ) +
-  geom_step() +
-  gganimate::transition_reveal(along = idx) +
-  labs(
-    caption = 'Minimum: 100 shots',
-    tag = 'Viz: @TonyElHabr | Data: NBA',
-    y = 'Stability Rate',
-    x = 'Shot #'
-  )
-# viz_krs
-
-viz_krs_gif <- animate_partial(viz_krs, height = 0.25 * height)
-# viz_krs_gif
-# Feference: https://github.com/thomasp85/gganimate/wiki/Animation-Composition
-viz_fgm_rate_cumu_mgif <- magick::image_read(viz_fgm_rate_cumu_gif)
-viz_krs_mgif <- magick::image_read(viz_krs_gif)
-
-res_gif <- magick::image_append(c(viz_fgm_rate_cumu_mgif[1], viz_krs_mgif[1]), stack = TRUE)
-for(i in 2:n_frame){
-  combo_gif <- magick::image_append(c(viz_fgm_rate_cumu_mgif[i], viz_krs_mgif[i]), stack = TRUE)
-  res_gif <- c(res_gif, combo_gif)
-}
-magick::image_write(res_gif, path = here::here('plots', 'nba_3p_stability.gif'))
