@@ -1,4 +1,5 @@
 
+library(tidyverse)
 import_fb <- memoise::memoise({function() {
   # fb rankings source:
   # + https://www.6atexasfb.com/forum/main-forum/518558-greatest-texas-hs-fb-programs-of-all-time
@@ -141,4 +142,122 @@ import_scores_old <- function(school) {
 # id_drive <- googledrive::as_id(url_drive)
 # # download.file(url_drive, 'file.xlsx')
 # drive <- googledrive::as_dribble(id_drive)
+# instructions:
+# 1. Make a copy of https://drive.google.com/open?id=1BRTPCLzc09oW6NpqPoHabXwKwjzwxOVO to your local google drive (link originally found here: https://www.6atexasfootball.com/forum/main-forum/199726-complete-game-by-game-football-histories/page10).
+# 2. Download a copy of this workbook.
+# 3. Show formulas on the Data sheet for column A.
+# 4. Copy-paste formulas to a text file.
+.get_fb_score_links_df <- memoise::memoise({function() {
+  path_links <- here::here('data-raw', '0x', 'tx-hs-fb-links.txt')
+  lines <- path_links %>% read_lines()
+  df <- lines %>% tibble(line = .)
+  df
+  res <-
+    df %>% 
+    mutate(has_link = line %>% str_detect('^[=]')) %>% 
+    mutate(
+      link = line %>% str_remove_all('^[=]HYPERLINK\\(|\\,.*\\)$|["]') %>% if_else(has_link, ., NA_character_),
+      # This `school` extraction actaully also works fine for those without links
+      school = line %>% str_remove_all('^.*\\,.|\\)$|["]'),
+    ) %>% 
+    select(school, has_link, link)
+  res
+}})
 
+.download_fb_scores <-
+  function(link,
+           dir = here::here('data-raw', '0x', 'schools'),
+           file = '',
+           path = fs::path(dir, sprintf('%s.xlsx', file))) {
+    if (fs::file_exists(path)) {
+      return(path)
+    }
+    id <- link %>% googledrive::as_id()
+    dr <- id %>% googledrive::as_dribble()
+    res <- dr %>% googledrive::drive_download(path = path)
+    path
+  }
+
+.import_fb_scores <- function(path) {
+  res_init <- path %>% readxl::read_excel(col_types = 'text')
+  res <-
+    res_init %>% 
+    select(
+      coach = Coach,
+      season = Season,
+      district = District,
+      conf = Classification,
+      date = Date,
+      week = Week,
+      opp = Opponent,
+      pf = PF,
+      pa = PA,
+      mov = `Margin of Victory`, 
+      w = Win,
+      l = Loss,
+      t = Tie,
+      gp = `Games Played`, 
+      w_cumu = `All Time Wins`,
+      l_cumu = `All Time Losses`,
+      t_cumu = `All Time Ties`,
+      g_cumu = `All Time Games`,
+      w_frac_cumu = `Win Percentage`
+    ) %>% 
+    mutate(
+      across(date, lubridate::mdy),
+      across(c(season, week, pf, pa, mov, w, l, t, gp, w_cumu, l_cumu, t_cumu, g_cumu), as.integer),
+      across(w_frac_cumu, as.double)
+    )
+  res
+}
+
+retrieve_fb_scores <- function(links = NULL, path = here::here('data-raw', '0x', 'fb_scores.rds')) {
+  
+  if(fs::file_exists(path)) {
+    res <- path %>% read_rds()
+    return(res)
+  }
+  
+  if(is.null(links)) {
+    links <-
+      .get_fb_score_links_df() %>% 
+      filter(has_link) %>%
+      select(-has_link)
+  }
+  
+  links_info <-
+    links %>% 
+    mutate(path = map2_chr(link, school, ~.download_fb_scores(link = ..1, file = ..2))) %>% 
+    select(-link)
+
+  .import_fb_scores_q <- quietly(.import_fb_scores)
+  res <-
+    links_info %>% 
+    mutate(data = map(path, ~.import_fb_scores_q(.x) %>% pluck('result'))) %>% 
+    select(-path) %>% 
+    unnest(data)
+  
+  write_rds(res, path)
+  res
+}
+
+# import_score_links <- function() {
+#   path <- here::here('data-raw', '0x', 'Texas High School Football Team Public Links.xlsm')
+#   df_raw <- path %>% readxl::read_excel(sheet = 'Data') %>% janitor::clean_names()
+#   df_raw
+#   link <- df_raw$link[[1]]
+#   path_dl <- here::here('data-raw', '0x', 'example.xlsx')
+#   download.file(link, destfile = path_dl, quiet = TRUE)
+# }
+
+import_scores <- function(school) {
+  school <- 'Duncanville'
+  path <- here::here('data-raw', '0x', sprintf('%s.xlsx', school))
+  sheets <- path %>% readxl::excel_sheets()
+  sheets
+  df_raw <- path %>% readxl::read_excel(sheet = 'Data') %>% janitor::clean_names()
+  df_raw
+  df_raw_filt <- df_raw %>% filter(season >= 1979)
+  df_raw_filt
+  
+}
