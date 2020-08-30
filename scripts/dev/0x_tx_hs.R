@@ -7,27 +7,9 @@ source(here::here('scripts', 'dev', '0x_tx_hs_helpers.R'))
   res <- data %>% filter(conf %in% sprintf('%dA', 5:6))
 }
 
-# fb ----
-# # Not sure I will actually use this. Probably just to check that the top football schools found via the scores are "reasonable".
-# fb_rnks <- import_fb_rnks()
-# fb_rnks_pts <-
-#   fb_rnks %>% 
-#   filter(key %in% c('TOTAL POINTS', 'Current Class')) %>% 
-#   pivot_wider(names_from = key, values_from = value) %>% 
-#   janitor::clean_names() %>% 
-#   # Intentionally will have warnings here.
-#   separate(current_class, into = c('conf', 'div'), sep = '-') %>% 
-#   rename(pts = total_points)
-# fb_rnks_pts_filt <- fb_rnks_pts %>% .filter_conf()
-# fb_rnks_pts_filt
-
 # bands ----
 bands_raw <- import_bands()
-# bands_raw %>% pull(school) %>% clipr::write_clip()
-# stringi::stri_cmp(bands_raw[[1, 'school']], 'Whiteface HS')
-# iconv(bands_raw[[1, 'school']], 'ASCII', 'UTF-8', sub = 'bleh')
-# x <- bands_raw[[1, 'school']]
-# Encoding(x)
+
 bands <- 
   bands_raw %>% 
   select(-notes) %>% 
@@ -85,28 +67,6 @@ bands_aug <-
     # score_rnk = ifelse(round == 'Prelims', 1, 2) * rnk_conf * rnk_place,
     score_prnk = ifelse(round == 'Prelims', 0.5, 1) * prnk_conf * prnk_place
   )
-# bands_aug %>% filter(is.na(w))
-# bands_aug %>% count(rnk_conf)
-# bands_aug %>% arrange(desc(score_rnk))
-
-# # How frequently did each school appear in each conference?
-# bands_schools_conf <-
-#   bands_aug %>% 
-#   group_by(school) %>% 
-#   mutate(n_app = n()) %>% 
-#   ungroup() %>% 
-#   group_by(school, conf, n_app) %>% 
-#   summarize(n_conf = n()) %>% 
-#   mutate(frac_app = n_conf / n_app) %>% 
-#   ungroup()
-# 
-# # Identify the most common conference for each school. (This is purely informational.)
-# bands_schools <-
-#   bands_schools_conf %>% 
-#   group_by(school) %>% 
-#   filter(row_number(desc(frac_app)) == 1L) %>% 
-#   ungroup()
-# bands_schools
 
 bands_schools <-
   bands_aug %>% 
@@ -117,9 +77,6 @@ bands_schools <-
   # `idx_grp` == `n_app` for last `idx_grp`
   arrange(desc(idx))
 bands_schools
-
-# bands_schools %>% pull(school) %>% clipr::write_clip()
-# bands_schools[[1, 1]] %>% stringi::stri_encode(from = 'ASCII', to = 'UTF-8', to_raw = T)
 
 # Ranking bands.
 bands_agg <-
@@ -159,26 +116,8 @@ bands_agg_filt_adj <-
     rnk_prnk = row_number(rnk_prnk), 
     rnk = row_number(rnk)
   )
-# bands_agg_filt_adj %>% clipr::write_clip()
-# bands_agg_filt_adj %>% 
-#   head(30) %>% 
-#   select(school) %>% clipr::write_clip()
-# 
-# bands_agg_filt_adj %>% 
-#   ggplot() +
-#   aes(x = score_raw, y = score_prnk) +
-#   geom_point()
-# 
-# bands_agg_filt_adj %>% 
-#   mutate(rnk_diff = (rnk_raw - rnk_prnk)) %>% 
-#   filter(rnk <= 30) %>% 
-#   arrange(desc(abs(rnk_diff)))
-# 
-# bands_agg_filt_adj %>% 
-#   ggplot() +
-#   aes(x = rnk_raw, y = rnk_prnk) +
-#   geom_point()
 
+# fb ----
 fb <- retrieve_fb_scores() %>% select(-coach, -opp, -mov, -date, -matches('cumu$'))
 fb
 
@@ -216,44 +155,11 @@ fb_proc_last <-
   filter(g_cumu == max(g_cumu)) %>% 
   ungroup() %>% 
   mutate(
-    # rnk_w_cumu = row_number(desc(w_cumu)),
-    # rnk_w_frac_cumu = row_number(desc(w_frac_cumu))
     rnk = row_number(desc(w_cumu))
   ) %>% 
   arrange(rnk)
 # fb_proc_last %>% arrange(desc(w_frac_cumu))
 fb_proc_last %>% arrange(desc(w_cumu))
-
-# w_cumu <- fb_proc_last %>% pull(w_cumu)
-# g_cumu <- fb_proc_last %>% pull(g_cumu)
-# ll <- function(alpha, beta) {
-#   x <- w_cumu
-#   size <- g_cumu
-#   -sum(VGAM::dbetabinom.ab(x, size, alpha, beta, log = TRUE))
-# }
-# 
-# m <- stats4::mle(ll, start = list(alpha = 1, beta = 1))
-# m_coef <- m %>% coef() %>% round()
-# m_coef
-# alpha <- 12 # m_coef[['alpha']]
-# beta <- 12 # m_coef[['beta']]
-# 
-# fb_proc_last_adj <-
-#   fb_proc_last %>% 
-#   mutate(
-#     w_frac_cumu_adj = (w_cumu + alpha) / (g_cumu + alpha + beta),
-#     rnk_w_frac_cumu_adj = row_number(desc(w_frac_cumu_adj))
-#   ) %>% 
-#   arrange(desc(w_frac_cumu_adj))
-# fb_proc_last_adj %>% relocate(matches('^rnk_'))
-# fb_last_adj %>% 
-#   arrange(desc(w_cumu)) %>% 
-#   select(school, w_cumu, w_frac_cumu_adj)
-
-# fb_proc_last %>% 
-#   arrange(rnk_w_cumu) %>% 
-#   select(school_fb = school) %>% 
-#   head(30)
 
 schools_dict <- 
   here::here('data-raw', '0x', 'schools_dict.csv') %>% 
@@ -265,11 +171,6 @@ schools_dict <-
   filter(!not_downloaded & !is_ambiguous) %>% 
   select(matches('school'))
 schools_dict
-
-# temp <- tempfile()
-# bands_agg_filt_adj %>% write_csv(temp)
-# bands_agg_filt_adj_fix <- temp %>% read_csv(locale = locale(encoding = 'ASCII')) %>% mutate(across(school, ~str_replace_all(.x, 'B\\s', ' ')))
-# bands_agg_filt_adj_fix %>% select(school) %>% clipr::write_clip()
 
 df <-
   bind_rows(
@@ -292,44 +193,21 @@ df <-
       rename(school_fb = school) %>% 
       inner_join(schools_dict)
   ) %>% 
-  # select(-dummy) %>% 
   relocate(src) %>%
   mutate(school = school_fb) %>% 
-  # group_by(school) %>% 
-  # mutate(n = n()) %>% 
-  # ungroup()
   arrange(school)
 df
-# df %>% count(school)
-df %>% filter(school %>% str_detect('Ceda')) %>% mutate(school_band == school_fb)
-df %>% filter(name == 'w_frac', is.na(value))
-df %>% filter(name == 'w_frac')
-df %>% count(school, src, name, value, sort = T) %>% filter(n > 1L) %>% distinct(school)
-
-df %>% 
-  # filter(school %in% c('Duncanville', 'Cedar Park')) %>% 
-  select(school, src, name, value) %>% 
-  count(school, src, name, value, sort = T) %>% 
-  filter(n > 1L) %>% 
-  distinct(school)
 
 df_wide <-
   df %>% 
-  # filter(school %in% c('Duncanville', 'Cedar Park')) %>% 
   select(school, src, name, value) %>% 
-  # count(school, src, name, value, sort = T) %>% 
   pivot_wider(
     names_from = c('name', 'src'),
     values_from = c('value')
   )
 df_wide
 
-df_wide %>% filter(is.na(w_fb))
-
 df_wide %>% 
-  # mutate(across(score_prnk_band, ~coalesce(.x, 0))) %>% 
-  # replace_na(list(score_prnk_band = 0)) %>% 
-  # mutate(across(w_frac_fb, ~case_when(.x < 0.4 ~ 0.4, TRUE ~ .x))) %>% 
   ggplot() +
   aes(y = score_prnk_band, x = w_fb) +
   geom_point(aes(size = w_frac_fb)) +
@@ -343,61 +221,3 @@ df_wide %>%
   geom_point(aes(size = w_fb)) +
   geom_smooth(method = 'lm') +
   scale_radius(range = c(0.1, 6))
-
-df_wide %>% 
-  # replace_na(list(rnk_band = max(rnk_band))) %>% 
-  # mutate(across(rnk_band, ~coalesce(.x, max(rnk_band, na.rm = TRUE)))) %>% 
-  ggplot() +
-  aes(x = rnk_band, y = rnk_fb) +
-  geom_jitter(aes(size = w_frac_fb)) +
-  geom_smooth(method = 'lm') +
-  scale_radius(range = c(0.1, 6))
-
-schools_band <- df %>% filter(!is.na(school_fb)) %>% filter(src == 'band') %>% arrange(rnk)
-schools_fb <- df %>% filter(is_missing_band | !is.na(school_band)) %>% filter(src == 'fb') %>% arrange(rnk)
-schools_fb
-
-df %>% filter(n > 1L)
-df %>% filter(n == 1L)
-df %>% filter(n == 1L) %>% filter(src == 'fb') %>% filter(is_missing_band | !is.na(school)) -> z
-df %>% filter(n == 1L) %>% filter(src == 'band') %>% filter(!is.na(school)) -> z
-
-viz_init <-
-  df %>%
-  mutate(z = 'dummy') %>% 
-  ggplot() +
-  aes(y = z, x = value) +
-  ggbeeswarm::geom_quasirandom(alpha = 0.5, groupOnX = FALSE) +
-  facet_wrap(~src, scales = 'free', ncol = 1L)
-viz_init
-
-b <- viz_init %>% ggplot_build() #  %>% as_tibble()
-df_viz <- b$data[[1]] %>% as_tibble() %>% arrange(desc(x))
-idx_filt <- 1L:30L
-schools_dict_n_aug <- schools_dict %>% left_join(schools_dict_n)
-schools_dict_n_aug
-df_viz_band <- df_viz %>% filter(PANEL == '1') %>% slice(idx_filt) %>% bind_cols(schools_band)
-df_viz_band %>% anti_join(df %>% filter(src == 'fb') %>% select(school, value_fb = value))
-df_viz_fb <- df_viz %>% filter(PANEL == '2') %>% slice(idx_filt) %>% bind_cols(schools_fb)
-df_viz_fb
-
-viz <-
-  viz_init +
-  geom_point(
-    data = df_viz_band %>% mutate(src == 'band'),
-    color = 'orange',
-  ) +
-  geom_point(
-    data = df_viz_fb %>% mutate(src == 'fb'),
-    color = 'orange',
-  ) +
-  ggrepel::geom_text_repel(
-    data = df %>% filter(n == 2L),
-    aes(label = school),
-    color = 'blue'
-  ) +
-  facet_wrap(~src, scales = 'free', ncol = 1L) +
-  labs(
-    x = NULL,
-    y = NULL
-  )
