@@ -1,6 +1,6 @@
 
 library(tidyverse)
-import_fb <- memoise::memoise({function() {
+import_fb_rnks <- memoise::memoise({function() {
   # fb rankings source:
   # + https://www.6atexasfb.com/forum/main-forum/518558-greatest-texas-hs-fb-programs-of-all-time
   path <- here::here('data-raw', '0x', 'top-50-tx-hs-football.txt')
