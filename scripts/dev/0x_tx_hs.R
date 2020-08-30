@@ -239,30 +239,54 @@ fb_proc_last %>% arrange(desc(w_cumu))
 #   head(30)
 
 schools_dict <- 
+  # here::here('data-raw', '0x', 'schools_dict.csv') %>% 
+  # # read_csv(locale = locale(encoding = 'ASCII')) %>%
+  # read_csv() %>% 
   here::here('data-raw', '0x', 'schools_dict2.xlsx') %>% 
   readxl::read_excel() %>% 
   mutate(across(c(not_downloaded, is_ambiguous), ~coalesce(.x, FALSE))) %>% 
   filter(!not_downloaded & !is_ambiguous) %>% 
   select(matches('school'))
 schools_dict
+schools_dict %>% filter(school_band %>% str_detect('Cedar R'))
+
+schools_dict %>% mutate_all(~str_replace_all(.x, '\\xa0', ' ') %>% str_trim())
+bands_agg_filt_adj %>% filter(school %>% str_detect('\\xa0', negate = T))
 # schools_dict_n <- schools_dict %>% count(school_fb, sort = T)
+
+# .add_join_col <- function(data, col) {
+#   res <- data %>% mutate(dummy = str_remove_all(!!sym(col), '\\s'))
+# }
+# .add_join_col_band <- partial(.add_join_col, col = 'school_band', ... = )
+# .add_join_col_fb <- partial(.add_join_col, col = 'school_fb', ... = )
 
 df <-
   # `conf` isn't really useful, but oh well.
   bind_rows(
     bands_agg_filt_adj %>%
-      select(school, rnk, score_raw, score_prnk, w, w_final, n_app)
+      select(school, rnk, score_raw, score_prnk, w, w_final, n_app) %>% 
       pivot_longer(
-        -c(school, rnk)
+        -c(school)
       ) %>% 
-      select(rnk, school_band = school, name, value  %>% 
       mutate(src = 'band') %>% 
-      left_join(schools_dict),
+      # rename(school_band = school) %>% 
+      .add_join_col('school') %>% 
+      inner_join(schools_dict %>% .add_join_col('school_band')) %>% 
+      select(-school),
     fb_proc_last %>% 
-      select(rnk, school_fb = school, value = w_cumu) %>% 
+      select(-w) %>% 
+      # filter(school == 'Cedar Park') %>% 
+      select(school, rnk, g = g_cumu, w = w_cumu, w_frac = w_frac_cumu) %>% 
+      pivot_longer(
+        -c(school)
+      ) %>% 
       mutate(src = 'fb') %>% 
-      left_join(schools_dict)
+      # rename(school_fb = school) %>% 
+      .add_join_col('school') %>% 
+      inner_join(schools_dict %>% .add_join_col('school_fb')) %>% 
+      select(-school)
   ) %>% 
+  select(-dummy) %>% 
   relocate(src) %>%
   mutate(school = school_fb) %>% 
   # group_by(school) %>% 
@@ -270,18 +294,51 @@ df <-
   # ungroup()
   arrange(school)
 df
+df %>% count(school)
+
+df %>% filter(name == 'w_frac', is.na(value))
+df %>% filter(name == 'w_frac')
+df %>% count(school, src, name, value, sort = T) %>% filter(n > 1L) %>% distinct(school)
 
 df_wide <-
   df %>% 
+  filter(school %in% c('Duncanville', 'Cedar Park')) %>% 
+  select(school, src, name, value) %>% 
+  # count(school, src, name, value, sort = T) %>% 
   pivot_wider(
-    names_from = 'src',
-    values_from = c('rnk', 'value')
+    names_from = c('name', 'src'),
+    values_from = c('value')
   )
-df_wide    
+df_wide
 
-df %>% 
+df_wide %>% filter(!is.na(score_prnk_band), is.na(w_fb))
+
+df_wide %>% 
+  # mutate(across(score_prnk_band, ~coalesce(.x, 0))) %>% 
+  # replace_na(list(score_prnk_band = 0)) %>% 
+  mutate(across(w_frac_fb, ~case_when(.x < 0.4 ~ 0.4, TRUE ~ .x))) %>% 
   ggplot() +
-  aes(x = 
+  aes(y = score_prnk_band, x = w_fb) +
+  geom_point(aes(size = w_frac_fb)) +
+  geom_smooth(method = 'lm') +
+  scale_radius(range = c(0.1, 4))
+
+df_wide %>% 
+  replace_na(list(score_prnk_band = 0)) %>% 
+  ggplot() +
+  aes(x = score_prnk_band, y = w_frac_fb) +
+  geom_point(aes(size = w_fb)) +
+  geom_smooth(method = 'lm') +
+  scale_radius(range = c(0.1, 6))
+
+df_wide %>% 
+  # replace_na(list(rnk_band = max(rnk_band))) %>% 
+  # mutate(across(rnk_band, ~coalesce(.x, max(rnk_band, na.rm = TRUE)))) %>% 
+  ggplot() +
+  aes(x = rnk_band, y = rnk_fb) +
+  geom_jitter(aes(size = w_frac_fb)) +
+  geom_smooth(method = 'lm') +
+  scale_radius(range = c(0.1, 6))
 
 schools_band <- df %>% filter(!is.na(school_fb)) %>% filter(src == 'band') %>% arrange(rnk)
 schools_fb <- df %>% filter(is_missing_band | !is.na(school_band)) %>% filter(src == 'fb') %>% arrange(rnk)
