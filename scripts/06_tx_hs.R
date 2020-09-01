@@ -3,7 +3,6 @@ extrafont::loadfonts(device = 'win', quiet = TRUE)
 library(tidyverse)
 library(here)
 library(ggtext)
-source(here::here('scripts', 'dev', '0x_tx_hs_helpers.R'))
 
 theme_set(theme_minimal())
 theme_update(
@@ -41,8 +40,145 @@ theme_update(
 )
 update_geom_defaults('text', list(family = 'Karla', size = 4))
 
+# funcs ----
+import_bands <- memoise::memoise({
+  function(path_export = here::here('data-raw', '06', 'tx-hs-band.rds')) {
+    if(fs::file_exists(path_export)) {
+      return(read_rds(path_export))
+    }
+    
+    require(rvest)
+    url <- 'https://smbc.uiltexas.org/archives.htm'
+    page <- url %>% xml2::read_html()
+    # children <- page %>% rvest::html_children()
+    main <- page %>% rvest::html_nodes('.main')
+    df <- 
+      main %>% 
+      rvest::html_node('table') %>% 
+      rvest::html_table(fill = TRUE) %>% 
+      .[[1]] %>% 
+      as_tibble() %>% 
+      janitor::clean_names()
+    res <-
+      df %>%
+      mutate(idx = row_number()) %>% 
+      relocate(idx) %>% 
+      rename(conf = conference) %>% 
+      filter(conf != 'B') %>% # Drop the 1979 year, where `conf == 'B'`
+      filter(round != 'Round') %>% # Extra heading row at the end
+      separate(school_isd, into = c('school', 'isd'), sep = '\\s\\(') %>% 
+      mutate(
+        across(c(place, year), as.integer),
+        across(isd, ~str_remove(.x, '\\)$'))
+      ) %>% 
+      mutate(tier = conf %>% str_sub(1, 1) %>% as.integer()) %>% 
+      select(idx, year, conf, tier, round, place, school, isd, notes)
+    write_rds(res, path_export)
+    res
+  }
+})
+
+# instructions:
+# 1. Make a copy of https://drive.google.com/open?id=1BRTPCLzc09oW6NpqPoHabXwKwjzwxOVO to your local google drive (link originally found here: https://www.6atexasfootball.com/forum/main-forum/199726-complete-game-by-game-football-histories/page10).
+# 2. Download a copy of this workbook.
+# 3. Show formulas on the Data sheet for column A.
+# 4. Copy-paste formulas to a text file.
+.get_fb_score_links_df <- memoise::memoise({function() {
+  path_links <- here::here('data-raw', '06', 'tx-hs-fb-links.txt')
+  lines <- path_links %>% read_lines()
+  df <- lines %>% tibble(line = .)
+  df
+  res <-
+    df %>% 
+    mutate(has_link = line %>% str_detect('^[=]')) %>% 
+    mutate(
+      link = line %>% str_remove_all('^[=]HYPERLINK\\(|\\,.*\\)$|["]') %>% if_else(has_link, ., NA_character_),
+      # This `school` extraction actaully also works fine for those without links
+      school = line %>% str_remove_all('^.*\\,.|\\)$|["]'),
+    ) %>% 
+    select(school, has_link, link)
+  res
+}})
+
+.download_fb_scores <-
+  function(link,
+           dir = here::here('data-raw', '06', 'schools'),
+           file = '',
+           path = fs::path(dir, sprintf('%s.xlsx', file))) {
+    if (fs::file_exists(path)) {
+      return(path)
+    }
+    id <- link %>% googledrive::as_id()
+    dr <- id %>% googledrive::as_dribble()
+    res <- dr %>% googledrive::drive_download(path = path)
+    path
+  }
+
+.import_fb_scores <- function(path) {
+  res_init <- path %>% readxl::read_excel(col_types = 'text')
+  res <-
+    res_init %>% 
+    select(
+      coach = Coach,
+      season = Season,
+      district = District,
+      conf = Classification,
+      date = Date,
+      week = Week,
+      opp = Opponent,
+      pf = PF,
+      pa = PA,
+      mov = `Margin of Victory`, 
+      w = Win,
+      l = Loss,
+      t = Tie,
+      gp = `Games Played`, 
+      w_cumu = `All Time Wins`,
+      l_cumu = `All Time Losses`,
+      t_cumu = `All Time Ties`,
+      g_cumu = `All Time Games`,
+      w_frac_cumu = `Win Percentage`
+    ) %>% 
+    mutate(
+      across(date, lubridate::mdy),
+      across(c(season, week, pf, pa, mov, w, l, t, gp, w_cumu, l_cumu, t_cumu, g_cumu), as.integer),
+      across(w_frac_cumu, as.double)
+    )
+  res
+}
+
+retrieve_fb_scores <- function(links = NULL, path = here::here('data-raw', '06', 'fb_scores.rds')) {
+  
+  if(fs::file_exists(path)) {
+    res <- path %>% read_rds()
+    return(res)
+  }
+  
+  if(is.null(links)) {
+    links <-
+      .get_fb_score_links_df() %>% 
+      filter(has_link) %>%
+      select(-has_link)
+  }
+  
+  links_info <-
+    links %>% 
+    mutate(path = map2_chr(link, school, ~.download_fb_scores(link = ..1, file = ..2))) %>% 
+    select(-link)
+  
+  .import_fb_scores_q <- quietly(.import_fb_scores)
+  res <-
+    links_info %>% 
+    mutate(data = map(path, ~.import_fb_scores_q(.x) %>% pluck('result'))) %>% 
+    select(-path) %>% 
+    unnest(data)
+  
+  write_rds(res, path)
+  res
+}
+
 # Have to filter for these cuz the scores data only has 5A and 6A of present day.
-.filter_conf <- function(data) {
+filter_conf <- function(data) {
   res <- data %>% filter(conf %in% sprintf('%dA', 5:6))
 }
 
@@ -143,7 +279,7 @@ bands_agg <-
 bands_agg
 
 # Didn't filter by conference earlier since bands could have been in lower conferences before.
-bands_agg_filt <- bands_agg %>% .filter_conf()
+bands_agg_filt <- bands_agg %>% filter_conf()
 bands_agg_filt
 
 bands_agg_filt_adj <-
@@ -201,11 +337,8 @@ fb_proc_last <-
 fb_proc_last %>% arrange(desc(w_cumu))
 
 schools_dict <- 
-  here::here('data-raw', '0x', 'schools_dict.csv') %>% 
+  here::here('data-raw', '06', 'schools_dict.csv') %>% 
   read_csv(locale = locale(encoding = 'ASCII')) %>%
-  # read_csv() %>% 
-  # here::here('data-raw', '0x', 'schools_dict2.xlsx') %>% 
-  # readxl::read_excel() %>% 
   mutate(across(c(not_downloaded, is_ambiguous), ~coalesce(.x, FALSE))) %>% 
   filter(!not_downloaded & !is_ambiguous) %>% 
   select(matches('school'))
@@ -281,7 +414,7 @@ df_filt_other
 df_filt_anti <- df_wide %>% anti_join(df_filt) %>% anti_join(df_filt_other)
 df_filt_anti
 
-# arw_annotate <- arrow(length = unit(3, 'pt'), type = 'closed')
+arw_annotate <- arrow(length = unit(3, 'pt'), type = 'closed')
 viz <-
   df_wide %>% 
   ggplot() +
@@ -331,7 +464,7 @@ viz <-
   scale_radius(name = 'Win %', range = c(0.1, 5), labels = scales::percent) +
   annotate(
     geom = 'curve',
-    x = 10.25,
+    x = 9.8,
     y = 160,
     xend = 9.3,
     yend = 176,
@@ -342,7 +475,7 @@ viz <-
   ) +
   geom_text(
     inherit.aes = FALSE,
-    aes(x = 10.3, y = 160),
+    aes(x = 9.85, y = 160),
     size = 4,
     vjust = 1,
     hjust = 0,
@@ -375,5 +508,5 @@ viz <-
     x = 'Weighted Sum of\nBand Competition Placings Since 1980'
   )
 viz
-ggsave(plot = viz, filename = here::here('plots', 'tx_hs_fb_band.png'), width = 11, height = 8, type = 'cairo')
+ggsave(plot = viz, filename = here::here('plots', 'tx_hs_fb_band.png'), width = 12, height = 8, type = 'cairo')
 
