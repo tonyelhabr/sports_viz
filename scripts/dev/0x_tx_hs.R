@@ -1,6 +1,45 @@
 
+extrafont::loadfonts(device = 'win', quiet = TRUE)
 library(tidyverse)
+library(here)
+library(ggtext)
 source(here::here('scripts', 'dev', '0x_tx_hs_helpers.R'))
+
+theme_set(theme_minimal())
+theme_update(
+  text = element_text(family = 'Karla'),
+  title = element_text('Karla', size = 14, color = 'gray20'),
+  plot.title = element_text('Karla', face = 'bold', size = 18, color = 'gray20'),
+  plot.title.position = 'plot',
+  plot.subtitle = element_text('Karla', face = 'bold', size = 14, color = 'gray50'),
+  axis.text = element_text('Karla', size = 14),
+  # axis.title = element_text(size = 24, face = 'bold'),
+  axis.title = element_text(size = 14, face = 'bold', hjust = 0.99),
+  # axis.text = element_text('Karla', size = 12, face = 'bold', color = 'gray20'),
+  # axis.title.x = element_text(hjust = 0.95),
+  # axis.title.y = element_text(hjust = 0.95),
+  # axis.line = element_line(color = 'gray80'),
+  axis.line = element_blank(),
+  panel.grid.major = element_line(color = 'gray80'),
+  panel.grid.minor = element_line(color = 'gray80'),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  # plot.margin = margin(25, 25, 25, 25),
+  plot.margin = margin(10, 10, 10, 10),
+  # plot.background = element_rect(fill = '#F3F4F6', color = '#F3F4F6'),
+  plot.background = element_rect(fill = '#fffaf0', color = NA),
+  # plot.caption = element_text(size = 15, face = 'italic'),
+  plot.caption = element_text('Karla', size = 14, color = 'gray50', hjust = 1),
+  plot.caption.position = 'plot',
+  plot.tag = element_text('Karla', size = 12, color = 'gray20', hjust = 0), 
+  plot.tag.position = c(.01, 0.02),
+  # legend.text = element_text(size = 14),
+  legend.text = element_text(size = 14),
+  # legend.background = element_rect(fill = '#F3F4F6', color = '#F3F4F6'),
+  # legend.position = c(.85, .85))
+  panel.background = element_rect(fill = '#fffaf0', color = NA)
+)
+update_geom_defaults('text', list(family = 'Karla', size = 4))
 
 # Have to filter for these cuz the scores data only has 5A and 6A of present day.
 .filter_conf <- function(data) {
@@ -95,7 +134,6 @@ bands_agg <-
   mutate(
     rnk_raw = row_number(desc(score_raw)),
     rnk_prnk = row_number(desc(score_prnk)),
-    # rnk_rnk = row_number(desc(score_rnk)),
     rnk = row_number(desc(score_prnk))
   ) %>% 
   # relocate(rnk_rnk, rnk_prnk) %>% 
@@ -116,6 +154,7 @@ bands_agg_filt_adj <-
     rnk_prnk = row_number(rnk_prnk), 
     rnk = row_number(rnk)
   )
+bands_agg_filt_adj
 
 # fb ----
 fb <- retrieve_fb_scores() %>% select(-coach, -opp, -mov, -date, -matches('cumu$'))
@@ -191,7 +230,7 @@ df <-
       ) %>% 
       mutate(src = 'fb') %>% 
       rename(school_fb = school) %>% 
-      inner_join(schools_dict)
+      left_join(schools_dict)
   ) %>% 
   relocate(src) %>%
   mutate(school = school_fb) %>% 
@@ -204,20 +243,137 @@ df_wide <-
   pivot_wider(
     names_from = c('name', 'src'),
     values_from = c('value')
-  )
+  ) %>% 
+  mutate(across(rnk_band, ~coalesce(.x, max(rnk_band, na.rm = TRUE))), across(score_prnk_band, ~coalesce(.x, 0)))
 df_wide
 
-df_wide %>% 
-  ggplot() +
-  aes(y = score_prnk_band, x = w_fb) +
-  geom_point(aes(size = w_frac_fb)) +
-  # geom_smooth(method = 'lm') +
-  scale_radius(range = c(0.1, 4))
+df_agg <-
+  df %>% 
+  group_by(src, name) %>% 
+  summarize(
+    across(c(value), list(mean = mean))
+  ) %>% 
+  ungroup()
+df_agg
 
-df_wide %>% 
-  replace_na(list(score_prnk_band = 0)) %>% 
+n_top <- 30L
+df_filt <- df_wide %>% filter(rnk_band <= n_top & rnk_fb <= n_top)
+df_filt %>% 
+  inner_join(schools_dict %>% rename(school = school_fb)) %>% 
+  inner_join(bands_schools %>% select(school_band = school, isd))
+df_filt
+bands_schools
+fit <-
+  df_wide %>%
+  lm(formula(rnk_fb ~ rnk_band), data = .) %>%
+  broom::tidy()
+fit
+
+df_wide %>%
+  select(matches('^rnk'), score_prnk_band, w_fb, w_frac_fb) %>%
+  corrr::correlate()
+
+df_filt_other <- 
+  df_wide %>% 
+  filter(rnk_band == 1L | rnk_fb == 1L) %>% 
+  mutate(lab = case_when(rnk_band == 1L ~ sprintf('%s (%s)', school, 'Best Band'), TRUE ~ sprintf('%s (%s)', school, 'Best Football Team')))
+df_filt_other
+df_filt_anti <- df_wide %>% anti_join(df_filt) %>% anti_join(df_filt_other)
+df_filt_anti
+
+# arw_annotate <- arrow(length = unit(3, 'pt'), type = 'closed')
+viz <-
+  df_wide %>% 
   ggplot() +
-  aes(x = score_prnk_band, y = w_frac_fb) +
-  geom_point(aes(size = w_fb)) +
-  geom_smooth(method = 'lm') +
-  scale_radius(range = c(0.1, 6))
+  aes(x = score_prnk_band, y = w_fb) +
+  geom_point(
+    data = df_filt,
+    aes(size = w_frac_fb),
+    color = 'red'
+  ) +
+  geom_point(
+    data = df_filt_other,
+    color = 'blue',
+    aes(size = w_frac_fb)
+  ) +
+  geom_point(
+    data = df_filt_anti %>% filter(score_prnk_band == 0),
+    aes(size = w_frac_fb),
+    alpha = 0.1
+  ) +
+  geom_point(
+    data = df_filt_anti %>% filter(score_prnk_band > 0),
+    aes(size = w_frac_fb)
+  ) +
+  # ggforce::geom_mark_circle(
+  #   data = df_filt,
+  #   label.fill = NA,
+  #   # n = 0,
+  #   expand = unit(3, 'mm'),
+  #   aes(label = school, group = school)
+  # ) +
+  ggrepel::geom_text_repel(
+    data = df_filt_other,
+    box.padding = 1,
+    family = 'Karla',
+    # arrow = arw_annotate,
+    aes(label = lab, group = school)
+  ) +
+  ggrepel::geom_text_repel(
+    data = df_filt,
+    box.padding = 1,
+    lineheight = -2,
+    family = 'Karla',
+    # arrow = arw_annotate,
+    aes(label = school, group = school)
+  ) +
+  # geom_smooth(method = 'lm') +
+  scale_radius(name = 'Win %', range = c(0.1, 5), labels = scales::percent) +
+  annotate(
+    geom = 'curve',
+    x = 10.25,
+    y = 160,
+    xend = 9.3,
+    yend = 176,
+    size = 1,
+    # angle = -75,
+    curvature = -0.1,
+    arrow = arw_annotate
+  ) +
+  geom_text(
+    inherit.aes = FALSE,
+    aes(x = 10.3, y = 160),
+    size = 4,
+    vjust = 1,
+    hjust = 0,
+    lineheight = 1,
+    # family = 'Arial',
+    # fontface = 'bold',
+    family = 'Karla',
+    color = 'grey20',
+    label = glue::glue('Size of circle indicates football team win %.
+                       Some schools have high win %\'s but are newer (started after 1980), 
+                       so they haven\'t accumulated as many wins as older schools.')
+  ) +
+  theme(
+    # legend.spacing.x = unit(0, 'cm'),
+    # legend.title = element_text(size = 12),
+    # legend.text = element_text(size = rel(0.6)),
+    # legend.margin = margin(-10, 0, -1, 0),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    panel.grid.major.x = element_blank(),
+    plot.subtitle = element_markdown(size = 10),
+    legend.position = 'none'
+  ) +
+  labs(
+    title = 'Do the Best Texas High School Football Teams also have the Best Marching Bands?',
+    subtitle = glue::glue('The correlation between a school\'s football team wins and a weighted sum of the school\'s band competition placings is only <b><span style="color:black">18.5%</span></b> (177 large schools).<p><span style="color:red">4 schools</span> rank among the top 30 in both football and band.'),
+    # caption = 'The scale for band competition placings is not intuitive, so the numbers are not shown. The methodology employs percent ranks.',
+    tag = 'Viz: @TonyElHabr\nData (band): https://www.uiltexas.org/music/archives\nData (football): https://www.6atexasfootball.com',
+    y = 'Football Team Wins Since 1980', 
+    x = 'Weighted Sum of\nBand Competition Placings Since 1980'
+  )
+viz
+ggsave(plot = viz, filename = here::here('plots', 'tx_hs_fb_band.png'), width = 11, height = 8, type = 'cairo')
+
