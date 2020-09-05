@@ -8,8 +8,10 @@ path_export_gif <- here::here('plots', sprintf('%s.gif', file))
 path_export_pc <- here::here('data', sprintf('07_%s_pc.rds', file))
 play_filt <- 'PSG [2]-1 Atalanta'
 fps <- 25
-pitch_fill <- '#7fc47f'
-pitch_color <- 'white'
+# pitch_fill <- '#7fc47f'
+# pitch_color <- 'white'
+pitch_fill <- 'white'
+pitch_color <- 'black'
 pitch <-
   ggsoccer::annotate_pitch(
     fill = pitch_fill, 
@@ -102,14 +104,14 @@ if(FALSE) {
   
 }
 
+frames_redux <- 
+  frames_ball %>% 
+  select(time, frame, ball_x = x, ball_y = y) %>% 
+  inner_join(frames_players)
+frames_redux
+
 if(!fs::file_exists(path_export_pc)) {
 
-  frames_redux <- 
-    frames_ball %>% 
-    select(time, frame, ball_x = x, ball_y = y) %>% 
-    inner_join(frames_players)
-  frames_redux
-  
   seq_pitch_dim <- function(dim = c('x', 'y'), length.out = 100L) {
     dim <- match.arg(dim)
     name_origin <- sprintf('origin_%s', dim)
@@ -213,21 +215,16 @@ if(!fs::file_exists(path_export_pc)) {
       Sigma <- get_Sigma(R, S)
       
       pitch_area$I <- calculate_I(as.matrix(pitch_area), x, y, mu_x, mu_y, Sigma)
-      pitch_area$team <- team
-      pitch_area$time <- time
-      pitch_area$player <- player
       write_rds(pitch_area, path)
       pitch_area
     }
-  f <- partial(calculate_pitch_control, pitch_area = pitch_area_filt, ... = )
+  f <- partial(calculate_pitch_control, pitch_area = pitch_area, overwrite = TRUE, ... = )
   pc <- 
     frames_redux %>%
-    # slice(1) %>% 
     mutate(
       data = 
         pmap(
           list(
-            # pitch_area = !!pitch_area_filt
             time = time, 
             next_time = next_time, 
             ball_x = ball_x, 
@@ -245,7 +242,7 @@ if(!fs::file_exists(path_export_pc)) {
   
   pc_agg <-
     pc %>%
-    select(frame, data) %>% 
+    select(frame, time, player, team, data) %>% 
     unnest(data) %>% 
     group_by(frame, time, team, x, y) %>%
     summarise(team_sum = sum(I, na.rm = TRUE)) %>%
@@ -256,20 +253,86 @@ if(!fs::file_exists(path_export_pc)) {
   
   write_rds(pc_agg, path_export_pc)
 } else {
-  pc <- read_rds(path_export_pc)
+  pc_agg <- read_rds(path_export_pc)
 }
 
+# library(ggnewscale)
+color_low <- '#4E79A7'
+color_high <- '#F28E2B'
+# arw_v <- arrow(length = unit(0.01, 'npc'))
+arw_v <- arrow(length = unit(3, 'pt'), type = 'closed')
+.filter_frames <- function(data) {
+  data %>% 
+    # mutate(is_tenth = frame %% 20 == 0) %>% 
+    # filter(is_tenth) 
+    filter(frame >= 5)
+    # filter(frame == 5)
+}
 
-viz_pc <-
+update_geom_defaults('text', list(family = 'Karla', size = 4))
+viz <-
   pc_agg %>%
-  # filter(frame == max(frame)) %>% 
-  mutate(is_tenth = frame %% 10 == 0) %>% 
-  filter(is_tenth) %>% 
+  .filter_frames() %>% 
   ggplot() +
   aes(x = x, y = y) +
   pitch_gg() +
   geom_tile(aes(x = x, y = y, fill = pc), alpha = 0.7) +
-  scale_fill_gradient2(low = 'blue', high = 'red', mid = 'white', midpoint = 0.5) +
-  # geom_segment(data = testing_data, aes(x = x, y = y, xend = forward_x, yend = forward_y, colour = team)
-  facet_wrap(~frame)
-viz_pc
+  scale_fill_gradient2(low = color_low, high = color_high, mid = 'white', midpoint = 0.5) +
+  geom_segment(
+    data = frames_redux %>% .filter_frames() %>% filter(!is.na(forward_x)),
+    color = 'black',
+    size = 1.5, 
+    arrow = arw_v,
+    aes(x = x, y = y, xend = forward_x, yend = forward_y)
+  ) +
+  ggnewscale::new_scale_fill() +
+  # ggnewscale::new_scale_color() +
+  geom_point(
+    data = frames_players %>% .filter_frames(),
+    color = 'black',
+    # aes(color = edgecolor, fill = bgcolor),
+    aes(fill = team),
+    size = 7,
+    alpha = 0.8,
+    stroke = 1,
+    shape = 21
+  ) + 
+  # scale_color_identity() +
+  scale_fill_manual(values = c('away' = color_high, 'home' = color_low)) +
+  # scale_fill_identity() +
+  geom_point(
+    data = frames_ball %>% .filter_frames(),
+    size = 3,
+    color = 'black', 
+    fill = 'black'
+  ) +
+  geom_text(
+    data = frames_players %>% .filter_frames() %>% filter(!is.na(player_num)),
+    aes(label = player_num),
+    fontface = 'bold',
+    color = 'black'
+  ) +
+  gganimate::transition_time(frame) +
+  # facet_wrap(~frame) + # for dev +
+  theme(
+    plot.title = element_text('Karla', face = 'bold', size = 18, color = 'gray20'),
+    plot.title.position = 'plot',
+    plot.margin = margin(20, 10, 10, 10),
+    plot.caption = element_text('Karla', size = 14, color = 'gray20', hjust = 0),
+    plot.caption.position = 'plot',
+    # plot.tag = element_text('Karla', size = 10, color = 'gray20', hjust = 0), 
+    # plot.tag.position = c(.01, 0.005)
+  ) +
+  labs(
+    title = 'PSG [2]-1 Atalanta, UCL 2020 Quarter-Finals',
+    caption = 'Viz: @TonyElHabr | Data: @lastrowview'
+  )
+# viz
+
+# ggsave(plot = viz_pc, filename = here::here('plots', sprintf('%s.png', file)), width = 10, height = 10, type = 'cairo')
+n_frame <- frames_players %>% .filter_frames() %>% pull(frame) %>% max()
+n_frame
+viz_anim <- gganimate::animate(viz, width = 900, height = 600, nframes = n_frame, fps = fps)
+gganimate::anim_save(animation = viz_anim, path_export_gif)
+
+       

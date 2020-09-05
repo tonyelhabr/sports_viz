@@ -37,6 +37,10 @@ Animated](plots/nba_3p_stability.gif
 Plot](plots/tx_hs_fb_band.png
 "Texas High School Football vs. Band Scatter Plot")
 
+![PSG 2-1 Atalanta, UCL 2020 Quarter-Finals, Animated Pitch
+Control](plots/ucl_2020_psg_atl.gif
+"PSG 2-1 Atalanta, UCL 2020 Quarter-Finals, Animated Pitch Control")
+
 ## Future Ideas
 
   - Stability of goal-scoring rate and/or xG over-performance
