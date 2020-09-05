@@ -60,50 +60,6 @@ pitch_gg <- function(...) {
   )
 }
 
-if(FALSE) {
-  viz <-
-    frames_players %>% 
-    filter(frame == 0) %>% 
-    ggplot() +
-    aes(x = x, y = y) +
-    pitch_gg() +
-    # pitch +
-    # coord_flip(
-    #   xlim = xlim_pitch,
-    #   ylim = ylim_pitch
-    # ) +
-    # scale_y_reverse() + 
-    geom_point(
-      aes(color = edgecolor, fill = bgcolor),
-      size = 7,
-      alpha = 0.8,
-      stroke = 1,
-      shape = 21
-    ) + 
-    scale_color_identity() +
-    scale_fill_identity() +
-    geom_point(
-      data = frames_ball %>% filter(frame == 0),
-      size = 3,
-      color = 'black', 
-      fill = 'black'
-    ) +
-    # gganimate::transition_time(frame) +
-    # geom_path(aes(group = player)) + # for dev (no gganimate)
-    # facet_wrap(~frame) + # for dev
-    geom_text(
-      data = . %>% filter(!is.na(player_num)),
-      aes(label = player_num),
-      size = 4.5,
-      color = 'black'
-    )
-  viz
-  n_frame <- frames %>% pull(frame) %>% max()
-  viz_anim <- gganimate::animate(viz, width = 900, height = 600, nframes = n_frame, fps = fps)
-  gganimate::anim_save(animation = viz_anim, path_export_gif)
-  
-}
-
 frames_redux <- 
   frames_ball %>% 
   select(time, frame, ball_x = x, ball_y = y) %>% 
@@ -189,12 +145,9 @@ if(!fs::file_exists(path_export_pc)) {
              ..., 
              dir = dir_data, 
              basename = glue::glue('pc_{sprintf("%.02f", time)}_{sprintf("%04d", player)}.rds'), 
-             # basename = sprintf('pc_%03d_%s_%s.rds', time * 100, player, team),
              path = fs::path(dir_data, basename), 
              overwrite = FALSE) {
-      # browser()
-      # basename = glue::glue('pc_{sprintf("%03d", time * 100)}_{player}_{team}.rds')
-      # path = fs::path(dir_data, basename)
+
       path_exists <- fs::file_exists(path)
       if(path_exists & !overwrite) {
         return(read_rds(path))
@@ -256,16 +209,16 @@ if(!fs::file_exists(path_export_pc)) {
   pc_agg <- read_rds(path_export_pc)
 }
 
-# library(ggnewscale)
 color_low <- '#4E79A7'
 color_high <- '#F28E2B'
-# arw_v <- arrow(length = unit(0.01, 'npc'))
 arw_v <- arrow(length = unit(3, 'pt'), type = 'closed')
+
+# Use this while experimenting with plotting settings.
 .filter_frames <- function(data) {
   data %>% 
     # mutate(is_tenth = frame %% 20 == 0) %>% 
-    # filter(is_tenth) 
-    filter(frame >= 5)
+    # filter(is_tenth)
+    filter(frame >= 5) # First handful of frames look weird.
     # filter(frame == 5)
 }
 
@@ -286,20 +239,16 @@ viz <-
     aes(x = x, y = y, xend = forward_x, yend = forward_y)
   ) +
   ggnewscale::new_scale_fill() +
-  # ggnewscale::new_scale_color() +
   geom_point(
     data = frames_players %>% .filter_frames(),
     color = 'black',
-    # aes(color = edgecolor, fill = bgcolor),
     aes(fill = team),
     size = 7,
     alpha = 0.8,
     stroke = 1,
     shape = 21
   ) + 
-  # scale_color_identity() +
   scale_fill_manual(values = c('away' = color_high, 'home' = color_low)) +
-  # scale_fill_identity() +
   geom_point(
     data = frames_ball %>% .filter_frames(),
     size = 3,
@@ -319,9 +268,7 @@ viz <-
     plot.title.position = 'plot',
     plot.margin = margin(20, 10, 10, 10),
     plot.caption = element_text('Karla', size = 14, color = 'gray20', hjust = 0),
-    plot.caption.position = 'plot',
-    # plot.tag = element_text('Karla', size = 10, color = 'gray20', hjust = 0), 
-    # plot.tag.position = c(.01, 0.005)
+    plot.caption.position = 'plot'
   ) +
   labs(
     title = 'PSG [2]-1 Atalanta, UCL 2020 Quarter-Finals',
@@ -329,9 +276,7 @@ viz <-
   )
 # viz
 
-# ggsave(plot = viz_pc, filename = here::here('plots', sprintf('%s.png', file)), width = 10, height = 10, type = 'cairo')
 n_frame <- frames_players %>% .filter_frames() %>% pull(frame) %>% max()
-n_frame
 viz_anim <- gganimate::animate(viz, width = 900, height = 600, nframes = n_frame, fps = fps)
 gganimate::anim_save(animation = viz_anim, path_export_gif)
 
