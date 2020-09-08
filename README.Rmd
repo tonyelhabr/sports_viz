@@ -33,6 +33,8 @@ knitr::include_graphics('plots/04_ucl_npg90_adj.utf8.pdf')
 
 ![PSG 2-1 Atalanta, UCL 2020 Quarter-Finals, Animated Pitch Control](plots/ucl_2020_psg_atl.gif "PSG 2-1 Atalanta, UCL 2020 Quarter-Finals, Animated Pitch Control")
 
+![2020 NBA Playoffs Total Excitement Index Bar Chart](plots/2020_nba_playoffs_excitement_index_20200907.png "2020 NBA Playoffs Total Excitement Index Bar Chart")
+
 ## Future Ideas
 
 + Stability of goal-scoring rate and/or xG over-performance
