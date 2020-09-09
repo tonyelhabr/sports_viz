@@ -1,8 +1,10 @@
 
+# setup ----
 library(tidyverse)
-file <- 'ucl_2020_psg_bay'
+library(xgboost) # for prediction
+file <- 'ucl_2020_psg_mun'
 path_export_gif <- here::here('plots', sprintf('%s.gif', file))
-path_export_pc <- here::here('data', sprintf('07_%s_pc.rds', file))
+path_export_pc <- here::here('data', sprintf('09_%s_pc.rds', file))
 play_filt <- 'PSG 0-[1] Bayern Munich'
 fps <- 25
 # pitch_fill <- '#7fc47f'
@@ -18,6 +20,330 @@ pitch <-
 xlim_pitch <- c(40, 101)
 ylim_pitch <- c(112, -12)
 
+color_low <- 'blue'
+color_high <- 'red'
+arw_v <- arrow(length = unit(3, 'pt'), type = 'closed')
+
+pitch_gg <- function(...) {
+  list(
+    pitch,
+    coord_flip(
+      xlim = xlim_pitch,
+      ylim = ylim_pitch
+    ),
+    ggsoccer::theme_pitch(aspect_ratio = 0.5), # changing the default aspect ratio cuz it looks weird
+    theme(legend.position = 'none')
+  )
+}
+
+
+get_config <- function(sheet) {
+  path_config <- here::here('data-raw', '09', 'config.xlsx')
+  res <- 
+    path_config %>% 
+    readxl::read_excel(sheet = sheet) %>% 
+    mutate(across(matches('_id$'), as.integer))
+  res
+}
+
+types <- 'types' %>% get_config()
+bodyparts <- 'bodyparts' %>% get_config()
+results <- 'results' %>% get_config()
+spadl_vaep_features <- 'spadl_vaep_features' %>% get_config() %>% pull()
+
+.rescale <- function(x, rng1, rng2) {
+  rng2[1] + ((x - rng1[1]) * (rng2[2] - rng2[1])) / (rng1[2] - rng1[1])
+}
+
+.case_when_vendor <- function(coord, vendor) {
+  
+  case_when(
+    coord == 'x' & vendor == 'opta' ~ c(0, 100), 
+    coord == 'x' & vendor == 'spadl' ~ c(0, 105),
+    coord == 'y' & vendor == 'opta' ~ c(0, 100), 
+    coord == 'y' & vendor == 'spadl' ~ c(0, 68)
+  )
+}
+
+.vendors_valid <- c('opta', 'spadl')
+.coords_valid <- c('x', 'y')
+.to_vendor_coord <- function(value, vendor1 = .vendors_valid, vendor2 = .vendors_valid, coord = .coords_valid) {
+  vendor1 <- match.arg(vendor1)
+  vendor2 <- match.arg(vendor2)
+  coord <- match.arg(coord)
+  rng1 <- .case_when_vendor(coord = coord, vendor = vendor1)
+  rng2 <- .case_when_vendor(coord = coord, vendor = vendor2)
+  res <- .rescale(value, rng1, rng2)
+  res
+}
+.to_spadl <- partial(.to_vendor_coord, vendor1 = 'opta', vendor2 = 'spadl', ... = )
+.to_opta <- partial(.to_vendor_coord, vendor1 = 'spadl', vendor2 = 'opta', ... = )
+to_spadl_x <- partial(.to_spadl, coord = 'x', ... = )
+to_spadl_y <- partial(.to_spadl, coord = 'y', ... = )
+to_opta_x <- partial(.to_opta, coord = 'x', ... = )
+to_opta_y <- partial(.to_opta, coord = 'y', ... = )
+
+get_model <- function(x = c('score', 'concede')) {
+  x <- match.arg(x)
+  path <- fs::path('data-raw', '09', sprintf('vaep.%smodel', x))
+  xgboost::xgb.load(path)
+}
+score_model <- 'score' %>% get_model()
+concede_model <- 'concede' %>% get_model()
+
+
+seq_pitch_dim <- function(dim = c('x', 'y'), length.out = 100L) {
+  dim <- match.arg(dim)
+  name_origin <- sprintf('origin_%s', dim)
+  name_length <- switch(dim, x = 'length', y = 'width')
+  start <- ggsoccer::pitch_opta[[name_origin]]
+  length <- ggsoccer::pitch_opta[[name_length]]
+  seq.int(start, start + length, length.out = length.out)
+}
+
+pitch_area <-
+  crossing(
+    x = seq_pitch_dim('x'),
+    y = seq_pitch_dim('y')
+  )
+pitch_area
+
+pitch_area_filt <-
+  pitch_area %>% 
+  filter(between(x, xlim_pitch[1], xlim_pitch[2])) %>% 
+  filter(between(y, ylim_pitch[2], ylim_pitch[1]))
+pitch_area_filt
+
+get_speed <- function(coord, next_coord, time, next_time) {
+  (next_coord - coord) / (next_time - time)
+}
+
+get_theta <- function(x_speed, y_speed) {
+  hypotenuse_speed <- sqrt(x_speed^2 + y_speed^2)
+  acos(x_speed / hypotenuse_speed)
+}
+
+get_mu <- function(location, speed) {
+  location + speed / 2
+}
+
+get_srat <- function(speed_x, speed_y) {
+  speed <- sqrt(speed_x^2 + abs(speed_y)^2)
+  (speed / 13)^2
+}
+
+get_ri <- function(x, y, ball_x, ball_y) {
+  ball_diff <- sqrt((x - ball_x) ^ 2 + (y - ball_y)^2)
+  ri <- 4 + ((ball_diff^3) / ((18^3) / 6))
+  min(ri, 10)
+}
+
+get_R <- function(theta) {
+  matrix(c(cos(theta), sin(theta), -sin(theta), cos(theta)), nrow = 2)
+}
+
+get_S <- function(ri, srat) {
+  top_left <- ri * (1 + srat) / 2
+  bottom_right <- ri * (1-srat) / 2
+  matrix(c(top_left, 0, 0, bottom_right), nrow = 2)
+}
+
+get_Sigma <- function(R, S) {
+  inv_R <- solve(R)
+  R %*% S %*% S %*% inv_R
+}
+
+calculate_I <- function(pitch_area, x, y, mu_x, mu_y, Sigma) {
+  mu <- c(mu_x, mu_y)
+  player_loc <- c(x, y)
+  num <- mvtnorm::dmvnorm(as.matrix(pitch_area), mu, Sigma)
+  den <- mvtnorm::dmvnorm(t(matrix(player_loc)), mu, Sigma)
+  num / den
+}
+
+dir_data <- here::here('data', '09')
+fs::dir_create(dir_data)
+calculate_pc <- 
+  function(time, next_time, ball_x, ball_y, x, y, next_x, next_y, team, player, 
+           pitch_area, 
+           ..., 
+           debug = FALSE,
+           dir = dir_data, 
+           basename = glue::glue('pc_{sprintf("%.02f", time)}_{sprintf("%04d", player)}.rds'), 
+           path = fs::path(dir_data, basename), 
+           overwrite = FALSE) {
+
+    path_exists <- fs::file_exists(path)
+    if(path_exists & !overwrite) {
+      return(read_rds(path))
+    }
+    speed_x <- get_speed(x, next_x, time, next_time)
+    speed_y <- get_speed(y, next_y, time, next_time)
+    srat <- get_srat(speed_x, speed_y)
+    theta <- get_theta(speed_x, speed_y)
+    
+    mu_x <- get_mu(x, speed_x)
+    mu_y <- get_mu(y, speed_y)
+    
+    ri <- get_ri(x, y, ball_x, ball_y)
+    
+    R <- get_R(theta)
+    S <- get_S(ri, srat)
+    
+    Sigma <- get_Sigma(R, S)
+    
+    if(debug) {
+      mu <- c(mu_x, mu_y)
+      player_loc <- c(x, y)
+      num <- mvtnorm::dmvnorm(as.matrix(pitch_area), mu, Sigma)
+      den <- mvtnorm::dmvnorm(t(matrix(player_loc)), mu, Sigma)
+      I <- sort(num / den, decreasing = TRUE)
+      # browser()
+      res <- 
+        tibble(
+          speed_x = speed_x, 
+          speed_y = speed_y, 
+          srat = srat, 
+          theta = theta, 
+          mu_x = mu_x,
+          mu_y = mu_y, 
+          r11 = R[1, 1],
+          r12 = R[1, 2],
+          r21 = R[2, 1],
+          r22 = R[2, 2],
+          s11 = S[1, 1],
+          s12 = S[1, 2],
+          s21 = S[2, 1],
+          s22 = S[2, 2],
+          sigma11 = Sigma[1, 1],
+          sigma12 = Sigma[1, 2],
+          sigma21 = Sigma[2, 1],
+          sigma22 = Sigma[2, 2],
+          den = den,
+          i01 = I[1],
+          i10 = I[10],
+          ilast = rev(I)[01],
+          ilast10 = rev(I)[10]
+        )
+      return(res)
+    }
+    
+    I <- calculate_I(as.matrix(pitch_area), x, y, mu_x, mu_y, Sigma)
+    # I <- ifelse(I > 1, 1, I)
+    # browser()
+    is_weird <- all(sort(I, decreasing = TRUE)[1:10] > 3)
+    if(is_weird) {
+      I <- rep(0, length(I))
+      # browser()
+    } else {
+      I <- case_when(I > 3 ~ 0, TRUE ~ I)
+    }
+    pitch_area$I <- I
+    write_rds(pitch_area, path)
+    pitch_area
+  }
+do_calculate_pc <- partial(calculate_pc, pitch_area = !!pitch_area, ... = )
+
+.filter_frame_weird <- function(data) {
+  res <- data %>% filter(frame >= 120 & frame <= 140) # %>% filter(player %in% c(14, 6715))
+  res
+}
+
+pc_weird_by_player_nest <-
+  frames_redux %>%
+  .filter_frame_weird() %>% 
+  mutate(
+    data = 
+      pmap(
+        list(
+          time = time, 
+          next_time = next_time, 
+          ball_x = ball_x, 
+          ball_y = ball_y, 
+          x = x, 
+          y = y, 
+          next_x = next_x, 
+          next_y = next_y, 
+          team = team, 
+          player = player,
+          overwrite = TRUE,
+          debug = F
+        ), 
+        do_calculate_pc
+      )
+  )
+pc_weird_by_player_nest
+
+pc_weird_by_player <-
+  pc_weird_by_player_nest %>% 
+  select(-matches('^ball_|color$')) %>% 
+  select(frame, player, player_x = x, player_y = y, data) %>% 
+  unnest(data)
+pc_weird_by_player
+
+pc_weird_by_player_long <-
+  pc_weird_by_player %>%
+  mutate(
+    idx = dense_rank(player),
+    is_bad = i10 > 3
+  ) %>% 
+  relocate(idx, is_bad) %>% 
+  # filter(player != 120) %>% 
+  pivot_longer(-c(idx:player))
+pc_weird_by_player_long
+
+viz <-
+  pc_weird_by_player_long %>% 
+  filter(!is_bad) %>% 
+  ggplot() +
+  theme_minimal() +
+  aes(x = idx, y = value) +
+  geom_point(alpha = 0.1) +
+  geom_point(
+    data =
+      pc_weird_by_player_long %>% 
+      filter(is_bad) %>% 
+      filter(name %>% str_detect('^i', negate = TRUE)), 
+    aes(x = idx, y = value), 
+    alpha = 0.1,
+    color = 'red',
+    size = 1
+  ) +
+  facet_wrap(~name, scales = 'free')
+viz
+pc_weird_by_player %>% filter(i10 > 100)
+
+pc_weird_by_player %>% skimr::skim()
+
+do_aggregate_pc <- 
+  function(pc,
+           suffix,
+           dir = dir_data, 
+           basename = glue::glue('pc_agg_{suffix}.rds'), 
+           path = fs::path(dir_data, basename), 
+           overwrite = FALSE) {
+    
+    path_exists <- fs::file_exists(path)
+    if(path_exists & !overwrite) {
+      return(read_rds(path))
+    }
+    
+    res <-
+      pc %>%
+      select(frame, time, player, team, data) %>% 
+      unnest(data) %>% 
+      # mutate(across(I, ~case_when(.x > 1 ~ 1, TRUE ~ .x))) %>% 
+      group_by(frame, time, team, x, y) %>%
+      summarise(team_sum = sum(I, na.rm = TRUE)) %>%
+      ungroup() %>%
+      pivot_wider(names_from = team, values_from = team_sum) %>%
+      mutate(pc = 1 / (1 + exp(home - away)))
+    # browser()
+    write_rds(res, path)
+    res
+  }
+
+# vaep calc ----
 events_nondribble <- 
   here::here('data-raw', '07', 'CL2020_final8_events.csv') %>% 
   read_csv() %>% 
@@ -42,101 +368,19 @@ events_dribble <-
     id = id - 1,
     Type = 'Dribble'
   ) %>% 
+  # Drop the last frame with a non-existant dribble before the shot.
   filter(id != max(id)) %>% 
   select(-dframe, -dx, -dy)
 events_dribble
 
 events <-
-  tibble(id = seq(1, 12, by = 1)) %>% 
+  tibble(id = seq(1, 12, by = 1) %>% .[-11]) %>% 
   left_join(
     bind_rows(events_nondribble, events_dribble)
   ) %>% 
-  filter(id != 11) %>% 
+  mutate(id = row_number(id)) %>% 
   arrange(id)
 events
-
-tracking %>% filter(frame == 226)
-tracking %>% count(frame) %>% arrange(desc(frame))
-# cols_spadl <- c('game_id', 'period_id', 'time_seconds', 'timestamp', 'team_id', 'home_team', 'team_name', 'player_id', 'player_name', 'action_id', 'type_name', 'bodypart_name', 'result_name', 'start_x', 'end_x', 'start_y', 'end_y', 'end_z', 'type_id', 'result_id', 'bodypart_id')
-# cols_spadl_unneeded <- c('game_id', 'time_seconds', 'team_id', 'home_team', 'team_name', 'player_id', 'player_name', 'action_id', 'start_z', 'end_z')
-# cols_spadl_needed <- setdiff(cols_spadl, cols_spadl_unneeded)
-# cols_spadl_needed
-# cols_events <- event_frames %>% colnames()
-# intersect(cols_events, cols_spadl_needed)
-# setdiff(cols_spadl_needed, cols_events)
-# setdiff(cols_events, cols_spadl_needed)
-
-types <-
-  tibble::tribble(
-          ~type_name, ~type_id,
-              'pass',       0L,
-             'cross',       1L,
-          'throw_in',       2L,
-  'freekick_crossed',       3L,
-    'freekick_short',       4L,
-    'corner_crossed',       5L,
-      'corner_short',       6L,
-           'take_on',       7L,
-              'foul',       8L,
-            'tackle',       9L,
-      'interception',      10L,
-              'shot',      11L,
-      'shot_penalty',      12L,
-     'shot_freekick',      13L,
-       'keeper_save',      14L,
-      'keeper_claim',      15L,
-      'keeper_punch',      16L,
-         'clearance',      18L,
-         'bad_touch',      19L,
-           'dribble',      21L,
-          'goalkick',      22L
-  )
-
-bodyparts <-
-  tibble::tribble(
-    ~bodypart_name, ~bodypart_id,
-    'foot',                   0L,
-    'head',                   1L,
-    'other',                  2L
-  )
-
-results <-
-  tibble::tribble(
-    ~result_name, ~result_id,
-    'fail',               0L,
-    'success',            1L,
-    'offside',            2L,
-    'owngoal',            3L,
-    'yellow_card',        4L,
-    'red_card',           5L
-  )
-
-rng_x_spadl <- c(0, 105)
-rng_y_spadl <- c(0, 68)
-rng_x_opta <- c(0, 100)
-rng_y_opta <- c(0, 100)
-# tracking %>% skimr::skim()
-# to_statsbomb <- ggsoccer::to_spadl_coordinates(from = ggsoccer::pitch_opta, to = ggsoccer::pitch_statsbomb)
-
-rescale <- function(x, rng1, rng2) {
-  rng2[1] + ((x - rng1[1]) * (rng2[2] - rng2[1])) / (rng1[2] - rng1[1])
-}
-
-to_spadl_x <- function(x) {
-  rescale(x, rng_x_opta, rng_x_spadl) 
-}
-
-to_spadl_y <- function(y) {
-  rescale(y, rng_y_opta, rng_y_spadl) 
-}
-
-to_opta_x <- function(x) {
-  rescale(x, rng_x_spadl, rng_x_opta) 
-}
-
-to_opta_y <- function(y) {
-  rescale(y, rng_y_spadl, rng_y_opta) 
-}
 
 events_spadl_init <-
   events %>% 
@@ -146,7 +390,7 @@ events_spadl_init <-
     period_id = 2L,
     team_id = 1L,
     home_team = TRUE,
-    type_name = case_when(id == 4 ~ 'shot', id == '3' ~ 'cross', TRUE ~ 'pass'),
+    type_name = case_when(id == 11L ~ 'shot', id == 10L ~ 'cross', TRUE ~ tolower(Type)),
     bodypart_name = if_else(id != 4, 'foot', 'head'),
     result_name = 'success',
     time_seconds = from_frame / fps,
@@ -159,29 +403,25 @@ events_spadl_init <-
   left_join(types) %>% 
   left_join(bodyparts) %>% 
   left_join(results)
-
+events_spadl_init
 events_spadl_init1 <- events_spadl_init %>% head(1)
 
 events_spadl_dummy <-
   events_spadl_init1 %>% 
   select(-action_id, -period_id, -team_id, -time_seconds) %>% 
-  mutate(dummy = 0) %>% 
+  mutate(dummy = 1) %>% 
   left_join(
     tibble(
       action_id = seq(-5L, -1L, by = 1L),
       period_id = c(rep(1L, 3), rep(2L, 2)),
       team_id = c(rep(2L, 3), rep(1L, 2)),
       time_seconds = seq(1, 5),
-      dummy = 0
+      dummy = 1
     )
   )
 events_spadl <- bind_rows(events_spadl_dummy, events_spadl_init)
-events_spadl
-
-features <- c('type_id_a0', 'type_pass_a0', 'type_cross_a0', 'type_throw_in_a0', 'type_freekick_crossed_a0', 'type_freekick_short_a0', 'type_corner_crossed_a0', 'type_corner_short_a0', 'type_take_on_a0', 'type_foul_a0', 'type_tackle_a0', 'type_interception_a0', 'type_shot_a0', 'type_shot_penalty_a0', 'type_shot_freekick_a0', 'type_keeper_save_a0', 'type_keeper_claim_a0', 'type_keeper_punch_a0', 'type_keeper_pick_up_a0', 'type_clearance_a0', 'type_bad_touch_a0', 'type_non_action_a0', 'type_dribble_a0', 'type_goalkick_a0', 'bodypart_foot_a0', 'bodypart_head_a0', 'bodypart_other_a0', 'result_id_a0', 'result_fail_a0', 'result_success_a0', 'result_offside_a0', 'result_owngoal_a0', 'result_yellow_card_a0', 'result_red_card_a0', 'goalscore_team', 'goalscore_opponent', 'goalscore_diff', 'start_x_a0', 'start_y_a0', 'end_x_a0', 'end_y_a0', 'dx_a0', 'dy_a0', 'movement_a0', 'start_dist_to_goal_a0', 'start_angle_to_goal_a0', 'end_dist_to_goal_a0', 'end_angle_to_goal_a0')
-
 # debugonce(Rteta::vaep_get_features)
-vaep_features <- events_spadl %>% Rteta::vaep_get_features() %>% .[features]
+vaep_features <- events_spadl %>% Rteta::vaep_get_features() %>% .[spadl_vaep_features]
 vaep_labels <- events_spadl %>% Rteta::vaep_get_labels()
 
 score_matrix <-
@@ -196,23 +436,47 @@ concede_matrix <-
     label = as.numeric(vaep_labels$concedes)
   )
 
-get_model <- function(x = c('score', 'concede')) {
-  x <- match.arg(x)
-  path <- fs::path('data-raw', '09', sprintf('vaep.%smodel', x))
-  xgboost::xgb.load(path)
-}
-score_model <- 'score' %>% get_model()
-concede_model <- 'concede' %>% get_model()
+events_spadl_vaep <- events_spadl
+events_spadl_vaep$scores <- score_model %>% predict(newdata = score_matrix)
+events_spadl_vaep$concedes <- concede_model %>% predict(newdata = concede_matrix)
 
-require(xgboost)
-events_spadl_aug <- events_spadl
-events_spadl_aug$scores <- score_model %>% predict(newdata = score_matrix)
-events_spadl_aug$concedes <- concede_model %>% predict(newdata = concede_matrix)
+events_spadl_vaep <- events_spadl_vaep %>% Rteta::vaep_get_scores('scores', 'concedes')
+events_spadl_vaep
 
-# debugonce(Rteta::vaep_get_scores)
-# debugonce(Rteta::vaep_score_actions)
-events_spadl_aug <- events_spadl_aug %>% Rteta::vaep_get_scores('scores', 'concedes')
+frame_last <- 263
+events_opta_vaep_init <-
+  events_spadl_aug %>% 
+  filter(action_id >= 0)  %>% 
+  mutate(
+    end_x = to_opta_x(start_x),
+    end_y = to_opta_y(start_y),
+    to_x = to_opta_x(end_x),
+    to_y = to_opta_y(end_y)
+  ) %>% 
+  select(
+    id = action_id,
+    scores,
+    concedes,
+    attack_score,
+    defence_score,
+    vaep_value
+  ) %>% 
+  inner_join(events) %>% 
+  mutate(across(to_frame, ~if_else(id == max(id), frame_last, to_frame)))
+events_opta_vaep_init
+events_opta_vaep_last_dummy <- events_opta_vaep_init %>% tail(1) %>% mutate(id = id + 1) %>% mutate(from_frame = frame_last)
+events_opta_vaep <- bind_rows(events_opta_vaep_init, events_opta_vaep_last_dummy)
+events_opta_vaep
+# events_opta_vaep %>% 
+#   filter(id > 0) %>%
+#    #filter(action_id < max(action_id)) %>% 
+#   pivot_longer(c(scores:vaep_value)) %>% 
+#   ggplot() +
+#   aes(x = from_frame, y = value, color = name) +
+#   geom_step(size = 1.25)
+#   # ggforce::geom_bspline(size = 1.25)
 
+# tracking data manip ----
 tracking <- 
   here::here('data-raw', '07', 'CL2020_final8_tracking.csv') %>% 
   read_csv() %>% 
@@ -238,42 +502,172 @@ frames
 frames_ball <- frames %>% filter(player == 0)
 frames_players <- frames %>% anti_join(frames_ball)
 
-pitch_gg <- function(...) {
-  list(
-    pitch,
-    coord_flip(
-      xlim = xlim_pitch,
-      ylim = ylim_pitch
-    ),
-    ggsoccer::theme_pitch(aspect_ratio = 0.5), # changing the default aspect ratio cuz it looks weird
-    theme(legend.position = 'none')
-  )
-}
-
 frames_redux <- 
   frames_ball %>% 
   select(time, frame, ball_x = x, ball_y = y) %>% 
   inner_join(frames_players)
 frames_redux
 
-color_low <- 'blue'
-color_high <- 'red'
-arw_v <- arrow(length = unit(3, 'pt'), type = 'closed')
+if(!fs::file_exists(path_export_pc)) {
+  
+  f <- possibly(do_calculate_pc, otherwise = NULL)
+  pc <- 
+    frames_redux %>%
+    mutate(
+      data = 
+        pmap(
+          list(
+            time = time, 
+            next_time = next_time, 
+            ball_x = ball_x, 
+            ball_y = ball_y, 
+            x = x, 
+            y = y, 
+            next_x = next_x, 
+            next_y = next_y, 
+            team = team, 
+            player = player,
+            overwrite = TRUE
+          ), 
+          f
+        )
+    ) %>% 
+    # Suddenly data is bad for the last frame? (hence why I resorted to possibly)
+    filter(frame != max(frame))
+  # pc %>% select(frame, player, data) %>% mutate(is_bad = map_lgl(data, is.null)) %>% filter(is_bad) %>% count(frame)
+  # pc_frames <- pc %>% count(frame)
+  # pc %>% mutate(grp = frame %/% 25) %>% count(grp)
+  pc_agg <-
+    pc %>%
+    mutate(grp = frame %/% 25) %>%
+    nest(-c(grp)) %>% 
+    mutate(res = map2(data, grp, ~do_aggregate_pc(pc = ..1, suffix = ..2, overwrite = TRUE))) %>% 
+    select(res) %>% 
+    unnest(res)
+  pc_agg
+  
+  write_rds(pc_agg, path_export_pc)
+} else {
+  pc_agg <- read_rds(path_export_pc)
+}
+
+# debugging ----
+pitch_area_filt %>% 
+  # sample_frac(0.002) %>%
+  mutate(idx = row_number()) %>% 
+  mutate(idx_filt = (idx %% (0.5 * 1000) == 0)) %>% 
+  # filter(y != 100) %>% 
+  filter(idx_filt) %>% 
+  ggplot() +
+  aes(x = x, y = y) +
+  pitch_gg() +
+  geom_text(aes(label = sprintf('%.1f, %.1f', x, y)))
+
+pc_weird_by_player_nest <-
+  frames_redux %>%
+  .filter_frame_weird() %>% 
+  mutate(
+    data = 
+      pmap(
+        list(
+          time = time, 
+          next_time = next_time, 
+          ball_x = ball_x, 
+          ball_y = ball_y, 
+          x = x, 
+          y = y, 
+          next_x = next_x, 
+          next_y = next_y, 
+          team = team, 
+          player = player,
+          overwrite = TRUE,
+          debug = TRUE
+        ), 
+        do_calculate_pc
+      )
+  )
+pc_weird_by_player_nest
+
+pc_weird_by_player <-
+  pc_weird_by_player_nest %>% 
+  select(-matches('^ball_|color$')) %>% 
+  rename(player_x = x, player_y = y) %>% 
+  unnest(data) %>% 
+  rename(i = I)
+pc_weird_by_player
+pc_weird_by_player %>% count(i == 1)
+
+pc_weird_by_player %>% 
+  # filter((x >= 50.5 & x <= 51) & (y > 0 & y <= 1)) %>% 
+  # filter((x >= 45.5 & x <= 55) & (y > 0 & y <= 10)) %>% 
+  filter(x >= 95 & (y >= 55 & y <= 80)) %>% 
+  # count(x, y)
+  filter(i > 1) %>% 
+  count(player)
+
+pc_weird_by_player %>% filter(i > 10) %>% count(player)
+pc_weird_by_player %>% filter(i > 0.1)%>% ggplot() + aes(x = i) + geom_histogram(aes(fill = factor(player)), binwidth = 0.05) # + facet_wrap(~player)
+
+pc_weird <-
+  pc_weird_by_player %>% 
+  group_by(frame, time, team, x, y) %>%
+  summarise(team_sum = sum(i, na.rm = TRUE)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = team, values_from = team_sum) %>%
+  mutate(pc = 1 / (1 + exp(home - away)))
+pc_weird
+pc_weird %>% filter(is.na(pc))
+pc_weird %>% arrange(desc(pc))
+pc_weird %>% pivot_longer(c(away:home)) %>% ggplot() + aes(x = pc) + geom_histogram(aes(fill = name))
+
+viz_weird <-
+  pc_weird %>% 
+  ggplot() +
+  aes(x = x, y = y) +
+  pitch_gg() +
+  geom_tile(aes(x = x, y = y, fill = pc), alpha = 0.7) +
+  scale_fill_gradient2(low = color_low, high = color_high, mid = 'white', midpoint = 0.5) +
+  # geom_segment(
+  #   data = frames_redux %>% .filter_frame_weird() %>% filter(!is.na(forward_x)),
+  #   color = 'black',
+  #   size = 1.5, 
+  #   arrow = arw_v,
+  #   aes(x = x, y = y, xend = forward_x, yend = forward_y)
+  # ) +
+  ggnewscale::new_scale_fill() +
+  geom_point(
+    data = frames_players %>% .filter_frame_weird(),
+    color = 'black',
+    aes(fill = team),
+    size = 3, # 7,
+    alpha = 0.8,
+    stroke = 1,
+    shape = 21
+  )
+viz_weird
+ggsave(plot = viz_weird, filename = here::here('temp.png'), width = 12, height = 12, type = 'cairo')
+
+# viz ----
 .filter_frames <- function(data) {
-  data %>% 
-    mutate(is_second = frame %% 25 == 0) %>% 
-    filter(is_second) # %>% 
+  res <-
+    data %>% 
+    filter(frame >= 80) %>% 
+    filter(frame <= 160) %>% 
+    mutate(is_slice = (frame %% 10 == 0)) %>% 
+    # mutate(is_slice = frame %% 25 == 0) %>% 
+    filter(is_slice) # %>% 
     # filter(frame >= 5) # First handful of frames look weird.
+  res
 }
 
 viz <-
-  frames %>%
+  pc_agg %>%
   .filter_frames() %>% 
   ggplot() +
   aes(x = x, y = y) +
   pitch_gg() +
-  # geom_tile(aes(x = x, y = y, fill = pc), alpha = 0.7) +
-  # scale_fill_gradient2(low = color_low, high = color_high, mid = 'white', midpoint = 0.5) +
+  geom_tile(aes(x = x, y = y, fill = pc), alpha = 0.7) +
+  scale_fill_gradient2(low = color_low, high = color_high, mid = 'white', midpoint = 0.5) +
   geom_segment(
     data = frames_redux %>% .filter_frames() %>% filter(!is.na(forward_x)),
     color = 'black',
@@ -281,12 +675,12 @@ viz <-
     arrow = arw_v,
     aes(x = x, y = y, xend = forward_x, yend = forward_y)
   ) +
-  # ggnewscale::new_scale_fill() +
+  ggnewscale::new_scale_fill() +
   geom_point(
     data = frames_players %>% .filter_frames(),
     color = 'black',
     aes(fill = team),
-    size = 7,
+    size = 3, # 7,
     alpha = 0.8,
     stroke = 1,
     shape = 21
@@ -296,36 +690,19 @@ viz <-
     data = frames_ball %>% .filter_frames(),
     size = 3,
     color = 'black', 
-    fill = 'black'
+    fill = 'yellow'
   ) +
-  geom_text(
-    data = frames_players %>% .filter_frames() %>% filter(!is.na(player_num)),
-    aes(label = player_num),
-    fontface = 'bold',
-    color = 'black'
-  ) +
-  facet_wrap(~frame)
+  # geom_text(
+  #   data = frames_players %>% .filter_frames() %>% filter(!is.na(player_num)),
+  #   aes(label = player_num),
+  #   fontface = 'bold',
+  #   color = 'black'
+  # ) +
+  facet_wrap(~frame) +
+  theme_minimal()
 viz
 
-vaep <-
-  events_spadl_aug %>% 
-  filter(action_id >= 0)  %>% 
-  mutate(
-    end_x = to_opta_x(start_x),
-    end_y = to_opta_y(start_y),
-    to_x = to_opta_x(end_x),
-    to_y = to_opta_y(end_y)
-  ) %>% 
-  select(
-    id = action_id,
-    scores,
-    concedes,
-    attack_score,
-    defence_score,
-    vaep_value
-  ) %>% 
-  inner_join(events)
-vaep
+ggsave(plot = viz, filename = here::here('viz.png'), width = 12, height = 12, type = 'cairo')
 
 tracking %>% filter(frame == 22)
 tracking %>% filter(player == 0) %>% filter(z > 0)
