@@ -191,129 +191,19 @@ calculate_pc <-
     S <- get_S(ri, srat)
     
     Sigma <- get_Sigma(R, S)
-    
-    if(debug) {
-      mu <- c(mu_x, mu_y)
-      player_loc <- c(x, y)
-      num <- mvtnorm::dmvnorm(as.matrix(pitch_area), mu, Sigma)
-      den <- mvtnorm::dmvnorm(t(matrix(player_loc)), mu, Sigma)
-      I <- sort(num / den, decreasing = TRUE)
-      # browser()
-      res <- 
-        tibble(
-          speed_x = speed_x, 
-          speed_y = speed_y, 
-          srat = srat, 
-          theta = theta, 
-          mu_x = mu_x,
-          mu_y = mu_y, 
-          r11 = R[1, 1],
-          r12 = R[1, 2],
-          r21 = R[2, 1],
-          r22 = R[2, 2],
-          s11 = S[1, 1],
-          s12 = S[1, 2],
-          s21 = S[2, 1],
-          s22 = S[2, 2],
-          sigma11 = Sigma[1, 1],
-          sigma12 = Sigma[1, 2],
-          sigma21 = Sigma[2, 1],
-          sigma22 = Sigma[2, 2],
-          den = den,
-          i01 = I[1],
-          i10 = I[10],
-          ilast = rev(I)[01],
-          ilast10 = rev(I)[10]
-        )
-      return(res)
-    }
-    
     I <- calculate_I(as.matrix(pitch_area), x, y, mu_x, mu_y, Sigma)
-    # I <- ifelse(I > 1, 1, I)
-    # browser()
-    is_weird <- all(sort(I, decreasing = TRUE)[1:10] > 3)
-    if(is_weird) {
-      I <- rep(0, length(I))
-      # browser()
-    } else {
-      I <- case_when(I > 3 ~ 0, TRUE ~ I)
-    }
+    # is_bad <- all(sort(I, decreasing = TRUE)[1:10] > 3)
+    # if(is_bad) {
+    #   I <- rep(0, length(I))
+    #   # browser()
+    # } else {
+    #   I <- case_when(I > 3 ~ 0, TRUE ~ I)
+    # }
     pitch_area$I <- I
     write_rds(pitch_area, path)
     pitch_area
   }
 do_calculate_pc <- partial(calculate_pc, pitch_area = !!pitch_area, ... = )
-
-.filter_frame_weird <- function(data) {
-  res <- data %>% filter(frame >= 120 & frame <= 140) # %>% filter(player %in% c(14, 6715))
-  res
-}
-
-pc_weird_by_player_nest <-
-  frames_redux %>%
-  .filter_frame_weird() %>% 
-  mutate(
-    data = 
-      pmap(
-        list(
-          time = time, 
-          next_time = next_time, 
-          ball_x = ball_x, 
-          ball_y = ball_y, 
-          x = x, 
-          y = y, 
-          next_x = next_x, 
-          next_y = next_y, 
-          team = team, 
-          player = player,
-          overwrite = TRUE,
-          debug = F
-        ), 
-        do_calculate_pc
-      )
-  )
-pc_weird_by_player_nest
-
-pc_weird_by_player <-
-  pc_weird_by_player_nest %>% 
-  select(-matches('^ball_|color$')) %>% 
-  select(frame, player, player_x = x, player_y = y, data) %>% 
-  unnest(data)
-pc_weird_by_player
-
-pc_weird_by_player_long <-
-  pc_weird_by_player %>%
-  mutate(
-    idx = dense_rank(player),
-    is_bad = i10 > 3
-  ) %>% 
-  relocate(idx, is_bad) %>% 
-  # filter(player != 120) %>% 
-  pivot_longer(-c(idx:player))
-pc_weird_by_player_long
-
-viz <-
-  pc_weird_by_player_long %>% 
-  filter(!is_bad) %>% 
-  ggplot() +
-  theme_minimal() +
-  aes(x = idx, y = value) +
-  geom_point(alpha = 0.1) +
-  geom_point(
-    data =
-      pc_weird_by_player_long %>% 
-      filter(is_bad) %>% 
-      filter(name %>% str_detect('^i', negate = TRUE)), 
-    aes(x = idx, y = value), 
-    alpha = 0.1,
-    color = 'red',
-    size = 1
-  ) +
-  facet_wrap(~name, scales = 'free')
-viz
-pc_weird_by_player %>% filter(i10 > 100)
-
-pc_weird_by_player %>% skimr::skim()
 
 do_aggregate_pc <- 
   function(pc,
@@ -369,15 +259,17 @@ events_dribble <-
     Type = 'Dribble'
   ) %>% 
   # Drop the last frame with a non-existant dribble before the shot.
-  filter(id != max(id)) %>% 
-  select(-dframe, -dx, -dy)
+  filter(dframe != 0) %>% 
+  select(-dframe, -dx, -dy) %>% 
+  arrange(id)
 events_dribble
 
 events <-
-  tibble(id = seq(1, 12, by = 1) %>% .[-11]) %>% 
+  tibble(id = seq(1, nrow(events_nondribble) * 2, by = 1)) %>% 
   left_join(
     bind_rows(events_nondribble, events_dribble)
   ) %>% 
+  filter(!is.na(from_x)) %>% 
   mutate(id = row_number(id)) %>% 
   arrange(id)
 events
@@ -445,7 +337,7 @@ events_spadl_vaep
 
 frame_last <- 263
 events_opta_vaep_init <-
-  events_spadl_aug %>% 
+  events_spadl_vaep %>% 
   filter(action_id >= 0)  %>% 
   mutate(
     end_x = to_opta_x(start_x),
@@ -464,7 +356,12 @@ events_opta_vaep_init <-
   inner_join(events) %>% 
   mutate(across(to_frame, ~if_else(id == max(id), frame_last, to_frame)))
 events_opta_vaep_init
-events_opta_vaep_last_dummy <- events_opta_vaep_init %>% tail(1) %>% mutate(id = id + 1) %>% mutate(from_frame = frame_last)
+n_event <- events_opta_vaep_init %>% nrow()
+
+events_opta_vaep_last_dummy <- 
+  events_opta_vaep_init %>% 
+  tail(1) %>% 
+  transmute(id = id + 1, from_frame = frame_last)
 events_opta_vaep <- bind_rows(events_opta_vaep_init, events_opta_vaep_last_dummy)
 events_opta_vaep
 # events_opta_vaep %>% 
@@ -531,10 +428,10 @@ if(!fs::file_exists(path_export_pc)) {
           ), 
           f
         )
-    ) %>% 
+    ) # %>% 
     # Suddenly data is bad for the last frame? (hence why I resorted to possibly)
-    filter(frame != max(frame))
-  # pc %>% select(frame, player, data) %>% mutate(is_bad = map_lgl(data, is.null)) %>% filter(is_bad) %>% count(frame)
+    # filter(frame != max(frame))
+  pc %>% select(frame, player, data) %>% mutate(is_bad = map_lgl(data, is.null)) %>% filter(is_bad) %>% count(frame)
   # pc_frames <- pc %>% count(frame)
   # pc %>% mutate(grp = frame %/% 25) %>% count(grp)
   pc_agg <-
@@ -551,111 +448,15 @@ if(!fs::file_exists(path_export_pc)) {
   pc_agg <- read_rds(path_export_pc)
 }
 
-# debugging ----
-pitch_area_filt %>% 
-  # sample_frac(0.002) %>%
-  mutate(idx = row_number()) %>% 
-  mutate(idx_filt = (idx %% (0.5 * 1000) == 0)) %>% 
-  # filter(y != 100) %>% 
-  filter(idx_filt) %>% 
-  ggplot() +
-  aes(x = x, y = y) +
-  pitch_gg() +
-  geom_text(aes(label = sprintf('%.1f, %.1f', x, y)))
-
-pc_weird_by_player_nest <-
-  frames_redux %>%
-  .filter_frame_weird() %>% 
-  mutate(
-    data = 
-      pmap(
-        list(
-          time = time, 
-          next_time = next_time, 
-          ball_x = ball_x, 
-          ball_y = ball_y, 
-          x = x, 
-          y = y, 
-          next_x = next_x, 
-          next_y = next_y, 
-          team = team, 
-          player = player,
-          overwrite = TRUE,
-          debug = TRUE
-        ), 
-        do_calculate_pc
-      )
-  )
-pc_weird_by_player_nest
-
-pc_weird_by_player <-
-  pc_weird_by_player_nest %>% 
-  select(-matches('^ball_|color$')) %>% 
-  rename(player_x = x, player_y = y) %>% 
-  unnest(data) %>% 
-  rename(i = I)
-pc_weird_by_player
-pc_weird_by_player %>% count(i == 1)
-
-pc_weird_by_player %>% 
-  # filter((x >= 50.5 & x <= 51) & (y > 0 & y <= 1)) %>% 
-  # filter((x >= 45.5 & x <= 55) & (y > 0 & y <= 10)) %>% 
-  filter(x >= 95 & (y >= 55 & y <= 80)) %>% 
-  # count(x, y)
-  filter(i > 1) %>% 
-  count(player)
-
-pc_weird_by_player %>% filter(i > 10) %>% count(player)
-pc_weird_by_player %>% filter(i > 0.1)%>% ggplot() + aes(x = i) + geom_histogram(aes(fill = factor(player)), binwidth = 0.05) # + facet_wrap(~player)
-
-pc_weird <-
-  pc_weird_by_player %>% 
-  group_by(frame, time, team, x, y) %>%
-  summarise(team_sum = sum(i, na.rm = TRUE)) %>%
-  ungroup() %>%
-  pivot_wider(names_from = team, values_from = team_sum) %>%
-  mutate(pc = 1 / (1 + exp(home - away)))
-pc_weird
-pc_weird %>% filter(is.na(pc))
-pc_weird %>% arrange(desc(pc))
-pc_weird %>% pivot_longer(c(away:home)) %>% ggplot() + aes(x = pc) + geom_histogram(aes(fill = name))
-
-viz_weird <-
-  pc_weird %>% 
-  ggplot() +
-  aes(x = x, y = y) +
-  pitch_gg() +
-  geom_tile(aes(x = x, y = y, fill = pc), alpha = 0.7) +
-  scale_fill_gradient2(low = color_low, high = color_high, mid = 'white', midpoint = 0.5) +
-  # geom_segment(
-  #   data = frames_redux %>% .filter_frame_weird() %>% filter(!is.na(forward_x)),
-  #   color = 'black',
-  #   size = 1.5, 
-  #   arrow = arw_v,
-  #   aes(x = x, y = y, xend = forward_x, yend = forward_y)
-  # ) +
-  ggnewscale::new_scale_fill() +
-  geom_point(
-    data = frames_players %>% .filter_frame_weird(),
-    color = 'black',
-    aes(fill = team),
-    size = 3, # 7,
-    alpha = 0.8,
-    stroke = 1,
-    shape = 21
-  )
-viz_weird
-ggsave(plot = viz_weird, filename = here::here('temp.png'), width = 12, height = 12, type = 'cairo')
-
 # viz ----
 .filter_frames <- function(data) {
   res <-
-    data %>% 
-    filter(frame >= 80) %>% 
-    filter(frame <= 160) %>% 
-    mutate(is_slice = (frame %% 10 == 0)) %>% 
+    data # %>% 
+    # filter(frame >= 80) %>% 
+    # filter(frame <= 160) %>% 
+    # mutate(is_slice = (frame %% 10 == 0)) %>% 
     # mutate(is_slice = frame %% 25 == 0) %>% 
-    filter(is_slice) # %>% 
+    # filter(is_slice) # %>% 
     # filter(frame >= 5) # First handful of frames look weird.
   res
 }
@@ -680,7 +481,7 @@ viz <-
     data = frames_players %>% .filter_frames(),
     color = 'black',
     aes(fill = team),
-    size = 3, # 7,
+    size = 7,
     alpha = 0.8,
     stroke = 1,
     shape = 21
@@ -688,22 +489,104 @@ viz <-
   scale_fill_manual(values = c('away' = color_high, 'home' = color_low)) +
   geom_point(
     data = frames_ball %>% .filter_frames(),
-    size = 3,
     color = 'black', 
-    fill = 'yellow'
+    fill = 'yellow',
+    size = 4,
+    stroke = 1,
+    shape = 21
   ) +
-  # geom_text(
-  #   data = frames_players %>% .filter_frames() %>% filter(!is.na(player_num)),
-  #   aes(label = player_num),
-  #   fontface = 'bold',
-  #   color = 'black'
-  # ) +
-  facet_wrap(~frame) +
-  theme_minimal()
-viz
+  geom_text(
+    data = frames_players %>% .filter_frames() %>% filter(!is.na(player_num)),
+    aes(label = player_num),
+    fontface = 'bold',
+    color = 'black'
+  ) +
+  gganimate::transition_time(frame) +
+  # facet_wrap(~frame) + # for dev +
+  theme(
+    plot.title = element_text('Karla', face = 'bold', size = 18, color = 'gray20'),
+    plot.title.position = 'plot',
+    plot.margin = margin(20, 10, 10, 10),
+    plot.caption = element_text('Karla', size = 14, color = 'gray20', hjust = 0),
+    plot.caption.position = 'plot'
+  ) +
+  labs(
+    title = glue::glue('{play_filt}, UCL 2020 Finals'),
+    caption = 'Viz: @TonyElHabr | Data: @lastrowview'
+  )
+# viz
+# ggsave(plot = viz, filename = here::here('viz.png'), width = 12, height = 12, type = 'cairo')
+n_frame <- frames_players %>% .filter_frames() %>% pull(frame) %>% max()
+viz_anim <- gganimate::animate(viz, width = 900, height = 600, nframes = n_frame, fps = fps)
+gganimate::anim_save(animation = viz_anim, path_export_gif)
 
-ggsave(plot = viz, filename = here::here('viz.png'), width = 12, height = 12, type = 'cairo')
+events_opta_vaep_viz <-
+  tibble(from_frame = seq(1, frame_last, by = 1)) %>% 
+  left_join(events_opta_vaep) %>%
+  fill(vaep_value) %>% 
+  mutate(across(vaep_value, ~if_else(id > n_event, 0, .x))) %>% 
+  mutate(across(vaep_value, ~coalesce(.x, 0))) %>% 
+  mutate(across(vaep_value, list(cumu = cumsum)))
+events_opta_vaep_viz
 
-tracking %>% filter(frame == 22)
-tracking %>% filter(player == 0) %>% filter(z > 0)
-frames
+events_opta_vaep_viz_labs <-
+  events_opta_vaep_viz %>% 
+  # filter(!is.na(vaep_value)) %>% #  & vaep_value > 0.0001) %>% 
+  filter(!is.na(id) & !is.na(from_x)) %>% 
+  mutate(
+    lab = 
+      case_when(
+        is.na(vaep_value) ~ NA_character_,
+        TRUE ~ paste0(ifelse(vaep_value < 0 , '', '+'), scales::number(vaep_value, accuracy = 0.01))
+      )
+  )
+events_opta_vaep_viz_labs %>% relocate(lab)
+
+viz_vaep <-
+  events_opta_vaep_viz %>% 
+  ggplot() +
+  aes(x = from_frame, y = vaep_value_cumu) +
+  # gganimate::view_follow() +
+  gganimate::transition_reveal(along = from_frame) +
+  geom_step(size = 1.25, color = 'gray20') +
+  geom_text(
+    data = events_opta_vaep_viz_labs, #  %>% filter(from_frame == min(from_frame)),
+    aes(x = from_frame - 6, y = vaep_value_cumu + 0.08, label = lab, group = NULL),
+    size = 5,
+    hjust = 1,
+    fontface = 'bold',
+    color = 'grey20'
+  ) +
+  geom_segment(
+    data = events_opta_vaep_viz_labs, #  %>% filter(from_frame == min(from_frame)),
+    aes(x = from_frame - 5, y = vaep_value_cumu + 0.07, xend = from_frame, yend = vaep_value_cumu + 0.005, group = NULL),
+    size = 0.5,
+    # curvature = -0.2,
+    # arrow = arrow(length = unit(0.03, 'npc'))
+  ) +
+  geom_text(
+    data = tibble(),
+    aes(x = 10, y = 0.45, label = glue::glue('VAEP')),
+    size = 6,
+    hjust = 0,
+    fontface = 'bold',
+    color = 'grey20'
+  ) +
+  theme_minimal() +
+  theme(
+    text = element_text(family = 'Karla'),
+    title = element_text('Karla', size = 14, color = 'gray20'),
+    plot.title = element_text('Karla', face = 'bold', size = 18, color = 'gray20'),
+    plot.title.position = 'plot',
+    plot.subtitle = element_text('Karla', face = 'bold', size = 14, color = 'gray50'),
+    # axis.text = element_text('Karla', size = 14),
+    axis.text = element_blank(),
+    plot.margin = margin(10, 10, 10, 10),
+    panel.background = element_blank(),
+    panel.grid = element_blank()
+  ) +
+  labs(
+    x = NULL, y = NULL
+  )
+viz_vaep
+
