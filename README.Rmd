@@ -35,6 +35,8 @@ knitr::include_graphics('plots/04_ucl_npg90_adj.utf8.pdf')
 
 ![2020 NBA Playoffs Total Excitement Index Bar Chart](plots/2020_nba_playoffs_excitement_index_20200907.png "2020 NBA Playoffs Total Excitement Index Bar Chart")
 
+![PSG 0-1 Bayern Munich, UCL 2020 Finals, Animated Pitch Control and VAEP](plots/ucl_2020_psg_mun.gif "PSG 0-1 Bayern Munich, UCL 2020 Finals, Animated Pitch Control and VAEP")
+
 ## Future Ideas
 
 + Stability of goal-scoring rate and/or xG over-performance

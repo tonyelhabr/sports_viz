@@ -8,6 +8,9 @@ path_export_pc_gif <- path_export_gif %>% str_replace('[.]gif$', '_pc.gif')
 path_export_vaep_gif <- path_export_gif %>% str_replace('[.]gif$', '_vaep.gif')
 path_export_pc <- here::here('data', sprintf('09_%s_pc.rds', file))
 path_export_vaep <- here::here('data', sprintf('09_%s_vaep.rds', file))
+dir_anim <- fs::path('plots', '09', 'anim')
+fs::dir_create(dir_anim)
+
 play_filt <- 'PSG 0-[1] Bayern Munich'
 fps <- 25
 # pitch_fill <- '#7fc47f'
@@ -152,6 +155,7 @@ get_S <- function(ri, srat) {
 }
 
 get_Sigma <- function(R, S) {
+  # I believe this `solve()` is what is leading to some bloated pitch control contours. (It "blows up".)
   inv_R <- solve(R)
   R %*% S %*% S %*% inv_R
 }
@@ -223,36 +227,68 @@ do_aggregate_pc <-
     }
     
     if(adjust) {
+      # # 15578 is top right blue player
+      # pc %>% 
+      #   filter(frame == 110) %>% # , player != 6717) %>% 
+      #   rename(player_x = x, player_y = y) %>% 
+      #   filter(bgcolor != 'red') %>% 
+      #   filter(player_y == min(player_y)) %>% 
+      #   glimpse()
+      
       pc_bad <-
         pc %>% 
-        # filter(frame == 120) %>% # , player != 6717) %>% 
+        # filter(frame == 110) %>% # , player != 6717) %>% 
         rename(player_x = x, player_y = y) %>% 
-        unnest(data) %>% 
-        mutate(dx = player_x - x, dy = player_y - y) %>% 
-        mutate(s = sqrt(dx^2 + dy^2))
-      bad_players <- z %>% filter(s > 20 & I > 1) %>% arrange(desc(I)) %>% distinct(player)
+        unnest(data) # %>% 
+        # mutate(dx = player_x - x, dy = player_y - y) %>% 
+        # mutate(s = sqrt(dx^2 + dy^2)) # %>% 
+        # arrange(desc(I))
       
-      suppressMessages(
-        pc_bad_adj <-
-          pc_bad %>% 
-          inner_join(bad_players) %>% 
-          group_by(player, frame) %>% 
-          mutate(across(I, ~3 * ((.x - 0) / (max(.x) - 0))^1))%>% 
-          ungroup() %>% 
-          select(-dx, -dy, -s) %>% 
-          nest(data = c(x, y, I)) %>% 
-          rename(x = player_x, y = player_y)
-      )
+      # bad_players <-
+      #   pc_bad %>% 
+      #   filter(s > 20 & I > 1) %>% 
+      #   arrange(desc(I)) %>% 
+      #   distinct(player, frame)
       
-      suppressMessages(
-        pc <-
-          bind_rows(
-            pc %>% anti_join(bad_players),
-            pc_bad_adj
-          )
-      )
+      bad_players <-
+        pc_bad %>% 
+        # filter(player == 15578) %>% 
+        # filter(s > 15) %>% 
+        # arrange(desc(I))
+        group_by(frame, player) %>% 
+        # Somewhat analogous to 3 standard deviations.
+        summarize(n = sum(I > 3)) %>% 
+        ungroup() %>% 
+        # arrange(desc(n))
+        # Arbitrary
+        filter(n > 3)
+      
+      if(nrow(bad_players) > 0) {
+
+        suppressMessages(
+          pc_bad_adj <-
+            pc_bad %>% 
+            inner_join(bad_players) %>% 
+            group_by(player, frame) %>% 
+            # Sort of normalize back to where the max is 2 standard deviations.
+            mutate(across(I, ~(2 * ((.x - 0) / (max(.x) - 0))^1)))%>% 
+            ungroup() %>% 
+            # select(-dx, -dy, -s) %>% 
+            nest(data = c(x, y, I)) %>% 
+            rename(x = player_x, y = player_y)
+        )
+        
+        suppressMessages(
+          pc <-
+            bind_rows(
+              pc %>% anti_join(bad_players),
+              pc_bad_adj
+            )
+        )
+      }
     }
     
+
     res <-
       pc %>%
       select(frame, time, player, team, data) %>% 
@@ -392,8 +428,7 @@ if(!fs::file_exists(path_export_vaep)) {
     inner_join(events) %>% 
     mutate(across(to_frame, ~if_else(id == max(id), frame_last, to_frame)))
   events_vaep_init
-  n_event <- events_vaep_init %>% nrow()
-  
+
   events_vaep_last_dummy <- 
     events_vaep_init %>% 
     tail(1) %>% 
@@ -465,7 +500,7 @@ if(!fs::file_exists(path_export_pc)) {
             next_y = next_y, 
             team = team, 
             player = player,
-            overwrite = TRUE
+            overwrite = FALSE
           ), 
           do_calculate_pc
         )
@@ -487,76 +522,14 @@ if(!fs::file_exists(path_export_pc)) {
   pc_agg <- read_rds(path_export_pc)
 }
 
-# viz ----
-pc_bad <-
-  pc %>% 
-  filter(frame == 130) %>% # , player != 6717) %>% 
-  rename(player_x = x, player_y = y) %>% 
-  unnest(data) %>% 
-  mutate(dx = player_x - x, dy = player_y - y) %>% 
-  mutate(s = sqrt(dx^2 + dy^2))
-bad_players <- z %>% filter(s > 20 & I > 1) %>% arrange(desc(I)) %>% distinct(player)
-
-suppressMessages(
-  pc_bad_adj <-
-    pc_bad %>% 
-    inner_join(bad_players) %>% 
-    group_by(player, frame) %>% 
-    mutate(across(I, ~3 * ((.x - 0) / (max(.x) - 0))^1))%>% 
-    ungroup()
-)
-
-suppressMessages(
-  pcx <-
-    bind_rows(
-      pc %>% filter(frame == 130) %>% anti_join(bad_players),
-      pc_bad_adj %>% select(-dx, -dy, -s) %>% nest(data = c(x, y, I)) %>% rename(x = player_x, y = player_y)
-    )
-)
-
-z <-
-  pc %>% 
-  filter(frame == 130) %>% # , player != 6717) %>% 
-  rename(player_x = x, player_y = y) %>% 
-  unnest(data) %>% 
-  mutate(dx = player_x - x, dy = player_y - y) %>% 
-  mutate(
-    s = sqrt(dx^2 + dy^2)
-  ) %>% #  & I > 1) %>% 
-  relocate(I)
-z %>% arrange(desc(I)) %>% filter(s > 20) # %>% distinct(player)
-z_players <- z %>% filter(s > 20 & I > 1) %>% arrange(desc(I)) %>% distinct(player)
-z_players
-z %>% filter(s > 20 & I > 1) %>% arrange(desc(I)) 
-z_adj <-
-  z %>% 
-  inner_join(z_players) %>% 
-  group_by(player, frame) %>% 
-  mutate(
-    across(I, ~3 * ((.x - 0) / (max(.x) - 0))^1)
-  )%>% 
-  ungroup()
-z_adj %>% filter(s > 20) %>% arrange(desc(I)) 
-z_adj %>% filter(s > 25) %>% arrange(desc(I)) 
-
-z_good <- z %>% anti_join(z_players)
-z_good %>% 
-  # filter(s <= 25) %>% 
-  filter(s > 25) %>% 
-  sample_frac(0.2) %>% 
-  ggplot() +
-  aes(x = s, y = I) +
-  geom_point()
-
+# viz-setup ----
 .filter_frames <- function(data) {
   res <-
     data # %>% 
+    # mutate(is_slice = (frame %% 10) == 0) %>% 
+    # filter(is_slice)
     # filter(frame >= 80) %>% 
-    # filter(frame <= 160)  %>% 
-    # mutate(is_slice = (frame %% 25 == 0)) %>% 
-    # mutate(is_slice = frame %% 25 == 0) %>% 
-    # filter(is_slice) # %>% 
-  # filter(frame >= 5) # First handful of frames look weird.
+    # filter(frame <= 160)
   res
 }
 
@@ -571,6 +544,58 @@ animate_partial <-
     ... = 
   )
 
+n_event <- events_vaep %>% nrow()
+n_event <- n_event - 1
+events_vaep_viz <-
+  tibble(from_frame = seq(1, frame_last, by = 1)) %>% 
+  left_join(events_vaep) %>%
+  fill(vaep_value) %>% 
+  mutate(across(vaep_value, ~if_else(id > n_event, 0, .x))) %>% 
+  mutate(across(vaep_value, ~coalesce(.x, 0))) %>% 
+  mutate(across(vaep_value, list(cumu = cumsum)))
+events_vaep_viz
+
+player_labs <-
+  tibble(
+    from_player_num = c(6, 22, 25, 29, 32),
+    from_player_name = c('Thiago', 'Gnabry', 'Muller', 'Coman', 'Kimmich') # 'Müller'
+  )
+
+events_vaep_viz_labs <-
+  events_vaep_viz %>% 
+  filter(!is.na(id) & !is.na(from_x)) %>% 
+  mutate(
+    is_neg = if_else(vaep_value < 0, TRUE, FALSE),
+    is_zero = if_else(abs(vaep_value) < 0.005, TRUE, FALSE)
+  ) %>% 
+  mutate(
+    color = case_when(is_zero ~ '#000000', is_neg ~ '#A50026', TRUE ~ '#006837'),
+    sign = case_when(is_zero ~ '', is_neg ~ '', TRUE ~ '+')
+  ) %>% 
+  inner_join(player_labs) %>% 
+  mutate(
+    lab = glue::glue('<span style="color:{color}">{sign}{scales::number(vaep_value, accuracy = 0.01)}</span>'),
+    lab_player = glue::glue('#{id} {from_player_name} {tolower(Type)}') %>% str_wrap(12),
+    x = from_frame - 6,
+    y = case_when(vaep_value < 0.2 ~ vaep_value_cumu + 0.08, TRUE ~ vaep_value_cumu - 0.2),
+    x_player = from_frame - 6,
+    y_player = case_when(vaep_value < 0.2 ~ vaep_value_cumu + 0.2, TRUE ~ vaep_value_cumu - 0.08)
+  ) %>% 
+  select(-is_neg, -color, -sign)
+
+events_vaep_viz_segs <-
+  events_vaep_viz_labs %>% 
+  transmute(
+    lab = lab,
+    lab_player = lab_player,
+    from_frame = from_frame,
+    x = from_frame - 5, 
+    y = case_when(vaep_value < 0.2 ~ vaep_value_cumu + 0.07, TRUE ~ vaep_value_cumu - 0.19),
+    xend = from_frame, 
+    yend = case_when(vaep_value < 0.2 ~ vaep_value_cumu + 0.01, TRUE ~ vaep_value_cumu - 0.01)
+  )
+
+# viz ----
 viz_pc <-
   pc_agg %>%
   .filter_frames() %>% 
@@ -582,7 +607,7 @@ viz_pc <-
   geom_segment(
     data = frames_redux %>% .filter_frames() %>% filter(!is.na(forward_x)),
     color = 'black',
-    size = 1.5, 
+    size = 1.5,
     arrow = arw_v,
     aes(x = x, y = y, xend = forward_x, yend = forward_y)
   ) +
@@ -595,7 +620,7 @@ viz_pc <-
     alpha = 0.5,
     stroke = 1,
     shape = 21
-  ) + 
+  ) +
   scale_fill_manual(values = c('away' = color_high, 'home' = color_low)) +
   geom_point(
     data = frames_ball %>% .filter_frames(),
@@ -624,47 +649,23 @@ viz_pc <-
     title = glue::glue('{play_filt}, UCL 2020 Finals'),
     caption = 'Viz: @TonyElHabr | Data: @lastrowview'
   )
-viz_pc
+# viz_pc
 # ggsave(plot = viz_pc, filename = here::here('viz.png'), width = 12, height = 12, type = 'cairo')
 
-viz_pc_gif <- animate_partial(viz_pc, height = 600)
-gganimate::anim_save(animation = viz_pc_gif, path_export_pc_gif)
-
-events_vaep_viz <-
-  tibble(from_frame = seq(1, frame_last, by = 1)) %>% 
-  left_join(events_vaep) %>%
-  fill(vaep_value) %>% 
-  mutate(across(vaep_value, ~if_else(id > n_event, 0, .x))) %>% 
-  mutate(across(vaep_value, ~coalesce(.x, 0))) %>% 
-  mutate(across(vaep_value, list(cumu = cumsum)))
-events_vaep_viz
-
-events_vaep_viz_labs <-
-  events_vaep_viz %>% 
-  filter(!is.na(id) & !is.na(from_x)) %>% 
-  mutate(
-    is_neg = if_else(vaep_value < 0, TRUE, FALSE),
-    is_zero = if_else(abs(vaep_value) < 0.005, TRUE, FALSE)
-  ) %>% 
-  mutate(
-    color = case_when(is_zero ~ '#000000', is_neg ~ '#A50026', TRUE ~ '#006837'),
-    sign = case_when(is_zero ~ '', is_neg ~ '', TRUE ~ '+')
-  ) %>% 
-  mutate(lab = glue::glue('<span style="color:{color}">{sign}{scales::number(vaep_value, accuracy = 0.01)}</span>')) %>% 
-  select(-is_neg, -color, -sign)
-events_vaep_viz_labs %>% select(lab)
+# viz_pc_gif <- animate_partial(viz_pc, height = 600)
+# gganimate::anim_save(animation = viz_pc_gif, path_export_pc_gif)
+animate_partial(viz_pc, height = 600, renderer = gganimate::file_renderer(dir = dir_anim, prefix = 'viz_pc_', overwrite = TRUE))
 
 # update_geom_defaults('text', list(family = 'Karla', size = 4))
 viz_vaep <-
   events_vaep_viz %>% 
   ggplot() +
   aes(x = from_frame, y = vaep_value_cumu) +
-  # gganimate::view_follow() +
   gganimate::transition_reveal(along = from_frame) +
   geom_area(size = 1.25, color = 'gray20', fill = 'gray80') +
   ggtext::geom_richtext(
     data = events_vaep_viz_labs,
-    aes(x = from_frame - 6, y = vaep_value_cumu + 0.08, label = lab, group = lab),
+    aes(x = x, y = y, label = lab, group = lab_player),
     fill = NA, 
     label.color = NA,
     size = 5,
@@ -673,21 +674,32 @@ viz_vaep <-
     fontface = 'bold',
     color = 'gray20'
   ) +
-  geom_segment(
+  geom_text(
     data = events_vaep_viz_labs,
+    aes(x = x_player, y = y_player, label = lab_player, group = lab_player),
+    size = 4,
+    hjust = 1,
+    # vjust = -2,
+    lineheight = 0.8,
+    family = 'Karla',
+    fontface = 'bold',
+    color = 'gray20'
+  ) +
+  geom_segment(
+    data = events_vaep_viz_segs,
     aes(
-      x = from_frame - 5, 
-      y = vaep_value_cumu + 0.07, 
-      xend = from_frame, 
-      yend = vaep_value_cumu + 0.005, 
-      group = lab
+      x = x,
+      y = y,
+      xend = xend,
+      yend = yend,
+      group = lab_player
     ),
     size = 0.5
   ) +
   geom_text(
     data = tibble(),
-    aes(x = 10, y = 0.6, label = glue::glue('VAEP')),
-    size = 8,
+    aes(x = 1, y = 0.6, label = glue::glue('Valuing Actions Estimating Probabilities (VAEP)')),
+    size = 6,
     hjust = 0,
     family = 'Karla',
     fontface = 'bold',
@@ -709,17 +721,49 @@ viz_vaep <-
     x = NULL, y = NULL
   )
 viz_vaep
-viz_vaep_gif <- animate_partial(viz_vaep, height = 200)
-gganimate::anim_save(animation = viz_vaep_gif, path_export_vaep_gif)
 
-viz_pc_mgif <- viz_pc_gif %>% magick::image_read()
-viz_vaep_mgif <- viz_vaep_gif %>% magick::image_read()
+# viz_vaep_gif <- animate_partial(viz_vaep, height = 200)
+# gganimate::anim_save(animation = viz_vaep_gif, path_export_vaep_gif)
+animate_partial(viz_vaep, height = 200, renderer = gganimate::file_renderer(dir = dir_anim, prefix = 'viz_vaep_', overwrite = TRUE))
 
-res_gif <- magick::image_append(c(viz_pc_mgif[1], viz_vaep_mgif[1]), stack = TRUE)
-for(i in 2:n_frame){
-  combo_gif <- magick::image_append(c(viz_pc_mgif[i], viz_vaep_mgif[i]), stack = TRUE)
-  res_gif <- c(res_gif, combo_gif)
+# postprocess ----
+.get_gif_frame_path <- function(x = c('pc', 'vaep'), i) {
+  fs::path(dir_anim, sprintf('viz_%s_%04d.png', x, i))
 }
-magick::image_write(res_gif, path = path_export_gif)
 
+.get_gif_frame <- function(x = c('pc', 'vaep'), i) {
+  path <- .get_gif_frame_path(x, i)
+  path %>% magick::image_read()
+}
 
+.stack_gifs <- function(i, overwrite = TRUE) {
+  # i <- 1
+  viz1 <- 'pc' %>% .get_gif_frame(i)
+  viz2 <- 'vaep' %>% .get_gif_frame(i)
+  # vizzes <- c('pc', 'vaep') %>% map(~.get_gif_frame(.x, i))
+  res <- magick::image_append(c(viz1, viz2), stack = TRUE)
+  # res <- magick::image_append(vizzes, stack = TRUE)
+  path <- fs::path(dir_anim, sprintf('viz_%04d.png', i))
+  path_exists <- path %>% fs::file_exists()
+  if(path_exists & !overwrite) {
+    # return(magick::image_read(path))
+    return(path)
+  }
+  res %>% magick::image_write(path = path)
+  # res
+  path
+}
+
+tibble(i = seq(224, frame_last - 1, by = 1)) %>% mutate(path = walk(i, .stack_gifs, overwrite = T))
+path_frame_pc_penul <- 'pc' %>% .get_gif_frame_path(n_frame - 1)
+path_frame_vaep_penul <- 'vaep' %>% .get_gif_frame_path(n_frame - 1)
+frame_last_extra <- n_frame + fps * 3
+seq_i_extra <- seq(n_frame, n_frame + frame_last_extra, by = 1)
+'pc' %>% walk2(seq_i_extra, ~.get_gif_frame_path(..1, ..2) %>% fs::file_copy(path_frame_pc_penul, ., overwrite = TRUE))
+'vaep' %>% walk2(seq_i_extra, ~.get_gif_frame_path(..1, ..2) %>% fs::file_copy(path_frame_vaep_penul, ., overwrite = TRUE))
+
+tibble(i = seq(frame_last, frame_last_extra, by = 1)) %>% mutate(path = walk(i, .stack_gifs, overwrite = T))
+paths_anim <- dir_anim %>% fs::dir_ls(regex = 'viz_0.*png$')
+paths_anim %>% length()
+gifski::gifski(paths_anim, gif_file = path_export_gif, width = 900, height = 800, delay = 1 / 25)
+# gifski::save_gif(paths_anim, gif_file = 'gif.gif', width = 900, height = 800, delay = 0)

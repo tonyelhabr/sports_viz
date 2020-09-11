@@ -41,6 +41,14 @@ Plot](plots/tx_hs_fb_band.png
 Control](plots/ucl_2020_psg_atl.gif
 "PSG 2-1 Atalanta, UCL 2020 Quarter-Finals, Animated Pitch Control")
 
+![2020 NBA Playoffs Total Excitement Index Bar
+Chart](plots/2020_nba_playoffs_excitement_index_20200907.png
+"2020 NBA Playoffs Total Excitement Index Bar Chart")
+
+![PSG 0-1 Bayern Munich, UCL 2020 Finals, Animated Pitch Control and
+VAEP](plots/ucl_2020_psg_mun.gif
+"PSG 0-1 Bayern Munich, UCL 2020 Finals, Animated Pitch Control and VAEP")
+
 ## Future Ideas
 
   - Stability of goal-scoring rate and/or xG over-performance
