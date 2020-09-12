@@ -244,12 +244,6 @@ do_aggregate_pc <-
         # mutate(s = sqrt(dx^2 + dy^2)) # %>% 
         # arrange(desc(I))
       
-      # bad_players <-
-      #   pc_bad %>% 
-      #   filter(s > 20 & I > 1) %>% 
-      #   arrange(desc(I)) %>% 
-      #   distinct(player, frame)
-      
       bad_players <-
         pc_bad %>% 
         # filter(player == 15578) %>% 
@@ -526,6 +520,7 @@ if(!fs::file_exists(path_export_pc)) {
 .filter_frames <- function(data) {
   res <-
     data # %>% 
+    # filter(frame %in% c(22, 52, 92, 122))
     # mutate(is_slice = (frame %% 10) == 0) %>% 
     # filter(is_slice)
     # filter(frame >= 80) %>% 
@@ -573,6 +568,7 @@ events_vaep_viz_labs <-
     sign = case_when(is_zero ~ '', is_neg ~ '', TRUE ~ '+')
   ) %>% 
   inner_join(player_labs) %>% 
+  mutate(across(id, row_number)) %>% 
   mutate(
     lab = glue::glue('<span style="color:{color}">{sign}{scales::number(vaep_value, accuracy = 0.01)}</span>'),
     lab_player = glue::glue('#{id} {from_player_name} {tolower(Type)}') %>% str_wrap(12),
@@ -596,6 +592,9 @@ events_vaep_viz_segs <-
   )
 
 # viz ----
+# lab_title <- glue::glue('{play_filt}, UCL 2020 Finals')
+lab_title <- glue::glue('<span style="color:{color_low}">PSG</span> 0-[1] <span style="color:{color_high}">Bayern Munich</span>, UCL 2020 Finals')
+
 viz_pc <-
   pc_agg %>%
   .filter_frames() %>% 
@@ -630,23 +629,33 @@ viz_pc <-
     stroke = 1,
     shape = 21
   ) +
-  geom_text(
-    data = frames_players %>% .filter_frames() %>% filter(!is.na(player_num)),
-    aes(label = player_num),
-    fontface = 'bold',
-    color = 'black'
-  ) +
+  # geom_text(
+  #   data = frames_players %>% .filter_frames() %>% filter(!is.na(player_num)),
+  #   aes(label = player_num),
+  #   fontface = 'bold',
+  #   color = 'black'
+  # ) +
+  # geom_text(
+  #   data = 
+  #     events_vaep_viz_labs %>% 
+  #     rename(frame = from_frame) %>% 
+  #     .filter_frames() %>% 
+  #     mutate(lab_action = sprintf('#%d', id)),
+  #   aes(x = (from_x + to_x) / 2, y = (from_y + to_y) / 2, label = lab_action, group = lab_action),
+  #   size = 3
+  # ) +
+  # gganimate::transition_reveal(along = frame) +
   gganimate::transition_time(frame) +
   # facet_wrap(~frame) + # for dev +
   theme(
-    plot.title = element_text('Karla', face = 'bold', size = 18, color = 'gray20'),
+    plot.title = ggtext::element_markdown('Karla', face = 'bold', size = 18, color = 'gray20'),
     plot.title.position = 'plot',
     plot.margin = margin(20, 10, 10, 10),
     plot.caption = element_text('Karla', size = 14, color = 'gray20', hjust = 0),
     plot.caption.position = 'plot'
   ) +
   labs(
-    title = glue::glue('{play_filt}, UCL 2020 Finals'),
+    title = lab_title,
     caption = 'Viz: @TonyElHabr | Data: @lastrowview'
   )
 # viz_pc
@@ -677,7 +686,7 @@ viz_vaep <-
   geom_text(
     data = events_vaep_viz_labs,
     aes(x = x_player, y = y_player, label = lab_player, group = lab_player),
-    size = 4,
+    size = 5,
     hjust = 1,
     # vjust = -2,
     lineheight = 0.8,
@@ -738,6 +747,7 @@ animate_partial(viz_vaep, height = 200, renderer = gganimate::file_renderer(dir 
 
 .stack_gifs <- function(i, overwrite = TRUE) {
   # i <- 1
+  message(glue::glue('Stacking frame {i}'))
   viz1 <- 'pc' %>% .get_gif_frame(i)
   viz2 <- 'vaep' %>% .get_gif_frame(i)
   # vizzes <- c('pc', 'vaep') %>% map(~.get_gif_frame(.x, i))
@@ -754,7 +764,7 @@ animate_partial(viz_vaep, height = 200, renderer = gganimate::file_renderer(dir 
   path
 }
 
-tibble(i = seq(224, frame_last - 1, by = 1)) %>% mutate(path = walk(i, .stack_gifs, overwrite = T))
+tibble(i = seq(143, frame_last - 1, by = 1)) %>% mutate(path = walk(i, .stack_gifs, overwrite = T))
 path_frame_pc_penul <- 'pc' %>% .get_gif_frame_path(n_frame - 1)
 path_frame_vaep_penul <- 'vaep' %>% .get_gif_frame_path(n_frame - 1)
 frame_last_extra <- n_frame + fps * 3
@@ -762,8 +772,7 @@ seq_i_extra <- seq(n_frame, n_frame + frame_last_extra, by = 1)
 'pc' %>% walk2(seq_i_extra, ~.get_gif_frame_path(..1, ..2) %>% fs::file_copy(path_frame_pc_penul, ., overwrite = TRUE))
 'vaep' %>% walk2(seq_i_extra, ~.get_gif_frame_path(..1, ..2) %>% fs::file_copy(path_frame_vaep_penul, ., overwrite = TRUE))
 
-tibble(i = seq(frame_last, frame_last_extra, by = 1)) %>% mutate(path = walk(i, .stack_gifs, overwrite = T))
+tibble(i = seq(286, frame_last_extra, by = 1)) %>% mutate(path = walk(i, .stack_gifs, overwrite = T))
 paths_anim <- dir_anim %>% fs::dir_ls(regex = 'viz_0.*png$')
-paths_anim %>% length()
+# paths_anim %>% length()
 gifski::gifski(paths_anim, gif_file = path_export_gif, width = 900, height = 800, delay = 1 / 25)
-# gifski::save_gif(paths_anim, gif_file = 'gif.gif', width = 900, height = 800, delay = 0)
