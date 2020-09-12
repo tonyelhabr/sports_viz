@@ -168,6 +168,7 @@ calculate_I <- function(pitch_area, x, y, mu_x, mu_y, Sigma) {
   num / den
 }
 
+# Save each individual player-frame data because it would be a lot to hold in memory.
 dir_data <- here::here('data', '09')
 fs::dir_create(dir_data)
 calculate_pc <- 
@@ -199,13 +200,6 @@ calculate_pc <-
     
     Sigma <- get_Sigma(R, S)
     I <- calculate_I(as.matrix(pitch_area), x, y, mu_x, mu_y, Sigma)
-    # is_bad <- all(sort(I, decreasing = TRUE)[1:10] > 3)
-    # if(is_bad) {
-    #   I <- rep(0, length(I))
-    #   # browser()
-    # } else {
-    #   I <- case_when(I > 3 ~ 0, TRUE ~ I)
-    # }
     pitch_area$I <- I
     write_rds(pitch_area, path)
     pitch_area
@@ -227,34 +221,27 @@ do_aggregate_pc <-
     }
     
     if(adjust) {
-      # # 15578 is top right blue player
-      # pc %>% 
-      #   filter(frame == 110) %>% # , player != 6717) %>% 
+      # Another way to adjust is to look at large deviances in `player_x - x` and `player_y - y` with respect to I.
+      # pc_bad <-
+      #   pc %>% 
+      #   # filter(frame == 110) %>% # , player != 6717) %>% 
       #   rename(player_x = x, player_y = y) %>% 
-      #   filter(bgcolor != 'red') %>% 
-      #   filter(player_y == min(player_y)) %>% 
-      #   glimpse()
+      #   unnest(data) %>% 
+      #   mutate(dx = player_x - x, dy = player_y - y) %>% 
+      #   mutate(s = sqrt(dx^2 + dy^2))
       
       pc_bad <-
         pc %>% 
-        # filter(frame == 110) %>% # , player != 6717) %>% 
         rename(player_x = x, player_y = y) %>% 
-        unnest(data) # %>% 
-        # mutate(dx = player_x - x, dy = player_y - y) %>% 
-        # mutate(s = sqrt(dx^2 + dy^2)) # %>% 
-        # arrange(desc(I))
+        unnest(data)
       
       bad_players <-
         pc_bad %>% 
-        # filter(player == 15578) %>% 
-        # filter(s > 15) %>% 
-        # arrange(desc(I))
         group_by(frame, player) %>% 
         # Somewhat analogous to 3 standard deviations.
         summarize(n = sum(I > 3)) %>% 
         ungroup() %>% 
-        # arrange(desc(n))
-        # Arbitrary
+        # Identify "bad" players as those who have more than 3 frames with >3 stdev. I.
         filter(n > 3)
       
       if(nrow(bad_players) > 0) {
@@ -287,19 +274,17 @@ do_aggregate_pc <-
       pc %>%
       select(frame, time, player, team, data) %>% 
       unnest(data) %>% 
-      # mutate(across(I, ~case_when(.x > 1 ~ 1, TRUE ~ .x))) %>% 
       group_by(frame, time, team, x, y) %>%
       summarise(team_sum = sum(I, na.rm = TRUE)) %>%
       ungroup() %>%
       pivot_wider(names_from = team, values_from = team_sum) %>%
       mutate(pc = 1 / (1 + exp(home - away)))
-    # browser()
     write_rds(res, path)
     res
   }
 
 # vaep calc ----
-frame_last <- 263
+frame_last <- 263 # Could also infer this from the tracking data, but if it's not loaded
 if(!fs::file_exists(path_export_vaep)) {
   events_nondribble <- 
     here::here('data-raw', '07', 'CL2020_final8_events.csv') %>% 
@@ -362,7 +347,6 @@ if(!fs::file_exists(path_export_vaep)) {
     left_join(types) %>% 
     left_join(bodyparts) %>% 
     left_join(results)
-  events_spadl_init
   events_spadl_init1 <- events_spadl_init %>% head(1)
   
   events_spadl_dummy <-
@@ -379,7 +363,6 @@ if(!fs::file_exists(path_export_vaep)) {
       )
     )
   events_spadl <- bind_rows(events_spadl_dummy, events_spadl_init)
-  # debugonce(Rteta::vaep_get_features)
   vaep_features <- events_spadl %>% Rteta::vaep_get_features() %>% .[spadl_vaep_features]
   vaep_labels <- events_spadl %>% Rteta::vaep_get_labels()
   
@@ -428,22 +411,13 @@ if(!fs::file_exists(path_export_vaep)) {
     tail(1) %>% 
     transmute(id = id + 1, from_frame = frame_last)
   events_vaep <- bind_rows(events_vaep_init, events_vaep_last_dummy)
-  events_vaep
-  # events_vaep %>% 
-  #   filter(id > 0) %>%
-  #    #filter(action_id < max(action_id)) %>% 
-  #   pivot_longer(c(scores:vaep_value)) %>% 
-  #   ggplot() +
-  #   aes(x = from_frame, y = value, color = name) +
-  #   geom_step(size = 1.25)
-  #   # ggforce::geom_bspline(size = 1.25)
-  
+
   write_rds(events_vaep, path_export_vaep)
 } else {
   events_vaep <- read_rds(path_export_vaep)
 }
 
-# tracking data manip ----
+# tracking data manipulaiton ----
 tracking <- 
   here::here('data-raw', '07', 'CL2020_final8_tracking.csv') %>% 
   read_csv() %>% 
@@ -499,9 +473,7 @@ if(!fs::file_exists(path_export_pc)) {
           do_calculate_pc
         )
     )
-  # pc %>% select(frame, player, data) %>% mutate(is_bad = map_lgl(data, is.null)) %>% filter(is_bad) %>% count(frame)
-  # pc_frames <- pc %>% count(frame)
-  # pc %>% mutate(grp = frame %/% 25) %>% count(grp)
+
   pc_agg <-
     pc %>%
     mutate(grp = frame %/% 25) %>%
@@ -517,6 +489,7 @@ if(!fs::file_exists(path_export_pc)) {
 }
 
 # viz-setup ----
+# Use this function when checking specific frames
 .filter_frames <- function(data) {
   res <-
     data # %>% 
@@ -550,10 +523,11 @@ events_vaep_viz <-
   mutate(across(vaep_value, list(cumu = cumsum)))
 events_vaep_viz
 
+# This and the next df are pretty "manual"
 player_labs <-
   tibble(
     from_player_num = c(6, 22, 25, 29, 32),
-    from_player_name = c('Thiago', 'Gnabry', 'Muller', 'Coman', 'Kimmich') # 'Müller'
+    from_player_name = c('Thiago', 'Gnabry', 'Muller', 'Coman', 'Kimmich') # 'Müller' doesn't render nice with `ggtext::geom_richtext()`.
   )
 
 events_vaep_viz_labs <-
@@ -592,8 +566,8 @@ events_vaep_viz_segs <-
   )
 
 # viz ----
-# lab_title <- glue::glue('{play_filt}, UCL 2020 Finals')
-lab_title <- glue::glue('<span style="color:{color_low}">PSG</span> 0-[1] <span style="color:{color_high}">Bayern Munich</span>, UCL 2020 Finals')
+lab_title <- glue::glue('{play_filt}, UCL 2020 Finals')
+# lab_title <- glue::glue('<span style="color:{color_low}">PSG</span> 0-[1] <span style="color:{color_high}">Bayern Munich</span>, UCL 2020 Finals')
 
 viz_pc <-
   pc_agg %>%
@@ -629,12 +603,14 @@ viz_pc <-
     stroke = 1,
     shape = 21
   ) +
+  # # Player labels.
   # geom_text(
   #   data = frames_players %>% .filter_frames() %>% filter(!is.na(player_num)),
   #   aes(label = player_num),
   #   fontface = 'bold',
   #   color = 'black'
   # ) +
+  # # Maybe add labels to pitch?
   # geom_text(
   #   data = 
   #     events_vaep_viz_labs %>% 
@@ -661,11 +637,8 @@ viz_pc <-
 # viz_pc
 # ggsave(plot = viz_pc, filename = here::here('viz.png'), width = 12, height = 12, type = 'cairo')
 
-# viz_pc_gif <- animate_partial(viz_pc, height = 600)
-# gganimate::anim_save(animation = viz_pc_gif, path_export_pc_gif)
 animate_partial(viz_pc, height = 600, renderer = gganimate::file_renderer(dir = dir_anim, prefix = 'viz_pc_', overwrite = TRUE))
 
-# update_geom_defaults('text', list(family = 'Karla', size = 4))
 viz_vaep <-
   events_vaep_viz %>% 
   ggplot() +
@@ -688,7 +661,6 @@ viz_vaep <-
     aes(x = x_player, y = y_player, label = lab_player, group = lab_player),
     size = 5,
     hjust = 1,
-    # vjust = -2,
     lineheight = 0.8,
     family = 'Karla',
     fontface = 'bold',
@@ -731,8 +703,6 @@ viz_vaep <-
   )
 viz_vaep
 
-# viz_vaep_gif <- animate_partial(viz_vaep, height = 200)
-# gganimate::anim_save(animation = viz_vaep_gif, path_export_vaep_gif)
 animate_partial(viz_vaep, height = 200, renderer = gganimate::file_renderer(dir = dir_anim, prefix = 'viz_vaep_', overwrite = TRUE))
 
 # postprocess ----
@@ -764,7 +734,7 @@ animate_partial(viz_vaep, height = 200, renderer = gganimate::file_renderer(dir 
   path
 }
 
-tibble(i = seq(143, frame_last - 1, by = 1)) %>% mutate(path = walk(i, .stack_gifs, overwrite = T))
+tibble(i = seq(1, frame_last - 1, by = 1)) %>% mutate(path = walk(i, .stack_gifs, overwrite = T))
 path_frame_pc_penul <- 'pc' %>% .get_gif_frame_path(n_frame - 1)
 path_frame_vaep_penul <- 'vaep' %>% .get_gif_frame_path(n_frame - 1)
 frame_last_extra <- n_frame + fps * 3
@@ -772,7 +742,6 @@ seq_i_extra <- seq(n_frame, n_frame + frame_last_extra, by = 1)
 'pc' %>% walk2(seq_i_extra, ~.get_gif_frame_path(..1, ..2) %>% fs::file_copy(path_frame_pc_penul, ., overwrite = TRUE))
 'vaep' %>% walk2(seq_i_extra, ~.get_gif_frame_path(..1, ..2) %>% fs::file_copy(path_frame_vaep_penul, ., overwrite = TRUE))
 
-tibble(i = seq(286, frame_last_extra, by = 1)) %>% mutate(path = walk(i, .stack_gifs, overwrite = T))
+tibble(i = seq(frame_last, frame_last_extra, by = 1)) %>% mutate(path = walk(i, .stack_gifs, overwrite = T))
 paths_anim <- dir_anim %>% fs::dir_ls(regex = 'viz_0.*png$')
-# paths_anim %>% length()
 gifski::gifski(paths_anim, gif_file = path_export_gif, width = 900, height = 800, delay = 1 / 25)
