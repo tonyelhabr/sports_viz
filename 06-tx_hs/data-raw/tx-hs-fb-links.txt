@@ -1,0 +1,1223 @@
+=HYPERLINK("https://drive.google.com/open?id=1UCEdcJlOrgxZl3nPDfXSH4oogt-6BOlw","El Paso Americas")
+=HYPERLINK("https://drive.google.com/open?id=1vJgPt3hhU7SQy6nTHwXS0II4JP2_TCL6","El Paso Coronado")
+=HYPERLINK("https://drive.google.com/open?id=1Qbi46ItN1u-O3oBxeAkk4cLNwU4rljij","El Paso Eastlake")
+=HYPERLINK("https://drive.google.com/open?id=1h9HPf0OVGIhoVyDk92E0iUMPaSPC5Qoj","El Paso Eastwood")
+=HYPERLINK("https://drive.google.com/open?id=1gwg0FvS3AEIw5ELIaslfGOvMW5nlDOe0","El Paso Franklin")
+=HYPERLINK("https://drive.google.com/open?id=1to2VneaIhLjjh_2umZ1rtnAmsq36ifLL","El Paso Montwood")
+=HYPERLINK("https://drive.google.com/open?id=1rzmnMhCBvroQuTegd3LQmmHtisD9Nibn","El Paso Pebble Hills")
+=HYPERLINK("https://drive.google.com/open?id=1zc1-BQtsBYMGzLz8AKXFcN0YCyjaknsK","El Paso Socorro")
+=HYPERLINK("https://drive.google.com/open?id=1XYiZBVZqyZiPYPTBPuLgaaS1d_7YmMDi","Abilene")
+=HYPERLINK("https://drive.google.com/open?id=1him_ysrYfMRkmO8BvX_YMzjbhRfQLs1h","Midland")
+=HYPERLINK("https://drive.google.com/open?id=1cCe4ClJ9Pvvtb5-jF6ZXHK21UOsrj3-k","Midland Lee")
+=HYPERLINK("https://drive.google.com/open?id=1MB6CovYHDB_9eFRTh3pzBXoOl_ziH5N5","Odessa")
+=HYPERLINK("https://drive.google.com/open?id=1nce2dOQid60Jp5AwTrdJ2XmdXzXdvD04","Odessa Permian")
+=HYPERLINK("https://drive.google.com/open?id=1aApaCj9UKyoOpcpRvuKJRPQnclJVHvDJ","San Angelo Central")
+=HYPERLINK("https://drive.google.com/open?id=1dlFwsoyHHP2yxy-7w3qt6qzfjtf8JjCA","Wolfforth Frenship")
+=HYPERLINK("https://drive.google.com/open?id=1dVwR2JerKb-RhuCvgu9e7ENISwa1wvld","Euless Trinity")
+=HYPERLINK("https://drive.google.com/open?id=181mwQNJzappcS0vUtcDTAik_VplEcg4e","Fort Worth Boswell")
+=HYPERLINK("https://drive.google.com/open?id=1FY8ELqWG0S26OzxTG68T8_8Frr4FHybW","Fort Worth Chisholm Trail")
+=HYPERLINK("https://drive.google.com/open?id=1CHeQ6td9BLIEElDtMKCHrYckVt-QG5tD","Fort Worth Paschal")
+=HYPERLINK("https://drive.google.com/open?id=1_2A14MudvG9__s4_OOBKngQFDQDynpj5","Haltom City Haltom")
+=HYPERLINK("https://drive.google.com/open?id=1pzaOkgGTuZbXM3XGGeVH3jOyW65gjo3S","Hurst LD Bell")
+=HYPERLINK("https://drive.google.com/open?id=1n8YHix7hwro_hG4v35bDzdxX3SHI5MvO","North Crowley")
+=HYPERLINK("https://drive.google.com/open?id=1IYEyalDZAkX36EziBcCrtRK-UzGih5Mr","Weatherford")
+=HYPERLINK("https://drive.google.com/open?id=1oOf8orNl9Z2GlcS_5Qf037D-HvB9Lke-","Justin Northwest Eaton")
+=HYPERLINK("https://drive.google.com/open?id=16qyXYd7kJd4BNjptG83iczTemFdUckEZ","Keller")
+=HYPERLINK("https://drive.google.com/open?id=1MouCK_Vx2S4A0bBjkb64lHUmu5eq7Ha2","Keller Central")
+=HYPERLINK("https://drive.google.com/open?id=1qb1e9S0XiIeZb8dWLtKzpeAJ9FVR2Auv","Keller Fossil Ridge")
+=HYPERLINK("https://drive.google.com/open?id=197V4j9TBQEzn0TKKWY_rBGKBEEXuio5C","Keller Timber Creek")
+=HYPERLINK("https://drive.google.com/open?id=1Ls58DTb8JTRRQQXY15OJz0CcsJ0JUgHL","Southlake Carroll")
+=HYPERLINK("https://drive.google.com/open?id=1JAodk6lPb6e3MJog44UxbkFJN3OZNv5n","Trophy Club Nelson")
+=HYPERLINK("https://drive.google.com/open?id=12zZRA2tw7nNm-w8YYypoXIA14TpjDupH","Allen")
+=HYPERLINK("https://drive.google.com/open?id=10iuSorCEONk8ELDq_gT02lBlzKe3avs3","Denton Braswell")
+=HYPERLINK("https://drive.google.com/open?id=1Cc9qBq5jn8h_aAmUtDMZY_L0jAL3_IK3","Denton Guyer")
+=HYPERLINK("https://drive.google.com/open?id=1sVws7eIlfkmdCN-m9OrDZg_BFKP4hFNd","Little Elm")
+=HYPERLINK("https://drive.google.com/open?id=1qt6x6ozujCVQAgR-B2owV0vUf8x0RgSk","McKinney")
+=HYPERLINK("https://drive.google.com/open?id=13Gx3CdPbSISevTo042L7MTVZFFcBjC-5","McKinney Boyd")
+=HYPERLINK("https://drive.google.com/open?id=10_ryxRMCLH9PDu5sNBro1XB3OUsJYPNQ","Prosper")
+=HYPERLINK("https://drive.google.com/open?id=1fFvDkf8y-n3F640Pkb0gWBSeTQPCz8yJ","Coppell")
+=HYPERLINK("https://drive.google.com/open?id=1JgiAJz6oyN0XqP605B5xHR-4poZ8OyKs","Flower Mound")
+=HYPERLINK("https://drive.google.com/open?id=19ZrhG4BMMQSHOR7ejyWvRiFw_hOgu29J","Flower Mound Marcus")
+=HYPERLINK("https://drive.google.com/open?id=1vX84eHLWhQqMKlkvN377DlxnybMtd0o4","Lewisville")
+=HYPERLINK("https://drive.google.com/open?id=1-3j9Vj8Z0kyeSDH4hxUK6WyShlXCpZJi","Lewisville Hebron")
+=HYPERLINK("https://drive.google.com/open?id=1sJjovl_QZ-jt6qUC_yB3Z3k0r9VTHe7-","Plano")
+=HYPERLINK("https://drive.google.com/open?id=1KzJr0yh_qFaDGuNk7lhav4hC3n8gd1-G","Plano East")
+=HYPERLINK("https://drive.google.com/open?id=19Ez00h3Mrdh3dYSOMKxixWAc4I3jPwOA","Plano West")
+=HYPERLINK("https://drive.google.com/open?id=1SPVePuSmDOEZTxB9V1ZQpkslur73ruPP","Dallas Jesuit")
+=HYPERLINK("https://drive.google.com/open?id=12rAZuvZL7UCOdFlqcww6tc1inKIq0Gvj","Irving")
+=HYPERLINK("https://drive.google.com/open?id=1tt9idh6iSZJwFrhglBcVUImWKjjE0wnI","Irving Macarthur")
+=HYPERLINK("https://drive.google.com/open?id=1H9Lcxk3mzvtdVe4ByR7Ls0-VMK3BUQxb","Irving Nimitz")
+=HYPERLINK("https://drive.google.com/open?id=1Wwq72AfklBZr-KIs3T-KZiLF3SKtw33F","Richardson")
+=HYPERLINK("https://drive.google.com/open?id=1XkNhbhjkxUpr-oEtxZnc9coczIlt9Bx8","Richardson Berkner")
+=HYPERLINK("https://drive.google.com/open?id=1iPEA2J6CQn9WYqx4KYzm1KeYiWJX0SV-","Richardson Lake Highlands")
+=HYPERLINK("https://drive.google.com/open?id=18mzynbDlJ87YmH_1_8CZQn9wKPs9y9Mb","Richardson Pearce")
+=HYPERLINK("https://drive.google.com/open?id=1zytqAUkWNvXcfMs-ZEXXVVrLuUzv18b0","Arlington")
+=HYPERLINK("https://drive.google.com/open?id=1K9LaW2uUfv-PSfiHMZhT38mIucOYsVq5","Arlington Bowie")
+=HYPERLINK("https://drive.google.com/open?id=11J4u0iSQHzoRxhY5SLdLK9YtSTL3aDqt","Arlington Houston")
+=HYPERLINK("https://drive.google.com/open?id=1v1qDlRN0fmk4tLm70XC41r5KlDwPHtCC","Arlington Lamar")
+=HYPERLINK("https://drive.google.com/open?id=1e_qfevo-JpqVnLQQIjN5rbk_QPTcBE9d","Arlington Martin")
+=HYPERLINK("https://drive.google.com/open?id=16KjqhDsLfqAgFQtU13v7JcxjIaxwyOJt","Grand Prairie")
+=HYPERLINK("https://drive.google.com/open?id=17Cn8mrYA6eLZsPGiAqvb468alHDVAaDf","South Grand Prairie")
+=HYPERLINK("https://drive.google.com/open?id=18JLuoSWa3rVOqS-ytvUdIJg0BV976RmW","Garland")
+=HYPERLINK("https://drive.google.com/open?id=11E9H9IXAhinrxqeJxrweB-DRrIlvNnnp","Garland Lakeview Centennial")
+=HYPERLINK("https://drive.google.com/open?id=1r63tNeOAB1xsh0DXcB4FJCX8c-eOPO92","Garland Naaman Forest")
+=HYPERLINK("https://drive.google.com/open?id=1kwrh9gBUo0YmttDvXAUUW23Y8dQsvKwp","Garland Rowlett")
+=HYPERLINK("https://drive.google.com/open?id=13IBd8R864H4aCXYk8cVt-8D2cjSXkdNk","Garland Sachse")
+=HYPERLINK("https://drive.google.com/open?id=1dWnwZjb_RqdPGM-ob5wSZoGaOk8OV5B2","North Garland")
+=HYPERLINK("https://drive.google.com/open?id=1oPgS5cGlfeFb2DFlQpqE4lTWiALf1ko5","South Garland")
+=HYPERLINK("https://drive.google.com/open?id=1dEfUHXuS84a_t0nSodkDkRia3oKytmG-","Wylie")
+=HYPERLINK("https://drive.google.com/open?id=1eCbufGK2sQOtaNuC-otiHW9L5cbh3Eam","Dallas Skyline")
+=HYPERLINK("https://drive.google.com/open?id=1ga9aNgjZIKwtMrgrc19ZtOxqzm5ZbD25","Mesquite")
+=HYPERLINK("https://drive.google.com/open?id=1iiTENz8oAaPLK-YTnqqkwpkL6QUTvtuX","Mesquite Horn")
+=HYPERLINK("https://drive.google.com/open?id=1_e_1C7gYolMafMNIOhhfdIw758sw_UZa","North Mesquite")
+=HYPERLINK("https://drive.google.com/open?id=1jd0VagWrixnhCkPiCl0TWay2PmJ9e6gF","Rockwall")
+=HYPERLINK("https://drive.google.com/open?id=1WsgawexWVBQJX75dK6RNOeaubK2P057Q","Rockwall Heath")
+=HYPERLINK("https://drive.google.com/open?id=1S-hKM-HSTx9wS1V356-qqzA6QIka-HT5","Tyler Lee")
+=HYPERLINK("https://drive.google.com/open?id=1YfiNAwo6logp_375P1CG1JN1lwWrhE3f","Cedar Hill")
+=HYPERLINK("https://drive.google.com/open?id=1EILL_dxPPxBb2pY24RFIUBYukigpvvGb","DeSoto")
+=HYPERLINK("https://drive.google.com/open?id=1nlFy6MsyuMP0CeLn0I9pa5nJyhMcGgJ2","Duncanville")
+=HYPERLINK("https://drive.google.com/open?id=1OIdWYXXM24-Gms30UzpKqR6EDeQtBRNT","Hewitt-Waco Midway")
+=HYPERLINK("https://drive.google.com/open?id=1XjCiibsGCzUqZj94vwqFsnEJ3D5Z1Rnc","Mansfield")
+=HYPERLINK("https://drive.google.com/open?id=1EJAcZmSe4bgEWPFgXSoBXqE4T5Jjef_f","Mansfield Lake Ridge")
+=HYPERLINK("https://drive.google.com/open?id=1ZHVqM-Yt0PkGQ3SfH5xXLlTdKtoguCal","Waco Consolidated")
+=HYPERLINK("https://drive.google.com/open?id=1Dma55PqTmxhtp2qXmIUa8xfPWFIG6upZ","Waxahachie")
+=HYPERLINK("https://drive.google.com/open?id=1v5hwFsv8TuETaXX5mDyTLjFOqsj4Xm8s","Belton")
+=HYPERLINK("https://drive.google.com/open?id=12H4RhbC3jpDMnElzlpNZC5g0RlQu_qvF","Bryan")
+=HYPERLINK("https://drive.google.com/open?id=1RKbmD_UBCOFWIG2rTnHa--SzIua4U5rE","Copperas Cove")
+=HYPERLINK("https://drive.google.com/open?id=1XPpyRNSgZPQj2C9KDaEQY328VSBqY5G9","Killeen")
+=HYPERLINK("https://drive.google.com/open?id=15xg0oFuO8-X-uPYKwhxlteQ6zDaEeenf","Killeen Ellison")
+=HYPERLINK("https://drive.google.com/open?id=1qOgZ5eZ3KsII-a6ztDQYfzlkv_ZuLY_1","Killeen Harker Heights")
+=HYPERLINK("https://drive.google.com/open?id=1fLdy4G1UJVqWv8fkpVFxsPYvc-2NLtHk","Killeen Shoemaker")
+=HYPERLINK("https://drive.google.com/open?id=1pMVYFpn6gmfSUPbtELzuyV1FtOxMPLl7","Temple")
+=HYPERLINK("https://drive.google.com/open?id=1eToSgzNRn95ENVRKo2F5BER77TKWxmeS","Conroe")
+=HYPERLINK("https://drive.google.com/open?id=1pbYAzWw1JuqcLQ4szzfSaWZ_wRFG53NV","Conroe Grand Oaks")
+=HYPERLINK("https://drive.google.com/open?id=1ztZgYAFIOG8fgcNdB3pZxzmja2C_R_Pn","Conroe Oak Ridge")
+=HYPERLINK("https://drive.google.com/open?id=1UBICQgH_lm9JXoeXIv4XSHB78ZppVN3S","The Woodlands")
+=HYPERLINK("https://drive.google.com/open?id=1TLUqibxxrynZ-PjnuhlkyOUoVjCjm9v3","The Woodlands College Park")
+=HYPERLINK("https://drive.google.com/open?id=11rg0LXQAZrMW4K2_9bScCyh9p56hAphv","Willis")
+=HYPERLINK("https://drive.google.com/open?id=1yg7CS01Re9vgYIjFEiL44iu1yUc68F0r","Aldine")
+=HYPERLINK("https://drive.google.com/open?id=1Fj8QG7z3bdqJsjS1ORml4RC5WVTO9cR7","Aldine Davis")
+=HYPERLINK("https://drive.google.com/open?id=1maFCQI3uOehbhqWdVCt89Sp15R0tzHqU","Aldine Eisenhower")
+=HYPERLINK("https://drive.google.com/open?id=1kBD0hPhmtXF7qDztXNWAgYcy1QmfOJjZ","Aldine Macarthur")
+=HYPERLINK("https://drive.google.com/open?id=1WGN8nKtS7fW0Qw-LMrQB-axKIJi6nMva","Aldine Nimitz")
+=HYPERLINK("https://drive.google.com/open?id=19QCfp2rwQRs7-uwhY8HC75SEOxxNMIFd","Spring")
+=HYPERLINK("https://drive.google.com/open?id=19OSLAIbwdc89e87CD_5K8qr2FSw3oP3i","Spring Dekaney")
+=HYPERLINK("https://drive.google.com/open?id=1XQlkOQxbUjqJNodqf5whvaRsbXdNwhYV","Spring Westfield")
+=HYPERLINK("https://drive.google.com/open?id=1yaU7tuvRg2ptw28aSpl-l-28EVlyrxTe","Klein")
+=HYPERLINK("https://drive.google.com/open?id=1-xRHeHha_b_oAq9LdCYI4Ixr3TZO2SfJ","Klein Cain")
+=HYPERLINK("https://drive.google.com/open?id=1Ng12t52Q6qrqYicSDCQb5ohQVJTW2fkU","Klein Collins")
+=HYPERLINK("https://drive.google.com/open?id=1KQR-PKkbdbxUVnKgTcB67znU9UIJYvsm","Klein Forest")
+=HYPERLINK("https://drive.google.com/open?id=1NeapXwE_eKR-Q39wO9b16gbnEo-Z4oN_","Klein Oak")
+=HYPERLINK("https://drive.google.com/open?id=16mcAENDBJQfTS7TEG2SNSnxHcEbt0Ffq","Tomball")
+=HYPERLINK("https://drive.google.com/open?id=1jXVDUvPexlgq0jm-yijw7kbUUNTXkOiM","Tomball Memorial")
+=HYPERLINK("https://drive.google.com/open?id=1eYVoUVYW1VydTs4AVOqYu3CMua905VTE","Cypress Bridgeland")
+=HYPERLINK("https://drive.google.com/open?id=16h1zpV1P2WmrtbwkEflzD-0moyCFsGpG","Cypress Falls")
+=HYPERLINK("https://drive.google.com/open?id=15_Frm-Bu4zw6JEz6MR4JaERVtL8E3m_q","Cypress Lakes")
+=HYPERLINK("https://drive.google.com/open?id=1p2JkL-yxARtiipf1NLiTWrt0tntRRDok","Cypress Park")
+=HYPERLINK("https://drive.google.com/open?id=164W3yWVl27bBsx9NCos6ObXk_QMLIbxM","Cypress Ranch")
+=HYPERLINK("https://drive.google.com/open?id=1G_BB0D8MsYIVYKWjl0nXqEjA736I2idS","Cypress Springs")
+=HYPERLINK("https://drive.google.com/open?id=1OJHjq_tUOR1EvRc0Thpiid-yQQCRqYt_","Cypress Woods")
+=HYPERLINK("https://drive.google.com/open?id=1UmWT0hPFOPJ8cKK9lFSIc8qdSrhcNL9v","Langham Creek")
+=HYPERLINK("https://drive.google.com/open?id=1qNCtOrV4ZMWthznS5-_J-rxd08k_1AbW","Cypress Creek")
+=HYPERLINK("https://drive.google.com/open?id=17q0k90nihL5l4gGfBkXO5YzdGuYvu8kB","Cypress Fairbanks")
+=HYPERLINK("https://drive.google.com/open?id=1D1zKTEQj8AhM608eyFk1b9zJ4LhdNBmP","Cypress Ridge")
+=HYPERLINK("https://drive.google.com/open?id=1cZ2fx2ZZYo5M8Db7hC-U6DbugqFPO_8g","Houston Memorial")
+=HYPERLINK("https://drive.google.com/open?id=15F4hC2OqkxpT3UECyg7NIwuM-eh5AWhI","Houston Northbrook")
+=HYPERLINK("https://drive.google.com/open?id=1AnySjiYZ7NZW-TKnDz3tmt00WbYlZRAw","Houston Spring Woods")
+=HYPERLINK("https://drive.google.com/open?id=1UXSPoFF9sD-Cwpu7IVXkbL4XimZ5Y_qb","Houston Stratford")
+=HYPERLINK("https://drive.google.com/open?id=1h89cwX4gAys-wnFgGr0-WsCUFNSTlpg3","Jersey Village")
+=HYPERLINK("https://drive.google.com/open?id=19UcCynKdyDsd0u9Qs4gYwIqfYJF1zHmv","Houston Bellaire")
+=HYPERLINK("https://drive.google.com/open?id=1e-XHMx-xlaBdpPrjLG-_VWE4ROhgNvi0","Houston Chavez")
+=HYPERLINK("https://drive.google.com/open?id=1g8_IqLhuPB12L8s5qdYyFH12N1-tDben","Houston Heights")
+=HYPERLINK("https://drive.google.com/open?id=1TZDQccM1h95_omBQFjCz_E8dXw0sOq1O","Houston Lamar")
+=HYPERLINK("https://drive.google.com/open?id=1ZSg9ZzvKYWuV4oOWQ5WkFmSiS1Qhal7z","Houston Sam Houston MST")
+=HYPERLINK("https://drive.google.com/open?id=1kX25Fgfc64e6TB2hwToai0RyslkF8hkE","Houston Westbury")
+=HYPERLINK("https://drive.google.com/open?id=10NpWA2xLfpLPgGOuLFZ1Dn-6cgAoq58F","Houston Westside")
+=HYPERLINK("https://drive.google.com/open?id=1lo1PMYtyKDax2__ojGqJHX5jcJFLAuH-","Katy")
+=HYPERLINK("https://drive.google.com/open?id=14ditqp1ZYVpdhB3pPjw6gaWBLPQwdJ9E","Katy Cinco Ranch")
+=HYPERLINK("https://drive.google.com/open?id=19_WShVyd8LwMKQxZkVvdcr6Ap7ZotmGA","Katy Mayde Creek")
+=HYPERLINK("https://drive.google.com/open?id=1t1CvNHJb-IFoS7XaBcUWk08TRre_bAaL","Katy Morton Ranch")
+=HYPERLINK("https://drive.google.com/open?id=1S0j5Nhe8XUXZ0lzOpgVE82mRJH38PW-c","Katy Seven Lakes")
+=HYPERLINK("https://drive.google.com/open?id=166Jp-c_3xGTabAMbyKWT1dkzPL9aQ49m","Katy Taylor")
+=HYPERLINK("https://drive.google.com/open?id=1h_ARD3mwS73AbjAhOGn69hEv_o-Q_OtJ","Katy Tompkins")
+=HYPERLINK("https://drive.google.com/open?id=1jhH6cXpcR47BFESH-FPMHYPLbBuftnxc","Fort Bend Austin")
+=HYPERLINK("https://drive.google.com/open?id=1lUymBi5JHy7wbaNc57ekPnsKpZN_VLUf","Fort Bend Bush")
+=HYPERLINK("https://drive.google.com/open?id=17OS1vd1R3nKscPr_b3yMU3DkZckVUEtE","Fort Bend Clements")
+=HYPERLINK("https://drive.google.com/open?id=1lyZA8pc_FQ40vqnUcm97XH55WgVqwBxC","Fort Bend Dulles")
+=HYPERLINK("https://drive.google.com/open?id=1EAl51-PUfX0GQa7uadwRBkS_6t1b-vLW","Fort Bend Elkins")
+=HYPERLINK("https://drive.google.com/open?id=1AZ0LU7gd29EikdKL34rJtYKsoMw6NAX8","Fort Bend Ridge Point")
+=HYPERLINK("https://drive.google.com/open?id=1UCZgGtjHEhp-VF7OfzbjfiPnsduo9-Ba","Fort Bend Travis")
+=HYPERLINK("https://drive.google.com/open?id=1M6ofT1vph4cYlkI9JTO8Fks9sZwvJfGU","Richmond George Ranch")
+=HYPERLINK("https://drive.google.com/open?id=13OhZ7tXVETnah2JLbCk7vaXd6x2gl27X","Beaumont West Brook")
+=HYPERLINK("https://drive.google.com/open?id=13obn6oSPxbXFB25PbTbMH_xa73KO5hGP","Galena Park North Shore")
+=HYPERLINK("https://drive.google.com/open?id=1kdtNVaR9DsGS9d8ucNTmRaSz-FDM_UoV","Houston King")
+=HYPERLINK("https://drive.google.com/open?id=1fz1YzWSrSoMN-OEHuVaiHxMHB_6uaP5L","Humble")
+=HYPERLINK("https://drive.google.com/open?id=1H1vX76TJzjyCKQBHZGEJX9e0xe9CV-TL","Humble Atascocita")
+=HYPERLINK("https://drive.google.com/open?id=1S2HJMFcisHp1Gk5fxPsXQC5S5DFiHC4S","Humble Kingwood")
+=HYPERLINK("https://drive.google.com/open?id=1Vd09aHf9Bz0v3WIF8lWuVyL1vqsz3HH8","Humble Summer Creek")
+=HYPERLINK("https://drive.google.com/open?id=1lQVC52GX9-PR9wDk3Z63tCHIAV5f8Dc0","Channelview")
+=HYPERLINK("https://drive.google.com/open?id=1WeJYRM4AbdLM9Aa5qodSGk-V9gwNrQ8R","Deer Park")
+=HYPERLINK("https://drive.google.com/open?id=16Ylw0LitGSaBu1G7Uxj1G5QYySZoMWUT","Pasadena")
+=HYPERLINK("https://drive.google.com/open?id=18vnPUc8XeGwdnPVA2RA_za4T1HHu_Pbf","Pasadena Dobie")
+=HYPERLINK("https://drive.google.com/open?id=1HLMvQs70ZFQpWvr1c5oPa9QqU0EL3Am1","Pasadena Memorial")
+=HYPERLINK("https://drive.google.com/open?id=1rKTa4xUEUnd5k9X-DBJNYQkx68epG7f1","Pasadena Rayburn")
+=HYPERLINK("https://drive.google.com/open?id=1StBIbJXNj3A26TceJW2dfPzcUUCVQpQo","South Houston")
+=HYPERLINK("https://drive.google.com/open?id=1z84YiYB4ArwPyFTrkyJgpNYiWwEjWA_4","Alief Elsik")
+=HYPERLINK("https://drive.google.com/open?id=14N1I6M8DatWZjCL6queemTpfCZyxr_cF","Alief Hastings")
+=HYPERLINK("https://drive.google.com/open?id=1OlapTFaxB44oeGE-crogIqMnnrKMD9Qj","Alief Taylor")
+=HYPERLINK("https://drive.google.com/open?id=1xKQ9OM_mIAYjyyjJCRYVUutkWRkfaxIr","Alvin")
+=HYPERLINK("https://drive.google.com/open?id=1NN58IDW1iQUBX-sd7BWUBqeFyPe5bTOK","Alvin Shadow Creek")
+=HYPERLINK("https://drive.google.com/open?id=1f4MET__l8AFrTNcJj3vbp7qe9U5Ek2r-","Houston Strake Jesuit")
+=HYPERLINK("https://drive.google.com/open?id=13D_C-ld7NXdKmYcvoMBVDsZWLxbRPs9w","Pearland")
+=HYPERLINK("https://drive.google.com/open?id=1t3qPadXwAUmu7NcwZN4nIkYRw1bSx4HE","Pearland Dawson")
+=HYPERLINK("https://drive.google.com/open?id=19kCb8-iFjao66uiGvy_k8tsQ-Gf1H1Wz","Brazoswood")
+=HYPERLINK("https://drive.google.com/open?id=1kkP8BpovJAucKo8DPtTuGwpLXSR6HKCb","Clear Brook")
+=HYPERLINK("https://drive.google.com/open?id=1-m4Fygt5kfUcKCeb7OfSSeHKOH9kPohZ","Clear Creek")
+=HYPERLINK("https://drive.google.com/open?id=14gZs-7VWH7g7a0xVJCvDtNSgbPbhJ_Rc","Clear Falls")
+=HYPERLINK("https://drive.google.com/open?id=1uOo57eJsUuSS-EP_WAEbU5sVzxpUgEdq","Clear Lake")
+=HYPERLINK("https://drive.google.com/open?id=1WfkRo0TQlbRzGUtUo52R8f1RoQV3-xvZ","Clear Springs")
+=HYPERLINK("https://drive.google.com/open?id=1T6xoebVRdLHajatR91JRW8mSeiNx2nwP","Dickinson")
+=HYPERLINK("https://drive.google.com/open?id=1Gt5z1LFn82h_V9WPTtXBbHZB67-S0BpB","Austin Vandegrift")
+=HYPERLINK("https://drive.google.com/open?id=19Br-TGx7zwmOS7W9sW3jm-O6KR8Vf7mW","Cedar Park Vista Ridge")
+=HYPERLINK("https://drive.google.com/open?id=1Wc0SiXQzR2ePLV95qa1vZJHbCkqQtbxG","Hutto")
+=HYPERLINK("https://drive.google.com/open?id=1gy_2Gwy2rtzFgkoTemUssMyR4lKx5D0M","Round Rock")
+=HYPERLINK("https://drive.google.com/open?id=15rMpkiwdi8HdUMfBAyDOa29KFnRXc-rl","Round Rock Cedar Ridge")
+=HYPERLINK("https://drive.google.com/open?id=1ljJYApaToSFTDUNzUahM8-y6NZuEnsKd","Round Rock McNeil")
+=HYPERLINK("https://drive.google.com/open?id=1keZ4Vvle8smIwvvNQ7q9ahSNIcD-5dHS","Round Rock Stony Point")
+=HYPERLINK("https://drive.google.com/open?id=1lMN6WS_4IjZM4y2mN2wvK4Ehxkq8kraL","Round Rock Westwood")
+=HYPERLINK("https://drive.google.com/open?id=1aq0kGY1NJn8LxvNwLPe9pEJti-H3TiyF","Austin Akins")
+=HYPERLINK("https://drive.google.com/open?id=1Vn5iHEmzLIqdHGT9WL9dzGURHK5EcP9m","Austin Bowie")
+=HYPERLINK("https://drive.google.com/open?id=1o-d0opkTL-qLKceWE3_XNh--4jEDowuj","Austin Del Valle")
+=HYPERLINK("https://drive.google.com/open?id=1gBj97IGgU341arU4q9xeeX-FSVlQlKs7","Austin Lake Travis")
+=HYPERLINK("https://drive.google.com/open?id=1YqMYGDT3Tx5wPASE3LKtSOFmNMkm6bRa","Austin Stephen F. Austin")
+=HYPERLINK("https://drive.google.com/open?id=1_jfJwqQBFoaHguJyW17lBD95IycdPMYy","Austin Westlake")
+=HYPERLINK("https://drive.google.com/open?id=1xi5A1xakSPHfXD3c_hkID7-VGo0BGreX","Buda Hays")
+=HYPERLINK("https://drive.google.com/open?id=1XVSnRHv_pr8er3UoWZco0j-5-t9OaI2e","San Marcos")
+=HYPERLINK("https://drive.google.com/open?id=1fxDHc78ai4YA40Y85DTfskct0CTAZC2-","Cibolo Steele")
+=HYPERLINK("https://drive.google.com/open?id=1cGFCvF9Kp0yVVFbJwLAJHtc6J8Vh4uRH","Converse Judson")
+=HYPERLINK("https://drive.google.com/open?id=1XRMlXTZinJ2oIgy7dSRwcdue6YTGrxo7","New Braunfels")
+=HYPERLINK("https://drive.google.com/open?id=1Klsa0GLA5DT2JJjkOncbVxVLUp4FDSJZ","San Antonio East Central")
+=HYPERLINK("https://drive.google.com/open?id=1yFcOux2B5Ic_aoT1npxqBTSr82jD7Fo7","San Antonio South San Antonio")
+=HYPERLINK("https://drive.google.com/open?id=1-L3jZZBSHesLLVvCOf2mKV_-yw4kdfUE","San Antonio Wagner")
+=HYPERLINK("https://drive.google.com/open?id=1uaPridQ1XM7njO9FeKHGBUSFRhmIy5eu","Schertz Clemens")
+=HYPERLINK("https://drive.google.com/open?id=1eeV7Fm1repkUI-Me6uuZsNrCHgLgYY6h","Smithson Valley")
+=HYPERLINK("https://drive.google.com/open?id=1A5AAupYLZ3SWunI2-xVOF93Exx_ahpav","San Antonio Brandeis")
+=HYPERLINK("https://drive.google.com/open?id=1HyQeH_pekQAEqOECtj_ncif3KBWBiL6y","San Antonio Churchill")
+=HYPERLINK("https://drive.google.com/open?id=166GBPEE8AAe5nTRqGM4YX1ew6rrMGk5k","San Antonio Clark")
+=HYPERLINK("https://drive.google.com/open?id=1KJB1Q9G4Cxzq85gptr21mDDnsf5Tz031","San Antonio Johnson")
+=HYPERLINK("https://drive.google.com/open?id=11F5Nsdfnvc-z7I4T_C3mGLBpvTJ0G1UN","San Antonio LEE")
+=HYPERLINK("https://drive.google.com/open?id=1ureDM0YmVG5v_dNMXn1IZ3QpqS5LqGH0","San Antonio Macarthur")
+=HYPERLINK("https://drive.google.com/open?id=18rDCzwDXnS8yEt3r7PqkI9hWw0Tq_M5S","San Antonio Madison")
+=HYPERLINK("https://drive.google.com/open?id=1gO1ORy-F-9PURefTHUW5NVqoWzB-yCZ9","San Antonio Reagan")
+=HYPERLINK("https://drive.google.com/open?id=19qrM3m_oqW2pFuZWW1UZ_DSkXqoAH_2l","San Antonio Roosevelt")
+=HYPERLINK("https://drive.google.com/open?id=1Ru9DaC3bWh-D9KnIgugRPIZHSWlAt4Ti","San Antonio Brennan")
+=HYPERLINK("https://drive.google.com/open?id=1ojWkKuvx_514B2KYc0RyLUfMuEi945TG","San Antonio Harlan")
+=HYPERLINK("https://drive.google.com/open?id=1Aa46KL-Oe99gKIZSWuWQtQpz5t_HmSou","San Antonio Holmes")
+=HYPERLINK("https://drive.google.com/open?id=1UdP3oeaX_kOeGmGL5ALpZ7iNHq7Frwfn","San Antonio Jay")
+=HYPERLINK("https://drive.google.com/open?id=1H01g6jmqW8KgixQCVqf3b_ya0BPTaIZe","San Antonio Marshall")
+=HYPERLINK("https://drive.google.com/open?id=1y-9osk3GSxVaeV7MEhPZeGCouMwN5JhB","San Antonio O'Connor")
+=HYPERLINK("https://drive.google.com/open?id=1Fymf000PYU97zE0n9J3V__fCwHVIFdff","San Antonio Stevens")
+=HYPERLINK("https://drive.google.com/open?id=1AfvemBoGJMuDvUZobiLUXrvW9bQhNupr","San Antonio Taft")
+=HYPERLINK("https://drive.google.com/open?id=1P_IDt1uK9WQFHl6ESFMGxTOg6-JQr2PY","San Antonio Warren")
+=HYPERLINK("https://drive.google.com/open?id=1K_4VPJe6wrJHhqAigc1nCea2IpRh7iaZ","Del Rio")
+=HYPERLINK("https://drive.google.com/open?id=1VHKp1Ez3j2nLi8jtI986-BuK8QUhy_P9","Eagle Pass")
+=HYPERLINK("https://drive.google.com/open?id=1jnZjgApyRB4zegP0f2zXXCVvpsggV2LK","Laredo Alexander")
+=HYPERLINK("https://drive.google.com/open?id=1kPXRE8VzTOyk-DVi5sCXit_grtZD4w9Q","Laredo Nixon")
+=HYPERLINK("https://drive.google.com/open?id=15Hs2-rmpM72PyDwzwVV4BiR9BFGbMmwu","Laredo United")
+=HYPERLINK("https://drive.google.com/open?id=1iQrBVr8h_i71kGLL_sgVS4iaMMmQBUfb","Laredo United Johnson")
+=HYPERLINK("https://drive.google.com/open?id=1hQgWOJqZYIZqwO0at7lHs8t1j1UcNz9M","Laredo United South")
+=HYPERLINK("https://drive.google.com/open?id=1hxwnqRjnhsis29nUXgfCdAuymXex2ZF0","Edinburg")
+=HYPERLINK("https://drive.google.com/open?id=1ONPOw1FiUYRBkhT1OY8Gx77KaOhbZLFL","Edinburg Economedes")
+=HYPERLINK("https://drive.google.com/open?id=1-8-8RH8Z3GGbLt3FG6ahOz0SaiQTR2AF","Edinburg North")
+=HYPERLINK("https://drive.google.com/open?id=19g3SZUnWO2IxJYf0IfWCmmCQ2bl018XH","Edinburg Vela")
+=HYPERLINK("https://drive.google.com/open?id=1Mv6v5mIRKcLKPlfdzbpKTy4TDAKrHYtz","La Joya")
+=HYPERLINK("https://drive.google.com/open?id=1rTqjjZRzwriJcAyHXSi818HHOSnQyDbO","La Joya Juarez-Lincoln")
+=HYPERLINK("https://drive.google.com/open?id=1mcZjfdExrWdHfEhLouvh-l1ylo1_xF_p","Mission")
+=HYPERLINK("https://drive.google.com/open?id=1yayViRa4byhm_sI8Sp8k11lDnNXNExMU","Pharr-San Juan-Alamo")
+=HYPERLINK("https://drive.google.com/open?id=1lTEfYNZZr-DR2IZL3MWGE_NxYH8aHLvU","Pharr-San Juan-Alamo North")
+=HYPERLINK("https://drive.google.com/open?id=1E8yuoFJyGqGz_G0SqcRBEC2x3Q_uwPmL","Brownsville Hanna")
+=HYPERLINK("https://drive.google.com/open?id=1RuIZpjlAqyCgn_PsoxVmsMY27-tjxb4j","Brownsville Rivera")
+=HYPERLINK("https://drive.google.com/open?id=1vPrsnBsEE96ItIgIuHavXIFYtq-yHpyF","Donna North")
+=HYPERLINK("https://drive.google.com/open?id=1KIsetZ_sNiCDSqKXEmrKT1KIT28R3qdW","Harlingen")
+=HYPERLINK("https://drive.google.com/open?id=1X2RJ1R6hKeka-VOOQgS_l53WDTym340D","Harlingen South")
+=HYPERLINK("https://drive.google.com/open?id=1-Emi7tyHHgOmX0_cS5zEc6iKe-utkqcP","Los Fresnos")
+=HYPERLINK("https://drive.google.com/open?id=1xc77Pb0PaNjDreOvpZL2JO1kbz5dXiQf","San Benito")
+=HYPERLINK("https://drive.google.com/open?id=1uLD4YBO_4N_fV34Gt4Y9f7axOjdPJumI","Weslaco")
+=HYPERLINK("https://drive.google.com/open?id=1ja-M4X9IkxyB1izs__C1ygupaHiRXVgk","Canutillo")
+=HYPERLINK("https://drive.google.com/open?id=1oPf-TIA6sXyxSM1l_Kj8Wn8zV6loyeLX","Clint Horizon")
+=HYPERLINK("https://drive.google.com/open?id=1fCzzqgpU0AQ-ipSPw-I6KavFaUH9lpcS","El Paso Hanks")
+=HYPERLINK("https://drive.google.com/open?id=1vA3vKI8c0A4qw0pYeEmNerQUBGneWGkS","El Paso Parkland")
+=HYPERLINK("https://drive.google.com/open?id=1GiuWJdBszdWKl5vngKU7oDb8nUMhxBhu","El Paso Ysleta")
+=HYPERLINK("https://drive.google.com/open?id=1NS8glhv2DvdZrq4jmsQsLbB90ujN-m6X","El Paso Andress")
+=HYPERLINK("https://drive.google.com/open?id=1csCeZniL97_MVRbtM1L15ZMPpERA-taI","El Paso Austin")
+=HYPERLINK("https://drive.google.com/open?id=19Lz5tq_cqZRjqeoRTJA3wnIDdnv3D5_4","El Paso Bowie")
+=HYPERLINK("https://drive.google.com/open?id=1udJgRFDKfURJulC0UyNxe-CzdLUKjPry","El Paso Burges")
+=HYPERLINK("https://drive.google.com/open?id=1GNitQ_Z3nWB6ap7zH-Uy37g2x5o2_NBG","El Paso High")
+=HYPERLINK("https://drive.google.com/open?id=12lxPwQeJMpDCyF38Eb_Rd047yL8NWjMb","El Paso Irvin")
+=HYPERLINK("https://drive.google.com/open?id=1d6Kzgnajxr9x7klwk3P_jvaq_cFQPFuH","El Paso Jefferson")
+=HYPERLINK("https://drive.google.com/open?id=1n_gfR2q3-tNIB1_lWGq8zRHLuuolHaS9","Abilene Wylie")
+=HYPERLINK("https://drive.google.com/open?id=1kJSvEwKVpCaDs-XvdIweePmwAcYbUgam","Amarillo Randall")
+=HYPERLINK("https://drive.google.com/open?id=1sYWEeHNFa4WqiyLwPqII3nVWHrLPpRvH","Lubbock Cooper")
+=HYPERLINK("https://drive.google.com/open?id=1fwMAaYkQng_n1SokwnZ7xdFTR-1h6c2X","Plainview")
+=HYPERLINK("https://drive.google.com/open?id=19wiiCup5MSwF9XWEu4tloT3oQ8bvE3-1","Wichita Falls")
+=HYPERLINK("https://drive.google.com/open?id=1epQfFr4-6vFW-eOqhr7WgMOKse8fS6nm","Wichita Falls Rider")
+=HYPERLINK("https://drive.google.com/open?id=1O71-PT674D31LzyLEaOxJlvtSdwEsVrE","Carrollton Creekview")
+=HYPERLINK("https://drive.google.com/open?id=1HT8_R8W639fKzr2RDJRqrXTB6YrEjaeb","Fort Worth North Side")
+=HYPERLINK("https://drive.google.com/open?id=1-Dq9ng1p251G8Y9uRwXkNi3WrI_O62VK","Fort Worth Polytechnic")
+=HYPERLINK("https://drive.google.com/open?id=1tMBO6rWLrBMqZU79_Yeu_6-CDvcqzoJ2","Fort Worth South Hills")
+=HYPERLINK("https://drive.google.com/open?id=1QOaFpkKCY3XErMGFP9xiqXjYcpRfiEiC","Fort Worth Southwest")
+=HYPERLINK("https://drive.google.com/open?id=1WQu0ZF2zx-AmJRpFrOhOlyAWc1nvU8sv","Fort Worth Trimble Tech")
+=HYPERLINK("https://drive.google.com/open?id=1mq0BV2UC0D_FoaWkMzFdmvkeHCc30NFo","Fort Worth Wyatt")
+=HYPERLINK("https://drive.google.com/open?id=1WNX4U4FN4Qr3AUa6nipDAMhrwDzqqaDO","Grapevine")
+=HYPERLINK("https://drive.google.com/open?id=1tT76mCpCBfoGzSp6nZ6bjFhNM3eqiQzX","Aledo")
+=HYPERLINK("https://drive.google.com/open?id=16WRaxuTfCzz_uGfyKujMIx8Jd9UvRLpJ","Arlington Seguin")
+=HYPERLINK("https://drive.google.com/open?id=1oOB_AuVVoyi2xkZlzZmIWHuP7JceQFYM","Burleson")
+=HYPERLINK("https://drive.google.com/open?id=1zc8hsqn6K5ix78go3xZSFh-OuLRT-avr","Cleburne")
+=HYPERLINK("https://drive.google.com/open?id=1POQ5fRbdsWUJNVzzwDSsFhxZgjoKnYa4","Everman")
+=HYPERLINK("https://drive.google.com/open?id=1zCFQQBoYSkXN7nAeAexpfF4D5E3i_Ca1","Joshua")
+=HYPERLINK("https://drive.google.com/open?id=1FWpAnsVd7SoQ9YxSdf0p--LT6ctsMQsp","Mansfield Timberview")
+=HYPERLINK("https://drive.google.com/open?id=12iMKsQq5_ml045j-NWQAeGdi9cUWQkTR","Waco University")
+=HYPERLINK("https://drive.google.com/open?id=1t6dXt9L5fo5sIpr_A1inXQwngj0dlWpe","Dallas Adamson")
+=HYPERLINK("https://drive.google.com/open?id=1PvrGC7cxPydI4xSQtETyxIj-J55a0l0j","Dallas Conrad")
+=HYPERLINK("https://drive.google.com/open?id=1-GmhsJhe8L1WQZMG_e2p_RWPYPP457yN","Dallas Hillcrest")
+=HYPERLINK("https://drive.google.com/open?id=1CCOEonX0mEj9GeXNNheRYEJeHV_ezENb","Dallas Jefferson")
+=HYPERLINK("https://drive.google.com/open?id=1pi7EWqwegwkcT7Rfs9b347CBEuqQpjPj","Dallas Kimball")
+=HYPERLINK("https://drive.google.com/open?id=1ewfeT2HnAVZNvOpsEvZBteusLnlWIBuI","Dallas Seagoville")
+=HYPERLINK("https://drive.google.com/open?id=1rpC2oXHujWQA3rnlGJv9Ra2bzNeLDahn","Dallas South Oak Cliff")
+=HYPERLINK("https://drive.google.com/open?id=1Ss_W8qcxqe7qRxrV06cqVt9BHs7U-Qj6","Dallas Spruce")
+=HYPERLINK("https://drive.google.com/open?id=1VXYWlWFfnLzsc_npHdFY2-locQNgJqHH","Mesquite Poteet")
+=HYPERLINK("https://drive.google.com/open?id=1NbWEGMThJ5D176ZUpH-ijqiaPcaAZbOU","Denison")
+=HYPERLINK("https://drive.google.com/open?id=140CgpMKx1CXwZ7UPhxeLTT4Aa0OG_7hy","Frisco")
+=HYPERLINK("https://drive.google.com/open?id=1IPLhUoYnTGJOgr6R12yzryM7Hbiayi3b","Frisco Lebanon Trail")
+=HYPERLINK("https://drive.google.com/open?id=1AcM201ZCfDGRVLh8qSTozb5VomcEkbtk","Frisco Liberty")
+=HYPERLINK("https://drive.google.com/open?id=1WUtak10GTSFaJQZLD7NHcUAxj8h3KSvq","Frisco Memorial")
+=HYPERLINK("https://drive.google.com/open?id=1Cu5XpC_akLTwMflq8_MUVbukDG7sUxI_","Lake Dallas")
+=HYPERLINK("https://drive.google.com/open?id=1zR2hpM06neTKgpq_uD6UiUJdkvijnJha","Lucas Lovejoy")
+=HYPERLINK("https://drive.google.com/open?id=1Ma2CaMoPPdcVA6RHr3doIUaiAAKM6ddR","Princeton")
+=HYPERLINK("https://drive.google.com/open?id=1pPVLo3kT-Yw9YbLFLTjljEYjNyciBjH5","Corsicana")
+=HYPERLINK("https://drive.google.com/open?id=1d-c8dNcoNO5vGI8-0r8JexhRT5rfEtoO","Crandall")
+=HYPERLINK("https://drive.google.com/open?id=1wiZF927BB89g9i8Rzdac_wt118ovaL0h","Ennis")
+=HYPERLINK("https://drive.google.com/open?id=1qm-H1vANbBOWL60350nfAOeK1L8XLsK5","Forney")
+=HYPERLINK("https://drive.google.com/open?id=17rrERznS3YEVKR3UsgVG_lZmqYoAKlAA","Greenville")
+=HYPERLINK("https://drive.google.com/open?id=15rEt55xNIuKh9ko9uE1bJpQMZzl7yzi6","North Forney")
+=HYPERLINK("https://drive.google.com/open?id=15K0YR-3SDESJt1dFxM9Ek1c-MZ5LdRo9","Royse City")
+=HYPERLINK("https://drive.google.com/open?id=1KS1od94_hKTZAYAVYBn7hV4RfMCwR3Lh","Sulphur Springs")
+=HYPERLINK("https://drive.google.com/open?id=1RutzXvUFWNCbz5nLI_pHlROoFDBs_2U-","Hallsville")
+=HYPERLINK("https://drive.google.com/open?id=1ertOMsT6nhlgnTX70xlueJ4UNrmpQaMp","Jacksonville")
+=HYPERLINK("https://drive.google.com/open?id=1DU0hGEfYEquzTkN5fSV2Ki5Vd-IuPfdu","Longview Pine Tree")
+=HYPERLINK("https://drive.google.com/open?id=1tdq5jsmr7-N3ZGJnro04GCAhPW39ce5S","Marshall")
+=HYPERLINK("https://drive.google.com/open?id=1UeuQgkqmpALZz7lFR3oOHOKreol3567K","Mount Pleasant")
+=HYPERLINK("https://drive.google.com/open?id=1giKSl9I_dCxhQrUtCo5ke-L5DC-5xjh0","Nacogdoches")
+=HYPERLINK("https://drive.google.com/open?id=1yOUjgbyBpkLfouegSFYQNxVvs5nzk_O9","Texarkana Texas")
+=HYPERLINK("https://drive.google.com/open?id=1wrQhY8r36Oopvps78xgL1hdtbdjpuN6k","Whitehouse")
+A&M Consolidated
+=HYPERLINK("https://drive.google.com/open?id=1-QrPLo7mG0XP0_LN-rzrtItd0B-SUkiy","Bryan Rudder")
+=HYPERLINK("https://drive.google.com/open?id=1brwx_tXAmHytMZGOGKwu6txATcEHa5TX","Huntsville")
+=HYPERLINK("https://drive.google.com/open?id=1Ku_mwSvuheD7QzkJt1FrPb5Rbl1uZr2K","Lamar Fulshear")
+=HYPERLINK("https://drive.google.com/open?id=1tcCr899WR1PYRB-yNHkko8zloNk_jM3d","Montgomery")
+=HYPERLINK("https://drive.google.com/open?id=1fKxZYabj7APvzQJS8nobjs1HfF-V6WIj","Montgomery Lake Creek")
+=HYPERLINK("https://drive.google.com/open?id=1szvjcGv-HeOaL7btXMsOfP4_5zCCt694","Rosenberg Lamar Consolidated")
+=HYPERLINK("https://drive.google.com/open?id=1YCMpDjhsqd5w2IdkVZ6diORHdZ3fOqaG","Fort Bend Marshall")
+=HYPERLINK("https://drive.google.com/open?id=12XOtunSDdcQDaaWuK0RL9hgPZfcE9hdz","Fort Bend Willowridge")
+=HYPERLINK("https://drive.google.com/open?id=1GJRhfeP138TRGblIYbHr3DErSmvxPjz4","Galena Park")
+=HYPERLINK("https://drive.google.com/open?id=17dWyGSSx3ttH4fU_hfvsBf2tvuID63Ww","Houston Austin")
+=HYPERLINK("https://drive.google.com/open?id=1u4M5Ltc47LNHzLDfNbTKjX17ZFWyoX_J","Houston Madison")
+=HYPERLINK("https://drive.google.com/open?id=1XeXy-VVSb0FK-SHQL_IRNOjlcLi9B4ts","Houston Northside")
+=HYPERLINK("https://drive.google.com/open?id=1QRYeXiwTq8apWG_O6khdEPv4XLKZ6k6P","Houston Sharpstown")
+=HYPERLINK("https://drive.google.com/open?id=1PmtPvr1Pu010uLN8cAMgB5KN7YuNhB_E","Houston Sterling")
+=HYPERLINK("https://drive.google.com/open?id=1NdNiyx7-DV2Msp6f_9L75AqgTbbnh0mV","Houston Waltrip")
+=HYPERLINK("https://drive.google.com/open?id=1BPdn5f7FV8rKgUYXxRvchRr2nm1N-aTE","Barbers Hill")
+=HYPERLINK("https://drive.google.com/open?id=1lvAlzdlql0TqTdyJJ5cNslwHPvodMMR_","Crosby")
+=HYPERLINK("https://drive.google.com/open?id=1N3fXR_cMe1j-3b-CxabXsGyGvRH7B53o","Dayton")
+=HYPERLINK("https://drive.google.com/open?id=1It-pfOPbFwEFKNtrMxhIo_Lr0X6f0hVp","Humble Kingwood Park")
+=HYPERLINK("https://drive.google.com/open?id=1FDy79OUsik7872EtnaO7Y2PT9x9m-oKf","Nederland")
+=HYPERLINK("https://drive.google.com/open?id=1kjIg-z-NCE8-1C1Tx63KYXvdwd7IvXQV","Port Neches-Groves")
+=HYPERLINK("https://drive.google.com/open?id=1EgKxiwig8ziVoxa33xhOTG8oke_1Bwsd","Santa Fe")
+=HYPERLINK("https://drive.google.com/open?id=1k40ni6OlXefVfil0VLeiPw9Ke7B68kW2","Texas City")
+=HYPERLINK("https://drive.google.com/open?id=1hg4Div36FynmyNcAMaIFwVjtRevbcmXK","Bastrop")
+=HYPERLINK("https://drive.google.com/open?id=1HcGTz6Wu48P09bLlM2_PQph5aQIRvdB1","Bastrop Cedar Creek")
+=HYPERLINK("https://drive.google.com/open?id=15Cs8O1W19jhWSrhHnYFtFHEAoYwgkhQS","Brenham")
+=HYPERLINK("https://drive.google.com/open?id=1JpHx9shJkaq2-bRv7Xk9r39yDyo2TlI6","Elgin")
+=HYPERLINK("https://drive.google.com/open?id=1wFRFJ2UpLuQ3FQm028qEUgyBp_hNkwYN","Georgetown East View")
+=HYPERLINK("https://drive.google.com/open?id=1esut04W40XEhqXBWl0B3LlXluruHZ4GU","Leander Glenn")
+=HYPERLINK("https://drive.google.com/open?id=1qPYHX0xZT3TU6Lk2xBb-GQRC0SQjEk8v","Leander Rouse")
+=HYPERLINK("https://drive.google.com/open?id=1OsXs8mmxOBuWvtjvVKbd5d1TUsLgVb5Q","Pflugerville Connally")
+=HYPERLINK("https://drive.google.com/open?id=1hu1d5OBa-dao9YcCHr_yhKFzKLu80Nj7","Austin Crockett")
+=HYPERLINK("https://drive.google.com/open?id=1UHN_lpl1hOL6kEJfrRB_otcb_Bkve-1m","Austin McCallum")
+=HYPERLINK("https://drive.google.com/open?id=1OmtNS2_nKwhCcE90VCSbCiYV-44gWVVm","Austin Navarro")
+=HYPERLINK("https://drive.google.com/open?id=1FcAfmwtyYg0T_toHY3eDBZ22NqEPpgiR","Austin North East")
+=HYPERLINK("https://drive.google.com/open?id=1Ds_MdgU9tmJmhp3zL15boHlOAVad41ih","Austin Travis")
+=HYPERLINK("https://drive.google.com/open?id=1-7Rw8zwwUcx3DZKY3PMdg7B-GVfNqlEU","Liberty Hill")
+=HYPERLINK("https://drive.google.com/open?id=11Rxmh8uf2oED_oAWZf4CLcZUSZ0UYuTS","Marble Falls")
+=HYPERLINK("https://drive.google.com/open?id=1joEATBxAkEiIx4Wamca9IEDKmQroxZDL","Boerne Champion")
+=HYPERLINK("https://drive.google.com/open?id=1IHmienRWIWgZHlfnEknmszvDP5CKJOV2","Castroville Medina Valley")
+=HYPERLINK("https://drive.google.com/open?id=1I5nnMzeLeU30sN69BnO2VnZJVrhUWcQL","Floresville")
+=HYPERLINK("https://drive.google.com/open?id=1nbxvyHzKCkKXosLxqkV0HB0qDw9JkkkB","Kerrville Tivy")
+=HYPERLINK("https://drive.google.com/open?id=1VxabnsFPSVop7o8uRajGeIJJ9FZkcVcC","Lockhart")
+=HYPERLINK("https://drive.google.com/open?id=1ptgGYH0rHBhYzuH9G_7un9RCdEGt8FSG","San Antonio Alamo Heights")
+=HYPERLINK("https://drive.google.com/open?id=1EeBJamLB3ZNU7J_70EL_v62Pb-bhWxCo","Edcouch-Elsa")
+=HYPERLINK("https://drive.google.com/open?id=1f8a7jwNaL3Tps5iZVoQa-iI1iLRSxgmo","Mercedes")
+=HYPERLINK("https://drive.google.com/open?id=1OXgIOq8NDsPOPtotfjGvHGKlLHENnCAs","Mission Sharyland")
+=HYPERLINK("https://drive.google.com/open?id=1Ua8D19kxjdFfvgtAEHZb1zSb2tBXj8-k","Mission Sharyland Pioneer")
+=HYPERLINK("https://drive.google.com/open?id=1ciURbjj5Sf6UkKaPj0K4fVO7m72O4cl0","Mission Veterans Memorial")
+=HYPERLINK("https://drive.google.com/open?id=1jLrPl4tMqNDbSU2vbGZECosVkQRJS7Z7","Pharr-San Juan-Alamo Memorial")
+=HYPERLINK("https://drive.google.com/open?id=1hS2ykfKQL_Lxbad8051EgS75Jr7AFW54","Pharr-San Juan-Alamo Southwest")
+=HYPERLINK("https://drive.google.com/open?id=1wmbAAKlSnlH7WfmcIONEwrhCS-yc5ZS_","Pharr-San Juan-Alamo Valley View")
+=HYPERLINK("https://drive.google.com/open?id=1PkNEbYxBHLd3KnTMii1bwEY9pSpxngGA","Roma")
+=HYPERLINK("https://drive.google.com/open?id=1NN2WahsZsp33xJRGfDQcOjwvnmCTnv01","El Paso Bel Air")
+=HYPERLINK("https://drive.google.com/open?id=1EBx9EEG4tCo6TlbMo9Qfj3k9vuXMi_VB","El Paso Chapin")
+=HYPERLINK("https://drive.google.com/open?id=1a6jReVDN84I1IPiADRrc0-BSRpBOSJoF","El Paso Del Valle")
+=HYPERLINK("https://drive.google.com/open?id=1OSSdPFHqmTOgeCBdPyXKcsqRCKk448LE","El Paso El Dorado")
+=HYPERLINK("https://drive.google.com/open?id=1F9qZaMIZIgAYRtXBEq6qKzzgFeCMO26U","Amarillo")
+=HYPERLINK("https://drive.google.com/open?id=1j-kF_aPiuEEXmzzdfw7LC3A-rQbQw4od","Amarillo Caprock")
+=HYPERLINK("https://drive.google.com/open?id=16JDQYvI1qmspAVMitT3nfG3ENzvVzl2j","Amarillo Palo Duro")
+=HYPERLINK("https://drive.google.com/open?id=1cVf3jHewCMUOdWoxsGG5m_zmfYy39yW_","Amarillo Tascosa")
+=HYPERLINK("https://drive.google.com/open?id=1iv7ICL72RkdKkPUVvqSq3uCn-8811Yui","Lubbock")
+=HYPERLINK("https://drive.google.com/open?id=1qNNPrstBojytVAQ3A4fkK4uxZ5Esq0-F","Lubbock Coronado")
+=HYPERLINK("https://drive.google.com/open?id=1rr450V9qgVAXY_QTue9ymI1Iy8aeX0sa","Lubbock Monterey")
+=HYPERLINK("https://drive.google.com/open?id=1yfUJTwIk7NPoVHTZNtFn2fcOaEMSMtjo","Abilene Cooper")
+=HYPERLINK("https://drive.google.com/open?id=1ccfZQtuS9eYiE-4EjIIZd0d2GlNM74IB","Azle")
+=HYPERLINK("https://drive.google.com/open?id=12nyJ7VJSqd0eP9ZecQjvrBqnQ4XURP8a","Crowley")
+=HYPERLINK("https://drive.google.com/open?id=1sOih2a8DFyhx12RTV_AioaBjSlaR98Ig","Fort Worth Arlington Heights")
+=HYPERLINK("https://drive.google.com/open?id=1lHTueQLO9uU6oyLNgCCgJm_GnppDdZqa","Fort Worth Brewer")
+=HYPERLINK("https://drive.google.com/open?id=1xTBpN_gEWMw5VM-2zHjg78Bzf2Tupqh5","Granbury")
+=HYPERLINK("https://drive.google.com/open?id=1L7X0zdmIGKKnVL3vRVoSMdLvodCLq3KG","Justin Northwest")
+=HYPERLINK("https://drive.google.com/open?id=1VV0TcEp_Z3zLqZYVSt9cKhYwjuCq_k5s","Saginaw")
+=HYPERLINK("https://drive.google.com/open?id=1gEmj-9ierlhe1CT0qvydaU9EjqLtIN35","Burleson Centennial")
+=HYPERLINK("https://drive.google.com/open?id=1mO_zKGJBrOTCOtXksmk8-2LJ-bFlKMKt","Colleyville Heritage")
+=HYPERLINK("https://drive.google.com/open?id=1RGXvjIHSA9HqPCPQZhsgq37W_tpLlL-i","Mansfield Legacy")
+=HYPERLINK("https://drive.google.com/open?id=1fc6lO0zUbVsHN63vEXQVs-kyfOT4N4YI","Mansfield Summit")
+=HYPERLINK("https://drive.google.com/open?id=1_xhw6U8rWarXtmAK_POFUWUU3jF7NJbz","Midlothian")
+=HYPERLINK("https://drive.google.com/open?id=194ixfSVdXM1ZEvRcMB8m2t6xeAWxeuIO","North Richland Hills Birdville")
+=HYPERLINK("https://drive.google.com/open?id=1JiK7EmnnjepSZbBsWhMdvKNbqcCpuufm","North Richland Hills Richland")
+=HYPERLINK("https://drive.google.com/open?id=1POHzt59zMFkKIHyYO5tX0Z41Hjlbjuor","Red Oak")
+=HYPERLINK("https://drive.google.com/open?id=1QS_boiZzIWUIvWkdgagDvbuwHRqbtfeq","Denton")
+=HYPERLINK("https://drive.google.com/open?id=11wyilqFcf3seNSnH5-1pFdtaxUq_HM9j","Denton Ryan")
+=HYPERLINK("https://drive.google.com/open?id=1KaUkCZ27F3n23gm-OCCr-vmTv2XK-mTT","Frisco Centennial")
+=HYPERLINK("https://drive.google.com/open?id=1tgQHVRycqBsTsKwJNHXUa_2GHYvi9uak","Frisco Heritage")
+=HYPERLINK("https://drive.google.com/open?id=1WG36ilkakQalAABykx8MFZZX2mBssoyt","Frisco Independence")
+=HYPERLINK("https://drive.google.com/open?id=1vhamFu34qsYYMwqx90yPKOMJECfL0tzr","Frisco Lone Star")
+=HYPERLINK("https://drive.google.com/open?id=13WPsOngZ3kwYE4NpTcwFF250Zzfb096m","Frisco Reedy")
+=HYPERLINK("https://drive.google.com/open?id=1UKb_DdjXTqXaH0SvKwDVgy1ulMhtU0dF","Frisco Wakeland")
+=HYPERLINK("https://drive.google.com/open?id=1oh8PvItzgIdQZibRXVd5MEfgwNKBf2lH","The Colony")
+=HYPERLINK("https://drive.google.com/open?id=1ZFf5P7OfsCm3sI0-3VW0-0ikcN37Er9R","Carrollton Newman Smith")
+=HYPERLINK("https://drive.google.com/open?id=1IcVstMTFoMSoWc1jLM1NXgzU4pUV2cfz","Carrollton R.L. Turner")
+=HYPERLINK("https://drive.google.com/open?id=1Aasgrc-K9ZY3Cm_4h70UlDu-EnegjYKw","Dallas Adams")
+=HYPERLINK("https://drive.google.com/open?id=1zJ-xf6dyRzWD8XPiAlUN58HkH7c28rWz","Dallas Molina")
+=HYPERLINK("https://drive.google.com/open?id=11wu7EWaMqZRzwL49w8nE3YwZQn5IhVsK","Dallas Samuell")
+=HYPERLINK("https://drive.google.com/open?id=1hJg1xjp70u38kibKxsW9Zw1I6NbaJSWM","Dallas Sunset")
+=HYPERLINK("https://drive.google.com/open?id=1J-jQ0MeC88_wiUCUYzPctrV7GK_qc8Tu","Dallas Wilson")
+=HYPERLINK("https://drive.google.com/open?id=1MEBHZBz5DjcxvFw81-vdQ0UYvc0c7Lm9","Dallas WT White")
+=HYPERLINK("https://drive.google.com/open?id=1ldXC0wIGP5CYqhnNObyIX-IkCfcJqIoZ","Lancaster")
+=HYPERLINK("https://drive.google.com/open?id=1nGsL_6YphiHltdFjSzO5OAZBlGsoTclW","Highland Park")
+=HYPERLINK("https://drive.google.com/open?id=1R1pPhuQ2q5qiTj3evsPA5ReJH-ef6XYA","Longview")
+=HYPERLINK("https://drive.google.com/open?id=1jmvJs2ZOxnR_aWlxyJycR-AfRRc4XCux","McKinney North")
+=HYPERLINK("https://drive.google.com/open?id=1O3JsCjSVpml72q_0knJK1NhxE3qQN6Gd","Sherman")
+=HYPERLINK("https://drive.google.com/open?id=1z1fkxsqyq4_4UrA0YrJcSE6fJ7_-_Nf4","Tyler John Tyler")
+=HYPERLINK("https://drive.google.com/open?id=17SEmLMrGsyU7eE06yYtHDslHddji_D83","West Mesquite")
+=HYPERLINK("https://drive.google.com/open?id=1Wq4a3YNIQhUXq8wJGFkBaICJijxrSzXt","Wylie East")
+=HYPERLINK("https://drive.google.com/open?id=1KfgTHau6veeUoVVV6xcUZRdM1hzUZ2Mz","Cleveland")
+=HYPERLINK("https://drive.google.com/open?id=1soNIbzPf1-skneuKPB_7tvHB8CbtzSKu","College Station")
+=HYPERLINK("https://drive.google.com/open?id=1cGsPB7S8PxzhidZODtY-R8pwoICopx8H","Conroe Caney Creek")
+=HYPERLINK("https://drive.google.com/open?id=1rduWx_PRDhrm-fG6TvIGHRT7LNFhU32_","Lufkin")
+=HYPERLINK("https://drive.google.com/open?id=1NBH9n9hRHk_tX3XsxKzC0yMXCGTaK-CV","Magnolia")
+=HYPERLINK("https://drive.google.com/open?id=1b3tX4Sac_DTr1Sz4IV5BC8fC8K8psuit","Magnolia West")
+=HYPERLINK("https://drive.google.com/open?id=1lUk3Uou9z3io1goVfqtUX2wJObIdi8_4","New Caney")
+=HYPERLINK("https://drive.google.com/open?id=1eNjXXdok7SKie8IWgnhWw2FoAnEdJ4gx","New Caney Porter")
+=HYPERLINK("https://drive.google.com/open?id=1J0Sq_yZ8SrcbkaqZFm6XxFAmqnBZpFjj","Waller")
+=HYPERLINK("https://drive.google.com/open?id=1IYmemn-IdVvnc8RXqaE_u8KAmR7QaSiK","Baytown Goose Creek Memorial")
+=HYPERLINK("https://drive.google.com/open?id=1c_zvFJl9GBQzWx8phVFvj05zHFvzpp72","Baytown Lee")
+=HYPERLINK("https://drive.google.com/open?id=1-iU84ElE38GYuzeEGDlVqecKLlGtlRLg","Baytown Sterling")
+=HYPERLINK("https://drive.google.com/open?id=1iomeMGPZ2SXaQNinqkidocGhXTQnp3Lp","Beaumont United")
+=HYPERLINK("https://drive.google.com/open?id=1P_nuqbpra5sJcLAGcpUvsvnzBcG3PJ5l","Friendswood")
+=HYPERLINK("https://drive.google.com/open?id=1MOEhgGOtj0M00mrI0JAYb50Zsb0Endv-","Galveston Ball")
+=HYPERLINK("https://drive.google.com/open?id=1G9_3EyRc3rq29yrdjNX60wKfnGAZvImb","La Porte")
+=HYPERLINK("https://drive.google.com/open?id=1_WWepX_3u27HrbPt3IEgw2PwKTwA1KI4","Port Arthur Memorial")
+=HYPERLINK("https://drive.google.com/open?id=19UvzGG5uywpU-4YokeWTU8rBahTKEwSn","Angleton")
+=HYPERLINK("https://drive.google.com/open?id=1X2Za8uT4cFaNYHBieYxw8DWrmndyRIXg","Fort Bend Hightower")
+=HYPERLINK("https://drive.google.com/open?id=1SOhKyHGa0k2My0gq4-42AsstE_6LQXvU","Fort Bend Kempner")
+=HYPERLINK("https://drive.google.com/open?id=1ld3ZnC-3ereS20b0ZiKCrHzlt6pdxi1c","Houston Milby")
+=HYPERLINK("https://drive.google.com/open?id=11rLY1nwK3DlsUk25e3kC_JPztBGPkH9C","Houston Wisdom")
+=HYPERLINK("https://drive.google.com/open?id=1CPVXERJxoBcczDh5BE86bfWG3T3GzpiN","Katy Paetow")
+=HYPERLINK("https://drive.google.com/open?id=1FP3iah7UPwRtm02UFCvFhAYXMY54u09g","Manvel")
+=HYPERLINK("https://drive.google.com/open?id=1r2yXbJN0OH0JSOAn5CT6ISHnDpMpsief","Richmond Foster")
+=HYPERLINK("https://drive.google.com/open?id=1kAta64TvnoUK-FXVIxPVNKJf67Z6pa1k","Rosenberg Terry")
+=HYPERLINK("https://drive.google.com/open?id=1cf0Y4nsoBsX1sQKtNAOm5KgpoNoloHfz","Austin Anderson")
+=HYPERLINK("https://drive.google.com/open?id=1zrnExkJqAwnuBiZc8Y2cfO2tYijUvC2A","Cedar Park")
+=HYPERLINK("https://drive.google.com/open?id=1-BKmIvpv-8X_SgQ4B09WnmPPd2IEbJDL","Georgetown")
+=HYPERLINK("https://drive.google.com/open?id=1hrZRx2qP_H-ep-uLWywCS3Iqa8YJ1HTp","Leander")
+=HYPERLINK("https://drive.google.com/open?id=1aWIqMFyQBlXXqEw98VCtETjC5FErivbI","Manor")
+=HYPERLINK("https://drive.google.com/open?id=1iIkXwIdAv-jesoiYXiCKISZJBQJ5AX3I","Pflugerville")
+=HYPERLINK("https://drive.google.com/open?id=1QiZVHBQhJIEmA_FEa5651wc2_uNOXenN","Pflugerville Hendrickson")
+=HYPERLINK("https://drive.google.com/open?id=1UG2fTwKhfr_Ama9AQqVvgA8Ivt42hErd","Pflugerville Weiss")
+=HYPERLINK("https://drive.google.com/open?id=1VkWH0VvhUowuw0zsC6KWcTcdiW9CBbop","Buda Johnson")
+=HYPERLINK("https://drive.google.com/open?id=1Fl5rB-oNNHClMFcfJibJDUbI1BVUp1oX","Dripping Springs")
+=HYPERLINK("https://drive.google.com/open?id=1As5bufsg4R2GWakUyYt-_coppnXuXxYN","Kyle Lehman")
+=HYPERLINK("https://drive.google.com/open?id=1yznWFPDxRFChvQB0b5maxtCPAHIPHOWe","New Braunfels Canyon")
+=HYPERLINK("https://drive.google.com/open?id=1t_RvJ-IPdiKIuW2UX8BF2RhCsuPFymSg","San Antonio Harlandale")
+=HYPERLINK("https://drive.google.com/open?id=1TU8NQFPyVi5x0f9a4BYf-BI5OD1C779M","San Antonio McCollum")
+=HYPERLINK("https://drive.google.com/open?id=144rz-9AZcZVbqLXmO9BcIK-JlwNnth4I","San Antonio Veterans Memorial")
+=HYPERLINK("https://drive.google.com/open?id=1_MO4ej3VVg50LzRgsSnmdDZD3sGpixE5","Seguin")
+=HYPERLINK("https://drive.google.com/open?id=12Kb3z0qBqq6TqgpuMBScC39sFvCxBN_k","San Antonio Brackenridge")
+=HYPERLINK("https://drive.google.com/open?id=1RFNHw8SfkQgQZWPgh_ByT1WNovtJso8d","San Antonio Burbank")
+=HYPERLINK("https://drive.google.com/open?id=1NxjE3GdcUQjfTuFDKSXea7xXuVN6_T57","San Antonio Edison")
+=HYPERLINK("https://drive.google.com/open?id=1RHcg2uxpNdnRaEEgLl_wjo2dVppXo0ol","San Antonio Highlands")
+=HYPERLINK("https://drive.google.com/open?id=1SuWPSEC4LMl1_bQRq143QDNWHyuAzC2e","San Antonio Houston")
+=HYPERLINK("https://drive.google.com/open?id=1J0hqzu0Jjf6jBJhTG1ObTEVisFgnw67P","San Antonio Jefferson")
+=HYPERLINK("https://drive.google.com/open?id=1ZjPS-nvrp0ZqnFTxqQs6QVok67fu5HIU","San Antonio Kennedy")
+=HYPERLINK("https://drive.google.com/open?id=1PZHJtx8oSq_Atc5s0wS3A6wKh08bsO9o","San Antonio Lanier")
+=HYPERLINK("https://drive.google.com/open?id=1N6BYU1KpQrdq0iL2S3TRzwT0F1k3vAdi","San Antonio Memorial")
+=HYPERLINK("https://drive.google.com/open?id=12ce3sxMXvUSKqJkd3yp13ozDfEV-ZucG","Eagle Pass Winn")
+=HYPERLINK("https://drive.google.com/open?id=1fdN312mqkWbrAJhMRwT0kr9oou6U8KEf","Laredo Cigarroa")
+=HYPERLINK("https://drive.google.com/open?id=1amrmt6YCLC3cPrkxJkO2sHstFZgA2YI0","Laredo Martin")
+=HYPERLINK("https://drive.google.com/open?id=1FpYg43U8MJnVA36FswQfnyYkZdiSVpqw","Rio Grande City")
+=HYPERLINK("https://drive.google.com/open?id=1wbGaDSzqgMB6XP3dSkJfFV50BPcG1J3d","San Antonio Southside")
+=HYPERLINK("https://drive.google.com/open?id=1GnPq3V26tR1_jtqMSwRcPYqF3nJUklUw","San Antonio Southwest")
+=HYPERLINK("https://drive.google.com/open?id=1aWTsodkRcSi3-FZWqDGKaEC_aPPvKyOJ","San Antonio Southwest Legacy")
+=HYPERLINK("https://drive.google.com/open?id=1-xEIWnObOiY5uwkIBRwMW4abeMpOGeGK","Corpus Christi Carroll")
+=HYPERLINK("https://drive.google.com/open?id=142TQcb4Xmt_qywVce6S0V7Y39K1IGKoc","Corpus Christi Flour Bluff")
+=HYPERLINK("https://drive.google.com/open?id=1vfXkXV9h6Zcd6jxrFRj6PtA5Q1QUbKO9","Corpus Christi King")
+=HYPERLINK("https://drive.google.com/open?id=14R7ipCW8vIVKjYYXmswCCSPB-r096Ej_","Corpus Christi Moody")
+=HYPERLINK("https://drive.google.com/open?id=1imDh2-YogpwP0hh6W3aJYtj8hNEyIyAk","Corpus Christi Ray")
+=HYPERLINK("https://drive.google.com/open?id=1GN1e38nKWQKpYibXvkLOHrm1uj5j4Ps4","Corpus Christi Veterans Memorial")
+=HYPERLINK("https://drive.google.com/open?id=1WF6nv636mYGfldjdNcV79VKgpgePhNW0","Gregory-Portland")
+=HYPERLINK("https://drive.google.com/open?id=1Os-jn88g8oqab-i12l6y0OIR31aPQmG3","Victoria East")
+=HYPERLINK("https://drive.google.com/open?id=1pveO_-_363AFZRPOWmyj7hqJj2K5_ekA","Victoria West")
+=HYPERLINK("https://drive.google.com/open?id=1chYjvqgxHAuK_WT-DXh_Wb59Jq-ttUnK","Brownsville Lopez")
+=HYPERLINK("https://drive.google.com/open?id=1UBhqgHYPj0y7J-zsHMk3d_CyaUPZqQOe","Brownsville Pace")
+=HYPERLINK("https://drive.google.com/open?id=1LyoX5eFiWJfHVMO14q0xfjRxQngPyK0R","Brownsville Porter")
+=HYPERLINK("https://drive.google.com/open?id=1qUb8gZMTZHtPGc-fc-0FkqbC7bMoZOgT","Brownsville Veterans Memorial")
+=HYPERLINK("https://drive.google.com/open?id=1Iu1FUXXXo581gw2vHKo4WvzhBAZsSW_i","Donna")
+=HYPERLINK("https://drive.google.com/open?id=1do3uFuBEkzMxjT9VH2ZzYlp6Vr-qUNNJ","La Joya Palmview")
+=HYPERLINK("https://drive.google.com/open?id=1mQ0uxnGJinepOmIThwQBAhG9y-JiEucl","McAllen")
+=HYPERLINK("https://drive.google.com/open?id=1qLqDs2Vk1txRTfeDw1hQTAwK7So89dot","McAllen Memorial")
+=HYPERLINK("https://drive.google.com/open?id=1_hkPx-76Gp-NItZM2LEeLh-zwsxR6z89","McAllen Rowe")
+=HYPERLINK("https://drive.google.com/open?id=1--uJ1FwPHujYqMIK91_H45NP8EH-MYhJ","Weslaco East")
+Midland Greenwood
+Monahans
+Pecos
+Snyder
+Sweetwater
+Borger
+Levelland
+Lubbock Estacado
+Perryton
+Seminole
+Bridgeport
+Graham
+Iowa Park
+Mineral Wells
+Vernon
+Aubrey
+Celina
+Krum
+Sanger
+Van Alstyne
+Ferris
+Glen Rose
+Godley
+Hillsboro
+Venus
+Caddo Mills
+Farmersville
+Nevada Community
+Quinlan Ford
+Sunnyvale
+Wills Point
+Brownsboro
+Bullard
+Canton
+Mexia
+Van
+Gilmer
+Longview Spring Hill
+Paris North Lamar
+Pittsburg
+Texarkana Liberty-Eylau
+Texarkana Pleasant Grove
+China Spring
+Gatesville
+Jarrell
+Robinson
+Salado
+Waco Connally
+Carthage
+Center
+Jasper
+Madisonville
+Rusk
+Shepherd
+Bridge City
+Hamshire-Fannett
+Liberty
+Orangefield
+Silsbee
+Sour Lake Hardin-Jefferson
+West Orange-Stark
+Bellville
+Brookshire Royal
+La Marque
+Sealy
+Sweeny
+Wharton
+Cuero
+Giddings
+Gonzales
+La Grange
+Navasota
+Smithville
+=HYPERLINK("https://drive.google.com/open?id=1ugLKT0B4w_98gxMSR--ddor-KISZ1zI6","Austin Eastside Memorial")
+Geronimo Navarro
+Manor New Tech
+Wimberley
+Bandera
+Carrizo Springs
+Crystal City
+Devine
+Hondo
+Pearsall
+Corpus Christi West Oso
+Ingleside
+Port Isabel
+Raymondville
+Rio Hondo
+Robstown
+Rockport-Fulton
+Sinton
+Clint
+Clint Mountain View
+El Paso Riverside
+Fabens
+San Elizario
+=HYPERLINK("https://drive.google.com/open?id=1HpIBRAn5M-DiKjKaUzV-qn4Mul-t8xeD","Andrews")
+Big Spring
+Fort Stockton
+San Angelo Lake View
+Canyon
+Dumas
+Hereford
+Pampa
+Burkburnett
+Decatur
+Gainesville
+Lake Worth
+Springtown
+Wichita Falls Hirschi
+=HYPERLINK("https://drive.google.com/open?id=1JpDe4vRu__aXCawTVwicSelWNotyXQfx","Alvarado")
+Brownwood
+Midlothian Heritage
+Stephenville
+Waco La Vega
+Waxahachie Life
+Fort Worth Benbrook
+Fort Worth Carter-Riverside
+Fort Worth Castleberry
+Fort Worth Diamond Hill-Jarvis
+Fort Worth Dunbar
+Fort Worth Eastern Hills
+Fort Worth Western Hills
+Kennedale
+=HYPERLINK("https://drive.google.com/open?id=1ZKCTOT9gwte0ksCqBvIqL3cMd7AUtmZy","Anna")
+Argyle
+Carrollton Ranchview
+Kaufman
+Melissa
+Paris
+Terrell
+Dallas Carter
+Dallas Lincoln
+Dallas Pinkston
+Dallas Roosevelt
+Dallas Wilmer-Hutchins
+North Dallas
+Athens
+Henderson
+Kilgore
+Lindale
+Mabank
+Palestine
+Tyler Chapel Hill
+Huffman Hargrave
+Little Cypress-Mauriceville
+Livingston
+Lumberton
+Splendora
+Vidor
+Houston Furr
+Houston Kashmere
+Houston North Forest
+Houston Scarborough
+Houston Washington
+Houston Wheatley
+Houston Worthing
+Houston Yates
+Bay City
+El Campo
+Freeport Brazosport
+Needville
+Stafford
+West Columbia
+=HYPERLINK("https://drive.google.com/open?id=1me9MdjNoQHbiO_DF_7KXkd3-3RI92ZRM","Austin LBJ")
+Burnet
+Fischer Canyon Lake
+Fredericksburg
+Lampasas
+Taylor
+Boerne
+La Vernia
+Pleasanton
+Somerset
+Uvalde
+=HYPERLINK("https://drive.google.com/open?id=1GBgOlyQ9gJnNqLkdz0qHfKl-wFhjQdQd","Alice")
+Beeville Jones
+Corpus Christi Calallen
+Corpus Christi Miller
+Corpus Christi Tuloso-Midway
+Port Lavaca Calhoun
+Hidalgo
+Kingsville King
+La Feria
+Rio Grande City La Grulla
+Zapata
+=HYPERLINK("https://drive.google.com/open?id=1LHUJ9Y1CT8aU2aGvCBrhAPUFr8AbQIv3","Alpine")
+Anthony
+Crane
+Tornillo
+Ballinger
+Bangs
+Brady
+Ingram Moore
+San Angelo Grape Creek
+Sonora
+=HYPERLINK("https://drive.google.com/open?id=1IrfrJ91adOOEvdWFq48RTLiKeR2BtrEY","Amarillo Highland Park")
+Canadian
+Childress
+Dimmitt
+Friona
+Spearman
+Tulia
+=HYPERLINK("https://drive.google.com/open?id=1OvSLW9pCjUp3eq8lg4JQ5IS3NM2sXMVk","Abernathy")
+Big Lake Reagan County
+Coahoma
+Idalou
+Lubbock Roosevelt
+Stanton
+Comanche
+Dublin
+Eastland
+Jacksboro
+Merkel
+Millsap
+Callisburg
+Henrietta
+Holliday
+Nocona
+Valley View
+Wichita Falls City View
+Blooming Grove
+Corsicana Mildred
+Dallas Gateway Charter
+Edgewood
+Palmer
+Rice
+Scurry-Rosser
+Bells
+Blue Ridge
+Gunter
+Leonard
+Lone Oak
+Sadler S&S Consolidated
+Whitewright
+Arp
+Big Sandy Harmony
+Grand Saline
+New London West Rusk
+Quitman
+Troup
+Winona
+Daingerfield
+De Kalb
+Hooks
+Omaha Pewitt
+Paris Chisum
+Pattonville Prairiland
+Redwater
+Diana New Diana
+Elysian Fields
+Harleton
+Hughes Springs
+Ore City
+Queen City
+Waskom
+=HYPERLINK("https://drive.google.com/open?id=1OFZLXm6aSb4fXfbnALRLtT729DgOyvA6","Anderson-Shiro")
+Corrigan Camden
+Hemphill
+Kountze
+New Waverly
+Newton
+Warren
+Buffalo
+Clifton
+Florence
+Franklin
+Lexington
+Riesel
+Rogers
+=HYPERLINK("https://drive.google.com/open?id=1wM0MYMSkq3mTQ-JAgft3dhK8j2IJHeAw","Altair Rice Consolidated")
+Danbury
+East Bernard
+Tidehaven
+Van Vleck
+Wallis Brazos
+Dilley
+George West
+Karnes City
+Natalia
+Nixon Smiley
+Poth
+Stockdale
+Banquete
+Hebbronville
+Monte Alto
+Odem
+Santa Rosa
+Skidmore-Tynan
+Taft
+Brownfield
+Denver City
+Kermit
+Lamesa
+Shallowater
+Slaton
+=HYPERLINK("https://drive.google.com/open?id=14cMzjXz9QukR01mHeQkcJWKfBlcgvFOM","Amarillo River Road")
+Bushland
+Dalhart
+Littlefield
+Muleshoe
+Breckenridge
+Clyde
+Early
+San Angelo TLC
+Tuscola Jim Ned
+Wall
+Bowie
+Boyd
+Brock
+Paradise
+Pilot Point
+Ponder
+Whitesboro
+Bonham
+Commerce
+Emory Rains
+Howe
+Mineola
+Mount Vernon
+Pottsboro
+Winnsboro
+Atlanta
+Gladewater
+Gladewater Sabine
+Jefferson
+New Boston
+Tatum
+White Oak
+Dallas A Plus Academy
+Dallas Life Oak Cliff
+Dallas Madison
+Grandview
+Maypearl
+West
+Whitney
+Eustace
+Fairfield
+Groesbeck
+Kemp
+Malakoff
+Teague
+Coldspring-Oakhurst
+Crockett
+Diboll
+Elkhart
+Huntington
+Palestine Westwood
+Trinity
+=HYPERLINK("https://drive.google.com/open?id=1RqgdAu_fwkRkeJ381zdIl7LFRc0dhebN","Anahuac")
+Buna
+Cleveland Tarkington
+Hardin
+Kirbyville
+Winnie East Chambers
+Woodville
+Caldwell
+Cameron Yoe
+Little River Academy
+Lorena
+McGregor
+Rockdale
+Troy
+Boling
+Columbus
+Hallettsville
+Hempstead
+Hitchcock
+Yoakum
+Blanco
+Comfort
+Lago Vista
+Llano
+Luling
+Cotulla
+Jourdanton
+Lytle
+Marion
+Poteet
+=HYPERLINK("https://drive.google.com/open?id=1uWjlZnE1DycKtQsn5KVHtV1LPRO2FGvt","San Antonio Cole")
+Universal City Randolph
+Aransas Pass
+Edna
+Goliad
+Mathis
+Orange Grove
+Palacios
+Vanderbilt Industrial
+Bishop
+Corpus Christi London
+Falfurrias
+Lyford
+Progreso
+San Diego
+Santa Gertrudis Academy
+Iraan
+McCamey
+Plains
+Seagraves
+Wink
+Bovina
+New Home
+Ropesville Ropes
+Smyer
+Sudan
+Booker
+Gruver
+Stratford
+Sunray
+Vega
+Clarendon
+Memphis
+Shamrock
+Wellington
+Wheeler
+Crosbyton
+Hamlin
+Lockney
+Ralls
+Roscoe
+Archer City
+Electra
+Munday
+Olney
+Quanah
+Seymour
+Chico
+Era
+Muenster
+Petrolia
+Windthorst
+=HYPERLINK("https://drive.google.com/open?id=1SNeGiIsTPaI0nIRj7TLmaU0uxyq2e4Nl","Albany")
+Cross Plains
+Hico
+Meridian
+Ranger
+Santo
+Clarksville
+Cumby
+Detroit
+Maud
+Quinlan Boles
+Simms Bowie
+Bremond
+Chilton
+Frost
+Hubbard
+Mart
+Wortham
+Colmesneil
+Cushing
+Lovelady
+Mount Enterprise
+Overton
+Pineland West Sabine
+Tenaha
+Burkeville
+Deweyville
+Evadale
+High Island
+Hull-Daisetta
+Sabine Pass
+Bartlett
+Burton
+Granger
+Iola
+Milano
+Snook
+Somerville
+Christoval
+Eldorado
+Junction
+Menard
+Miles
+Rocksprings
+Benavides
+Bruni
+Charlotte
+D’Hanis
+La Pryor
+Sabinal
+=HYPERLINK("https://drive.google.com/open?id=1IB3YEyjUPWTgirrl9CxTNAywRa66xAuR","Agua Dulce")
+Falls City
+Louise
+Pettus
+Runge
+Woodsboro
+Yorktown
+Malakoff Cross Roads
+Boys Ranch
+Farwell
+Olton
+Panhandle
+Sanford-Fritch
+Stinnett West Texas
+Floydada
+Hale Center
+New Deal
+Post
+Sundown
+Tahoka
+=HYPERLINK("https://drive.google.com/open?id=1k6ab-L5LhPDOkEM1YRh50Iez3gUfTadM","Anson")
+Colorado City Colorado
+Forsan
+Haskell
+Hawley
+Stamford
+Cisco
+Coleman
+De Leon
+Goldthwaite
+San Saba
+Winters
+=HYPERLINK("https://drive.google.com/open?id=1Iv8265Mg05cuBGeqOZJ9J_jqAMB_L1R7","Alvord")
+Collinsville
+Lindsay
+Tioga
+Tom Bean
+Trenton
+=HYPERLINK("https://drive.google.com/open?id=1FbmeuDK6v0VD1QAYt3Z-b30DpYYop0Gh","Alba Golden")
+Bogata Rivercrest
+Celeste
+Como-Pickton
+Cooper
+Honey Grove
+Wolfe City
+Bosqueville
+Crawford
+Hamilton
+Itasca
+Rio Vista
+Tolar
+Valley Mills
+Axtell
+Cayuga
+Dawson
+Italy
+Kerens
+Marlin
+Beckville
+Big Sandy
+Frankston
+Gladewater Union Grove
+Hawkins
+Linden-Kildare
+Price Carlisle
+Garrison
+Joaquin
+San Augustine
+Saratoga West Hardin
+Shelbyville
+Timpson
+=HYPERLINK("https://drive.google.com/open?id=1U9tLsMa2K2-XBTYOXfe3lp0-TTtmXFat","Alto")
+Centerville
+Grapeland
+Groveton
+Jewett Leon
+Normangee
+Bruceville-Eddy
+Hearne
+Holland
+Moody
+Rosebud-Lott
+Thorndale
+Thrall
+Flatonia
+Ganado
+Schulenburg
+Shiner
+Weimar
+Brackettville Brackett
+Center Point
+Harper
+Johnson City
+Mason
+Ozona
+Bloomington
+Freer
+Kenedy
+Refugio
+Three Rivers
+Ben Bolt
+La Villa
+Premont
+Riviera Kaufer
+Santa Maria
+Follett
+Hedley
+Lefors
+Miami
+Groom
+Hart
+Silverton
+=HYPERLINK("https://drive.google.com/open?id=1LHzggncNfGhDCX_JqBusEst_24t1eYHM","Amherst")
+Anton
+Cotton Center
+Lazbuddie
+Whitharral
+=HYPERLINK("https://drive.google.com/open?id=1j1FDGrgdzZQmLeNpZkT6FSHUKjDqzA5P","Ackerly Sands")
+Lamesa Klondike
+Loop
+Wilson
+Balmorhea
+Grandfalls-Royalty
+Sanderson
+Sierra Blanca
+Blackwell
+Loraine
+Trent
+=HYPERLINK("https://drive.google.com/open?id=1pywZNu7A_ToqBLuQZ1ryaCyPx-RJb-Nq","Afton Patton Springs")
+Guthrie
+Jayton
+Matador Motley County
+Southland
+Benjamin
+Chillicothe
+Rule
+Lueders-Avoca
+Moran
+Throckmorton
+Woodson
+Bowie Gold-burg
+Forestburg
+Ladonia Fannindel
+Trinidad
+Bluff Dale
+Gordon
+Gustine
+Stephenville Three Way
+Strawn
+Cranfills Gap
+Iredell
+Kopperl
+Morgan
+Walnut Springs
+Apple Springs
+Calvert
+Chester
+Oakwood
+Buckholts
+Dime Box
+Mount Calm
+Oglesby
+Blanket
+Brookesmith
+Rising Star
+Sidney
+Valera Panther Creek
+Cherokee
+Lohn
+Mullin
+Richland Springs
+Rochelle
+Morton
+Happy
+McLean
+Turkey Valley
+White Deer
+Kress
+Lorenzo
+Nazareth
+Petersburg
+Springlake-Earth
+Crowell
+Knox City
+Paducah
+Spur
+Vernon Northside
+Gail Borden County
+Meadow
+O'Donnell
+Wellman-Union
+Whiteface
+Fort Davis
+Imperial Buena Vista
+Marfa
+Van Horn
+Garden City
+Lenorah Grady
+Rankin
+Aspermont
+Hermleigh
+Ira
+Roby
+Rotan
+Bronte
+Robert Lee
+Roscoe Highland
+Sterling City
+Westbrook
+Bryson
+Newcastle
+Perrin-Whitt
+Saint Jo
+Campbell
+Fruitvale
+Gilmer Union Hill
+Leverett's Chapel
+Savoy
+Avalon
+Blum
+Bynum
+Covington
+Milford
+=HYPERLINK("https://drive.google.com/open?id=1RJ2n4l1FkCNnmMD3DvBqlMFiiTdUFmxL","Abbott")
+Aquilla
+Coolidge
+Gholson
+Penelope
+Baird
+Gorman
+Lingleville
+May Tigers
+Santa Anna
+Eden
+Irion County
+Paint Rock
+Veribest
+Water Valley
+Evant
+Jonesboro
+Lometa
+Zephyr
+Leakey
+McDade
+Medina
+Nueces Canyon
+Prairie Lea

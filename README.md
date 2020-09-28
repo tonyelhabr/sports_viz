@@ -1,53 +1,68 @@
 
-This repo stores my code and plots for sports-related plots.
+This repo stores my code and plots for sports-related plots. Any “small”
+data is stored in the repo. Otherwise, it’s saved locally and
+gitignor’ed here.
 
 ![NBA Western Conference 2020 League Restart Playoff Seeding
-Probabilities Bar Chart](plots/nba_seed_p.png
+Probabilities Bar Chart](01-nba_seed_p/nba_seed_p.png
 "NBA Western Conference 2020 League Restart Playoff Seeding Probabilities Bar Chart")
 
 ![English Premier League 2019-20 First 30 Games Points Minus Expected
-Points Lollipop Chart](plots/epl_before_break_pts_minus_xpts.png
+Points Lollipop
+Chart](02-epl_since_break/epl_before_break_pts_minus_xpts.png
 "English Premier League 2019-20 First 30 Games Points Minus Expected Points Lollipop Chart")
 
 ![English Premier League 2019-20 First 30 Games Points vs. Expected
-Points Scatter Plot](plots/epl_before_break_pts_vs_xpts.png
+Points Scatter Plot](02-epl_since_break/epl_before_break_pts_vs_xpts.png
 "English Premier League 2019-20 First 30 Games Points vs. Expected Points Scatter Plot")
 
 ![English Premier League 2019-20 Last 9 Games Simulated Points
-vs. Actual Points Ridge Plot](plots/epl_after_break_pts_sim.png
+vs. Actual Points Ridge
+Plot](02-epl_since_break/epl_after_break_pts_sim.png
 "English Premier League 2019-20 Last 9 Games Simulated Points vs. Actual Points Ridge Plot")
 
 ![2020 NBA Restart Social Justice Message Bar
-Chart](plots/nba_social_justice.png
+Chart](03-2020_nba_social_justice/2020_nba_social_justice.png
 "2020 NBA Restart Social Justice Message Bar Chart")
 
 ![Competition-Adjusted Non-Penalty Goals Per 90 Minutes
-Table](plots/04_ucl_npg90_adj.utf8.png
+Table](04-2020_ucl_npg90_adj/04_ucl_npg90_adj.utf8.png
 "Competition-Adjusted Non-Penalty Goals Per 90 Minutes Table")
 
 ![Competition-Adjusted Non-Penalty Goals Per 90 Minutes Dumbbell
-Chart](plots/ucl_npg90_adj.png
+Chart](04-2020_ucl_npg90_adj/ucl_npg90_adj.png
 "Competition-Adjusted Non-Penalty Goals Per 90 Minutes Dumbbell Chart")
 
 ![NBA 3P% Cumulative Average and Stability Rate Line Charts
-Animated](plots/nba_3p_stability.gif
+Animated](05-nba_3fg_stability/nba_3p_stability.gif
 "NBA 3P% Cumulative Average and Stability Rate Line Charts Animated")
 
 ![Texas High School Football vs. Band Scatter
-Plot](plots/tx_hs_fb_band.png
+Plot](06-tx_hs/tx_hs_fb_band.png
 "Texas High School Football vs. Band Scatter Plot")
 
 ![PSG 2-1 Atalanta, UCL 2020 Quarter-Finals, Animated Pitch
-Control](plots/ucl_2020_psg_atl.gif
+Control](07-2020_ucl_psg_ata/ucl_2020_psg_atl.gif
 "PSG 2-1 Atalanta, UCL 2020 Quarter-Finals, Animated Pitch Control")
 
 ![2020 NBA Playoffs Total Excitement Index Bar
-Chart](plots/2020_nba_playoffs_excitement_index_20200907.png
+Chart](08-2020_nba_playoffs_excitement_index/2020_nba_playoffs_excitement_index_20200907.png
 "2020 NBA Playoffs Total Excitement Index Bar Chart")
 
 ![PSG 0-1 Bayern Munich, UCL 2020 Finals, Animated Pitch Control and
-VAEP](plots/ucl_2020_psg_mun.gif
+VAEP](09-2020_ucl_psg_mun_w_vaep/ucl_2020_psg_mun.gif
 "PSG 0-1 Bayern Munich, UCL 2020 Finals, Animated Pitch Control and VAEP")
+
+![Voronoi tessellation of a 4-3-3 False 9 vs. 5-4-1 Diamond
+Formation](10-soccer_formations/4-3-3-falsenineattack_v_5-4-1-diamond.png
+"Voronoi tessellation of a 4-3-3 False 9 vs. 5-4-1 Diamond Formation")
+
+![Python and R Comparison of Spearman (2018) Pitch Control
+Model](11-pitch_control_spearman/viz_pc_823_combined.png
+"Python and R Comparison of Spearman (2018) Pitch Control Model")
+
+[Accompanying blog
+post](https://tonyelhabr.rbind.io/post/soccer-pitch-control-r/)
 
 ## Future Ideas
 
