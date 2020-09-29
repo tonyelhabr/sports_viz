@@ -11,11 +11,9 @@ Probabilities Bar Chart](01-nba_seed_p/nba_seed_p.png
 
 ## 2\. 2019-20 English Premier League First 30 Games
 
-\[2019-20 English Premier League First 30 Games Points Minus Expected
+[2019-20 English Premier League First 30 Games Points Minus Expected
 Points Lollipop
-Chart\](02-epl\_since\_break/epl\_before\_break\_pts\_minus\_xpts.png "
-2019-20 English Premier League First 30 Games Points Minus Expected
-Points Lollipop Chart")
+Chart](02-epl_since_break/epl_before_break_pts_minus_xpts.png "2019-20 English Premier League First 30 Games Points Minus Expected Points Lollipop Chart")
 
 ![English Premier League 2019-20 First 30 Games Points vs. Expected
 Points Scatter Plot](02-epl_since_break/epl_before_break_pts_vs_xpts.png
