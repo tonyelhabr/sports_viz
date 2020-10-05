@@ -76,11 +76,17 @@ VAEP](09-2020_ucl_psg_mun_w_vaep/ucl_2020_psg_mun.gif
 Formation](10-soccer_formations/4-3-3-falsenineattack_v_5-4-1-diamond.png
 "Voronoi tessellation of a 4-3-3 False 9 vs. 5-4-1 Diamond Formation")
 
-## 11\. [Python and R Comparison of Spearman (2018) Pitch Control Model](https://tonyelhabr.rbind.io/post/soccer-pitch-control-r/)
+## 11\. [Python and R Comparison of Spearman (2017) Pitch Control Model](https://tonyelhabr.rbind.io/post/soccer-pitch-control-r/)
 
-![Python and R Comparison of Spearman (2018) Pitch Control
+![Python and R Comparison of Spearman (2017) Pitch Control
 Model](11-pitch_control_spearman/viz_pc_823_combined.png
-"Python and R Comparison of Spearman (2018) Pitch Control Model")
+"Python and R Comparison of Spearman (2017) Pitch Control Model")
+
+## 12\. Comparison of Pitch Control Models
+
+![Comparison of Pitch Control
+Models](12-pitch_control_compare/pc_fb_v_spearman___fb_v_vor.gif
+"Comparison of Pitch Control Models")
 
 # Future Ideas
 
