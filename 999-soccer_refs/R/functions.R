@@ -5,7 +5,7 @@ library(RSelenium)
 .dir_data_raw <- fs::path('data-raw')
 .dir_data <- fs::path('data')
 fs::dir_create(.dir_data)
-# shell('docker run -d -p 4445:4444 selenium/standalone-firefox:2.53.0')
+# shell('docker run -d -p 4445:4444 selenium/standalone-chrome') # standalone-firefox:2.53.0')
 # state <- shell('docker ps', intern = TRUE)
 # state[2]
 path_pages_seasons <- fs::path('data-raw', 'links_seasons.csv')
@@ -115,10 +115,10 @@ path_pages_seasons <- fs::path('data-raw', 'links_seasons.csv')
            url_parent,
            stage,
            suffix = .get_suffixes_valid(),
-           league = 'EPL',
+           league = .get_leagues_valid(),
            season,
            dir = .dir_data,
-           path = fs::path(dir, glue::glue('{league}_{season}_{stage}_{suffix}.json')),
+           path = fs::path(dir, glue::glue('{league}_{season}_{suffix}.json')),
            overwrite = FALSE) {
     # browser()
     path_exists <- path %>% fs::file_exists()
@@ -126,6 +126,9 @@ path_pages_seasons <- fs::path('data-raw', 'links_seasons.csv')
       res <- path %>% .import_json()
       return(res)
     }
+    .validate_suffix(suffix)
+    .validate_league(league)
+    
     # Have to refresh this every time.
     dr$navigate(url_parent)
     # browser()
@@ -168,7 +171,7 @@ path_pages_seasons <- fs::path('data-raw', 'links_seasons.csv')
   url_ref <- glue::glue('{.url_base}{link_ref}')
   dr$navigate(url_ref)
   # dr$screenshot(display = TRUE)
-  rgx <- '(^.*Stages)\\/([0-9]+)(\\/.*)([0-9]{4}-[0-4]{4}$)'
+  rgx <- '(^.*Stages)\\/([0-9]+)(\\/.*)([0-9]{4}-[0-9]{4}$)'
   stage <- url_ref %>% str_replace_all(rgx, '\\2')
   season <- url_ref %>% str_replace_all(rgx, '\\4')
   # assertthat::are_equal(season_num, season)
@@ -192,4 +195,8 @@ path_pages_seasons <- fs::path('data-raw', 'links_seasons.csv')
 }
 
 scrape_season_possibly <- possibly(.scrape_season, otherwise = tibble())
+
+str_replace_ref_path <- function(x, i) {
+  str_replace_all(x, '(.*)_([0-9]{4}-[0-9]{4})_(Overall|Home)[.]json$', sprintf('\\%d', i))
+}
 
