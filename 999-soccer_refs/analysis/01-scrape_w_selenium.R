@@ -27,6 +27,7 @@
   res <- paths_possible %>% anti_join(paths_existing)
 }
 
+# NOTE: Would need to pass `dr` into this if these hadn't all been scraped yet.
 seasons_links <- 
   .get_leagues_valid() %>% 
   tibble(league = .) %>% 
