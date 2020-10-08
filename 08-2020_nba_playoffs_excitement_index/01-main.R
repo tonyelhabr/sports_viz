@@ -4,7 +4,7 @@ library(tidyverse)
 dir_proj <- fs::path('08-2020_nba_playoffs_excitement_index')
 dir_data <- fs::path(dir_proj, 'data')
 fs::dir_create(dir_data)
-path_export <- fs::path(dir_data, 'nba_playoffs_excitement_index.rds')
+path_export <- fs::path(dir_data, 'nba_playoffs_excitement_index_2.rds')
 if(!fs::file_exists(path_export)) {
   host <- 'http://stats.inpredictable.com/'
   sess <- host %>% polite::bow()
@@ -51,7 +51,8 @@ if(!fs::file_exists(path_export)) {
     val
   }
   
-  seasons <- 1996:2016
+  # seasons <- 1996:2016
+  seasons <- 2020
   f_q <- quietly(nbastatR::game_logs)
   logs <- 
     seasons %>% 
@@ -65,6 +66,7 @@ if(!fs::file_exists(path_export)) {
     logs %>% 
     filter(slug_team == slug_team_winner) %>% 
     select(year = year_season, date = date_game, id_game, tm_w = slug_team_winner, tm_l = slug_team_loser, slug_matchup) %>% 
+    filter(date >= lubridate::ymd('20200906')) %>% 
     group_by(year) %>% 
     mutate(idx_season = row_number(date)) %>% 
     ungroup()
@@ -82,9 +84,30 @@ if(!fs::file_exists(path_export)) {
   vals <- read_rds(path_export)
 }
 vals
-vals %>% count(year)
-idx_season_max <- vals %>% filter(year == 2020) %>% filter(idx_season == max(idx_season)) %>% pull(idx_season)
 
+vals_1 <- path_export %>% str_remove('_2') %>% read_rds()
+vals_2 <- path_export %>% read_rds()
+vals_1 %>% tail()
+vals_2 %>% head()
+
+vals <-
+  bind_rows(vals_1, vals_2 %>% filter(date != '2020-09-06')) %>% 
+  group_by(year) %>% 
+  mutate(
+    idx_season = row_number(date),
+    val_cumu = cumsum(val)
+  ) %>% 
+  ungroup() %>% 
+  mutate(grp = sprintf('%04d-%02d', year - 1, year %% 100) %>% forcats::fct_reorder(., val))
+vals
+# vals %>% count(year)
+idx_season_max <- 
+  vals %>% 
+  filter(year == 2020) %>% 
+  filter(idx_season == max(idx_season)) %>% 
+  pull(idx_season)
+idx_season_max
+vals %>% arrange(desc(val))
 # vals %>% 
 #   group_by(year) %>% 
 #   mutate(
@@ -113,11 +136,11 @@ vals_agg
 
 do_theme_set()
 viz <-
-  vals_agg %>% 
+  vals %>% 
   ggplot() +
   aes(x = val, y = grp) +
   geom_col() +
-  coord_cartesian(xlim = c(280, 360)) +
+  # coord_cartesian(xlim = c(300, 600)) +
   geom_col(fill = 'grey20') +
   geom_text(
     data = vals_agg %>% filter(year == 2020),
@@ -137,6 +160,7 @@ viz <-
     fontface = 'bold',
     color = 'white'
   ) +
+  gganimate::transition_states(idx_season) +
   theme(
     # axis.text.y = element_markdown(),
     axis.text.y = element_blank(),
@@ -158,4 +182,4 @@ viz <-
     y = NULL
   )
 viz
-ggsave(plot = viz, filename = fs::path(dir_proj, '2020_nba_playoffs_excitement_index_20200907.png'), width = 10.5, height = 10.5, type = 'cairo')
+ggsave(plot = viz, filename = fs::path(dir_proj, '2020_nba_playoffs_excitement_index_20201007.png'), width = 10.5, height = 10.5, type = 'cairo')
