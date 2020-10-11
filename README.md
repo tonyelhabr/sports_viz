@@ -88,6 +88,14 @@ Model](11-pitch_control_spearman/viz_pc_823_combined.png
 Models](12-pitch_control_compare/pc_fb_v_spearman___fb_v_vor.gif
 "Comparison of Pitch Control Models")
 
+## 13\. Premier League Official Radar Charts
+
+![Anthony Taylor Radar Chart](13-soccer_refs/Anthony%20Taylor_w_logo.png
+"Anthony Taylor Radar Chart")
+
+![Mike Dean Radar Chart](13-soccer_refs/Mike%20Dean_w_logo.png
+"Mike Dean Radar Chart")
+
 # Future Ideas
 
   - Stability of goal-scoring rate and/or xG over-performance

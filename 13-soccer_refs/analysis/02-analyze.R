@@ -163,7 +163,7 @@ green <- .convert_rgb_to_hex(144, 237, 125)
 stats_pg_info <-
   tibble(
     stat = c('fouls_per_game', 'penalties_awarded_against_per_game', 'yellow_cds_per_game', 'red_cds_per_game', 'home_win_ratio'),
-    stat_lab = c('Fouls', 'Penalites', 'Yellow Cards', 'Red Cards', 'Home Wins'),
+    stat_lab = c('Fouls', 'Penalties', 'Yellow Cards', 'Red Cards', 'Home Wins'),
     color = c(blue, purple, yellow, red, green),
     idx_stat = c(1L, 2L, 3L, 4L, 5L)
   )
