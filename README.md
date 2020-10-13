@@ -54,11 +54,23 @@ Plot](06-tx_hs/tx_hs_fb_band.png
 
 ## 7\. 2020 Champions League Quarter-Finals, PSG’s 2nd Goal
 
+***Note: This gif really should have had some smoothing applied. The
+matrix inversion with `solve()` in the code returns some near infinite
+values for some inputs.***
+
 ![PSG 2-1 Atalanta, UCL 2020 Quarter-Finals, Animated Pitch
 Control](07-2020_ucl_psg_ata/ucl_2020_psg_atl.gif
 "PSG 2-1 Atalanta, UCL 2020 Quarter-Finals, Animated Pitch Control")
 
 ## 8\. 2020 NBA Playoffs Total Excitement Index
+
+At the end of the playoffs
+
+![2020 NBA Playoffs Total Excitement Index Bar Chart
+Race](08-2020_nba_playoffs_excitement_index/2020_nba_playoffs_excitement_index_20201010.gif
+"2020 NBA Playoffs Total Excitement Index Bar Chart Race")
+
+As of 2020-09-06
 
 ![2020 NBA Playoffs Total Excitement Index Bar
 Chart](08-2020_nba_playoffs_excitement_index/2020_nba_playoffs_excitement_index_20200907.png

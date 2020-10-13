@@ -75,7 +75,7 @@ if(!fs::file_exists(path_export)) {
     logs %>% 
     filter(slug_team == slug_team_winner) %>% 
     select(year = year_season, date = date_game, id_game, tm_w = slug_team_winner, tm_l = slug_team_loser, slug_matchup) %>% 
-    filter(date >= lubridate::ymd('20200906')) %>% 
+    filter(date >= lubridate::ymd('20200907')) %>% 
     group_by(year) %>% 
     mutate(idx_season = row_number(date)) %>% 
     ungroup()
@@ -100,12 +100,18 @@ vals_2 <- path_export %>% read_rds()
 # vals_2 %>% head()
 
 vals <- 
-  bind_rows(vals_1, vals_2 %>% filter(date != '2020-09-06')) %>% 
+  bind_rows(vals_1, vals_2) %>% 
   group_by(year) %>% 
   mutate(
     idx_season = row_number(date)
   ) %>% 
   ungroup() 
+
+season_idx_combos <-
+  crossing(
+    vals %>% distinct(year),
+    vals %>% distinct(idx_season)
+  )
 
 idx_season_max <- 
   vals %>% 
@@ -116,11 +122,12 @@ idx_season_max
 
 vals_proc <-
   vals %>% 
-  filter(idx_season <= idx_season_max) %>% 
+  full_join(season_idx_combos) %>% 
+  # filter(idx_season <= idx_season_max) %>% 
+  replace_na(list(val = 0)) %>% 
+  arrange(year, idx_season) %>% 
   group_by(year) %>% 
-  mutate(
-    val_cumu = cumsum(val)
-  ) %>% 
+  mutate(val_cumu = cumsum(val)) %>% 
   ungroup() %>% 
   mutate(grp = sprintf('%04d-%02d', year - 1, year %% 100)) %>% 
   group_by(idx_season) %>% 
@@ -156,10 +163,13 @@ res_best
 vals_proc_filt <- 
   vals_proc %>% 
   # mutate(keep = idx_season %% 5L == 0 & rnk <= 15L) %>% 
-  mutate(keep = idx_season %% 4L == 0 & rnk <= 15L) %>% 
+  filter(year != 1996) %>% 
+  mutate(keep = idx_season %% 4L == 0 | idx_season == max(idx_season)) %>% 
   filter(keep)
 vals_proc_filt
-
+vals_proc_filt %>% filter(idx_season == 89L) %>% arrange(desc(val_cumu))
+vals_proc_filt %>% filter(idx_season == 80) # idx_season_max)
+vals_proc %>% filter(idx_season > 82L) %>% count(year)
 # vals_proc %>% filter(year == 2020L) %>% arrange(-rnk)
 
 do_theme_set()
@@ -192,9 +202,10 @@ viz <-
     axis.text.y = element_blank(),
     # plot.subtitle = element_markdown(),
     # panel.grid.major.x = element_blank(),
+    plot.caption = element_text(size = 12),
+    # plot.tag = ggtext::element_markdown('Karla', size = 12, color = 'gray20', hjust = 0),
     panel.grid.major.y = element_blank(),
     plot.title = ggtext::element_markdown(size = 16),
-    plot.caption = element_text(size = 12),
     plot.margin = margin(10, 10, 10, 10),
     plot.tag.position = c(.01, 0.01),
   ) +
@@ -206,7 +217,7 @@ viz <-
     subtitle = 'After {closest_state} games',
     # subtitle = 'After {idx_season} games',
     tag = 'Viz: @TonyElHabr | Data: https://www.inpredictable.com/',
-    caption = 'excitement = total in-game win probability change', 
+    caption = 'Excitement index: total in-game win probability change', 
     x = NULL, 
     y = NULL
   )
@@ -227,3 +238,4 @@ gganimate::animate(
   renderer = gganimate::gifski_renderer(path_gif),
   end_pause = n_sec_end * fps
 )
+
