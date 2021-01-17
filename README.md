@@ -108,6 +108,15 @@ Models](12-pitch_control_compare/pc_fb_v_spearman___fb_v_vor.gif
 ![Mike Dean Radar Chart](13-soccer_refs/Mike%20Dean_w_logo.png
 "Mike Dean Radar Chart")
 
+## 14\. Non-Negative Matrix Factorization of Soccer Player Tracking
+
+![Countour Surfaces of Non-Negative Matrix Factorization of Soccer Player Tracking](14-soccer_nnmf/viz_nnmf_dimensions_1to9_r_smooth.png "Countour Surfaces of NNon-Negative Matrix Factorization of Soccer Player Tracking")
+
+## 15\. Fantasy Football Points For vs. Against
+
+![Sucio Boys ESPN Fantasy Football League Points For vs. Against Scatter](15-2020_ff/viz_scores_cusum_2020-07.png "Sucio Boys ESPN Fantasy Football League Points For vs. Against Scatter")
+
+
 # Future Ideas
 
   - Stability of goal-scoring rate and/or xG over-performance
