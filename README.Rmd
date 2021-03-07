@@ -81,6 +81,24 @@ As of 2020-09-06
 
 ![Mike Dean Radar Chart](13-soccer_refs/Mike Dean_w_logo.png "Mike Dean Radar Chart")
 
+## 14. Non-Negative Matrix Factorization Heat Maps for Soccer Player Tracking
+
+![Non-Negative Matrix Factorization Heat Maps for Soccer Player Tracking](14-soccer_nnmf/viz_nnmf_dimensions_1to9_r_smooth.jpg "Non-Negative Matrix Factorization Heat Maps for Soccer Player Tracking")
+
+## 15. 2020-21 Fantasy Football Plots
+
+After regular season (week 12)
+
+![2020-21 Fantasy Football Standings Simulation Table](15-2020_ff/viz_standings_tile_2020.png "2020-21 Fantasy Football Standings Simulation Table")
+
+After week 7
+
+![2020-21 Fantasy Football Points For vs. Points Against Scatter Plot](15-2020_ff/viz_scores_cusum_2020-07.png "2020-21 Fantasy Football Points For vs. Points Against Scatter Plot")
+
+## 17. 2020-21 NBA All-Star Break Net Rating Lollipop Chart
+
+![2020-21 NBA All-Star Break Net Rating Lollipop Chart](17-nba_allstar_break_nrtg/viz_nba_allstar_break_2021.png "2020-21 NBA All-Star Break Net Rating Lollipop Chart")
+
 # Future Ideas
 
 -   Stability of goal-scoring rate and/or xG over-performance
