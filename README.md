@@ -112,6 +112,20 @@ After week 7
 ![2020-21 Fantasy Football Points For vs. Points Against Scatter
 Plot](15-2020_ff/viz_scores_cusum_2020-07.png "2020-21 Fantasy Football Points For vs. Points Against Scatter Plot")
 
+## 16. xGPhilosophy xEngagement
+
+![Brighton Engagement Over Expected
+Table](16-xGPhilosopy/tb_ex.png "Brighton Engagement Over Expected Table")
+
+![Brighton 2-3 Man U Actual vs. Predicted Favorites and Retweets Scatter
+Plot](16-xGPhilosopy/viz_preds_ex.png "Brighton 2-3 Man U Actual vs. Predicted Favorites and Retweets Scatter Plot")
+
+![Brighton 2-3 Man U Retweets SHAP Breakdown Bar
+Plot](16-xGPhilosopy/viz_shap_ex.png "Brighton 2-3 Man U Actual vs. Retweets SHAP Breakdown Bar Plot")
+
+![Aggregate SHAP Bar
+Plot](16-xGPhilosopy/viz_shap_agg.png "Aggregate SHAP Bar Plot")
+
 ## 17. 2020-21 NBA All-Star Break Net Rating Lollipop Chart
 
 ![2020-21 NBA All-Star Break Net Rating Lollipop
