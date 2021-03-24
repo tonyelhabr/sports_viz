@@ -72,13 +72,203 @@ tweets_slim <-
   ) %>% 
   # Keep text for debugging.
   select(-text_trim) %>% 
-  reloate(text_trim, .after = last_col())
+  relocate(matches('text'), .after = last_col())
 tweets_slim
 
 n_tweet <-
   tweets_slim %>% 
   count(suffix, sort = TRUE) %>% 
-  drop_na(suffix)
+  drop_na(suffix) %>% 
+  left_join(grps)
 n_tweet
 
+n_tweet_filt <- 
+  n_tweet %>%
+  filter(n >= 8L) 
 
+# colors <- c('orange' = '#E62600', 'red' = '#ee0831')
+colors <-
+  c(
+    '#003f5c',
+    '#58508d',
+    '#bc5090',
+    '#ff6361',
+    '#ffa600'
+  )
+
+catgs <-
+  n_tweet_filt %>% 
+  group_by(from = catg) %>% 
+  summarize(
+    across(n, sum)
+  ) %>% 
+  ungroup() %>% 
+  add_row(from = 'root', n = 0)
+catgs
+
+df <-
+  catgs %>% 
+  filter(from != 'root') %>% 
+  rename(to = from) %>% 
+  mutate(from = 'root') %>% 
+  select(from, to, n) %>% 
+  bind_rows(n_tweet_filt %>% select(from = catg, to = suffix, n))
+df
+
+nodes <- 
+  df %>% 
+  distinct(node = to, n) %>% 
+  add_row(node = 'root', n = 0) %>% 
+  select(node, n)
+nodes
+
+igraph::graph_from_data_frame(
+  vertices = nodes,
+  d = df
+)
+
+g <-
+  tbl_graph(
+    nodes = nodes,
+    edges = df
+  )
+
+# debugonce(as_tbl_graph)
+g <-
+  df %>% 
+  as_tbl_graph()
+g
+
+library(tidygraph)
+library(ggraph)
+.idx_center <- 1L
+n_tweet_filt <- 
+  n_tweet %>%
+  filter(n >= 8L) %>% 
+  mutate(
+    idx = row_number(desc(n)) + .idx_center,
+    to = idx
+  ) %>% 
+  group_by(catg) %>% 
+  arrange(to, .by_group = TRUE) %>% 
+  mutate(
+    # to = row_number(desc(n)),
+    from = dplyr::lag(to),
+    # across() is breaking
+    from = coalesce(from, .idx_center )
+  ) %>% 
+  ungroup() %>% 
+  # arrange(to)
+  arrange(catg, idx) %>% 
+  relocate(from, to)
+n_tweet_filt
+# idx_from_center <-
+#   n_tweet_filt %>% 
+#   filter(from == idx_center) %>% 
+#   pull(idx)
+# idx_from_center
+# 
+# idx_center <-
+#   tibble(
+#     suffix = 'none',
+#     n = 2 * max(n_tweet_filt$n),
+#     catg = 'None',
+#     idx = !!idx_center
+#   )
+# 
+# graph_init <-
+#   crossing(idx_center, tibble(to = idx_from_center)) %>%
+#   mutate(from = idx) %>% 
+#   bind_rows(n_tweet_filt) %>%
+#   relocate(suffix, from, to)
+# graph_init
+
+g <-
+  tbl_graph(
+    nodes = 
+      n_tweet_filt %>% 
+      distinct(name = idx, suffix, catg, n) %>% 
+      relocate(name) %>% 
+      add_row(name = .idx_center, suffix = 'none', n = max(n_tweet_filt$n) + 1L) %>% 
+      arrange(name),
+    edges = n_tweet_filt %>% select(from, to)
+  )
+g
+
+g %>% 
+  ggraph('circlepack', weight = n^2) + 
+  geom_node_circle(
+    # aes(fill = node)
+    # aes(area = n)
+  ) +
+  geom_node_text(
+    aes(
+      label = node,
+      filter = leaf,
+      fill = node,
+    ),
+  ) +
+  theme_void() +
+  theme(
+    legend.position = 'none'
+  ) +
+  coord_fixed()
+
+ggraph(g, 'unrooted') + 
+  geom_edge_link()
+
+ggraph(g, 'tree') + 
+  geom_edge_diagonal()
+
+g %>% 
+  ggraph(layout = 'eigen') +
+  geom_node_label(aes(label = suffix)) +
+  # geom_node_point(aes(fill = n))
+  geom_edge_link()
+
+g2 <-
+  igraph::graph_from_data_frame(
+    vertices = graph_init %>% 
+      distinct(name = idx, suffix, n, catg) %>% 
+      relocate(name),
+    d = graph_init %>% select(from, to)
+  )
+g2
+
+g2 %>% 
+  ggraph('circlepack') + 
+  # geom_node_circle(aes(fill = catg)) + 
+  geom_node_circle(aes(fill = factor(catg))) +
+  geom_node_text(aes(label=catg, filter=leaf, fill=factor(catg), size=n)) +
+  # theme_void() +
+  # theme(
+  #   legend.position = 'none'
+  # ) +
+  coord_fixed()
+
+
+
+graph <- tbl_graph(flare$vertices, flare$edges)
+set.seed(1)
+graph
+n_tweet_filt %>% 
+  as_tbl_graph()
+
+edges <- flare$edges %>% 
+  filter(to %in% from) %>% 
+  droplevels()
+vertices <- flare$vertices %>% 
+  filter(name %in% c(edges$from, edges$to)) %>% 
+  droplevels()
+vertices$size <- runif(nrow(vertices))
+
+# Rebuild the graph object
+mygraph <- igraph::graph_from_data_frame( edges, vertices=vertices )
+mygraph
+
+ggraph(mygraph, layout = 'circlepack') + 
+  geom_node_circle(aes(fill = depth)) +
+  geom_node_text( aes(label=shortName, filter=leaf, fill=depth, size=size)) +
+  theme_void() + 
+  theme(legend.position="FALSE") + 
+  scale_fill_viridis()
