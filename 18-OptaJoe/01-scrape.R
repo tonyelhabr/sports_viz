@@ -1,5 +1,6 @@
 
 library(tidyverse)
+
 user <- 'OptaJoe'
 dir_proj <- sprintf('18-%s', user)
 grps <-
@@ -58,8 +59,13 @@ tweets_slim <-
     suffix2 = 
       text_trim %>% 
       str_replace_all('(^.*)([.]?[\\s]+?\\w+[.!?])(.*$)', '\\2') %>% 
-      str_remove_all('[.]|\\s'),
-    across(matches('^suffix'), list(str_length), .names = 'n_char_{col}'),
+      str_remove_all('[.]|\\s')
+  ) %>% 
+  # Can't refer to a column within across created in the same `mutate()` (https://github.com/tidyverse/dplyr/issues/5734)
+  mutate(
+    across(matches('^suffix'), list(str_length), .names = 'n_char_{col}')
+  ) %>% 
+  mutate(
     is_good1 = if_else(n_char_suffix1 <= 20, TRUE, FALSE),
     is_good2 = if_else(n_char_suffix2 <= 20, TRUE, FALSE),
     suffix = case_when(
@@ -82,20 +88,33 @@ n_tweet <-
   left_join(grps)
 n_tweet
 
+# Find last opener tweet (since this is the most common word) for the tweet that I'll make.
+tweets_slim %>% 
+  filter(suffix == 'opener') %>%
+  slice(1) %>% 
+  pull(status_id) %>% 
+  paste0('https://twitter.com/OptaJoe/status/', .)
+
+# Arbitrarily choosing this cutoff, trying to choose a good balance between number of words and over-plotting.
 n_tweet_filt <- 
   n_tweet %>%
   filter(n >= 8L) 
 
 # colors <- c('orange' = '#E62600', 'red' = '#ee0831')
+# colors <- paletteer::paletteer_d('LaCroixColoR::PeachPear') %>% rev()
+# colors <- paletteer::paletteer_d('vapeplot::jazzcup') %>% rev() %>% c('#FF3200FF') # c('#ffffff')
 colors <-
   c(
     '#003f5c',
     '#58508d',
     '#bc5090',
     '#ff6361',
-    '#ffa600'
+    '#ffa600',
+    # '#E62600',
+    '#ffffff' # Don't even end up using this.
   )
 
+.root <- 'a_root'
 catgs <-
   n_tweet_filt %>% 
   group_by(from = catg) %>% 
@@ -103,14 +122,15 @@ catgs <-
     across(n, sum)
   ) %>% 
   ungroup() %>% 
-  add_row(from = 'root', n = 0)
+  add_row(from = .root, n = Inf) %>% 
+  mutate(across(from, ~fct_reorder(.x, -n)))
 catgs
 
 df <-
   catgs %>% 
-  filter(from != 'root') %>% 
+  filter(from != .root) %>% 
   rename(to = from) %>% 
-  mutate(from = 'root') %>% 
+  mutate(from = .root) %>% 
   select(from, to, n) %>% 
   bind_rows(n_tweet_filt %>% select(from = catg, to = suffix, n))
 df
@@ -118,157 +138,161 @@ df
 nodes <- 
   df %>% 
   distinct(node = to, n) %>% 
-  add_row(node = 'root', n = 0) %>% 
-  select(node, n)
+  add_row(node = .root, n = 0) %>% 
+  select(node, n) %>% 
+  left_join(grps %>% rename(node = suffix)) %>% 
+  mutate(across(catg, ~coalesce(.x, .root)))
 nodes
 
-igraph::graph_from_data_frame(
-  vertices = nodes,
-  d = df
-)
-
-g <-
-  tbl_graph(
+graph <-
+  tidygraph::tbl_graph(
     nodes = nodes,
     edges = df
   )
-
-# debugonce(as_tbl_graph)
-g <-
-  df %>% 
-  as_tbl_graph()
-g
-
-library(tidygraph)
-library(ggraph)
-.idx_center <- 1L
-n_tweet_filt <- 
-  n_tweet %>%
-  filter(n >= 8L) %>% 
-  mutate(
-    idx = row_number(desc(n)) + .idx_center,
-    to = idx
-  ) %>% 
-  group_by(catg) %>% 
-  arrange(to, .by_group = TRUE) %>% 
-  mutate(
-    # to = row_number(desc(n)),
-    from = dplyr::lag(to),
-    # across() is breaking
-    from = coalesce(from, .idx_center )
-  ) %>% 
-  ungroup() %>% 
-  # arrange(to)
-  arrange(catg, idx) %>% 
-  relocate(from, to)
-n_tweet_filt
-# idx_from_center <-
-#   n_tweet_filt %>% 
-#   filter(from == idx_center) %>% 
-#   pull(idx)
-# idx_from_center
-# 
-# idx_center <-
-#   tibble(
-#     suffix = 'none',
-#     n = 2 * max(n_tweet_filt$n),
-#     catg = 'None',
-#     idx = !!idx_center
-#   )
-# 
-# graph_init <-
-#   crossing(idx_center, tibble(to = idx_from_center)) %>%
-#   mutate(from = idx) %>% 
-#   bind_rows(n_tweet_filt) %>%
-#   relocate(suffix, from, to)
-# graph_init
-
-g <-
-  tbl_graph(
-    nodes = 
-      n_tweet_filt %>% 
-      distinct(name = idx, suffix, catg, n) %>% 
-      relocate(name) %>% 
-      add_row(name = .idx_center, suffix = 'none', n = max(n_tweet_filt$n) + 1L) %>% 
-      arrange(name),
-    edges = n_tweet_filt %>% select(from, to)
-  )
-g
-
-g %>% 
-  ggraph('circlepack', weight = n^2) + 
-  geom_node_circle(
-    # aes(fill = node)
-    # aes(area = n)
-  ) +
-  geom_node_text(
-    aes(
-      label = node,
-      filter = leaf,
-      fill = node,
-    ),
-  ) +
-  theme_void() +
-  theme(
-    legend.position = 'none'
-  ) +
-  coord_fixed()
-
-ggraph(g, 'unrooted') + 
-  geom_edge_link()
-
-ggraph(g, 'tree') + 
-  geom_edge_diagonal()
-
-g %>% 
-  ggraph(layout = 'eigen') +
-  geom_node_label(aes(label = suffix)) +
-  # geom_node_point(aes(fill = n))
-  geom_edge_link()
-
-g2 <-
-  igraph::graph_from_data_frame(
-    vertices = graph_init %>% 
-      distinct(name = idx, suffix, n, catg) %>% 
-      relocate(name),
-    d = graph_init %>% select(from, to)
-  )
-g2
-
-g2 %>% 
-  ggraph('circlepack') + 
-  # geom_node_circle(aes(fill = catg)) + 
-  geom_node_circle(aes(fill = factor(catg))) +
-  geom_node_text(aes(label=catg, filter=leaf, fill=factor(catg), size=n)) +
-  # theme_void() +
-  # theme(
-  #   legend.position = 'none'
-  # ) +
-  coord_fixed()
-
-
-
-graph <- tbl_graph(flare$vertices, flare$edges)
-set.seed(1)
 graph
-n_tweet_filt %>% 
-  as_tbl_graph()
 
-edges <- flare$edges %>% 
-  filter(to %in% from) %>% 
-  droplevels()
-vertices <- flare$vertices %>% 
-  filter(name %in% c(edges$from, edges$to)) %>% 
-  droplevels()
-vertices$size <- runif(nrow(vertices))
+colors_named <-
+  colors %>% 
+  setNames(., as.character(catgs$from))
+colors_named
 
-# Rebuild the graph object
-mygraph <- igraph::graph_from_data_frame( edges, vertices=vertices )
-mygraph
+set.seed(42)
+viz <-
+  graph %>% 
+  ggraph::ggraph('circlepack', weight = n) + 
+  ggraph::geom_node_circle(
+    alpha = 0.7,
+    aes(filter = leaf, fill = catg)
+  ) +
+  ggraph::geom_node_text(
+    aes(
+      filter = leaf,
+      label = node,
+      size = n
+    ),
+    family = 'Karla'
+  ) +
+  scale_size(range = c(3.5, 5)) +
+  scale_fill_manual(values = colors_named) +
+  theme_void(base_family = 'Karla') +
+  theme(
+    legend.position = 'none',
+    text = element_text('Karla')
+  ) +
+  theme(
+    plot.tag = ggtext::element_markdown('Karla', size = 12, color = 'gray20', hjust = 0),
+    plot.caption = ggtext::element_markdown('Karla', size = 12, color = 'gray20', hjust = 1),
+    plot.title = ggtext::element_markdown(size = 22, hjust = 0.5),
+    plot.margin = margin(10, 10, 10, 10),
+    plot.tag.position = c(.01, 0.01)
+  ) +
+  labs(
+    title = 'Most Comon @OptaJoe One-Word Summaries',
+    # Improvement would be to not hard-code this date range.
+    caption = '**Time period**: Aug. 5, 2020 - Mar. 21, 2021<br/>Colored categories defined manually.',
+    tag = '**Viz**: @TonyElHabr'
+  ) +
+  coord_fixed()
+viz
 
-ggraph(mygraph, layout = 'circlepack') + 
-  geom_node_circle(aes(fill = depth)) +
-  geom_node_text( aes(label=shortName, filter=leaf, fill=depth, size=size)) +
-  theme_void() + 
-  theme(legend.position="FALSE") + 
-  scale_fill_viridis()
+gb <- viz %>% ggplot2::ggplot_build()
+centers <-
+  gb$data[[2]] %>% 
+  as_tibble() %>% 
+  select(suffix = label, x, y) %>% 
+  left_join(grps) %>% 
+  group_by(catg) %>% 
+  summarize(across(c(x, y), list(min = min, max = max, mean = mean))) %>% 
+  # summarize(across(c(x, y), mean)) %>% 
+  ungroup() # %>% 
+# mutate(across(c(x, y), round, 1))
+centers
+
+# centers %>% clipr::write_clip()
+
+catgs_labs <-
+  colors_named %>% 
+  enframe('catg', 'color') %>% 
+  mutate(lab = str_replace(catg, '&', '&<br/>')) %>% 
+  mutate(
+    lab = glue::glue("<b><span style='color:{color}'>{lab}</span></b>")
+  )
+catgs_labs
+
+centers_coords <-
+  catgs_labs %>% 
+  left_join(
+    tibble(
+      catg = c('In-game Events', 'Player Archetypes', 'Player Superlatives', 'Team Events & History', 'Transfers & Roster Construction'),
+      x = c(7, 5, -12, 5, 2),
+      y = c(11, -6, 5, 14, -8)
+    )
+  ) %>% 
+  filter(catg != .root)
+centers_coords
+
+viz_w_labs <-
+  viz +
+  ggtext::geom_richtext(
+    data = centers_coords,
+    fill = NA, label.color = NA,
+    family = 'Karla',
+    hjust = 0,
+    size = 5,
+    aes(x = x, y = y, label = lab)
+  )
+viz_w_labs
+
+h <- 10
+path_viz <- file.path(dir_proj, 'bubble_optajoe_wide.png')
+ggsave(
+  plot = viz_w_labs,
+  filename = path_viz,
+  type = 'cairo',
+  width = 1.5 * h,
+  height = h
+)
+
+# img ----
+path_img <- file.path(dir_proj, 'optajoe-cropped.png')
+# img <- magick::image_read()
+# img %>% magick::image_resize(geometry = c('300x400'))
+# viz_w_img <-
+#   viz_w_labs +
+#   ggimage::geom_image(
+#     size = 0.15,
+#     aes(x = 11, y = -12, image = path_img)
+#   )
+# viz_w_img
+# ggsave(
+#   plot = viz_w_img,
+#   filename = file.path(dir_proj, 'bubble_optajoe_w_logo.png'),
+#   type = 'cairo',
+#   width = w,
+#   height = w
+# )
+
+# Reference: https://themockup.blog/posts/2019-01-09-add-a-logo-to-your-plot/
+plot <- path_viz %>% magick::image_read()
+logo_raw <- path_img %>% magick::image_read() # %>% magick::image_resize(geometry = c('300x400'))
+
+# get dimensions of plot for scaling
+plot_height <- magick::image_info(plot)$height
+plot_width <- magick::image_info(plot)$width
+
+logo_scale <- 8
+logo <- magick::image_scale(logo_raw, as.character(plot_width/logo_scale))
+
+logo_width <- magick::image_info(logo)$width
+logo_height <- magick::image_info(logo)$height
+
+x_pos <- plot_width - logo_width - 0.26 * plot_width
+y_pos <- plot_height - logo_height - 0.08 * plot_height
+offset <- paste0('+', x_pos, '+', y_pos)
+
+res <- plot %>% magick::image_composite(logo, offset = offset)
+magick::image_write(
+  res,
+  path_viz %>% str_replace('[.]png', '_w_logo.png')
+)
+
