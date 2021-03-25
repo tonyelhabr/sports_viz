@@ -109,6 +109,10 @@ After week 7
 
 ![2020-21 NBA All-Star Break Net Rating Lollipop Chart](17-nba_allstar_break_nrtg/viz_nba_allstar_break_2021.png "2020-21 NBA All-Star Break Net Rating Lollipop Chart")
 
+## 18. OptaJoe One-Word Summaries
+
+![OptaJoe One-Word Summaries Bubble Chart](18-OptaJoe/bubble_optajoe_wide_w_logo.png "OptaJoe One-Word Summaries Bubble Chart")
+
 # Future Ideas
 
 -   Stability of goal-scoring rate and/or xG over-performance
