@@ -215,7 +215,7 @@ shots_by_team
 .refactor_g_state_col <- function(data) {
   data %>%
     mutate(
-      across(g_state, ~factor(.x, levels = c('Behind', 'Neutral', 'Ahead')))
+      across(g_state, ~factor(.x, levels = c('Behind (relative)', 'Neutral', 'Ahead (relative)')))
     )
 }
 
@@ -223,7 +223,7 @@ states <-
   shots_by_team %>% 
   select(-g_state_opp) %>% 
   mutate(
-    across(g_state, ~case_when(.x < 0L ~ 'Behind', .x > 0L ~ 'Ahead', TRUE ~ 'Neutral'))
+    across(g_state, ~case_when(.x < 0L ~ 'Behind (relative)', .x > 0L ~ 'Ahead (relative)', TRUE ~ 'Neutral'))
   ) %>%
   # Just to have something at the end that I don't comment out when testing.
   arrange(season, date, match_id, minute, team)
@@ -269,17 +269,78 @@ states_by_team_wide <-
     names_from = g_state
   ) %>% 
   mutate(
-    `<` = `Behind` - `Neutral`,
-    `>` = `Ahead` - `Neutral`
+    `<` = `Behind (relative)` - `Neutral`,
+    `>` = `Ahead (relative)` - `Neutral`
   )
 states_by_team_wide
+
+if(FALSE) {
+viz_npxg_p90_diff <-
+  states_by_team_slim %>% 
+  mutate(
+    lab = sprintf('%.2f', npxg_p90_diff)
+  ) %>%
+  .refactor_g_state_col() %>% 
+  left_join(standings) %>% 
+  ggplot() +
+  aes(y = -rnk, x = g_state) +
+  geom_tile(aes(fill = npxg_p90_diff)) +
+  geom_text(aes(label = lab), family  = 'Karla', size = 4) +
+  guides(
+    fill = 
+      guide_legend(
+        title = 'Non-penalty xG differential per 90 min.\nrelative to neutral game state',
+        title.position = 'top',
+        nrow = 1
+      )
+  ) +
+  scale_fill_gradient2(
+    midpoint = 0,
+    low = '#e9a3c9',
+    mid = '#f7f7f7',
+    high = '#a1d76a',
+    na.value = 'grey80'
+  ) +
+  scale_x_discrete(position = 'top') +
+  scale_y_continuous(
+    breaks = seq.int(-20, -1),
+    labels = team_annotations %>% arrange(-rnk) %>% pull(team)
+  ) +
+  labs(
+    y = NULL,
+    # x = 'Game State',
+    x = NULL,
+    title = 'xGD By Game State, 2020/21 Premier League',
+    tag = '**Viz**: Tony ElHabr | **Data**: understat'
+  ) +
+  theme(
+    plot.tag.position = c(0.99, 0.01),
+    plot.tag = ggtext::element_markdown(hjust = 1),
+    axis.text.y = ggtext::element_markdown(),
+    axis.text.x.top = element_text(),
+    plot.title.position = 'plot',
+    legend.title = element_text(size = 10, hjust = 0.5),
+    plot.title = element_text(size = 22, hjust = 0.5),
+    plot.subtitle = ggtext::element_markdown(size = 12, hjust = 0.5, color = 'grey50'),
+    panel.grid.major = element_blank(),
+    legend.position = 'top'
+  )
+
+ggsave(
+  plot = viz_npxg_p90_diff,
+  filename = file.path(dir_proj, sprintf('viz_npxg_p90_diff_%s_dev.png', season)),
+  width = 9,
+  height = 10,
+  type = 'cairo'
+)
+}
 
 states_by_team_clean <-
   states_by_team_slim %>% 
   left_join(
     states_by_team_wide %>% 
       select(season, team, `<`, `>`) %>%
-      rename(`Behind` = `<`, `Ahead` = `>`) %>% 
+      rename(`Behind (relative)` = `<`, `Ahead (relative)` = `>`) %>% 
       pivot_longer(
         -c(season, team),
         names_to = 'g_state',
@@ -296,11 +357,12 @@ states_by_team_clean <-
   .refactor_g_state_col() %>% 
   left_join(standings)
 
-teams_neutral <- c('Man City', 'Tottenham')
-teams_volatile <- c('Man United', 'Chelsea', 'West Ham')
-teams_filt <- c(teams_neutral, teams_volatile)
-color_neutral <- 'blue'
-color_volatile <- 'red'
+# teams_neutral <- c('Man City', 'Tottenham')
+teams_bus <- c('Southampton', 'Sheffield Utd')
+# teams_filt <- c(teams_neutral, teams_bus)
+teams_filt <- teams_bus
+# color_neutral <- 'blue'
+color_bus <- 'black'
 
 team_annotations <-
   team_mapping %>% 
@@ -308,13 +370,13 @@ team_annotations <-
   inner_join(states_by_team_clean %>% distinct(team, rnk)) %>% 
   mutate(
     prefix = case_when(
-      team %in% teams_neutral ~ glue::glue('<b><span style="color:{color_neutral}">'),
-      team %in% teams_volatile ~ glue::glue('<b><span style="color:{color_volatile}">'),
+      # team %in% teams_neutral ~ glue::glue('<b><span style="color:{color_neutral}">'),
+      team %in% teams_bus ~ glue::glue('<b><span style="color:{color_bus}">'),
       TRUE ~ NA_character_
     ),
     suffix = case_when(
-      team %in% teams_neutral ~ '</span></b>',
-      team %in% teams_volatile ~ '</span></b>',
+      # team %in% teams_neutral ~ '</span></b>',
+      team %in% teams_bus ~ '</span></b>',
       TRUE ~ NA_character_
     )
   ) %>%  
@@ -335,7 +397,7 @@ viz_npxg_p90_diff <-
   guides(
     fill = 
       guide_legend(
-        title = 'Non-penalty xG differential per 90 min.\nrelative to neutral game state',
+        title = 'Non-penalty xG/90\nrelative to neutral game state',
         title.position = 'top',
         nrow = 1
       )
@@ -357,13 +419,14 @@ viz_npxg_p90_diff <-
     # x = 'Game State',
     x = NULL,
     title = 'xG By Game State, 2020/21 Premier League',
-    subtitle = glue::glue('Some teams accumulate xG at a <b><span style="color:{colorspace::darken("#e9a3c9", amount = 0.5)}">higher</span></b> rate when playing in an even match (<b><span style="color:{color_neutral}">Man City</span></b>, <b><span style="color:{color_neutral}">Tottenham</span></b>)<br/>while others (<b><span style="color:{color_volatile}">Man United</span></b>, <b><span style="color:{color_volatile}">Chelsea</span></b>, <b><span style="color:{color_volatile}">West Ham</span></b>) have <b><span style="color:{colorspace::darken("#a1d76a", amount = 0.3)}">higher</span></b> xG rates when either behind or ahead.',
-    caption = 'Rates are time-based averages (accounting for varying time spent in a given game state).'),
+    subtitle = glue::glue('Some <b><span style="color:{color_bus}">teams</b> accumulate xG at a <b><span style="color:{colorspace::darken("#e9a3c9", amount = 0.5)}">lower</span></b> rate when playing with the lead (parking the bus)<br/>and at a <b><span style="color:{colorspace::darken("#a1d76a", amount = 0.3)}">higher</span></b> rate when playing from behind (playing hard when they have to).'),
+    caption = 'Rates are time-based averages<br/>(accounting for varying time spent in a given game state).',
     tag = '**Viz**: Tony ElHabr | **Data**: understat'
   ) + 
   theme(
-    plot.tag.position = c(0.99, 0.01),
-    plot.tag = ggtext::element_markdown(hjust = 1),
+    # plot.tag.position = c(0.99, 0.01),
+    # plot.tag = ggtext::element_markdown(hjust = 1),
+    plot.caption = ggtext::element_markdown(size = 12),
     axis.text.y = ggtext::element_markdown(),
     axis.text.x.top = element_text(),
     plot.title.position = 'plot',
@@ -384,7 +447,7 @@ ggsave(
 )
 
 # more ----
-# options(tibble.print_min = 23)
+# TODO: Change the relative labels here! (No longer relative.)
 states_by_team_agg <-
   # states_by_team %>% 
   states_by_team %>% 
@@ -498,7 +561,7 @@ viz_shots_p90_diff <-
   labs(
     x = 'Game State',
     caption = 'Game states with goal differentials less/greater than +-2 not shown.',
-    subtitle = 'because they shoot more frequently'
+    subtitle = 'Because they shoot more frequently'
   )
 viz_shots_p90_diff
 
@@ -538,9 +601,9 @@ viz_teams
 
 # library(patchwork)
 res <- 
-  patchwork::wrap_plots(viz_npxg_ps_diff, viz_teams, viz_shots_p90_diff, widths = c(8, 2, 8)) +
+  patchwork::wrap_plots(viz_npxg_ps_diff, viz_teams, viz_shots_p90_diff, widths = c(7, 2, 7)) +
   patchwork::plot_annotation(
-    title = 'Why is there a game state bias with xG?',
+    title = 'The Shot Quality vs. Volume Trade-off',
     theme = theme(
       plot.title = ggtext::element_markdown('Karla', face = 'bold', size = 18, hjust = 0.5)
     )
