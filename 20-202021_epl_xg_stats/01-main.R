@@ -180,7 +180,7 @@ shots_redux <-
     dur = minute - dplyr::lag(minute, default = 0L),
     across(matches(sprintf('%s_', rgx_g)), list(cumu = ~cumsum(coalesce(.x, 0))))
   ) %>% 
-
+  
   mutate(
     g_state_h = dplyr::lag(g_h_cumu, 1) - dplyr::lag(g_a_cumu, 1),
     g_state_a = dplyr::lag(g_a_cumu, 1) - dplyr::lag(g_h_cumu, 1)
@@ -211,19 +211,11 @@ shots_by_team
 # shots_by_team$team %>% levels()
 # shots_by_team %>% filter(is.na(team))
 
-# # g_state column gets coerced to a character later on.
-.refactor_g_state_col <- function(data) {
-  data %>%
-    mutate(
-      across(g_state, ~factor(.x, levels = c('Behind (relative)', 'Neutral', 'Ahead (relative)')))
-    )
-}
-
 states <-
   shots_by_team %>% 
   select(-g_state_opp) %>% 
   mutate(
-    across(g_state, ~case_when(.x < 0L ~ 'Behind (relative)', .x > 0L ~ 'Ahead (relative)', TRUE ~ 'Neutral'))
+    across(g_state, ~case_when(.x < 0L ~ 'Behind', .x > 0L ~ 'Ahead', TRUE ~ 'Neutral'))
   ) %>%
   # Just to have something at the end that I don't comment out when testing.
   arrange(season, date, match_id, minute, team)
@@ -248,129 +240,93 @@ states_by_team <-
     across(c(matches(rgx_g), -g_state, matches('^shots')), list(p90 = ~90 * .x / dur))
   ) %>% 
   mutate(
-    shots_p90_diff = shots_p90 - shots_opp_p90,
-    npxg_p90_diff = npxg_p90 - npxg_opp_p90,
-    npxg_ps_diff = npxg_ps - npxg_opp_ps
-  ) %>% 
-  mutate(
     across(team, ~factor(.x, levels = lvls))
   ) %>% 
   relocate(season, team)
+states_by_team
 
-states_by_team_slim <-
+states_by_team_long <-
   states_by_team %>% 
-  select(season, team, g_state, npxg_p90) # npxg_p90_diff) 
-states_by_team_slim
-
-states_by_team_wide <-
-  states_by_team_slim %>% 
+  mutate(across(g_state, ~as.character(.x) %>% tolower())) %>% 
   pivot_wider(
     values_from = -any_of(c('season', 'team', 'g_state')),
     names_from = g_state
   ) %>% 
+  pivot_longer(
+    -c(season, team),
+    names_pattern = '(^.*)_(ahead|behind|neutral)',
+    names_to = c('stat', 'g_state'),
+    values_to = 'value'
+  )
+states_by_team_long
+
+states_by_team_wide <-
+  states_by_team_long %>% 
+  pivot_wider(
+    names_from = g_state,
+    values_from = value
+  ) %>% 
   mutate(
-    `<` = `Behind (relative)` - `Neutral`,
-    `>` = `Ahead (relative)` - `Neutral`
+    across(c(ahead, behind), list(diff = ~{.x - neutral}))
   )
 states_by_team_wide
 
-if(FALSE) {
-viz_npxg_p90_diff <-
-  states_by_team_slim %>% 
-  mutate(
-    lab = sprintf('%.2f', npxg_p90_diff)
-  ) %>%
-  .refactor_g_state_col() %>% 
-  left_join(standings) %>% 
-  ggplot() +
-  aes(y = -rnk, x = g_state) +
-  geom_tile(aes(fill = npxg_p90_diff)) +
-  geom_text(aes(label = lab), family  = 'Karla', size = 4) +
-  guides(
-    fill = 
-      guide_legend(
-        title = 'Non-penalty xG differential per 90 min.\nrelative to neutral game state',
-        title.position = 'top',
-        nrow = 1
-      )
-  ) +
-  scale_fill_gradient2(
-    midpoint = 0,
-    low = '#e9a3c9',
-    mid = '#f7f7f7',
-    high = '#a1d76a',
-    na.value = 'grey80'
-  ) +
-  scale_x_discrete(position = 'top') +
-  scale_y_continuous(
-    breaks = seq.int(-20, -1),
-    labels = team_annotations %>% arrange(-rnk) %>% pull(team)
-  ) +
-  labs(
-    y = NULL,
-    # x = 'Game State',
-    x = NULL,
-    title = 'xGD By Game State, 2020/21 Premier League',
-    tag = '**Viz**: Tony ElHabr | **Data**: understat'
-  ) +
-  theme(
-    plot.tag.position = c(0.99, 0.01),
-    plot.tag = ggtext::element_markdown(hjust = 1),
-    axis.text.y = ggtext::element_markdown(),
-    axis.text.x.top = element_text(),
-    plot.title.position = 'plot',
-    legend.title = element_text(size = 10, hjust = 0.5),
-    plot.title = element_text(size = 22, hjust = 0.5),
-    plot.subtitle = ggtext::element_markdown(size = 12, hjust = 0.5, color = 'grey50'),
-    panel.grid.major = element_blank(),
-    legend.position = 'top'
-  )
-
-ggsave(
-  plot = viz_npxg_p90_diff,
-  filename = file.path(dir_proj, sprintf('viz_npxg_p90_diff_%s_dev.png', season)),
-  width = 9,
-  height = 10,
-  type = 'cairo'
-)
-}
-
 states_by_team_clean <-
-  states_by_team_slim %>% 
-  left_join(
+  full_join(
     states_by_team_wide %>% 
-      select(season, team, `<`, `>`) %>%
-      rename(`Behind (relative)` = `<`, `Ahead (relative)` = `>`) %>% 
+      select(-matches('diff$')) %>% 
       pivot_longer(
-        -c(season, team),
+        -c(season, team, stat),
+        names_to = 'g_state',
+        values_to = 'value'
+      ),
+    states_by_team_wide %>% 
+      select(season, team, stat, matches('diff')) %>% 
+      pivot_longer(
+        -c(season, team, stat),
         names_to = 'g_state',
         values_to = 'diff'
-      )
+      ) %>% 
+      mutate(across(g_state, ~str_remove(.x, '_diff$')))
   ) %>% 
   mutate(
     lab = case_when(
-      g_state == 'Neutral' ~ sprintf('%.2f', npxg_p90), #  npxg_p90_diff),
-      # TRUE ~ sprintf('%+.2f (%+.2f)', npxg_p90_diff, diff)
+      g_state == 'neutral' ~ sprintf('%.2f', value),
       TRUE ~ sprintf('%+.2f', diff)
     )
   ) %>% 
-  .refactor_g_state_col() %>% 
+  mutate(
+    across(
+      g_state, 
+      ~factor(.x, levels = c('behind', 'neutral', 'ahead')) %>% 
+        fct_recode('Behind\n(Relative)' = 'behind', 'Ahead\n(Relative)' = 'ahead', 'Neutral' = 'neutral')
+    )
+  ) %>% 
   left_join(standings)
+states_by_team_clean
+# states_by_team_clean$g_state %>% levels()
 
-# teams_neutral <- c('Man City', 'Tottenham')
-teams_bus <- c('Southampton', 'Sheffield Utd')
-# teams_filt <- c(teams_neutral, teams_bus)
+teams_bus <-
+  bind_rows(
+    states_by_team_clean %>% 
+      filter(g_state == 'Ahead (Relative)' & diff < 0),
+    states_by_team_clean %>% 
+      filter(g_state == 'Behind (Relative)' & diff > 0)
+  ) %>% 
+  count(team) %>% 
+  filter(n == 2L) %>% 
+  pull(team)
+
 teams_filt <- teams_bus
-# color_neutral <- 'blue'
 color_bus <- 'black'
 
+# This seems overly complicated (and is) just cuz I was testing out different stuff.
 team_annotations <-
   team_mapping %>% 
   select(team) %>%
   inner_join(states_by_team_clean %>% distinct(team, rnk)) %>% 
   mutate(
     prefix = case_when(
-      # team %in% teams_neutral ~ glue::glue('<b><span style="color:{color_neutral}">'),
       team %in% teams_bus ~ glue::glue('<b><span style="color:{color_bus}">'),
       TRUE ~ NA_character_
     ),
@@ -390,6 +346,7 @@ team_annotations
 
 viz_npxg_p90_diff <-
   states_by_team_clean %>% 
+  filter(stat == 'npxg_p90') %>% 
   ggplot() +
   aes(y = -rnk, x = g_state) +
   geom_tile(aes(fill = diff)) +
@@ -397,7 +354,7 @@ viz_npxg_p90_diff <-
   guides(
     fill = 
       guide_legend(
-        title = 'Non-penalty xG/90\nrelative to neutral game state',
+        title = 'Non-penalty xG per 90 min.\nrelative to neutral game state',
         title.position = 'top',
         nrow = 1
       )
@@ -428,7 +385,7 @@ viz_npxg_p90_diff <-
     # plot.tag = ggtext::element_markdown(hjust = 1),
     plot.caption = ggtext::element_markdown(size = 12),
     axis.text.y = ggtext::element_markdown(),
-    axis.text.x.top = element_text(),
+    # axis.text.x.top = element_text(),
     plot.title.position = 'plot',
     legend.title = element_text(size = 10, hjust = 0.5),
     plot.title = element_text(size = 22, hjust = 0.5),
@@ -447,138 +404,98 @@ ggsave(
 )
 
 # more ----
-# TODO: Change the relative labels here! (No longer relative.)
 states_by_team_agg <-
-  # states_by_team %>% 
   states_by_team %>% 
-  rename(g_state = g_state) %>% 
+  relocate(season, team, g_state, dur, shots) %>% 
   group_by(season, g_state) %>% 
-  # mutate() %>% 
   summarize(
     cnt = sum(!is.na(dur)),
-    # dur_total = sum(dur),
-    across(matches('_diff$'), list(mean = ~sum(dur * .x, na.rm = TRUE) / sum(dur)))
+    across(shots:last_col(), list(mean = ~sum(dur * .x, na.rm = TRUE) / sum(dur)))
   ) %>% 
   ungroup()
 states_by_team_agg %>% mutate(across(matches('_mean'), round, 2))
 
-# Not really needed. Just for identify the most extreme cases.
-states_by_team_oe <-
-  # states_by_team %>% 
-  states_by_team %>% 
-  rename(g_state = g_state) %>% 
-  left_join(states_by_team_agg) %>% 
-  mutate(
-    shots_p90_oe = shots_p90_diff - shots_p90_diff_mean,
-    npxg_p90_oe = npxg_p90_diff - npxg_p90_diff_mean
-  ) %>% 
-  group_by(season, g_state) %>% 
-  mutate(
-    across(matches('_oe$'), list(rnk = ~row_number(desc(.x)), rnk_inv = ~row_number(.x)))
-  ) %>% 
-  ungroup() %>%
-  arrange(season, g_state)
-states_by_team_oe
+.plot_heatmap <-
+  function(stat = 'npxg_ps',
+           lab_legend = 'Non-Penalty xG Per Shot',
+           lab_format = '%+.2f',
+           low = '#5ab4ac',
+           mid = '#f5f5f5',
+           high = '#d8b365') {
+    
+    states_by_team_clean %>%
+      filter(stat == !!stat) %>% 
+      ggplot() +
+      aes(y = team, x = g_state)+
+      geom_tile(aes(fill = diff)) +
+      geom_text(
+        family = 'Karla',
+        size = 4,
+        aes(label = lab)
+      ) +
+      guides(
+        fill = guide_legend(
+          title = lab_legend,
+          nrow = 1,
+          title.position = 'top',
+          title.hjust = 0.5
+        )
+      ) +
+      scale_x_discrete(position = 'top') + 
+      scale_fill_gradient2(
+        labels = function(x) sprintf(lab_format, x),
+        midpoint = 0,
+        low = low,
+        mid = mid,
+        high = high
+      ) +
+      labs(
+        y = NULL
+      ) +
+      theme(
+        # axis.text.x.top = element_text(),
+        legend.title = element_text(size = 10, hjust = 0.5),
+        axis.text.x = element_text(size = 10, hjust = 0.5),
+        axis.text.y = element_blank(),
+        plot.subtitle = element_text(hjust = 0.5),
+        panel.grid.major = element_blank(),
+        legend.position = 'top'
+      )
+  }
 
-states_by_team_oe %>% 
-  filter(
-    shots_p90_oe_rnk == 1L |
-      npxg_p90_oe_rnk == 1L |
-      shots_p90_oe_rnk_inv == 1L | npxg_p90_oe_rnk_inv == 1L
-  )
-
-.plot_heatmap <- function(col) {
-  # states_by_team %>% 
-  states_by_team %>% 
-    rename(g_state = g_state) %>% 
-    # filter(g_state %in% c('-1', '0', '+1')) %>% 
-    ggplot() +
-    aes(y = team, x = g_state) +
-    geom_tile(aes(fill = {{ col }})) +
-    labs(
-      y = NULL
-    ) +
-    theme(
-      axis.text.y = element_blank(),
-      # plot.title.position = 'plot',
-      plot.subtitle = element_text(hjust = 0.5),
-      # title = element_text(hjust = 0.5),
-      panel.grid.major = element_blank(),
-      legend.position = 'top'
-    )
-}
-
-viz_npxg_ps_diff <-
-  .plot_heatmap(npxg_ps_diff) +
-  geom_text(
-    family = 'Karla',
-    size = 4,
-    aes(label = scales::number(npxg_ps_diff, accuracy = 0.01))
-  ) +
-  guides(
-    fill = guide_legend(
-      title = 'Non-Penalty xG Differential Per Shot',,
-      nrow = 1,
-      title.position = 'top',
-      title.hjust = 0.5
-    )
-  ) +
-  scale_fill_gradient2(
-    midpoint = 0,
+viz_npxg_ps <-
+  .plot_heatmap(
+    stat = 'npxg_ps',
+    lab_format = '%+.2f',
+    lab_legend = 'Non-Penalty xG Per Shot\nRelative to Neutral Game State',
     low = '#5ab4ac',
     mid = '#f5f5f5',
     high = '#d8b365'
   ) +
   labs(
-    x = ' ',
+    x = NULL,
+    caption = ' ',
     tag = '**Viz**: Tony ElHabr | **Data**: understat',
     subtitle = 'Teams shoot less efficiently when they\'re down'
   )
-viz_npxg_ps_diff
+viz_npxg_ps
 
-viz_shots_p90_diff <-
-  .plot_heatmap(shots_p90_diff) +
-  geom_text(
-    family = 'Karla',
-    size = 4,
-    aes(label = scales::number(shots_p90_diff, accuracy = 0.1))
-  ) +
-  # guides(fill = guide_legend(title = 'shots/90', nrow = 1)) +
-  guides(
-    fill = guide_legend(
-      title = 'Shot Differential Per 90 Min.',
-      nrow = 1,
-      title.position = 'top',
-      title.hjust = 0.5
-    )
-  ) +
-  scale_fill_gradient2(
-    midpoint = 0,
+viz_shots_p90 <-
+  .plot_heatmap(
+    stat = 'shots_p90',
+    lab_format = '%+d',
+    lab_legend = 'Shots Per 90 Min\nRelative to Neutral Game State',
     low = '#67a9cf',
     mid = '#f7f7f7',
     high = '#ef8a62'
   ) +
   labs(
-    x = 'Game State',
-    caption = 'Game states with goal differentials less/greater than +-2 not shown.',
-    subtitle = 'Because they shoot more frequently'
+    x = NULL,
+    # x = 'Game State',
+    caption = ' ',
+    subtitle = 'Teams shoot more often when they are behind'
   )
-viz_shots_p90_diff
-
-# viz_teams <-
-#   states_by_team %>%
-#   distinct(team) %>% 
-#   ggplot() +
-#   aes(y = team) +
-#   geom_blank() +
-#   theme(
-#     axis.text.y = element_text(hjust = 0.5)
-#   ) +
-#   labs(
-#     x = NULL,
-#     y = NULL
-#   )
-# viz_teams
+viz_shots_p90
 
 viz_teams <-
   states_by_team %>%
@@ -601,11 +518,23 @@ viz_teams
 
 # library(patchwork)
 res <- 
-  patchwork::wrap_plots(viz_npxg_ps_diff, viz_teams, viz_shots_p90_diff, widths = c(7, 2, 7)) +
+  patchwork::wrap_plots(viz_npxg_ps, viz_teams, viz_shots_p90, widths = c(7, 2, 7)) +
   patchwork::plot_annotation(
-    title = 'The Shot Quality vs. Volume Trade-off',
+    title = 'The Shot Quality vs. Quantity Trade-off',
     theme = theme(
       plot.title = ggtext::element_markdown('Karla', face = 'bold', size = 18, hjust = 0.5)
     )
   )
 res
+
+ggsave(
+  plot = res,
+  filename = file.path(dir_proj, sprintf('viz_shot_quality_efficiency_%s.png', season)),
+  width = 12,
+  height = 9,
+  type = 'cairo'
+)
+
+# Every shot-based sport has a trade-off between shot quality and quantity. Teams are more likely to shoot more when losing, but those shots are more likely to be difficult. For soccer, this is evident in the non-penalty xG per shot (quality) and shots per 90 (quantity).
+
+# The influence of game state is evident in the change in teams' xG per 90 when they are either ahead or behind---they are more likely to accumulate
