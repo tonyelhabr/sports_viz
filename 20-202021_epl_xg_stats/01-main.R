@@ -42,6 +42,56 @@ season <- 2020
 path_matches <- here::here(dir_proj, sprintf('matches_%s.rds', season))
 path_shots <- here::here(dir_proj, sprintf('shots_%s.rds', season))
 overwrite <- FALSE
+
+# Reference: https://themockup.blog/posts/2019-01-09-add-a-logo-to-your-plot/
+# https://a.espncdn.com/combiner/i?img=/i/leaguelogos/soccer/500/23.png
+path_logo <- file.path(dir_proj, 'premier-league.png')
+add_logo <-
+  function(path_viz,
+           path_logo,
+           idx_x,
+           idx_y,
+           logo_scale = 0.1,
+           adjust_x = TRUE,
+           adjust_y = TRUE,
+           path_suffix = '_w_logo') {
+    plot <- path_viz %>% magick::image_read()
+    logo_raw <- path_logo %>% magick::image_read()
+
+    plot_height <- magick::image_info(plot)$height
+    plot_width <- magick::image_info(plot)$width
+    
+    logo <- magick::image_scale(logo_raw, as.character(round(plot_width * logo_scale)))
+    
+    info <- magick::image_info(logo)
+    logo_width <- info$width
+    logo_height <- info$height
+    
+    x_pos <- plot_width - idx_x * plot_width
+    y_pos <- plot_height - idx_y * plot_height
+    
+    if(adjust_x) {
+      x_pos <- x_pos - logo_width
+    }
+    
+    if(adjust_y) {
+      y_pos <- y_pos - logo_height
+    }
+    
+    offset <- paste0('+', x_pos, '+', y_pos)
+    
+    viz <- plot %>% magick::image_composite(logo, offset = offset)
+    ext <- path_viz %>% tools::file_ext()
+    rgx_ext <- sprintf('[.]%s$', ext)
+    
+    res <-
+      magick::image_write(
+        viz,
+        path_viz %>% str_replace(rgx_ext, sprintf('%s.%s', path_suffix, ext))
+      )
+    res
+  }
+
 # Reference: https://gist.github.com/Torvaney/42cd82addb3ba2c4f33ec3247e66889c
 if(!file.exists(path_shots) & overwrite) {
   if(!file.exists(path_matches) & overwrite) {
@@ -304,106 +354,8 @@ states_by_team_clean <-
   ) %>% 
   left_join(standings)
 states_by_team_clean
-# states_by_team_clean$g_state %>% levels()
 
-teams_bus <-
-  bind_rows(
-    states_by_team_clean %>% 
-      filter(g_state == 'Ahead (Relative)' & diff < 0),
-    states_by_team_clean %>% 
-      filter(g_state == 'Behind (Relative)' & diff > 0)
-  ) %>% 
-  count(team) %>% 
-  filter(n == 2L) %>% 
-  pull(team)
-
-teams_filt <- teams_bus
-color_bus <- 'black'
-
-# This seems overly complicated (and is) just cuz I was testing out different stuff.
-team_annotations <-
-  team_mapping %>% 
-  select(team) %>%
-  inner_join(states_by_team_clean %>% distinct(team, rnk)) %>% 
-  mutate(
-    prefix = case_when(
-      team %in% teams_bus ~ glue::glue('<b><span style="color:{color_bus}">'),
-      TRUE ~ NA_character_
-    ),
-    suffix = case_when(
-      # team %in% teams_neutral ~ '</span></b>',
-      team %in% teams_bus ~ '</span></b>',
-      TRUE ~ NA_character_
-    )
-  ) %>%  
-  mutate(
-    lab = case_when(
-      !is.na(prefix) ~ glue::glue('{prefix}{team}{suffix}') %>% as.character(), 
-      TRUE ~ as.character(team)
-    )
-  )
-team_annotations
-
-viz_npxg_p90_diff <-
-  states_by_team_clean %>% 
-  filter(stat == 'npxg_p90') %>% 
-  ggplot() +
-  aes(y = -rnk, x = g_state) +
-  geom_tile(aes(fill = diff)) +
-  geom_text(aes(label = lab), family  = 'Karla', size = 4) +
-  guides(
-    fill = 
-      guide_legend(
-        title = 'Non-penalty xG per 90 min.\nrelative to neutral game state',
-        title.position = 'top',
-        nrow = 1
-      )
-  ) +
-  scale_fill_gradient2(
-    midpoint = 0,
-    low = '#e9a3c9',
-    mid = '#f7f7f7',
-    high = '#a1d76a',
-    na.value = 'grey80'
-  ) +
-  scale_x_discrete(position = 'top') +
-  scale_y_continuous(
-    breaks = seq.int(-20, -1),
-    labels = team_annotations %>% arrange(-rnk) %>% pull(lab)
-  ) +
-  labs(
-    y = NULL,
-    # x = 'Game State',
-    x = NULL,
-    title = 'xG By Game State, 2020/21 Premier League',
-    subtitle = glue::glue('Some <b><span style="color:{color_bus}">teams</b> accumulate xG at a <b><span style="color:{colorspace::darken("#e9a3c9", amount = 0.5)}">lower</span></b> rate when playing with the lead (parking the bus)<br/>and at a <b><span style="color:{colorspace::darken("#a1d76a", amount = 0.3)}">higher</span></b> rate when playing from behind (playing hard when they have to).'),
-    caption = 'Rates are time-based averages<br/>(accounting for varying time spent in a given game state).',
-    tag = '**Viz**: Tony ElHabr | **Data**: understat'
-  ) + 
-  theme(
-    # plot.tag.position = c(0.99, 0.01),
-    # plot.tag = ggtext::element_markdown(hjust = 1),
-    plot.caption = ggtext::element_markdown(size = 12),
-    axis.text.y = ggtext::element_markdown(),
-    # axis.text.x.top = element_text(),
-    plot.title.position = 'plot',
-    legend.title = element_text(size = 10, hjust = 0.5),
-    plot.title = element_text(size = 22, hjust = 0.5),
-    plot.subtitle = ggtext::element_markdown(size = 12, hjust = 0.5, color = 'grey50'),
-    panel.grid.major = element_blank(),
-    legend.position = 'top'
-  )
-viz_npxg_p90_diff
-
-ggsave(
-  plot = viz_npxg_p90_diff,
-  filename = file.path(dir_proj, sprintf('viz_npxg_p90_diff_%s.png', season)),
-  width = 9,
-  height = 10,
-  type = 'cairo'
-)
-
-# more ----
+# main ----
 states_by_team_agg <-
   states_by_team %>% 
   relocate(season, team, g_state, dur, shots) %>% 
@@ -415,6 +367,8 @@ states_by_team_agg <-
   ungroup()
 states_by_team_agg %>% mutate(across(matches('_mean'), round, 2))
 
+lab_caption <- 'Rates are time-based averages<br/>(accounting for varying time spent in a given game state).'
+lab_tag <- '**Viz**: Tony ElHabr | **Data**: understat'
 .plot_heatmap <-
   function(stat = 'npxg_ps',
            lab_legend = 'Non-Penalty xG Per Shot',
@@ -445,6 +399,7 @@ states_by_team_agg %>% mutate(across(matches('_mean'), round, 2))
       scale_fill_gradient2(
         labels = function(x) sprintf(lab_format, x),
         midpoint = 0,
+        na.value = 'grey80',
         low = low,
         mid = mid,
         high = high
@@ -475,7 +430,7 @@ viz_npxg_ps <-
   labs(
     x = NULL,
     caption = ' ',
-    tag = '**Viz**: Tony ElHabr | **Data**: understat',
+    tag = lab_tag,
     subtitle = 'Teams shoot less efficiently when they\'re down'
   )
 viz_npxg_ps
@@ -484,15 +439,18 @@ viz_shots_p90 <-
   .plot_heatmap(
     stat = 'shots_p90',
     lab_format = '%+d',
-    lab_legend = 'Shots Per 90 Min\nRelative to Neutral Game State',
+    lab_legend = 'Shots Per 90 Min.\nRelative to Neutral Game State',
     low = '#67a9cf',
     mid = '#f7f7f7',
     high = '#ef8a62'
   ) +
+  theme(
+    plot.caption = ggtext::element_markdown(),
+  ) +
   labs(
     x = NULL,
     # x = 'Game State',
-    caption = ' ',
+    caption = lab_caption,
     subtitle = 'Teams shoot more often when they are behind'
   )
 viz_shots_p90
@@ -517,7 +475,7 @@ viz_teams <-
 viz_teams
 
 # library(patchwork)
-res <- 
+viz_shot_qq <- 
   patchwork::wrap_plots(viz_npxg_ps, viz_teams, viz_shots_p90, widths = c(7, 2, 7)) +
   patchwork::plot_annotation(
     title = 'The Shot Quality vs. Quantity Trade-off',
@@ -525,16 +483,162 @@ res <-
       plot.title = ggtext::element_markdown('Karla', face = 'bold', size = 18, hjust = 0.5)
     )
   )
-res
+viz_shot_qq
+
+path_viz_qq <- file.path(dir_proj, sprintf('viz_shot_quality_efficiency_%s.png', season))
 
 ggsave(
-  plot = res,
-  filename = file.path(dir_proj, sprintf('viz_shot_quality_efficiency_%s.png', season)),
+  plot = viz_shot_qq,
+  filename = path_viz_qq,
   width = 12,
   height = 9,
   type = 'cairo'
 )
 
-# Every shot-based sport has a trade-off between shot quality and quantity. Teams are more likely to shoot more when losing, but those shots are more likely to be difficult. For soccer, this is evident in the non-penalty xG per shot (quality) and shots per 90 (quantity).
+add_logo(
+  path_viz = path_viz_qq,
+  path_logo = path_logo,
+  idx_x = 0.45,
+  idx_y = 0.8
+)
 
-# The influence of game state is evident in the change in teams' xG per 90 when they are either ahead or behind---they are more likely to accumulate
+# secondary ----
+states_npxg_p90_diff <-
+  states_by_team_clean %>% 
+  filter(stat == 'npxg_p90')
+
+teams_select_init <-
+  states_npxg_p90_diff %>%
+  select(season, team, g_state, diff) %>%
+  filter(g_state != 'Neutral') %>%
+  pivot_wider(names_from = g_state, values_from = diff)
+
+teams_lo <-
+  teams_select_init %>%
+  filter(`Ahead\n(Relative)` < 0 & `Behind\n(Relative)` < 0) %>% 
+  pull(team)
+teams_lo
+
+teams_hi <-
+  teams_select_init %>%
+  filter(`Ahead\n(Relative)` > 0 & `Behind\n(Relative)` > 0) %>% 
+  pull(team)
+teams_hi
+
+# teams_bus <-
+#   states_by_team_clean %>%
+#   filter(stat == 'npxg_p90') %>%
+#   filter(
+#     g_state == 'Ahead\n(Relative)' & diff < 0
+#   ) %>%
+#   pull(team)
+# teams_bus <- c('Tottenham', 'West Brom')
+
+# teams_filt <- teams_bus
+color_hi <- '#F28E2B'
+color_lo <- '#4E79A7'
+colors_lst <-
+  xengagement::team_accounts_mapping %>%
+  select(team, color_pri) %>%
+  deframe()
+colors_lst
+
+# This seems overly complicated (and is) just cuz I was testing out different stuff.
+team_annotations <-
+  team_mapping %>% 
+  select(team) %>%
+  inner_join(states_by_team_clean %>% distinct(team, rnk)) %>% 
+  left_join(
+    xengagement::team_accounts_mapping %>% 
+      select(team, color_pri) 
+  ) %>% 
+  mutate(
+    prefix = case_when(
+      team %in% teams_hi ~ glue::glue('<b><span style="color:{color_hi}">'),
+      team %in% teams_lo ~ glue::glue('<b><span style="color:{color_lo}">'),
+      TRUE ~ NA_character_
+    ),
+    suffix = case_when(
+      team %in% c(teams_hi, teams_lo) ~ '</span></b>',
+      TRUE ~ NA_character_
+    )
+  ) %>%  
+  mutate(
+    lab = case_when(
+      !is.na(prefix) ~ glue::glue('{prefix}{team}{suffix}') %>% as.character(), 
+      TRUE ~ as.character(team)
+    )
+  )
+team_annotations
+
+viz_npxg_p90_diff <-
+  states_npxg_p90_diff %>% 
+  ggplot() +
+  aes(y = -rnk, x = g_state) +
+  geom_tile(aes(fill = diff)) +
+  geom_text(aes(label = lab), family  = 'Karla', size = 4) +
+  guides(
+    fill = 
+      guide_legend(
+        title = 'Non-penalty xG Per 90 Min.\nRelative to Neutral Game State',
+        title.position = 'top',
+        nrow = 1
+      )
+  ) +
+  scale_fill_gradient2(
+    midpoint = 0,
+    na.value = 'grey80',
+    low = '#e9a3c9',
+    mid = '#f7f7f7',
+    high = '#a1d76a'
+  ) +
+  scale_x_discrete(position = 'top') +
+  scale_y_continuous(
+    breaks = seq.int(-20, -1),
+    labels = team_annotations %>% arrange(-rnk) %>% pull(lab)
+  ) +
+  labs(
+    y = NULL,
+    # x = 'Game State',
+    x = NULL,
+    title = 'xG By Game State, 2020/21 Premier League',
+    subtitle = glue::glue('<b><span style="color:{color_lo}">Some teams</span></b> accumulate xG at a <b><span style="color:{colorspace::darken("#e9a3c9", amount = 0.5)}">lower</span></b> rate both when behind or ahead,<br/> while <b><span style="color:{color_hi}">other teams</span></b> accumulate xG at a <b><span style="color:{colorspace::darken("#a1d76a", amount = 0.3)}">higher</span></b> rate in such game states.'),
+    caption = lab_caption,
+    tag = lab_tag
+  ) + 
+  theme(
+    # plot.tag.position = c(0.99, 0.01),
+    # plot.tag = ggtext::element_markdown(hjust = 1),
+    plot.caption = ggtext::element_markdown(size = 12),
+    axis.text.y = ggtext::element_markdown(),
+    # axis.text.x.top = element_text(),
+    plot.title.position = 'plot',
+    legend.title = element_text(size = 10, hjust = 0.5),
+    plot.title = element_text(size = 22, hjust = 0),
+    plot.subtitle = ggtext::element_markdown(size = 14, hjust = 0, color = 'grey50'),
+    panel.grid.major = element_blank(),
+    legend.position = 'top'
+  )
+viz_npxg_p90_diff
+
+path_viz_npxg_p90_diff <- file.path(dir_proj, sprintf('viz_npxg_p90_diff_%s.png', season))
+ggsave(
+  plot = viz_npxg_p90_diff,
+  filename = path_viz_npxg_p90_diff,
+  width = 9,
+  height = 10,
+  type = 'cairo'
+)
+
+add_logo(
+  path_viz = path_viz_npxg_p90_diff,
+  path_logo = path_logo,
+  idx_x = 0.05,
+  idx_y = 1,
+  adjust_y = FALSE
+)
+
+# Death, taxes, and diminishing returns are the 3 pillars of life. With Soccer ball, the 3rd principle is evident in the trade-off between non-penalty xG per shot (quality) and shots per 90 (quantity).
+
+# When the game is tied, some teams play frantically while others play much more under control. The influence of game state is evident in the change in teams' xG per 90 when they are either ahead or behind.
+
