@@ -113,6 +113,17 @@ After week 7
 
 ![OptaJoe One-Word Summaries Bubble Chart](18-OptaJoe/bubble_optajoe_wide_w_logo.png "OptaJoe One-Word Summaries Bubble Chart")
 
+## 19. Nick Wan New Twitch Followers
+
+![Nick Wan New Follower Time series Lollipops](19-nickwan/nick_wan_twitch_followers_w_sliced.png "Nick Wan New Follower Time series Lollipops")
+
+## 20. 2020-21 EPL Game State xG
+
+![Game State npxG/Shot and Shot/90 Tables](20-202021_epl_xg_stats/viz_shot_quality_efficiency_2020_w_logo.png "Game State npxG/Shot and Shot/90 Tables")
+
+![Game State npxG/90 Table](20-202021_epl_xg_stats/viz_npxg_p90_diff_2020_w_logo.png "Game State npxG/90 Table")
+
+
 # Future Ideas
 
 -   Stability of goal-scoring rate and/or xG over-performance
