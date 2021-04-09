@@ -4,8 +4,10 @@ library(patchwork)
 library(metR)
 dir_proj <- '21-202021_epl_heatmap'
 path_events <- file.path(dir_proj, 'events.rds')
+path_meta <- file.path(dir_proj, 'meta.rds')
 path_forms <- file.path(dir_proj, 'forms.rds')
 events <- path_events %>% read_rds()
+meta <- path_meta %>% read_rds()
 forms <- path_forms %>% read_rds()
 extrafont::loadfonts(device = 'win', quiet = TRUE)
 theme_set(theme_minimal())
@@ -34,128 +36,56 @@ theme_update(
 )
 update_geom_defaults('text', list(family = 'Karla', size = 4))
 
-fouls <- events %>% filter(type_name == 'Foul')
-fouls
-
-subs <-
-  events %>% 
-  # filter(type_name %in% c('SubstitutionOn', 'SubstitutionOff')) %>% 
-  filter(type_name == 'SubstitutionOff') %>% 
-  select(season, match_id, match, team_id, team_name, player_id, player_name, type_name, expanded_minute)
-subs
-
-events_last <-
-  events %>% 
-  group_by(match_id) %>% 
-  slice_max(expanded_minute) %>% 
-  ungroup() %>% 
-  select(match_id, expanded_minute)
-events_last
-
-subs_grp <-
-  subs %>% 
-  arrange(expanded_minute) %>% 
-  group_by(match_id, team_id, type_name) %>% 
-  # This should match the `idx` from `forms`.
-  mutate(idx = row_number(expanded_minute) + 1L) %>% 
-  ungroup() %>% 
-  select(match_id, team_id, idx, expanded_minute)
-
-minutes_init <-
-  subs_grp %>% 
-  filter(idx == min(idx)) %>% 
-  mutate(idx = 1L, expanded_minute = 0L)
-minutes_init
-
-minutes_max <-
-  subs_grp %>% 
-  group_by(match_id, team_id) %>% 
-  slice_max(idx, with_ties = FALSE) %>% 
-  ungroup() %>% 
-  left_join(events_last %>% rename(expanded_minute_last = expanded_minute)) %>% 
-  mutate(
-    across(idx, ~.x + 1L), 
-    across(expanded_minute, ~ifelse(expanded_minute > expanded_minute_last, .x, expanded_minute_last))
-  ) %>% 
-  select(-expanded_minute_last)
-minutes_max
-
-minutes <-
-  list(
-    minutes_init,
-    subs_grp,
-    minutes_max
-  ) %>% 
-  reduce(bind_rows)
-minutes
-
-mp <-
-  forms %>% 
-  left_join(minutes) %>% 
-  left_join(
-    minutes %>% 
-      mutate(across(idx, ~.x - 1L)) %>% 
-      rename(expanded_minute_lead1 = expanded_minute)
-  ) %>% 
-  mutate(dur = expanded_minute_lead1 - expanded_minute) %>% 
-  group_by(match_id, player_id, player_name) %>% 
-  summarize(across(dur, sum)) %>% 
-  ungroup()
-mp
-
-matches <- forms %>% distinct(season, match_id, team_name, side) %>% pivot_wider(names_from = side, values_from = team_name)
-matches
-mp %>% 
-  head(10) %>% 
-  left_join(matches)
-
-.generate_lineups <- function(forms, subs, .match_id = 1485271) {
-  
-  forms_filt <- forms %>% filter(match_id == .match_id)
-  subs_filt <- subs %>% filter(match_id == .match_id)
-  teams <- forms_filt %>% distinct(team_name) %>% pull(team_name)
-
-  .f <- function(team) {
-    team <- 'Arsenal'
-    forms_team_filt <- forms_filt %>% filter(team_name == team)
-
-    subs_team_filt <-
-      subs_filt %>% 
-      filter(team_name == team) %>% 
-      arrange(expanded_minute) %>% 
-      group_by(type_name) %>% 
-      # This should match the `idx` from `forms`.
-      mutate(idx = row_number(expanded_minute) + 1L) %>% 
-      ungroup()
-    subs_team_filt
+path_logo <- file.path(dir_proj, 'premier-league.png')
+add_logo <-
+  function(path_viz,
+           path_logo,
+           idx_x,
+           idx_y,
+           logo_scale = 0.1,
+           adjust_x = TRUE,
+           adjust_y = TRUE,
+           path_suffix = '_w_logo') {
+    plot <- path_viz %>% magick::image_read()
+    logo_raw <- path_logo %>% magick::image_read()
     
-    minutes_init <-
-      subs_team_filt %>% 
-      select(idx, expanded_minute) %>% 
-      add_row(idx = 1L, expanded_minute = 0L)
+    plot_height <- magick::image_info(plot)$height
+    plot_width <- magick::image_info(plot)$width
     
-    minute_max <- max(minutes_init$expanded_minute) %>% max(. + 1L, 96)
-    minutes <-
-      minutes_init %>% 
-      add_row(idx = max(minutes_init$idx) + 1L, expanded_minute = minute_max) %>% 
-      arrange(idx)
-    minutes
+    logo <- magick::image_scale(logo_raw, as.character(round(plot_width * logo_scale)))
+    
+    info <- magick::image_info(logo)
+    logo_width <- info$width
+    logo_height <- info$height
+    
+    x_pos <- plot_width - idx_x * plot_width
+    y_pos <- plot_height - idx_y * plot_height
+    
+    if(adjust_x) {
+      x_pos <- x_pos - logo_width
+    }
+    
+    if(adjust_y) {
+      y_pos <- y_pos - logo_height
+    }
+    
+    offset <- paste0('+', x_pos, '+', y_pos)
+    
+    viz <- plot %>% magick::image_composite(logo, offset = offset)
+    ext <- path_viz %>% tools::file_ext()
+    rgx_ext <- sprintf('[.]%s$', ext)
     
     res <-
-      forms_team_filt %>% 
-      select(idx, formation_slot, player_id, player_name) %>% 
-      left_join(minutes) %>% 
-      left_join(
-        minutes %>% 
-          mutate(idx = idx - 1L) %>% 
-          select(idx, expanded_minute_impute = expanded_minute)
-      ) %>% 
-      mutate(dur = expanded_minute_impute - expanded_minute) %>% 
-      group_by(player_id, player_name) %>% 
-      summarize(across(dur, sum)) %>% 
-      ungroup()
+      magick::image_write(
+        viz,
+        path_viz %>% str_replace(rgx_ext, sprintf('%s.%s', path_suffix, ext))
+      )
     res
   }
+
+# main ----
+fouls <- events %>% filter(type_name == 'Foul')
+fouls
 
 forms_labs <-
   tibble(
@@ -165,20 +95,13 @@ forms_labs <-
   )
 forms_labs
 
-forms %>% 
-  count(player_id, player_name, pos, sort = TRUE) %>% 
-  group_by(player_id, player_name) %>%
-  mutate(total = sum(n)) %>% 
-  mutate(frac = n / total) %>% 
-  slice_max(frac, with_ties = FALSE) %>% 
-  ungroup() %>% 
-  arrange(frac) %>% 
-  ggplot() +
-  aes(x = frac, y = n) +
-  geom_point()
-
 pos <-
   forms %>% 
+  group_by(match_id, team_id, idx) %>% 
+  mutate(row = dense_rank(y)) %>% 
+  mutate(row_max = max(row)) %>% 
+  ungroup() %>% 
+  left_join(forms_labs, by = c('row', 'row_max')) %>% 
   count(player_id, player_name, pos) %>% 
   group_by(player_id, player_name) %>%
   mutate(total = sum(n)) %>% 
@@ -189,18 +112,30 @@ pos <-
 pos
 
 fouls_pos <- 
-  events %>% 
+  fouls %>% 
   left_join(pos) %>% 
   filter(pos != 'G') %>% 
   mutate(across(pos, ~ordered(.x, c('D', 'M', 'F')))) %>% 
   mutate(across(pos, ~fct_recode(.x, 'Defenders' = 'D', 'Midfielders' = 'M', 'Forwards' = 'F')))
 fouls_pos
 
-fouls_by_player_top <-
+fouls_by_player <-
   fouls_pos %>% 
   drop_na(player_id) %>% 
-  count(outcome_type_name, pos, player_id, player_name) %>% 
-  arrange(outcome_type_name, pos, desc(n)) %>% 
+  count(outcome_type_name, pos, player_id, player_name, name = 'foul') %>% 
+  left_join(
+    mp %>% 
+      group_by(player_id) %>% 
+      summarize(across(mp, sum)) %>% 
+      ungroup(), 
+    by = 'player_id'
+  ) %>% 
+  mutate(foul_p90 = mp * foul / 90) %>% 
+  arrange(outcome_type_name, pos, desc(foul))
+fouls_by_player
+
+fouls_by_player_top <-
+  fouls_by_player %>% 
   group_by(outcome_type_name, pos) %>% 
   slice_max(n, n = 3, with_ties = FALSE) %>% 
   ungroup()
@@ -224,18 +159,16 @@ convert_to_xyz <- function(data, n = 200) {
     as_tibble() %>% 
     mutate(x = dz$x) %>% 
     pivot_longer(-x, names_to = 'y', values_to = 'z') %>% 
-    mutate(y = as.double(y))
+    mutate(y = as.double(y)) %>% 
+    mutate(across(z, list(norm = ~(.x - min(.x)) / (max(.x) - min(.x)))))
   res
 }
 
 fouls_xyz <-
   fouls_pos %>% 
-  group_nest(pos) %>% 
+  group_nest(outcome_type_name, pos) %>% 
   mutate(data = map(data, convert_to_xyz)) %>% 
-  unnest(data) %>% 
-  group_by(pos) %>%
-  mutate(across(z, list(norm = ~(.x - min(.x)) / (max(.x) - min(.x))))) %>%
-  ungroup()
+  unnest(data)
 fouls_xyz
 
 # Hex experimentation
@@ -258,145 +191,279 @@ fouls_xyz
 #   guides(fill = FALSE)
 
 
-# library(metR)
 pos <- c('Defenders', 'Midfielders', 'Forwards')
+h <- 4
 .plot_by_outcome_type_name <- function(.outcome_type_name) {
+  
+  fouls_xyz_filt <- fouls_xyz %>% filter(outcome_type_name == .outcome_type_name)
+  lab_outcome <- case_when(
+    .outcome_type_name == 'Unsuccessful' ~ 'Made',
+    .outcome_type_name == 'Successful' ~ 'Drawn'
+  )
   .plot_by_pos <- function(.pos) {
-    # .pos <- 'Defenders'
     pal <- case_when(
-      .pos == 'Defenders' ~ 'Greens',
+      .pos == 'Forwards' ~ 'Greens',
       .pos == 'Midfielders' ~ 'Oranges',
-      .pos == 'Forwards' ~ 'Purples'
+      .pos == 'Defenders' ~ 'Purples'
     )
     
-    lab_tag <- case_when(
-      .pos == 'Defenders' ~ '**Viz**: Tony ElHabr', #  | **Data**: Tedious film sessions',
-      TRUE ~ ' '
+    color_title <- case_when(
+      .pos == 'Forwards' ~ '#005a32',
+      .pos == 'Midfielders' ~ '#8c2d04',
+      .pos == 'Defenders' ~ '#4a1486'
     )
     
     viz <-
-      fouls_xyz %>%
+      fouls_xyz_filt %>%
       filter(pos == .pos) %>% 
       ggplot() +
       aes(x = x, y = y, z = z_norm) +
-      # ggsoccer::annotate_pitch(limits = FALSE) +
-      ggsoccer::annotate_pitch(fill = '#141622', clor = 'white', limits = FALSE) +
+      ggsoccer::annotate_pitch(limits = FALSE) +
       ggsoccer::theme_pitch() +
       geom_contour_filled(bins = 8, alpha = 0.7) +
-      # metR::geom_contour_fill(aes(x = x, y = y, z = z_norm), bins = 8, alpha = 0.7) +
       metR::geom_contour_tanaka(bins = 8, alpha = 0.7) +
       guides(fill = FALSE) +
       scale_fill_brewer(palette = pal) +
-      coord_fixed(clip = 'off') +
+      # coord_fixed(clip = 'off') +
       theme(
-        # panel.background = element_rect(fill = 'black'),
-        # plot.background = element_rect(fill = 'red')
-        # plot.margin = margin(0, 0, 0, 0),
-        plot.tag = ggtext::element_markdown(hjust = 0, size = 14),
-        plot.tag.position = c(.05, 0.01),
-        plot.subtitle = element_text(size = 18, hjust = 0.5)
+        plot.subtitle = ggtext::element_markdown(size = 18, hjust = 0.5, color = 'grey50')
       ) +
       labs(
-        caption = ' ',
-        tag = lab_tag,
-        subtitle = .pos
+        subtitle = glue::glue('<b><span style="color:{color_title}">{.pos}</span></b>')
       )
     viz
   }
   
   plots <- pos %>% map(.plot_by_pos)
-  # plots[[1]]
   viz_fouls_by_pos <- 
-    patchwork::wrap_plots(plots) +
-    patchwork::plot_annotation(
-      title = 'Where Are Fouls %s?',
-      theme = theme(
-        plot.title = ggtext::element_markdown('Karla', face = 'bold', size = 24, hjust = 0.5)
-      )
-    )
+    patchwork::wrap_plots(plots, row = 1)
   viz_fouls_by_pos
+  
   ggsave(
     plot = viz_fouls_by_pos,
-    filename = file.path(dir_proj, 'viz_fouls_by_pos.png'),
-    width = 10,
-    height = 6,
+    filename = file.path(dir_proj, sprintf('viz_fouls_%s_by_pos.png', tolower(lab_outcome))),
+    width =  3 * h * 1.5, # 2 / 3,
+    height = h,
     type = 'cairo'
   )
+  viz_fouls_by_pos
 }
 
-player_name_filt <- 'Tomas Soucek'
-fouls_pos1 <- fouls_pos %>% filter(player_name == !!player_name_filt)
-fouls_pos2 <- fouls_pos %>% filter(player_name != !!player_name_filt)
-x1 <- fouls_pos1 %>% pull(x)
-y1 <- fouls_pos1 %>% pull(y)
-x2 <- fouls_pos2 %>% pull(x)
-y2 <- fouls_pos2 %>% pull(y)
-x_rng <- range(c(x1, x2))
-y_rng <- range(c(y1, y2))
-bw_x <- MASS::bandwidth.nrd(c(x1, x2))
-bw_y <- MASS::bandwidth.nrd(c(y1, y2))
-bw_xy <- c(bw_x, bw_y)
-n <- 200
-d21 <- MASS::kde2d(x1, y1, h = bw_xy, n = n, lims = c(x_rng, y_rng))
-d22 <- MASS::kde2d(x2, y2, h = bw_xy, n = n, lims = c(x_rng, y_rng))
-dz <- d21
-dz$z <- d21$z - d22$z
-colnames(dz$z) <- dz$y
-dzz <- 
-  dz$z %>%
-  as_tibble() %>% 
-  mutate(x = d2$x) %>% 
-  pivot_longer(-x, names_to = 'y', values_to = 'z') %>% 
-  mutate(y = as.double(y))
-dzz
+plots <- sprintf('%successful', c('S', 'Uns')) %>% map(.plot_by_outcome_type_name)
+plots[[1]]
 
-dzz %>% pull(z) %>% mean()
-
-library(metR)
-p <- 
-  dzz %>% 
+.add_tag <- function(...) {
+  list(
+    ...,
+    theme(
+      plot.tag = ggtext::element_markdown(hjust = 0, size = 14)
+    ),
+    labs(
+      tag = '**Viz**: Tony ElHabr | **Data**: 2020-21 Premier League through matchweek 30'
+    )
+  )
+}
+footer <-
   ggplot() +
-  aes(x = x, y = y, z = sqrt(z)) +
-  geom_contour_fill(
-    data = . %>% filter(z >= mean(z))
+  geom_blank() +
+  .add_tag()
+footer
+
+lab_title_fmt <- 'Where are Fouls <b><span style="color:black">%s</span></b>?'
+title1 <-
+  ggplot() +
+  geom_blank() +
+  # geom_point() +
+  theme(
+    # plot.background = element_rect(fill = 'black'),
+    # panel.background = element_rect(fill = 'black'),
+    plot.title = ggtext::element_markdown('Karla', color = 'gray50', face = NULL, size = 18, hjust = 0.5, linewidth = 1)
   ) +
-  geom_contour_tanaka(bins = 5)  +
-  coord_fixed(clip = 'off') +
-  scale_fill_gradient2(low = 'white', mid = 'white', high = 'red')
-p
-viz <-
-  fouls_pos %>% 
-  # Need to do this to match WhoScored
-  # filter(player_name %in% c('Mohamed Salah', 'Jamie Vardy', 'Danny Ings', 'Harry Kane', '')) %>% 
-  # mutate(
-  #   across(
-  #     c(x, y),
-  #     ~case_when(
-  #       side == 'away' ~ 1 * (100 - .x),
-  #       TRUE ~ .x
-  #     )
-  #   )
-  # ) %>% 
-# # Need to do this for symmetry of home/away, with attacking going right?
-# mutate(
-#   across(
-#     c(x, y),
-#     ~case_when(
-#       side == 'home' ~ 1 * (100 - .x),
-#       TRUE ~ .x
-#     )
+  labs(
+    title = sprintf(lab_title_fmt, 'Drawn')
+  )
+title1
+
+title2 <-
+  title1 +
+  labs(
+    title = sprintf(lab_title_fmt, 'Made')
+  )
+title2
+
+# viz_fouls_by_pos_init <- 
+#   patchwork::wrap_plots(
+#     list(plots[[1]],plots[[2]], footer), 
+#     heights = c(12, 12, 1),
+#     ncol = 1
 #   )
-# ) %>% 
-ggplot() +
-  ggsoccer::annotate_pitch() +
-  ggsoccer::theme_pitch() +
-  aes(x = x, y = y) +
-  # geom_point(alpha = 1) +
-  # geom_label(aes(label = player_name)) +
-  # geom_contour(aes(z = ..count..)) +
-  geom_density2d_filled() +
-  # geom_contour_fill() +
-  # guides(color = FALSE)
-  # facet_wrap(~pos, scales = 'free') +
-  guides(fill = FALSE)
-viz
+# viz_fouls_by_pos_init
+
+viz_fouls_by_pos <- 
+  patchwork::wrap_plots(
+    list(title1, plots[[1]], title2, plots[[2]], footer), 
+    heights = c(1, 12, 1, 12, 1),
+    ncol = 1
+  )
+viz_fouls_by_pos
+
+path_fouls_by_pos <- file.path(dir_proj, 'viz_fouls_by_pos.png')
+ggsave(
+  plot = viz_fouls_by_pos,
+  filename = path_fouls_by_pos,
+  width = 10,
+  height = 7,
+  type = 'cairo'
+)
+
+add_logo(
+  path_viz = path_fouls_by_pos,
+  path_logo = path_logo,
+  # adjust_x = FALSE,
+  idx_x = 0.05,
+  adjust_y = FALSE,
+  idx_y = 1
+)
+
+# dev ----
+convert_to_xyz2 <- function(data, n = 200) {
+  x <- data %>% pull(x)
+  y <- data %>% pull(y)
+  # x_rng <- range(x)
+  # y_rng <- range(y)
+  x_rng <- c(0, 100)
+  y_rng <- x_rng
+  
+  bw_x <- MASS::bandwidth.nrd(x)
+  bw_y <- MASS::bandwidth.nrd(y)
+  bw_xy <- c(bw_x, bw_y)
+  dz <- MASS::kde2d(x, y, h = bw_xy, n = n, lims = c(x_rng, y_rng))
+  colnames(dz$z) <- dz$y
+  res <- 
+    dz$z %>%
+    as_tibble() %>% 
+    mutate(x = dz$x) %>% 
+    pivot_longer(-x, names_to = 'y', values_to = 'z') %>% 
+    mutate(y = as.double(y)) %>% 
+    mutate(across(z, list(norm = ~(.x - min(.x)) / (max(.x) - min(.x)))))
+  res
+}
+
+# player-specfic ----
+plot_player_vs_pos <-
+  function(player,
+           outcome_type_name = 'Unsuccessful',
+           pos = NULL,
+           color = 'red',
+           n_bin = 8L,
+           n = 200L,
+           dir = dir_proj,
+           file = player,
+           ext = 'png',
+           path = file.path(dir, sprintf('%s.%s', file, ext)),
+           path_logo = file.path(dir, sprintf('%s.%s', str_replace_all(tolower(player), ' ', '-'), ext))) {
+    
+    if(is.null(pos)) {
+      player_name_filt <- 
+        pos <-
+        fouls_pos %>% 
+        filter(player_name == !!player) %>% 
+        distinct(pos) %>% 
+        pull(pos) %>% 
+        as.character() %>% 
+        .[1]
+    }
+    lab_outcome <- case_when(
+      outcome_type_name == 'Unsuccessful' ~ 'Made',
+      outcome_type_name == 'Successful' ~ 'Drawn'
+    )
+    
+    fouls_pos_filt <- fouls_pos %>% filter(pos == !!pos)
+    fouls_pos1 <- fouls_pos_filt %>% filter(player_name == !!player)
+    fouls_pos2 <- fouls_pos_filt %>% filter(player_name != !!player)
+    x1 <- fouls_pos1 %>% pull(x)
+    y1 <- fouls_pos1 %>% pull(y)
+    x2 <- fouls_pos2 %>% pull(x)
+    y2 <- fouls_pos2 %>% pull(y)
+    x_rng <- range(c(x1, x2))
+    y_rng <- range(c(y1, y2))
+    bw_x <- MASS::bandwidth.nrd(c(x1, x2))
+    bw_y <- MASS::bandwidth.nrd(c(y1, y2))
+    bw_xy <- c(bw_x, bw_y)
+    d21 <- MASS::kde2d(x1, y1, h = bw_xy, n = n, lims = c(x_rng, y_rng))
+    d22 <- MASS::kde2d(x2, y2, h = bw_xy, n = n, lims = c(x_rng, y_rng))
+    dz <- d21
+    dz$z <- d21$z - d22$z
+    colnames(dz$z) <- dz$y
+    dzz <- 
+      dz$z %>%
+      as_tibble() %>% 
+      mutate(x = dz$x) %>% 
+      pivot_longer(-x, names_to = 'y', values_to = 'z') %>% 
+      mutate(y = as.double(y)) %>% 
+      mutate(across(z, list(norm = ~(.x - min(.x)) / (max(.x) - min(.x)))))
+    
+    pal <- colorRampPalette(c('white', color))(n_bin) # %>% scales::show_col()
+    viz <- 
+      dzz %>% 
+      filter(z_norm > mean(z_norm)) %>% 
+      ggplot() +
+      # Not as smooth without the sqrt
+      aes(x = x, y = y, z = sqrt(z_norm)) +
+      ggsoccer::annotate_pitch(limits = FALSE) +
+      ggsoccer::theme_pitch() +
+      metR::geom_contour_fill(bins = n_bin, alpha = 0.7) +
+      metR::geom_contour_tanaka(bins = n_bin, alpha = 0.7) +
+      guides(fill = FALSE) +
+      scale_fill_gradientn(colors = pal) +
+      # coord_fixed(clip = 'off') +
+      theme(
+        plot.title.position = 'plot',
+        plot.title = ggtext::element_markdown(size = 18, hjust = 0, color = 'grey50')
+      ) +
+      labs(
+        subtitle = ' ',
+        title = glue::glue('Fouls <b><span style="color:black">{lab_outcome}</span><b> by <b><span style="color:{color}">{player}</span><b> vs. All Other {pos}')
+      ) +
+      .add_tag()
+    viz
+    
+    h <- 8
+    # browser()
+    ggsave(
+      plot = viz,
+      filename = path,
+      height = h,
+      width = h * 1.5,
+      type = 'cairo'
+    )
+
+    add_logo(
+      path_viz = path,
+      path_logo = path_logo,
+      # adjust_x = FALSE,
+      idx_x = 0.1,
+      logo_scale = 0.08,
+      adjust_y = FALSE,
+      idx_y = 1
+    )
+    viz
+  }
+
+viz_fouler <-
+  plot_player_vs_pos(
+    player = 'Tomas Soucek',
+    file = 'viz_fouler',
+    color = '#7a263a',
+    outcome_type_name = 'Unsuccessful'
+  )
+viz_fouler 
+
+viz_fouled <-
+  plot_player_vs_pos(
+    player = 'Jack Grealish',
+    file = 'viz_fouled',
+    color = '#670e36', # '#95bfe5',
+    outcome_type_name = 'Successful'
+  )
+viz_fouled
