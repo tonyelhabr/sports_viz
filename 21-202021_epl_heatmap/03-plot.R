@@ -122,16 +122,8 @@ fouls_pos
 fouls_by_player <-
   fouls_pos %>% 
   drop_na(player_id) %>% 
-  count(outcome_type_name, pos, player_id, player_name, name = 'foul') %>% 
-  left_join(
-    mp %>% 
-      group_by(player_id) %>% 
-      summarize(across(mp, sum)) %>% 
-      ungroup(), 
-    by = 'player_id'
-  ) %>% 
-  mutate(foul_p90 = mp * foul / 90) %>% 
-  arrange(outcome_type_name, pos, desc(foul))
+  count(outcome_type_name, pos, player_id, player_name, name = 'n') %>% 
+  arrange(outcome_type_name, pos, desc(n))
 fouls_by_player
 
 fouls_by_player_top <-
@@ -171,29 +163,15 @@ fouls_xyz <-
   unnest(data)
 fouls_xyz
 
-# Hex experimentation
-# fouls_xyz %>%
-#   filter(pos == 'Defenders') %>% 
-#   ggplot() +
-#   aes(x = x, y = y) +
-#   ggsoccer::annotate_pitch(limits = FALSE) +
-#   # ggsoccer::theme_pitch() +
-#   # stat_summary_hex(fun = ~mean(.x, na.rm = TRUE)) +
-#   coord_fixed(clip = 'on') +
-#   stat_summary_hex(
-#     mapping = aes(z = z_norm),
-#     alpha = 0.7,
-#     fun = ~ mean(.x)
-#   ) +
-#   # scale_fill_steps2(low = "#ffffff", mid = "#e0e0e0", high = "#1094c4") +
-#   scale_fill_gradient2(low = 'white', high = 'red') +
-#   # scale_fill_viridis_c() +
-#   guides(fill = FALSE)
-
-
 pos <- c('Defenders', 'Midfielders', 'Forwards')
-h <- 4
-.plot_by_outcome_type_name <- function(.outcome_type_name) {
+lab_tag <- '**Viz**: Tony ElHabr | **Data**: 2020-21 Premier League through Matchweek 30'
+
+.plot_by_outcome_type_name <- 
+  function(.outcome_type_name,
+           dir = dir_proj,
+           ext = 'png',
+           file = sprintf('viz_fouls_%s_by_pos', tolower(lab_outcome)),
+           path = file.path(dir_proj, sprintf('%s.%s', file, ext))) {
   
   fouls_xyz_filt <- fouls_xyz %>% filter(outcome_type_name == .outcome_type_name)
   lab_outcome <- case_when(
@@ -213,6 +191,11 @@ h <- 4
       .pos == 'Defenders' ~ '#4a1486'
     )
     
+    lab_title <- case_when(
+      .pos == 'Midfielders' ~ sprintf('Where are Fouls <b><span style="color:black">%s</span></b>?', lab_outcome),
+      TRUE ~ ' '
+    )
+    
     viz <-
       fouls_xyz_filt %>%
       filter(pos == .pos) %>% 
@@ -226,9 +209,11 @@ h <- 4
       scale_fill_brewer(palette = pal) +
       # coord_fixed(clip = 'off') +
       theme(
-        plot.subtitle = ggtext::element_markdown(size = 18, hjust = 0.5, color = 'grey50')
+        plot.title = ggtext::element_markdown(size = 24, hjust = 0.5, color = 'grey50'),
+        plot.subtitle = ggtext::element_markdown(size = 18, hjust = 0.5)
       ) +
       labs(
+        title = lab_title,
         subtitle = glue::glue('<b><span style="color:{color_title}">{.pos}</span></b>')
       )
     viz
@@ -236,91 +221,33 @@ h <- 4
   
   plots <- pos %>% map(.plot_by_pos)
   viz_fouls_by_pos <- 
-    patchwork::wrap_plots(plots, row = 1)
+    patchwork::wrap_plots(plots, row = 1) +
+    patchwork::plot_annotation(
+      caption = lab_tag,
+      theme = theme(plot.caption = ggtext::element_markdown(hjust = 0, size = 14))
+    )
   viz_fouls_by_pos
   
   ggsave(
     plot = viz_fouls_by_pos,
-    filename = file.path(dir_proj, sprintf('viz_fouls_%s_by_pos.png', tolower(lab_outcome))),
-    width =  3 * h * 1.5, # 2 / 3,
-    height = h,
+    filename = path,
+    height = 6,
+    width =  3 * 6,
     type = 'cairo'
   )
   viz_fouls_by_pos
 }
 
-plots <- sprintf('%successful', c('S', 'Uns')) %>% map(.plot_by_outcome_type_name)
-plots[[1]]
-
-.add_tag <- function(...) {
-  list(
-    ...,
-    theme(
-      plot.tag = ggtext::element_markdown(hjust = 0, size = 14)
-    ),
-    labs(
-      tag = '**Viz**: Tony ElHabr | **Data**: 2020-21 Premier League through matchweek 30'
-    )
-  )
-}
-footer <-
-  ggplot() +
-  geom_blank() +
-  .add_tag()
-footer
-
-lab_title_fmt <- 'Where are Fouls <b><span style="color:black">%s</span></b>?'
-title1 <-
-  ggplot() +
-  geom_blank() +
-  # geom_point() +
-  theme(
-    # plot.background = element_rect(fill = 'black'),
-    # panel.background = element_rect(fill = 'black'),
-    plot.title = ggtext::element_markdown('Karla', color = 'gray50', face = NULL, size = 18, hjust = 0.5, linewidth = 1)
-  ) +
-  labs(
-    title = sprintf(lab_title_fmt, 'Drawn')
-  )
-title1
-
-title2 <-
-  title1 +
-  labs(
-    title = sprintf(lab_title_fmt, 'Made')
-  )
-title2
-
-# viz_fouls_by_pos_init <- 
-#   patchwork::wrap_plots(
-#     list(plots[[1]],plots[[2]], footer), 
-#     heights = c(12, 12, 1),
-#     ncol = 1
-#   )
-# viz_fouls_by_pos_init
-
-viz_fouls_by_pos <- 
-  patchwork::wrap_plots(
-    list(title1, plots[[1]], title2, plots[[2]], footer), 
-    heights = c(1, 12, 1, 12, 1),
-    ncol = 1
-  )
-viz_fouls_by_pos
-
-path_fouls_by_pos <- file.path(dir_proj, 'viz_fouls_by_pos.png')
-ggsave(
-  plot = viz_fouls_by_pos,
-  filename = path_fouls_by_pos,
-  width = 10,
-  height = 7,
-  type = 'cairo'
-)
+path_fouled_by_pos <- file.path(dir_proj, 'viz_fouled_by_pos.png')
+viz_fouled_by_pos <- 
+  .plot_by_outcome_type_name('Successful', path = path_fouled_by_pos)
+viz_fouled_by_pos
 
 add_logo(
-  path_viz = path_fouls_by_pos,
+  path_viz = path_fouled_by_pos,
   path_logo = path_logo,
-  # adjust_x = FALSE,
-  idx_x = 0.05,
+  idx_x = 0.01,
+  logo_scale = 0.08,
   adjust_y = FALSE,
   idx_y = 1
 )
@@ -419,13 +346,14 @@ plot_player_vs_pos <-
       # coord_fixed(clip = 'off') +
       theme(
         plot.title.position = 'plot',
-        plot.title = ggtext::element_markdown(size = 18, hjust = 0, color = 'grey50')
+        plot.title = ggtext::element_markdown(size = 24, hjust = 0, color = 'grey50'),
+        plot.tag = ggtext::element_markdown(hjust = 0, size = 14)
       ) +
       labs(
         subtitle = ' ',
+        tag = lab_tag,
         title = glue::glue('Fouls <b><span style="color:black">{lab_outcome}</span><b> by <b><span style="color:{color}">{player}</span><b> vs. All Other {pos}')
-      ) +
-      .add_tag()
+      )
     viz
     
     h <- 8
@@ -450,6 +378,15 @@ plot_player_vs_pos <-
     viz
   }
 
+viz_fouled <-
+  plot_player_vs_pos(
+    player = 'Jack Grealish',
+    file = 'viz_fouled',
+    color = '#670e36', # '#95bfe5',
+    outcome_type_name = 'Successful'
+  )
+viz_fouled
+
 viz_fouler <-
   plot_player_vs_pos(
     player = 'Tomas Soucek',
@@ -459,11 +396,4 @@ viz_fouler <-
   )
 viz_fouler 
 
-viz_fouled <-
-  plot_player_vs_pos(
-    player = 'Jack Grealish',
-    file = 'viz_fouled',
-    color = '#670e36', # '#95bfe5',
-    outcome_type_name = 'Successful'
-  )
-viz_fouled
+# Despite missing several matches, Grealish still leads the EPL in fouls drawn (100) by a wide margin. (Second is Sadio Mané with 67). He owns the left attacking half.

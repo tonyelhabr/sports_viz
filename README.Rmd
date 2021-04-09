@@ -119,9 +119,17 @@ After week 7
 
 ## 20. 2020-21 EPL Game State xG
 
-![Game State npxG/Shot and Shot/90 Tables](20-202021_epl_xg_stats/viz_shot_quality_efficiency_2020_w_logo.png "Game State npxG/Shot and Shot/90 Tables")
+![2020-21 EPL Game State npxG/Shot and Shot/90 Tables](20-202021_epl_xg_stats/viz_shot_quality_efficiency_2020_w_logo.png "2020-21 EPL Game State npxG/Shot and Shot/90 Tables")
 
-![Game State npxG/90 Table](20-202021_epl_xg_stats/viz_npxg_p90_diff_2020_w_logo.png "Game State npxG/90 Table")
+![2020-21 EPL Game State npxG/90 Table](20-202021_epl_xg_stats/viz_npxg_p90_diff_2020_w_logo.png "2020-21 EPL Game State npxG/90 Table")
+
+## 21. 2020-21 EPL Foul Tanaka Maps
+
+![2020-21 EPL Fouls Drawn by Position Tanaka Map](21-202021_epl_heatmap/viz_fouled_by_pos_w_logo.png "2020-21 EPL Fouls Drawn by Position Tanaka Map")
+
+![2020-21 EPL Fouls Drawn by Jack Grealish vs Other Midfielders Tanaka Map](21-202021_epl_heatmap/viz_fouled_w_logo.png "2020-21 EPL Fouls Drawn by Jack Grealish vs Other Midfielders Tanaka Map")
+
+![2020-21 EPL Fouls Made by Tomas Soucek vs Other Midfielders Tanaka Map](21-202021_epl_heatmap/viz_fouler_w_logo.png "2020-21 EPL Fouls Made by Tomas Soucek vs Other Midfielders Tanaka Map")
 
 
 # Future Ideas
