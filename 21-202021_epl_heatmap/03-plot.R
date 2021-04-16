@@ -252,31 +252,7 @@ add_logo(
   idx_y = 1
 )
 
-# dev ----
-convert_to_xyz2 <- function(data, n = 200) {
-  x <- data %>% pull(x)
-  y <- data %>% pull(y)
-  # x_rng <- range(x)
-  # y_rng <- range(y)
-  x_rng <- c(0, 100)
-  y_rng <- x_rng
-  
-  bw_x <- MASS::bandwidth.nrd(x)
-  bw_y <- MASS::bandwidth.nrd(y)
-  bw_xy <- c(bw_x, bw_y)
-  dz <- MASS::kde2d(x, y, h = bw_xy, n = n, lims = c(x_rng, y_rng))
-  colnames(dz$z) <- dz$y
-  res <- 
-    dz$z %>%
-    as_tibble() %>% 
-    mutate(x = dz$x) %>% 
-    pivot_longer(-x, names_to = 'y', values_to = 'z') %>% 
-    mutate(y = as.double(y)) %>% 
-    mutate(across(z, list(norm = ~(.x - min(.x)) / (max(.x) - min(.x)))))
-  res
-}
-
-# player-specfic ----
+# player-specific ----
 plot_player_vs_pos <-
   function(player,
            outcome_type_name = 'Unsuccessful',

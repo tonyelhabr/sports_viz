@@ -1,11 +1,14 @@
 
 library(tidyverse)
-dir_proj <- '21-202021_epl_heatmap'
+dir_proj <- '22-202021_epl_traore'
+team <- 'Liverpool'
 dir_data <- file.path('..', 'whoscraped', 'data')
-path_events <- file.path(dir_proj, 'events.rds')
-path_meta <- file.path(dir_proj, 'meta.rds')
-path_forms <- file.path(dir_proj, 'forms.rds')
-paths <- fs::dir_ls(dir_data, regexp = 'js$') %>% str_subset('2020-2021')
+path_events <- file.path(dir_proj, sprintf('events_%s.rds', team))
+path_meta <- file.path(dir_proj, sprintf('meta_%s.rds', team))
+paths <- 
+  fs::dir_ls(dir_data, regexp = 'js$') %>% 
+  str_subset(team) %>% 
+  str_subset('2019-2020|2020-2021')
 paths
 n_path <- paths %>% length()
 
@@ -121,96 +124,7 @@ n_path <- paths %>% length()
     events_clean_init %>% 
     select(-c(qualifiers, satisfied_events_types)) %>% 
     arrange(minute, event_id)
-  
-  # events_foul <-
-  #   events_clean %>% 
-  #   filter(type_name == 'Foul') # %>% 
-  #   # This corresponds with `event_type_name == "foulCommited"`, so no need to join `satisfied_events_types`.
-  #   # filter(outcome_type_name == 'Unsuccessful')
-  # events_foul
   events_clean
-}
-
-.parse_forms <- function(path) {
-  lst <- .parse_init(path)
-
-  events <-
-    lst$events_init %>% 
-    filter(name == 'events') %>% 
-    select(value) %>% 
-    unnest(value) %>% 
-    unnest_wider(value)
-  
-  players <-
-    lst$events_init %>%
-    filter(name == 'playerIdNameDictionary') %>%
-    select(value) %>%
-    unnest_longer(value, indices_to = 'player_id', values_to = 'player_name') %>% 
-    mutate(across(player_id, as.integer))
-  
-  .unnest_side <- function(side) {
-    team <-
-      lst$events_init %>%
-      filter(name == !!side) %>%
-      select(value) %>% 
-      unnest_wider(value) %>%
-      janitor::clean_names()
-    
-    form_init <-
-      team %>% 
-      select(formations) %>% 
-      unnest(formations) %>% 
-      unnest_wider(formations) %>% 
-      mutate(idx = row_number()) %>%
-      janitor::clean_names()
-    
-    form_grid <-
-      form_init %>% 
-      select(idx) %>% 
-      crossing(formation_slot = seq.int(1, 11))
-    
-    form_slots <-
-      form_init %>% 
-      select(-formation_positions) %>% 
-      unnest(c(jersey_numbers, formation_slots, player_ids)) %>% 
-      unnest(c(jersey_numbers, formation_slots, player_ids)) %>% 
-      rename_with(~str_remove(.x, 's$'), c(jersey_numbers, formation_slots, player_ids)) %>% 
-      filter(formation_slot != 0L) %>% 
-      full_join(form_grid, by = c('idx', 'formation_slot'))
-    
-    form_pos <-
-      form_init %>% 
-      select(idx, formation_positions) %>% 
-      unnest(formation_positions) %>% 
-      unnest_wider(formation_positions)
-    
-    form <-
-      bind_cols(form_slots, form_pos %>% select(-idx)) %>%
-      relocate(idx) %>%
-      left_join(players, by = 'player_id') %>%
-      bind_cols(team %>% select(team_id, team_name = name, side = field)) %>% 
-      select(
-        idx,
-        team_id,
-        team_name,
-        side,
-        formation_id,
-        formation_name,
-        formation_slot,
-        jersey_number,
-        player_id,
-        player_name,
-        x = horizontal,
-        y = vertical
-      )
-    form
-  }
-  
-  forms <- 
-    c('home', 'away') %>%
-    map_dfr(.unnest_side) %>% 
-    mutate(match_id = lst$match_id)
-  forms
 }
 
 .postprocess_parsed_data <- function(data) {
@@ -220,12 +134,10 @@ n_path <- paths %>% length()
   }
   data %>% 
     mutate(file = path %>% basename() %>% tools::file_path_sans_ext()) %>% 
-    # select(-path) %>% 
     mutate(
       across(
         file,
         list(
-          # match = ~.f_replace(.x, 3),
           league = ~.f_replace(.x, 1),
           season = ~.f_replace(.x, 2)
         ),
@@ -250,7 +162,6 @@ do_f <- function(f, path) {
 
 events <- do_f(.parse_events, path_events)
 meta <- do_f(.parse_meta, path_meta)
-# forms <- do_f(.parse_forms, path_forms)
 
-beepr::beep(3)
+# beepr::beep(3)
 
