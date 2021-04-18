@@ -160,6 +160,12 @@ Map](21-202021_epl_heatmap/viz_fouled_w_logo.png "2020-21 EPL Fouls Drawn by Jac
 ![2020-21 EPL Fouls Made by Tomas Soucek vs Other Midfielders Tanaka
 Map](21-202021_epl_heatmap/viz_fouler_w_logo.png "2020-21 EPL Fouls Made by Tomas Soucek vs Other Midfielders Tanaka Map")
 
+# 22. 2020-21 Chelsea Attack Under Tuchel Compared to Lampard
+
+![Heatmaps for Passes, Touches, and Take-Ons for Kai Havertz and Mason
+Mount under Tuchel
+vs. Lampard](22-202021_epl_tuchel/viz_tuchel_w_logo.png "Heatmaps for Passes, Touches, and Take-Ons for Kai Havertz and Mason Mount under Tuchel vs. Lampard")
+
 # Future Ideas
 
 -   Stability of goal-scoring rate and/or xG over-performance

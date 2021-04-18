@@ -1,7 +1,7 @@
 
 library(tidyverse)
-dir_proj <- '22-202021_epl_traore'
-team <- 'Liverpool'
+dir_proj <- '22-202021_epl_tuchel'
+team <- 'Chelsea'
 dir_data <- file.path('..', 'whoscraped', 'data')
 path_events <- file.path(dir_proj, sprintf('events_%s.rds', team))
 path_meta <- file.path(dir_proj, sprintf('meta_%s.rds', team))
