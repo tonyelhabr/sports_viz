@@ -166,6 +166,11 @@ Map](21-202021_epl_heatmap/viz_fouler_w_logo.png "2020-21 EPL Fouls Made by Toma
 Mount under Tuchel
 vs. Lampard](22-202021_epl_tuchel/viz_tuchel_w_logo.png "Heatmaps for Passes, Touches, and Take-Ons for Kai Havertz and Mason Mount under Tuchel vs. Lampard")
 
+# 23. European Super League Google Trends
+
+![European Super League Google Trends Animated
+GIF](23-superleague/superleague_timeline.gif "European Super League Google Trends Animated GIF")
+
 # Future Ideas
 
 -   Stability of goal-scoring rate and/or xG over-performance
