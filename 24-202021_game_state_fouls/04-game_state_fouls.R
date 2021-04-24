@@ -3,18 +3,88 @@ library(tidyverse)
 dir_proj <- '24-202021_game_state_fouls'
 path_events <- file.path(dir_proj, 'events.rds')
 path_meta <- file.path(dir_proj, 'meta.rds')
-# path_states <- file.path(dir_proj, 'states.rds')
 
-probs <- 
+leagues_mapping <-
+  tibble(
+    league = c('epl'),
+    league_understat = c('EPL'),
+    league_whoscored = c('England-Premier-League'),
+    league_538 = c('Barclays Premier League')
+  )
+
+team_mapping <-
+  xengagement::team_accounts_mapping %>% 
+  select(team, team_538, team_whoscored)
+team_mapping
+
+probs_init <- 
   read_csv(
     'https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv'
   ) %>% 
-  filter(league == 'Barclays Premier League' & season >= 2019) %>% 
-  select(-c(league, league_id)) %>% 
-  rename(date_538 = date, team_538_h = team1, team_538_a = team2, probtie_538 = probtie) %>% 
+  rename(league_538 = league, team_538_h = team1, team_538_a = team2, probtie_538 = probtie) %>% 
+  left_join(leagues_mapping) %>% 
+  select(-league_538) %>% 
+  filter(league == 'epl' & season >= 2019) %>% 
+  select(-c(league_id)) %>% 
+  mutate(across(season, as.integer)) %>% 
   rename_with(~stringr::str_replace(.x, '1$', '_538_h'), matches('1$')) %>% 
-  rename_with(~stringr::str_replace(.x, '2$', '_538_a'), matches('2$'))
-probs
+  rename_with(~stringr::str_replace(.x, '2$', '_538_a'), matches('2$')) %>% 
+  left_join(team_mapping %>% select(team_h = team, team_538_h = team_538)) %>% 
+  left_join(team_mapping %>% select(team_a = team, team_538_a = team_538)) %>% 
+  rename(prob_h = prob_538_h, prob_a = prob_538_a, probtie = probtie_538) %>% 
+  select(season, date, matches('^team_'), matches('^score_'), matches('^prob'))
+probs_init
+
+.f_rename_538 <- function(side) {
+  suffix <- sprintf('_%s$', side)
+  side_opp <- ifelse(side == 'h', 'a', 'h')
+  suffix_opp <- sprintf('_%s$', side_opp)
+  probs_init %>% 
+    rename_with(~str_replace(.x, suffix, ''), c(matches(suffix))) %>% 
+    rename_with(~str_replace(.x, suffix_opp, '_opp'), c(matches(suffix_opp))) %>% 
+    mutate(side = !!side)
+}
+probs_redux <- bind_rows(.f_rename_538('h'), .f_rename_538('a')) %>% select(-matches('team_538'))
+probs_redux
+
+# probs_redux %>% 
+#   mutate(
+#     across(
+#       prob, 
+#       list(grp = ~cut_number(.x, n = 5))
+#     )
+#   ) %>% 
+#   count(prob_grp)
+
+probs_grps <-
+  probs_redux %>% 
+  # mutate(
+  #   across(
+  #     prob, 
+  #     list(grp = ~cut_number(.x, n = 5, labels = c('big underdog', 'moderate underdog', 'even match', 'moderate favorite', 'big favorite')))
+  #   )
+  # ) %>% 
+  mutate(
+    across(
+      prob,
+      # list(
+      #   grp = ~case_when(
+      #     .x > prob_opp & prob_opp > probtie  ~ 'fav_small',
+      #     .x > prob_opp~ 'fav_big',
+      #     .x < prob_opp & .x < probtie ~ 'dog_big',
+      #     .x < prob_opp ~ 'dog_small',
+      #   )
+      # )
+      list(
+        grp = ~case_when(
+          .x > prob_opp ~ 'fav',
+          .x < prob_opp ~ 'dog',
+          TRUE ~ NA_character_
+        )
+      )
+    )
+  )
+probs_grps %>% count(prob_grp)
 
 meta <- 
   path_meta %>% 
@@ -28,7 +98,6 @@ events_teams <-
   group_by(match_id, team = team_name) %>% 
   slice(1) %>% 
   ungroup() %>% 
-  # mutate(across(side, ~case_when(.x == 'home' ~ 'h', .x == 'away' ~ 'a'))) %>% 
   select(match_id, team, side) %>% 
   pivot_wider(
     names_from = side,
@@ -37,13 +106,6 @@ events_teams <-
   ) %>% 
   rename(team_h = team_home, team_a = team_away)
 events_teams
-
-leagues_mapping <-
-  tibble(
-    league = c('epl'),
-    league_understat = c('EPL'),
-    league_whoscored = c('England-Premier-League')
-  )
 
 events <- 
   path_events %>% 
@@ -59,27 +121,45 @@ events <-
   ) %>% 
   left_join(events_teams) %>% 
   mutate(team_opp = ifelse(team == team_h, team_a, team_h)) %>% 
-  arrange(league, season, match_id, team, expanded_minute, second) %>% 
+  arrange(league, season, match_id, expanded_minute, second, team) %>% 
   relocate(league, season, match_id, date)
 events
 
-# .f_slice <- function(f = slice_head) {
-#   events %>% 
-#     group_by(match_id) %>% 
-#     f(n = 1) %>% 
-#     ungroup()
-# }
-# 
-# events_first <- .f_slice(slice_head)
-# events_last <- .f_slice(slice_tail)
 events_first <- events %>% filter(period_name == 'PreMatch', type_name == 'FormationSet', side == 'h')
 events_last <- events %>% filter(period_name == 'SecondHalf', type_name == 'End', side == 'h')
-# events_first %>% count(type_name)
-# events_last %>% count(type_name)
 
-fouls <- events %>% filter(type_name == 'Foul')
+.add_time_col <- function(data) {
+  data %>% 
+    mutate(time = sprintf('%s:%s', expanded_minute, second) %>% lubridate::ms() %>% as.double())
+}
+
+fouls <-
+  events %>% 
+  filter(type_name == 'Foul') %>% 
+  mutate(
+    is_drawn = if_else(outcome_type_name == 'Successful', TRUE, FALSE)
+  ) %>%
+  .add_time_col() %>%
+  select(
+    league,
+    season,
+    match_id,
+    date,
+    id,
+    time,
+    expanded_minute,
+    second,
+    team,
+    team_opp,
+    # team_h,
+    # team_a,
+    side,
+    player_name,
+    is_drawn
+  )
+fouls
+
 goals <- events %>% filter(type_name == 'Goal')
-# states <- path_states %>% read_rds() %>% filter(league == 'EPL') %>% select(-league)
 
 # main ----
 .f_select <- function(data, ...) {
@@ -91,7 +171,7 @@ goals <- events %>% filter(type_name == 'Goal')
       match_id,
       team_h,
       team_a,
-      # side,
+      side,
       expanded_minute,
       second,
       ...
@@ -102,14 +182,20 @@ rgx_g <- '^g_[ha]'
 goals_redux_init <-
   bind_rows(
     # Could generalize this even more.
-    goals %>% 
-      filter(side == 'h') %>% 
-      select(-side) %>% 
+    bind_rows(
+      goals %>% 
+        filter(side == 'h' & is.na(is_own_goal)),
+      goals %>% 
+        filter(side == 'a' & is_own_goal)
+    ) %>% 
       .f_select() %>% 
       mutate(g_h = 1L),
-    goals %>% 
-      filter(side == 'a') %>% 
-      select(-side) %>% 
+    bind_rows(
+      goals %>% 
+        filter(side == 'a' & is.na(is_own_goal)),
+      goals %>% 
+        filter(side == 'h' & is_own_goal)
+    ) %>% 
       .f_select() %>% 
       mutate(g_a = 1L)
   ) %>% 
@@ -134,131 +220,183 @@ goals_redux <-
   ) %>% 
   arrange(league, season, date, match_id, expanded_minute, second) %>% 
   group_by(match_id) %>% 
-  # mutate(across(matches(sprintf('%s_cumu$', rgx_g)), ~lag(.x, 1L))) %>% 
   fill(g_h_cumu, g_a_cumu, .direction = 'down') %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate(
+    g_state_h = dplyr::lag(g_h_cumu, 1) - dplyr::lag(g_a_cumu, 1),
+    g_state_a = dplyr::lag(g_a_cumu, 1) - dplyr::lag(g_h_cumu, 1)
+  ) %>%
+  ungroup() %>%
+  mutate(
+    # The coalesce is for the first event in a match.
+    across(matches('^g_'), ~coalesce(.x, 0) %>% as.integer())
+  )
 goals_redux
 
-fouls_slim <- 
-  fouls %>% 
+.f_rename <- function(side) {
+  suffix <- sprintf('_%s$', side)
+  side_opp <- ifelse(side == 'h', 'a', 'h')
+  suffix_opp <- sprintf('_%s$', side_opp)
+  goals_redux %>% 
+    # select(-matches('_cumu$')) %>% 
+    rename_with(~str_replace(.x, suffix, ''), c(matches(suffix))) %>% 
+    rename_with(~str_replace(.x, suffix_opp, '_opp'), c(matches(suffix_opp))) %>% 
+    mutate(side = !!side)
+}
+
+states <- 
+  bind_rows(.f_rename('h'), .f_rename('a')) %>% 
   mutate(
-    is_drawn = if_else(outcome_type_name == 'Successful', TRUE, FALSE)
+    across(g_state, list(grp = ~case_when(.x < 0L ~ 'behind', .x > 0L ~ 'ahead', TRUE ~ 'neutral')))
   ) %>%
-  select(
-    season,
-    match_id,
-    date,
-    id,
-    minute,
-    second,
-    team,
-    team_opp,
-    side,
-    player_name,
-    is_drawn
-  )
-fouls_slim
+  arrange(league, season, date, match_id, team, expanded_minute, second) %>% 
+  .add_time_col()
+states
 
-# teams_fouls <- fouls_slim %>% count(team, name = 'n_fouls')
-# teams_fouls
-# teams_states <- states %>% filter(league == 'EPL') %>% count(team, name = 'n_states')
-# teams_states
-# teams_probs <- matches %>% count(team = team_538_h, name = 'n_prob')
-# teams_probs
-# res <-
-#   teams_fouls %>%
-#   full_join(teams_states) %>% 
-#   full_join(teams_probs)
-# res
-# 
-# res %>%
-#   filter(is.na(n_fouls)) %>%
-#   pull(team) %>%
-#   datapasta::vector_paste()
-# c("Manchester City", "Manchester United", "Newcastle United", "Sheffield United", "West Bromwich Albion", "Wolverhampton Wanderers", "AFC Bournemouth", "Brighton and Hove Albion", "Leeds United", "Leicester City", "Norwich City", "Tottenham Hotspur", "West Ham United", "Wolverhampton")
-# res %>%
-#   filter(is.na(n_states)) %>%
-#   pull(team) %>%
-#   datapasta::vector_paste()
-# c("Man City", "Man Utd", "Newcastle", "Sheff Utd", "West Brom", "Wolves", "AFC Bournemouth", "Brighton and Hove Albion", "Leeds United", "Leicester City", "Norwich City", "Tottenham Hotspur", "West Ham United", "Wolverhampton")
-# res %>%
-#   filter(is.na(n_prob)) %>%
-#   pull(team) %>%
-#   datapasta::vector_paste()
-# c("Bournemouth", "Brighton", "Leeds", "Leicester", "Man City", "Man Utd", "Norwich", "Sheff Utd", "Tottenham", "West Brom", "West Ham", "Wolves", "Newcastle United", "Wolverhampton Wanderers")
-
-team_mapping <-
-  xengagement::team_accounts_mapping %>% 
-  select(team, team_538, team_whoscored)
-team_mapping
-
-states_prep <- 
+final_scores <- 
   states %>% 
-  select(-side) %>% 
-  arrange(season, date, match_id, team) %>% 
-  group_by(season, date, match_id, team) %>% 
-  mutate(across(minute, list(lead1 = ~coalesce(lead(.x), 96L), lag1 = ~coalesce(lag(.x), 0L)))) %>% 
-  ungroup() %>% 
-  rename_with(~sprintf('%s_understat', .x), matches('^(match_id|team|minute|second|date)')) %>% 
-  left_join(team_mapping %>% select(team, team_understat)) %>% 
-  left_join(team_mapping %>% select(team_opp = team, team_opp_understat = team_understat)) %>% 
-  select(-matches('team.*understat$'))
-states_prep
+  filter(comment == 'end') %>% 
+  select(match_id, team, team_opp, g_h_final = g_h_cumu, g_a_final = g_a_cumu, g_state_final = g_state)
+final_scores
 
-fouls_prep <- 
-  fouls_slim %>% 
-  select(-side) %>% 
-  arrange(season, date, match_id, team) %>% 
-  rename_with(~sprintf('%s_whoscored', .x), matches('^(match_id|team|minute|second|date)')) %>% 
-  left_join(team_mapping %>% select(team, team_whoscored))%>% 
-  left_join(team_mapping %>% select(team_opp = team, team_opp_whoscored = team_whoscored)) %>% 
-  select(-matches('team.*whoscored$'))
-fouls_prep
-
-matches_states <-
-  states_prep %>% 
-  distinct(season, date = date_understat, team, team_opp)
-matches_states
-
-matches_fouls <-
-  fouls_prep %>% 
-  distinct(season, date = date_whoscored, team, team_opp)
-matches_fouls
-
+# pre-joining ----
+# This returns the same number of results as a lag join (as expected).
 fouls_by_state <-
-  data.table::as.data.table(fouls_prep %>% mutate(minute_whoscored_copy = minute_whoscored))[
-    data.table::as.data.table(states_prep), 
-    on=.(season = season, team = team, team_opp = team_opp, minute_whoscored >= minute_lag1_understat, minute_whoscored_copy < minute_understat)
+  data.table::as.data.table(fouls)[
+    data.table::as.data.table(
+      states %>% 
+        select(match_id, team, time, g_state, g_state_grp) %>% 
+        group_by(match_id) %>% 
+        mutate(across(time, list(hi = ~dplyr::lead(.x)))) %>% 
+        ungroup() %>% 
+        rename(time_lo = time)
+    ), 
+    on=.(match_id = match_id, team = team, time >= time_lo, time < time_hi)
   ] %>% 
   as_tibble() %>%
-  arrange(season, date_whoscored, team, team_opp, minute_lag1_whoscored, second_whoscored) %>% 
-  relocate(
-    season,
-    date_whoscored,
-    date_understat,
-    team,
-    team_opp,
-    minute_lag1_whoscored,
-    minute_lead1_whoscored,
-    # second_whoscored,
-    # minute_lag1_understat,
-    minute_understat_lag1 = minute_whoscored,
-    minute_understat = minute_whoscored.1,
-    minute_lead1_understat
-  )
-fouls_by_state
-fouls_by_state$g_state
-fouls_by_state %>% filter(is.na(id)) %>% distinct(team, team_opp)
-
-fouls_by_state2 <-
-  data.table::as.data.table(states_prep)[
-    data.table::as.data.table(fouls_prep), 
-    on=.(season = season, team = team, team_opp = team_opp, minute_understat >= minute_whoscored, minute_understat < minute_lead1_whoscored)
-  ] %>% 
-  as_tibble()
-fouls_by_state2
-
-fouls_by_state %>% 
   drop_na(id) %>% 
-  count(id, sort = TRUE) %>% 
-  count(n)
+  rename(time_lo = time, time_hi = time.1) %>% 
+  .add_time_col() %>%
+  group_by(match_id, team) %>%
+  arrange(time, .by_group = TRUE) %>%
+  mutate(time_diff = time - lag(time, default = 0)) %>%
+  ungroup() %>% 
+  mutate(across(matches('^time'), as.integer)) %>% 
+  relocate(
+    league,
+    season,
+    date,
+    match_id,
+    time,
+    time_diff,
+    time_lo,
+    time_hi,
+    expanded_minute,
+    second,
+    team
+  ) %>%
+  left_join(final_scores) %>% 
+  rename(team_whoscored = team, team_whoscored_opp = team_opp) %>% 
+  left_join(team_mapping %>% select(team, team_whoscored = team_whoscored)) %>% 
+  left_join(team_mapping %>% select(team_opp = team, team_whoscored_opp = team_whoscored)) %>% 
+  left_join(probs_grps) %>% 
+  select(-matches('^team.*(whoscored|538)')) %>% 
+  arrange(league, season, date, match_id, time, team)
+fouls_by_state  
+
+fouls_by_state_by_game <-
+  fouls_by_state %>% 
+  group_by_at(vars(league, season, date, team, team_opp, match_id, is_drawn, g_state_grp, matches('prob'))) %>% 
+  summarize(
+    n_foul = sum(time_diff > 0L),
+    across(time_diff, sum)
+  ) %>% 
+  ungroup() %>% 
+  mutate(n_foul_p90 = 90 * n_foul / (time_diff / 60))
+fouls_by_state_by_game
+
+fouls_by_state_by_game %>% 
+  filter(!is_drawn) %>% 
+  filter(time_diff > 120) %>% 
+  # filter(abs(g_state) <= 3L) %>% 
+  left_join(probs_grps) %>% 
+  arrange(desc(n_foul_p90)) %>% 
+  ggplot() +
+  aes(y = n_foul_p90, x = factor(g_state_grp)) +
+  facet_wrap(~prob_grp) +
+  # geom_point(aes(color = prob_grp, size = time_diff)) +
+  guides(color = FALSE) +
+  geom_boxplot()
+
+fouls_by_state_by_team <-
+  fouls_by_state %>% 
+  group_by(league, season, team, is_drawn, prob_grp, g_state_grp) %>% 
+  summarize(
+    prob = mean(prob),
+    n_foul = sum(time_diff > 0L),
+    # across(time_diff, sum)
+    time_diff = sum(time_diff)
+  ) %>% 
+  ungroup() %>% 
+  mutate(n_foul_p90 = 90 * n_foul / (time_diff / 60))
+fouls_by_state_by_team
+
+fouls_by_state_by_team %>% arrange(desc(n_foul_p90))
+
+fouls_stats_init <-
+  fouls_by_state_by_team %>% 
+  filter(!is_drawn) %>% 
+  select(-is_drawn) %>% 
+  # filter(g_state_grp == 'Ahead') %>% 
+  group_by(league, season, team) %>% 
+  mutate(
+    # time_diff_sum = sum(time_diff),
+    # Weird error
+    # across(time_diff, list(frac = ~.x / time_diff_sum))
+    frac = time_diff / sum(time_diff)
+  ) %>% 
+  ungroup()
+
+fouls_stats_wide <-
+  fouls_stats_init %>% 
+  select(-c(n_foul, matches('^time_diff'))) %>% 
+  pivot_wider(
+    names_from = g_state_grp,
+    values_from = c(frac, n_foul_p90, prob)
+  ) %>% 
+  mutate(
+    diff_behind = n_foul_p90_behind - n_foul_p90_neutral,
+    diff_ahead = n_foul_p90_ahead - n_foul_p90_neutral
+  ) %>% 
+  arrange(desc(diff_ahead))
+fouls_stats_wide
+
+fouls_stats_wide %>% 
+  ggplot() +
+  aes(x = prob_ahead, y = n_foul_p90_ahead) + # , color = prob_grp) +
+  geom_point() +
+  geom_smooth()
+
+fouls_stats_wide %>% 
+  ggplot() +
+  aes(x = frac_ahead, y = n_foul_p90_ahead) + # , color = prob_grp) +
+  geom_point() +
+  geom_smooth()
+
+fouls_stats_wide %>% 
+  ggplot() +
+  aes(x = frac_behind, y = n_foul_p90_behind) + # , color = prob_grp) +
+  geom_point() +
+  geom_smooth()
+
+fouls_by_state_by_team_filt_wide %>% 
+  arrange(desc(diff)) %>% 
+  ggplot() +
+  aes(x = frac_dog, y = diff) +
+  geom_point()
+
+fouls_by_state_by_team %>% 
+  ggplot() +
+  aes(x = factor(g_state_grp), n_foul_p90) +
+  geom_boxplot() +
+  facet_wrap(~is_drawn, scales = 'free')

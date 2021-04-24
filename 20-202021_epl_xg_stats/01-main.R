@@ -270,6 +270,8 @@ states <-
   # Just to have something at the end that I don't comment out when testing.
   arrange(season, date, match_id, minute, team)
 states
+path_states <- file.path(dir_proj, 'states.rds')
+write_rds(states, path_states)
 
 # lvls <- team_mapping$team %>% rev()
 lvls <- standings$team %>% rev()
@@ -354,6 +356,8 @@ states_by_team_clean <-
   ) %>% 
   left_join(standings)
 states_by_team_clean
+# path_states_by_team <- file.path(dir_proj, 'states_by_team.rds')
+# write_rds(states_by_team_clean, path_states_by_team)
 
 # main ----
 states_by_team_agg <-
