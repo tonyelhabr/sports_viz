@@ -1,5 +1,34 @@
 
 library(tidyverse)
+
+extrafont::loadfonts(device = 'win', quiet = TRUE)
+theme_set(theme_minimal())
+theme_update(
+  text = element_text(family = 'Karla'),
+  title = element_text('Karla', size = 14, color = 'gray20'),
+  plot.title = element_text('Karla', face = 'bold', size = 24, color = 'gray20'),
+  plot.title.position = 'plot',
+  plot.subtitle = element_text('Karla', face = 'bold', size = 16, color = 'gray50'),
+  axis.text = element_text('Karla', size = 14),
+  axis.title = element_text(size = 14, face = 'bold', hjust = 0.99),
+  axis.line = element_blank(),
+  panel.grid.major = element_line(color = 'gray80'),
+  panel.grid.minor = element_line(color = 'gray80'),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  plot.margin = margin(10, 10, 10, 10),
+  plot.background = element_rect(fill = '#ffffff', color = NA),
+  plot.caption = element_text('Karla', size = 14, color = 'gray20', hjust = 0),
+  plot.caption.position = 'plot',
+  plot.tag = ggtext::element_markdown('Karla', size = 14, color = 'gray20', hjust = 0), 
+  plot.tag.position = c(.01, 0.01),
+  legend.text = element_text(size = 14),
+  strip.text = element_text(size = 14),
+  strip.background = element_blank(),
+  panel.background = element_rect(fill = '#ffffff', color = NA)
+)
+update_geom_defaults('text', list(family = 'Karla', size = 4))
+
 dir_proj <- '24-202021_game_state_fouls'
 path_events <- file.path(dir_proj, 'events.rds')
 path_meta <- file.path(dir_proj, 'meta.rds')
@@ -292,9 +321,26 @@ fouls_by_time <-
 fouls_by_time
 fouls_by_time %>% count(id, sort = TRUE) %>% filter(n > 1L)
 
-.add_n_foul_p90_col <- function(data) {
+.add_n_foul_p90_col <-
+  function(data,
+           suffix = '',
+           sep = ifelse(suffix == '', '', '_'),
+           col = sprintf('n_foul%s%s', sep, suffix),
+           col_res = sprintf('n_foul_p90%s%s', sep, suffix)) {
+    data %>%
+      mutate(!!sym(col_res) := 90 * !!sym(col) / (time_diff / 60))
+  }
+
+.postprocess_redux <- function(data) {
   data %>% 
-    mutate(n_foul_p90 = 90 * n_foul / (time_diff / 60))
+    mutate(
+      across(c(n_foul, n_foul_opp), ~coalesce(.x, 0L)),
+      across(c(n_foul_p90, n_foul_p90_opp), ~coalesce(.x, 0))
+    ) %>%
+    mutate(
+      n_foul_diff = n_foul - n_foul_opp, 
+      n_foul_p90_diff = n_foul_p90 - n_foul_p90_opp
+    )
 }
 
 fouls_by_state <-
@@ -308,7 +354,6 @@ fouls_by_state <-
     side,
     match_id,
     action,
-    g_state,
     g_state_grp,
     time_lo,
     time_hi
@@ -322,7 +367,7 @@ fouls_by_state <-
   mutate(time_diff = time_hi - time_lo) %>% 
   left_join(final_scores) %>% 
   left_join(probs_grps) %>% 
-  .add_n_foul_p90_col()%>% 
+  .add_n_foul_p90_col() %>% 
   arrange(league, season, date, match_id, time_lo, time_hi, team, team_opp)
 fouls_by_state
 
@@ -346,180 +391,251 @@ fouls_by_state
 
 fouls_by_state_redux <- 
   bind_rows(.rejoin('h'), .rejoin('a')) %>% 
-  mutate(
-    across(c(n_foul, n_foul_opp), ~coalesce(.x, 0L)),
-    across(c(n_foul_p90, n_foul_p90_opp), ~coalesce(.x, 0))
-  ) %>%
-  mutate(
-    n_foul_diff = n_foul - n_foul_opp, 
-    n_foul_p90_diff = n_foul_p90 - n_foul_p90_opp
-  ) %>% 
+  .postprocess_redux() %>% 
   arrange(league, season, date, match_id, time_lo, time_hi, team, team_opp)
 fouls_by_state_redux
 
-fouls_by_state_redux %>% select(where(is.numeric)) %>% skimr::skim()
-# fouls_by_state_redux %>% filter(side == 'h' & g_h_final != score_538)
-# fouls_by_state_redux %>% filter(side == 'a' & g_a_final != score_538)
-
-fouls_by_state_redux2 %>% 
+fouls_by_state_redux_filt <-
+  fouls_by_state_redux %>% 
   filter(action == 'committed') %>% 
-  filter(time_diff > (60 * 10)) %>% 
-  # filter(abs(g_state) <= 3L) %>% 
-  mutate(across(g_state_grp, factor)) %>% 
-  # filter(prob_diff > 0) %>% 
-  ggplot() +
-  aes(x = n_foul_diff) +
-  geom_density() +
-  facet_grid(g_state_grp~prob_grp4)
+  # filter(time_diff > (60 * 5)) %>% 
+  filter(season == 2020L) %>% 
+  filter(g_state_grp != 'neutral')
+fouls_by_state_redux_filt
 
-fouls_by_state_redux %>% 
-  filter(action == 'committed') %>% 
-  filter(time_diff > (60 * 10)) %>% 
-  filter(abs(g_state) <= 3L) %>% 
-  # filter(prob_diff > 0) %>% 
-  ggplot() +
-  aes(x = n_foul_diff) +
-  geom_point(aes(color = team)) +
-  theme(legend.position = 'top') +
-  facet_wrap(g_state~prob_grp4)
 
-fouls_by_state2 <-
-  fouls_by_state_redux %>%
-  group_by(
-    league,
-    season,
-    date,
-    team,
-    team_opp,
-    side,
-    match_id,
-    action,
-    g_state_grp,
-    time_lo,
-    time_hi
-  ) %>%
+fouls_by_team <-
+  fouls_by_state_redux_filt %>%
+  group_by(league, season, team, g_state_grp, prob_grp2) %>% 
   summarize(
-    n_foul = sum(n_foul)
+    n = sum(!is.na(n_foul)),
+    across(c(n_foul, n_foul_opp, time_diff), sum)
   ) %>% 
   ungroup() %>% 
-  # ...so re-calculate `time_diff`
-  mutate(time_diff = time_hi - time_lo) %>% 
-  left_join(final_scores) %>% 
-  left_join(probs_grps) %>% 
-  .add_n_foul_p90_col()%>% 
-  arrange(league, season, date, match_id, time_lo, time_hi, team, team_opp)
-fouls_by_state2
-
-.rejoin2 <- function(side1 = 'h') {
-  side2 <- ifelse(side1 == 'h', 'a', 'h')
-  left_join(
-    fouls_by_state2 %>% filter(side == !!side1),
-    fouls_by_state2 %>% 
-      filter(side == !!side2) %>% 
-      rename(team_z = team) %>% 
-      rename(team = team_opp) %>% 
-      rename(team_opp = team_z) %>% 
-      select(match_id, date, g_state_grp, team, team_opp, time_lo, time_hi, action, n_foul, n_foul_p90) %>% 
-      mutate(
-        across(n_foul, ~coalesce(.x, 0L)),
-        across(n_foul_p90, ~coalesce(.x, 0))
-      ) %>% 
-      rename(n_foul_opp = n_foul, n_foul_p90_opp = n_foul_p90) %>%
-      mutate(across(g_state_grp, ~case_when(.x == 'ahead' ~ 'behind', .x == 'behind' ~ 'neutral', TRUE ~ .x)))
-  )
-}
-
-fouls_by_state_redux2 <- 
-  bind_rows(.rejoin2('h'), .rejoin2('a')) %>% 
-  mutate(n_foul_p90_diff = n_foul_p90 - n_foul_p90_opp) %>% 
-  arrange(league, season, date, match_id, time_lo, time_hi, team, team_opp)
-fouls_by_state_redux2
-
-fouls_by_state_redux2 %>% select(where(is.numeric)) %>% skimr::skim()
-
-fouls_by_state_redux %>%
-  filter(action == 'committed') %>% 
-  # filter(n_foul_p90 <= 60) %>% 
-  filter(time_diff > (60 * 10)) %>% 
-  select(date, team, team_opp, g_state, g_state_grp, prob_grp4, n_foul_p90_diff, prob_diff) %>% 
-  pivot_longer(
-    -c(date, team, team_opp, g_state, g_state_grp, prob_grp4)
-  ) %>% 
-  mutate(grp = sprintf('%s, %s', prob_grp4, g_state)) %>% 
-  ggplot() +
-  aes(y = grp, x = value, color = team) +
-  ggbeeswarm::geom_quasirandom(groupOnX = FALSE) +
-  facet_wrap(~name, scales = 'free')
-
-fouls_by_time_by_team <-
-  fouls_by_state_redux2 %>% 
-  left_join(probs_grps) %>% 
-  group_by(league, season, team, action, prob_grp2, prob_grp4, g_state_grp) %>% 
-  summarize(
-    # prob = mean(prob),
-    n_foul = sum(n_foul),
-    n_foul_p90
-    time_diff = sum(time_diff)
-  ) %>% 
-  ungroup() %>% 
-  .add_n_foul_p90_col()
-fouls_by_time_by_team
-
-fouls_by_time_by_team %>%
-  filter(season == 2020L) %>%
-  filter(time_diff > (10 * 60)) %>% 
-  arrange(desc(n_foul_p90))
-
-fouls_stats_init <-
-  fouls_by_time_by_team %>% 
-  filter(!action) %>% 
-  select(-action) %>% 
-  group_by(league, season, team) %>% 
+  .add_n_foul_p90_col() %>% 
+  .add_n_foul_p90_col(suffix = 'opp') %>% 
+  .postprocess_redux() %>% 
+  arrange(league, season, team) %>% 
+  filter(time_diff > (60 * 90))  %>% 
+  group_by(league, season, g_state_grp, prob_grp2) %>% 
   mutate(
-    frac = time_diff / sum(time_diff)
+    rnk_inv = row_number(n_foul_p90_diff)
   ) %>% 
   ungroup()
+fouls_by_team
 
-fouls_stats_wide <-
-  fouls_stats_init %>% 
-  select(-c(n_foul, matches('^time_diff'))) %>% 
-  pivot_wider(
-    names_from = g_state_grp,
-    values_from = c(frac, n_foul_p90, prob)
+# fouls_by_team %>% filter(team == 'Man City')
+# fouls_by_team %>% filter(team == 'Liverpool')
+# fouls_by_team %>% filter(team == 'Burnley')
+# fouls_by_team %>% filter(team == 'Tottenham')
+prob_grp2_pretty <- c('Underdog', 'Favorite')
+g_state_grp_pretty <- c('Behind', 'Ahead')
+labs_prob_grps <-
+  tibble(
+    prob_grp2 = c('dog', 'fav'),
+    prob_grp2_pretty = prob_grp2_pretty
+  ) %>% 
+  mutate(idx_prob = row_number())
+labs_prob_grps
+
+labs_g_state <-
+  tibble(
+    g_state_grp = c('behind', 'ahead'),
+    g_state_grp_pretty = g_state_grp_pretty 
+  ) %>% 
+  mutate(idx_g_state = row_number())
+labs_g_state
+
+lvls_grp <- c('(1) Underdog Playing with a Lead', '(2) Favorite Playing from Behind', 'Underdog Playing from Behind', 'Favorite Playing From Behind')
+.case_when <- function(x, lvls) {
+  data %>% 
+    mutate(
+      !!sym(col_res) :=
+        case_when(
+          prob_grp2 == 'Underdog' & g_state_grp == 'Ahead' ~ lvls[1]
+          prob_grp2 == 'Favorite' & g_state_grp == 'Behind' ~ lvls[2],
+          prob_grp2 == 'Underdog' & g_state_grp == 'Behind' ~ lvls[3],
+          prob_grp2 == 'Favorite' & g_state_grp == 'Ahead' ~ lvls[4],
+        )
+    )
+}
+
+labs_grps <-
+  crossing(
+    prob_grp2_pretty = prob_grp2_pretty,
+    g_state_grp_pretty = g_state_grp_pretty 
   ) %>% 
   mutate(
-    diff_behind = n_foul_p90_behind - n_foul_p90_neutral,
-    diff_ahead = n_foul_p90_ahead - n_foul_p90_neutral
+    grp = case_when(
+      prob_grp2 == 'Underdog' & g_state_grp == 'Ahead' ~ '(1) Underdog Playing with a Lead'
+      prob_grp2 == 'Favorite' & g_state_grp == 'Behind' ~ '(2) Favorite Playing from Behind',
+      prob_grp2 == 'Underdog' & g_state_grp == 'Behind' ~ 'Underdog Playing from Behind',
+      prob_grp2 == 'Favorite' & g_state_grp == 'Ahead' ~ 'Favorite Playing From Behind',
+    ),
+    idx = case_when(
+      prob_grp2 == 'Underdog' & g_state_grp == 'Ahead' ~ '(1) Underdog Playing with a Lead'
+      prob_grp2 == 'Favorite' & g_state_grp == 'Behind' ~ '(2) Favorite Playing from Behind',
+      prob_grp2 == 'Underdog' & g_state_grp == 'Behind' ~ 'Underdog Playing from Behind',
+      prob_grp2 == 'Favorite' & g_state_grp == 'Ahead' ~ 'Favorite Playing From Behind',
+    )
   ) %>% 
-  arrange(desc(diff_ahead))
-fouls_stats_wide
+  
+  mutate(idx_g_state = row_number())
+labs_grps
 
-fouls_stats_wide %>% 
-  ggplot() +
-  aes(x = prob_ahead, y = n_foul_p90_ahead) + # , color = prob_grp) +
-  geom_point() +
-  geom_smooth()
+# # Reference: https://themockup.blog/posts/2020-10-11-embedding-images-in-ggplot/
+# .link_to_img <- function(x, width = 50) {
+#   glue::glue("<img src='{x}' width='{width}'/>")
+# }
 
-fouls_stats_wide %>% 
-  ggplot() +
-  aes(x = frac_ahead, y = n_foul_p90_ahead) + # , color = prob_grp) +
-  geom_point() +
-  geom_smooth()
+dir_img <- file.path(dir_proj, 'img')
+fouls_by_team_pretty <-
+  fouls_by_team %>% 
+  left_join(
+    xengagement::team_accounts_mapping %>%
+      # mutate(href = .link_to_img(url_logo_espn)) %>% 
+      mutate(path_local = file.path(dir_img, sprintf('%s.png', team))) %>% 
+      select(team, path_local, url = url_logo_espn, color_pri)
+  ) %>% 
+  left_join(labs_prob_grps) %>% 
+  left_join(labs_g_state) %>% 
+  select(-c(prob_grp2, g_state_grp)) %>% 
+  rename(prob_grp2 = prob_grp2_pretty, g_state_grp = g_state_grp_pretty) %>% 
+  mutate(
+    across(prob_grp2, ~fct_reorder(.x, idx_prob)),
+    across(g_state_grp, ~ fct_reorder(.x, idx_g_state))
+  ) %>% 
+  mutate(
+    grp = sprintf('%s %s', prob_grp2, ifelse(g_state_grp == 'Ahead', 'Playing with the Lead', 'Playing from Behind')),
+    grp = case_when(
+      prob_grp2 == 'Underdog' & g_state_grp == 'Ahead' ~ 'Underdog Playing with a Lead'
+    )
+    # across(grp, ~fct_reorder(.x, idx_prob + 2 * idx_g_state))
+    across(grp, ~ordered(.x, levels = c('Underdog Playing with the Lead', )))
+  ) %>% 
+  select(-c(idx_prob, idx_g_state))
+fouls_by_team_pretty
+fouls_by_team_pretty$grp %>% levels()
+bind_rows(
+fouls_by_team_pretty %>% 
+  filter(grp == 'Underdog Playing with the Lead' & n_foul_p90_diff > 0),
+fouls_by_team_pretty %>% 
+  filter(grp == 'Favorite Playing from Behind' & n_foul_p90_diff > 0),
+fouls_by_team_pretty %>% 
+  filter(grp == 'Underdog Playing from Behind' & n_foul_p90_diff < 0),
+) %>% 
+  count(team) %>% 
+  filter(n == 3L)
 
-fouls_stats_wide %>% 
-  ggplot() +
-  aes(x = frac_behind, y = n_foul_p90_behind) + # , color = prob_grp) +
-  geom_point() +
-  geom_smooth()
+# Do this once.
+# fs::dir_create(dir_img)
+# fouls_by_team_pretty %>% 
+#   distinct(url, path_local) %>% 
+#   mutate(res = map2(url, path_local, ~download.file(url = ..1, destfile = ..2, quiet = TRUE, mode = 'wb')))
+# asp_ratio <- 1.618
+# .pts <- function(x) {
+#   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
+# }
 
-fouls_by_time_by_team_filt_wide %>% 
-  arrange(desc(diff)) %>% 
-  ggplot() +
-  aes(x = frac_dog, y = diff) +
-  geom_point()
+.plot_team <- function(.team, height = 8) {
+  # .team <- 'Liverpool'
+  viz <-
+    fouls_by_team_pretty %>% 
+    # filter(prob_grp2 == 'Underdog', g_state_grp == 'Ahead') %>% 
+    ggplot() +
+    aes(y = rnk_inv, x = n_foul_p90_diff) +
+    geom_vline(aes(xintercept = 0), linetype = 2) +
+    geom_segment(
+      data = fouls_by_team_pretty %>% filter(team == .team), #  %>% filter(prob_grp2 == 'Underdog', g_state_grp == 'Ahead'),
+      show.legend = FALSE,
+      size = 1.25,
+      aes(x = n_foul_p90_diff, xend = 0, y = rnk_inv, yend = rnk_inv, color = I(color_pri))
+    ) +
+    geom_text(
+      data = fouls_by_team_pretty, #  %>% filter(team == .team), #  %>% filter(prob_grp2 == 'Underdog', g_state_grp == 'Ahead'),
+      aes(label = team), 
+      show.legend = FALSE
+    ) +
+    # ggimage::geom_image(
+    #   data = fouls_by_team_pretty %>% filter(team == .team) %>% filter(prob_grp2 == 'Underdog', g_state_grp == 'Ahead'),
+    #   aes(image = path_local), # , width = I(time_diff)), by= 'height'
+    # ) +
+    # scale_size(range = c(0.01, 0.1)) +
+    facet_wrap(~grp, scales = 'free_y', ncol = 2, labeller = grp) +
+    theme(
+      axis.text.y = element_blank(),
+      panel.grid.major.y = element_blank()
+    ) +
+    labs(
+      x = 'Fouls per 90 min. Relative to Opponent',
+      y = NULL
+    )
+  viz
+  
+  ggsave(
+    plot = viz,
+    filename = file.path(dir_proj, sprintf('viz_%s.png', tolower(.team))),
+    height = height,
+    width = height * asp_ratio,
+    type = 'cairo'
+  )
+  viz
+}
 
-fouls_by_time_by_team %>% 
+fouls_by_team %>% distinct(team) %>% pull(team) %>% walk(.plot_team)
+
+team <- 'Tottenham'
+color_pri <- xengagement::team_accounts_mapping %>% filter(team == !!team) %>% pull(color_pri)
+viz <-
+  fouls_by_team_pretty %>% 
   ggplot() +
-  aes(x = factor(g_state_grp), n_foul_p90) +
-  geom_boxplot() +
-  facet_wrap(~action, scales = 'free')
+  aes(y = rnk_inv, x = n_foul_p90_diff) +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  geom_segment(
+    data = fouls_by_team_pretty %>% filter(team == !!team),
+    show.legend = FALSE,
+    size = 2,
+    aes(x = n_foul_p90_diff, xend = 0, y = rnk_inv, yend = rnk_inv, color = I(color_pri))
+  ) +
+  # geom_text(
+  #   data = fouls_by_team_pretty,
+  #   aes(label = team), 
+  #   show.legend = FALSE
+  # ) +
+  ggimage::geom_image(
+    data = fouls_by_team_pretty %>% filter(team != !!team),
+    size = 0.1,
+    aes(image = path_local), # , width = I(time_diff)), by= 'height'
+  ) +
+  ggimage::geom_image(
+    data = fouls_by_team_pretty %>% filter(team == !!team),
+    size = 0.2,
+    aes(image = path_local), # , width = I(time_diff)), by= 'height'
+  ) +
+  scale_size(range = c(0.01, 0.1)) +
+  facet_wrap(~grp, scales = 'free_y', ncol = 2) +
+  theme(
+    plot.title = element_text(size = 22, hjust = 0),
+    plot.subtitle = ggtext::element_markdown(size = 12, hjust = 0),
+    axis.text.y = element_blank(),
+    panel.grid.major.y = element_blank()
+  ) +
+  labs(
+    title = 'Relative Foul Frequency By Game State',
+    subtitle = glue::glue('Under Mourinho, <b><span style="color:{color_pri};">Tottenham</span></b> played more aggressively based on game state. Spurs are the only team that fouled<br/>(1) more often than their opponent when not favored to win ("Underdog") and playing with the lead, and <br/>(2) more often when the favorite and playing from behind, and,<br/>otherwise, fouled less often.'),
+    x = 'Fouls per 90 min. Relative to Opponent',
+    y = NULL
+  )
+viz
+
+# h <- 6
+ggsave(
+  plot = viz,
+  filename = file.path(dir_proj, 'viz_foul_p90_diff.png'),
+  # height = (2 * h),
+  # width = h * asp_ratio,
+  height = 12,
+  width = 12,
+  type = 'cairo'
+)
+
