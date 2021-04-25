@@ -17,7 +17,7 @@ team_mapping <-
   select(team, team_538, team_whoscored)
 team_mapping
 
-probs_init <- 
+probs_init <-
   read_csv(
     'https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv'
   ) %>% 
@@ -44,39 +44,26 @@ probs_init
     rename_with(~str_replace(.x, suffix_opp, '_opp'), c(matches(suffix_opp))) %>% 
     mutate(side = !!side)
 }
-probs_redux <- bind_rows(.f_rename_538('h'), .f_rename_538('a')) %>% select(-matches('team_538'))
-probs_redux
 
-# probs_redux %>% 
-#   mutate(
-#     across(
-#       prob, 
-#       list(grp = ~cut_number(.x, n = 5))
-#     )
-#   ) %>% 
-#   count(prob_grp)
+probs_redux <- 
+  bind_rows(.f_rename_538('h'), .f_rename_538('a')) %>% 
+  select(-matches('team_538')) %>% 
+  mutate(prob_diff = prob - prob_opp)
+probs_redux
 
 probs_grps <-
   probs_redux %>% 
-  # mutate(
-  #   across(
-  #     prob, 
-  #     list(grp = ~cut_number(.x, n = 5, labels = c('big underdog', 'moderate underdog', 'even match', 'moderate favorite', 'big favorite')))
-  #   )
-  # ) %>% 
   mutate(
     across(
       prob,
-      # list(
-      #   grp = ~case_when(
-      #     .x > prob_opp & prob_opp > probtie  ~ 'fav_small',
-      #     .x > prob_opp~ 'fav_big',
-      #     .x < prob_opp & .x < probtie ~ 'dog_big',
-      #     .x < prob_opp ~ 'dog_small',
-      #   )
-      # )
       list(
-        grp = ~case_when(
+        grp4 = ~case_when(
+          .x > prob_opp & prob_opp > probtie  ~ 'fav_small',
+          .x > prob_opp~ 'fav_big',
+          .x < prob_opp & .x < probtie ~ 'dog_big',
+          .x < prob_opp ~ 'dog_small',
+        ),
+        grp2 = ~case_when(
           .x > prob_opp ~ 'fav',
           .x < prob_opp ~ 'dog',
           TRUE ~ NA_character_
@@ -84,7 +71,8 @@ probs_grps <-
       )
     )
   )
-probs_grps %>% count(prob_grp)
+probs_grps
+probs_grps %>% count(prob_grp4)
 
 meta <- 
   path_meta %>% 
@@ -137,7 +125,7 @@ fouls <-
   events %>% 
   filter(type_name == 'Foul') %>% 
   mutate(
-    is_drawn = if_else(outcome_type_name == 'Successful', TRUE, FALSE)
+    action = if_else(outcome_type_name == 'Successful', 'drawn', 'committed')
   ) %>%
   .add_time_col() %>%
   select(
@@ -155,7 +143,7 @@ fouls <-
     # team_a,
     side,
     player_name,
-    is_drawn
+    action
   )
 fouls
 
@@ -261,7 +249,7 @@ final_scores
 
 # pre-joining ----
 # This returns the same number of results as a lag join (as expected).
-fouls_by_state <-
+fouls_by_time <-
   data.table::as.data.table(fouls)[
     data.table::as.data.table(
       states %>% 
@@ -295,64 +283,199 @@ fouls_by_state <-
     second,
     team
   ) %>%
-  left_join(final_scores) %>% 
   rename(team_whoscored = team, team_whoscored_opp = team_opp) %>% 
   left_join(team_mapping %>% select(team, team_whoscored = team_whoscored)) %>% 
   left_join(team_mapping %>% select(team_opp = team, team_whoscored_opp = team_whoscored)) %>% 
-  left_join(probs_grps) %>% 
-  select(-matches('^team.*(whoscored|538)')) %>% 
+  # left_join(probs_grps) %>% 
+  select(-matches('^team.*whoscored')) %>% 
   arrange(league, season, date, match_id, time, team)
-fouls_by_state  
+fouls_by_time
+fouls_by_time %>% count(id, sort = TRUE) %>% filter(n > 1L)
 
-fouls_by_state_by_game <-
-  fouls_by_state %>% 
-  group_by_at(vars(league, season, date, team, team_opp, match_id, is_drawn, g_state_grp, matches('prob'))) %>% 
+.add_n_foul_p90_col <- function(data) {
+  data %>% 
+    mutate(n_foul_p90 = 90 * n_foul / (time_diff / 60))
+}
+
+fouls_by_state <-
+  fouls_by_time %>%
+  group_by(
+    league,
+    season,
+    date,
+    team,
+    team_opp,
+    side,
+    match_id,
+    action,
+    g_state,
+    g_state_grp,
+    time_lo,
+    time_hi
+  ) %>%
+  # Summing `time_diff`s is wrong, since it won't account for time after last foul and before `time_hi`...
   summarize(
-    n_foul = sum(time_diff > 0L),
-    across(time_diff, sum)
+    n_foul = sum(time_diff > 0L)
   ) %>% 
   ungroup() %>% 
-  mutate(n_foul_p90 = 90 * n_foul / (time_diff / 60))
-fouls_by_state_by_game
-
-fouls_by_state_by_game %>% 
-  filter(!is_drawn) %>% 
-  filter(time_diff > 120) %>% 
-  # filter(abs(g_state) <= 3L) %>% 
+  # ...so re-calculate `time_diff`
+  mutate(time_diff = time_hi - time_lo) %>% 
+  left_join(final_scores) %>% 
   left_join(probs_grps) %>% 
-  arrange(desc(n_foul_p90)) %>% 
-  ggplot() +
-  aes(y = n_foul_p90, x = factor(g_state_grp)) +
-  facet_wrap(~prob_grp) +
-  # geom_point(aes(color = prob_grp, size = time_diff)) +
-  guides(color = FALSE) +
-  geom_boxplot()
+  .add_n_foul_p90_col()%>% 
+  arrange(league, season, date, match_id, time_lo, time_hi, team, team_opp)
+fouls_by_state
 
-fouls_by_state_by_team <-
-  fouls_by_state %>% 
-  group_by(league, season, team, is_drawn, prob_grp, g_state_grp) %>% 
+.rejoin <- function(side1 = 'h') {
+  side2 <- ifelse(side1 == 'h', 'a', 'h')
+  left_join(
+    fouls_by_state %>% filter(side == !!side1),
+    fouls_by_state %>% 
+      filter(side == !!side2) %>% 
+      select(
+        match_id,
+        time_lo,
+        time_hi,
+        action,
+        n_foul,
+        n_foul_p90
+      ) %>%
+      rename(n_foul_opp = n_foul, n_foul_p90_opp = n_foul_p90) 
+  )
+}
+
+fouls_by_state_redux <- 
+  bind_rows(.rejoin('h'), .rejoin('a')) %>% 
+  mutate(
+    across(c(n_foul, n_foul_opp), ~coalesce(.x, 0L)),
+    across(c(n_foul_p90, n_foul_p90_opp), ~coalesce(.x, 0))
+  ) %>%
+  mutate(
+    n_foul_diff = n_foul - n_foul_opp, 
+    n_foul_p90_diff = n_foul_p90 - n_foul_p90_opp
+  ) %>% 
+  arrange(league, season, date, match_id, time_lo, time_hi, team, team_opp)
+fouls_by_state_redux
+
+fouls_by_state_redux %>% select(where(is.numeric)) %>% skimr::skim()
+# fouls_by_state_redux %>% filter(side == 'h' & g_h_final != score_538)
+# fouls_by_state_redux %>% filter(side == 'a' & g_a_final != score_538)
+
+fouls_by_state_redux2 %>% 
+  filter(action == 'committed') %>% 
+  filter(time_diff > (60 * 10)) %>% 
+  # filter(abs(g_state) <= 3L) %>% 
+  mutate(across(g_state_grp, factor)) %>% 
+  # filter(prob_diff > 0) %>% 
+  ggplot() +
+  aes(x = n_foul_diff) +
+  geom_density() +
+  facet_grid(g_state_grp~prob_grp4)
+
+fouls_by_state_redux %>% 
+  filter(action == 'committed') %>% 
+  filter(time_diff > (60 * 10)) %>% 
+  filter(abs(g_state) <= 3L) %>% 
+  # filter(prob_diff > 0) %>% 
+  ggplot() +
+  aes(x = n_foul_diff) +
+  geom_point(aes(color = team)) +
+  theme(legend.position = 'top') +
+  facet_wrap(g_state~prob_grp4)
+
+fouls_by_state2 <-
+  fouls_by_state_redux %>%
+  group_by(
+    league,
+    season,
+    date,
+    team,
+    team_opp,
+    side,
+    match_id,
+    action,
+    g_state_grp,
+    time_lo,
+    time_hi
+  ) %>%
   summarize(
-    prob = mean(prob),
-    n_foul = sum(time_diff > 0L),
-    # across(time_diff, sum)
+    n_foul = sum(n_foul)
+  ) %>% 
+  ungroup() %>% 
+  # ...so re-calculate `time_diff`
+  mutate(time_diff = time_hi - time_lo) %>% 
+  left_join(final_scores) %>% 
+  left_join(probs_grps) %>% 
+  .add_n_foul_p90_col()%>% 
+  arrange(league, season, date, match_id, time_lo, time_hi, team, team_opp)
+fouls_by_state2
+
+.rejoin2 <- function(side1 = 'h') {
+  side2 <- ifelse(side1 == 'h', 'a', 'h')
+  left_join(
+    fouls_by_state2 %>% filter(side == !!side1),
+    fouls_by_state2 %>% 
+      filter(side == !!side2) %>% 
+      rename(team_z = team) %>% 
+      rename(team = team_opp) %>% 
+      rename(team_opp = team_z) %>% 
+      select(match_id, date, g_state_grp, team, team_opp, time_lo, time_hi, action, n_foul, n_foul_p90) %>% 
+      mutate(
+        across(n_foul, ~coalesce(.x, 0L)),
+        across(n_foul_p90, ~coalesce(.x, 0))
+      ) %>% 
+      rename(n_foul_opp = n_foul, n_foul_p90_opp = n_foul_p90) %>%
+      mutate(across(g_state_grp, ~case_when(.x == 'ahead' ~ 'behind', .x == 'behind' ~ 'neutral', TRUE ~ .x)))
+  )
+}
+
+fouls_by_state_redux2 <- 
+  bind_rows(.rejoin2('h'), .rejoin2('a')) %>% 
+  mutate(n_foul_p90_diff = n_foul_p90 - n_foul_p90_opp) %>% 
+  arrange(league, season, date, match_id, time_lo, time_hi, team, team_opp)
+fouls_by_state_redux2
+
+fouls_by_state_redux2 %>% select(where(is.numeric)) %>% skimr::skim()
+
+fouls_by_state_redux %>%
+  filter(action == 'committed') %>% 
+  # filter(n_foul_p90 <= 60) %>% 
+  filter(time_diff > (60 * 10)) %>% 
+  select(date, team, team_opp, g_state, g_state_grp, prob_grp4, n_foul_p90_diff, prob_diff) %>% 
+  pivot_longer(
+    -c(date, team, team_opp, g_state, g_state_grp, prob_grp4)
+  ) %>% 
+  mutate(grp = sprintf('%s, %s', prob_grp4, g_state)) %>% 
+  ggplot() +
+  aes(y = grp, x = value, color = team) +
+  ggbeeswarm::geom_quasirandom(groupOnX = FALSE) +
+  facet_wrap(~name, scales = 'free')
+
+fouls_by_time_by_team <-
+  fouls_by_state_redux2 %>% 
+  left_join(probs_grps) %>% 
+  group_by(league, season, team, action, prob_grp2, prob_grp4, g_state_grp) %>% 
+  summarize(
+    # prob = mean(prob),
+    n_foul = sum(n_foul),
+    n_foul_p90
     time_diff = sum(time_diff)
   ) %>% 
   ungroup() %>% 
-  mutate(n_foul_p90 = 90 * n_foul / (time_diff / 60))
-fouls_by_state_by_team
+  .add_n_foul_p90_col()
+fouls_by_time_by_team
 
-fouls_by_state_by_team %>% arrange(desc(n_foul_p90))
+fouls_by_time_by_team %>%
+  filter(season == 2020L) %>%
+  filter(time_diff > (10 * 60)) %>% 
+  arrange(desc(n_foul_p90))
 
 fouls_stats_init <-
-  fouls_by_state_by_team %>% 
-  filter(!is_drawn) %>% 
-  select(-is_drawn) %>% 
-  # filter(g_state_grp == 'Ahead') %>% 
+  fouls_by_time_by_team %>% 
+  filter(!action) %>% 
+  select(-action) %>% 
   group_by(league, season, team) %>% 
   mutate(
-    # time_diff_sum = sum(time_diff),
-    # Weird error
-    # across(time_diff, list(frac = ~.x / time_diff_sum))
     frac = time_diff / sum(time_diff)
   ) %>% 
   ungroup()
@@ -389,14 +512,14 @@ fouls_stats_wide %>%
   geom_point() +
   geom_smooth()
 
-fouls_by_state_by_team_filt_wide %>% 
+fouls_by_time_by_team_filt_wide %>% 
   arrange(desc(diff)) %>% 
   ggplot() +
   aes(x = frac_dog, y = diff) +
   geom_point()
 
-fouls_by_state_by_team %>% 
+fouls_by_time_by_team %>% 
   ggplot() +
   aes(x = factor(g_state_grp), n_foul_p90) +
   geom_boxplot() +
-  facet_wrap(~is_drawn, scales = 'free')
+  facet_wrap(~action, scales = 'free')
