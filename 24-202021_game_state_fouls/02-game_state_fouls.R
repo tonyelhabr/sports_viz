@@ -18,7 +18,7 @@ theme_update(
   panel.grid.minor.y = element_blank(),
   plot.margin = margin(10, 10, 10, 10),
   plot.background = element_rect(fill = '#ffffff', color = NA),
-  plot.caption = element_text('Karla', size = 14, color = 'gray20', hjust = 0),
+  plot.caption = element_text('Karla', size = 14, color = 'gray20', hjust = 1),
   plot.caption.position = 'plot',
   plot.tag = ggtext::element_markdown('Karla', size = 14, color = 'gray20', hjust = 0), 
   plot.tag.position = c(.01, 0.01),
@@ -403,59 +403,51 @@ fouls_by_state_redux_filt <-
   filter(g_state_grp != 'neutral')
 fouls_by_state_redux_filt
 
-
-fouls_by_team <-
+# by game state ----
+.group_by_team <- function(...) {
   fouls_by_state_redux_filt %>%
-  group_by(league, season, team, g_state_grp, prob_grp2) %>% 
-  summarize(
-    n = sum(!is.na(n_foul)),
-    across(c(n_foul, n_foul_opp, time_diff), sum)
-  ) %>% 
-  ungroup() %>% 
-  .add_n_foul_p90_col() %>% 
-  .add_n_foul_p90_col(suffix = 'opp') %>% 
-  .postprocess_redux() %>% 
-  arrange(league, season, team) %>% 
-  filter(time_diff > (60 * 90))  %>% 
-  group_by(league, season, g_state_grp, prob_grp2) %>% 
-  mutate(
-    rnk_inv = row_number(n_foul_p90_diff)
-  ) %>% 
-  ungroup()
-fouls_by_team
+    group_by(league, season, team, ...) %>% 
+    summarize(
+      n = sum(!is.na(n_foul)),
+      across(c(n_foul, n_foul_opp, time_diff), sum)
+    ) %>% 
+    ungroup() %>% 
+    .add_n_foul_p90_col() %>% 
+    .add_n_foul_p90_col(suffix = 'opp') %>% 
+    .postprocess_redux() %>% 
+    arrange(league, season, team) %>% 
+    filter(time_diff > (60 * 90))  %>% 
+    group_by(league, season, ...) %>% 
+    mutate(
+      rnk_inv = row_number(n_foul_p90_diff)
+    ) %>% 
+    ungroup()
+}
+fouls_by_team <- .group_by_team(g_state_grp)
 
 lvls_grp <-
   c(
-    '(1) Underdog Playing with a Lead',
-    '(2) Favorite Playing from Behind',
-    '(3) Underdog Playing from Behind',
-    '(4) Favorite Playing with a Lead'
+    'Playing with a Lead',
+    'Playing from Behind'
   )
-# paletteer::paletteer_d('LaCroixColoR::PassionFruit', n = 4) %>% datapasta::vector_paste()
-# pal <- c("#C70E7BFF", "#FC6882FF", "#A6E000FF", "#1BB6AFFF") %>% str_remove('FF$')
-pal <- c("#003f5c", "#7a5195", "#ef5675", "#ffa600")
+pal <- c('#003f5c', '#ffa600')
 
-labs_md <-
-  map2_chr(
-    lvls_grp, pal,
-    ~{
-    glue::glue('<b><span style="color:{..2};">{..1}</span></b>')
-  })
+.map2_colors <- function(lab, color) {
+  glue::glue('<b><span style="color:{color};">{lab}</span></b>')
+}
+labs_md <- .map2_colors(lvls_grp, pal)
 labs_md
 
 lab_grps <-
   crossing(
-    prob_grp2 = c('dog', 'fav'),
     g_state_grp = c('behind', 'ahead')
   ) %>% 
-  mutate(grp = sprintf('%s_%s', prob_grp2, g_state_grp)) %>% 
+  mutate(grp = g_state_grp) %>% 
   mutate(
     idx_grp =
       case_when(
-        prob_grp2 == 'dog' & g_state_grp == 'ahead' ~ 1L,
-        prob_grp2 == 'fav' & g_state_grp == 'behind' ~ 2L,
-        prob_grp2 == 'dog' & g_state_grp == 'behind' ~ 3L,
-        prob_grp2 == 'fav' & g_state_grp == 'ahead' ~ 4L
+        g_state_grp == 'ahead' ~ 1L,
+        g_state_grp == 'behind' ~ 2L
       ),
     grp = fct_reorder(grp, idx_grp)
   )
@@ -491,9 +483,247 @@ if(FALSE) {
     mutate(res = map2(url, path_local, ~download.file(url = ..1, destfile = ..2, quiet = TRUE, mode = 'wb')))
 }
 
-pts <- function(x) {
+.pts <- function(x) {
   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
 }
+
+lab_caption <- '**Viz**: Tony ElHabr<br/>**Data**: 2020-21 Premier League through Matchweek 32'
+viz_by_state <-
+  fouls_by_team_pretty %>% 
+  ggplot() +
+  aes(y = rnk_inv, x = n_foul_p90_diff) +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  geom_segment(
+    data = fouls_by_team_pretty,
+    show.legend = FALSE,
+    size = 1,
+    color = 'black',
+    aes(x = n_foul_p90_diff, xend = 0, y = rnk_inv, yend = rnk_inv)
+  ) +
+  ggimage::geom_image(
+    data = fouls_by_team_pretty,
+    size = 0.05,
+    aes(image = path_local),
+  ) +
+  ggtext::geom_richtext(
+    # fill = NA, 
+    label.color = NA,
+    size = .pts(14),
+    family = 'Karla',
+    fontface = 'bold',
+    inherit.aes = FALSE,
+    data = labs_xy,
+    hjust = 0,
+    aes(y = rnk_inv_max, x = min(n_foul_p90_diff_min) + 0.1, label = lab)
+  ) +
+  facet_wrap(~grp, scales = 'free_y', ncol = 2) +
+  theme(
+    strip.text = element_blank(),
+    panel.background = element_rect(color = 'grey80', size = 2),
+    # strip.background = element_rect(color = '#000000', size = 10),
+    plot.title = element_text(size = 18, hjust = 0),
+    plot.subtitle = ggtext::element_markdown(size = 12, hjust = 0),
+    axis.text.y = element_blank(),
+    panel.grid.major.y = element_blank()
+  ) +
+  labs(
+    title = 'Team Foul Rate Relative to Opponent',
+    subtitle = glue::glue('Which teams foul more/less frequently than their opponent when playing <b><span style="color:{pal[1]};">with the lead</span></b> or <b><span style="color:{pal[2]};">from behind</span></b>?'),
+    caption = '',
+    tag = lab_caption,
+    x = 'Fouls per 90 min. Relative to Opponent',
+    y = NULL
+  )
+viz_by_state
+
+h <- 8
+asp_ratio <- 1.618
+ggsave(
+  plot = viz_by_state,
+  filename = file.path(dir_proj, 'viz_foul_p90_diff_by_state.png'),
+  height = h,
+  width = h * asp_ratio,
+  type = 'cairo'
+)
+
+# by prob_grp2 ----
+fouls_by_team <- .group_by_team(prob_grp2)
+lvls_grp <-
+  c(
+    'Underdog',
+    'Favorite'
+  )
+pal <- c('#7a5195', '#ef5675')
+
+labs_md <- .map2_colors(lvls_grp, pal)
+labs_md
+
+lab_grps <-
+  crossing(
+    prob_grp2 = c('dog', 'fav')
+  ) %>% 
+  mutate(grp = prob_grp2) %>% 
+  mutate(
+    idx_grp =
+      case_when(
+        prob_grp2 == 'dog' ~ 1L,
+        prob_grp2 == 'fav' ~ 2L
+      ),
+    grp = fct_reorder(grp, idx_grp)
+  )
+lab_grps
+
+fouls_by_team_pretty <-
+  fouls_by_team %>% 
+  left_join(
+    xengagement::team_accounts_mapping %>%
+      mutate(path_local = file.path(dir_img, sprintf('%s.png', team))) %>% 
+      select(team, path_local, url = url_logo_espn, color_pri)
+  ) %>% 
+  left_join(lab_grps)
+fouls_by_team_pretty
+
+labs_xy <-
+  fouls_by_team_pretty %>% 
+  group_by(idx_grp, grp) %>% 
+  summarize(
+    across(c(rnk_inv, n_foul_p90_diff), list(min = min, max = max))
+  ) %>% 
+  ungroup() %>% 
+  left_join(tibble(lab = labs_md) %>% mutate(idx_grp = row_number()))
+labs_xy
+
+viz_by_prob <-
+  fouls_by_team_pretty %>% 
+  ggplot() +
+  aes(y = rnk_inv, x = n_foul_p90_diff) +
+  geom_vline(aes(xintercept = 0), linetype = 2) +
+  geom_segment(
+    data = fouls_by_team_pretty,
+    show.legend = FALSE,
+    size = 1,
+    color = 'black',
+    aes(x = n_foul_p90_diff, xend = 0, y = rnk_inv, yend = rnk_inv)
+  ) +
+  ggimage::geom_image(
+    data = fouls_by_team_pretty,
+    size = 0.05,
+    aes(image = path_local),
+  ) +
+  ggtext::geom_richtext(
+    # fill = NA, 
+    label.color = NA,
+    size = .pts(16),
+    family = 'Karla',
+    fontface = 'bold',
+    inherit.aes = FALSE,
+    data = labs_xy,
+    hjust = 0,
+    aes(y = rnk_inv_max, x = min(n_foul_p90_diff_min) + 0.1, label = lab)
+  ) +
+  facet_wrap(~grp, scales = 'free_y', ncol = 2) +
+  theme(
+    strip.text = element_blank(),
+    panel.background = element_rect(color = 'grey80', size = 2),
+    # strip.background = element_rect(color = '#000000', size = 10),
+    plot.title = element_text(size = 18, hjust = 0),
+    plot.subtitle = ggtext::element_markdown(size = 12, hjust = 0),
+    axis.text.y = element_blank(),
+    panel.grid.major.y = element_blank()
+  ) +
+  labs(
+    title = 'Team Foul Rate Relative to Opponent',
+    subtitle = glue::glue('Which teams foul more/less frequently than they are the pre-game <b><span style="color:{pal[1]};">underdog</span></b> vs. <b><span style="color:{pal[2]};">favorite</span></b>?'),
+    caption = 'Favorites and underdogs determined based on @FiveThirtyEight\'s pre-game win probabilities.',
+    tag = lab_caption,
+    x = 'Fouls per 90 min. Relative to Opponent',
+    y = NULL
+  )
+viz_by_prob
+
+ggsave(
+  plot = viz_by_prob,
+  filename = file.path(dir_proj, 'viz_foul_p90_diff_by_prob.png'),
+  height = h,
+  width = h * asp_ratio,
+  type = 'cairo'
+)
+
+# by4 ----
+fouls_by_team <-
+  fouls_by_state_redux_filt %>%
+  group_by(league, season, team, g_state_grp, prob_grp2) %>% 
+  summarize(
+    n = sum(!is.na(n_foul)),
+    across(c(n_foul, n_foul_opp, time_diff), sum)
+  ) %>% 
+  ungroup() %>% 
+  .add_n_foul_p90_col() %>% 
+  .add_n_foul_p90_col(suffix = 'opp') %>% 
+  .postprocess_redux() %>% 
+  arrange(league, season, team) %>% 
+  group_by(league, season, g_state_grp, prob_grp2) %>% 
+  mutate(
+    rnk_inv = row_number(n_foul_p90_diff)
+  ) %>% 
+  ungroup()
+fouls_by_team
+
+lvls_grp <-
+  c(
+    '(1) Underdog Playing with a Lead',
+    '(2) Favorite Playing from Behind',
+    '(3) Underdog Playing from Behind',
+    '(4) Favorite Playing with a Lead'
+  )
+# paletteer::paletteer_d('ggsci::default_nejm', n = 4) %>% datapasta::vector_paste()
+# c("#BC3C29FF", "#0072B5FF", "#E18727FF", "#20854EFF")
+# c("#BC3C29FF", "#0072B5FF", "#E18727FF", "#20854EFF")
+# paletteer::paletteer_d('LaCroixColoR::PassionFruit', n = 4) %>% datapasta::vector_paste()
+pal <- c('#BC3C29FF', '#0072B5FF', '#E18727FF', '#20854EFF') %>% str_remove('FF$')
+# pal <- c('#003f5c', '#7a5195', '#ef5675', '#ffa600')
+
+labs_md <- .map2_colors(lvls_grp, pal)
+
+lab_grps <-
+  crossing(
+    prob_grp2 = c('dog', 'fav'),
+    g_state_grp = c('behind', 'ahead')
+  ) %>% 
+  mutate(grp = sprintf('%s_%s', prob_grp2, g_state_grp)) %>% 
+  mutate(
+    idx_grp =
+      case_when(
+        prob_grp2 == 'dog' & g_state_grp == 'ahead' ~ 1L,
+        prob_grp2 == 'fav' & g_state_grp == 'behind' ~ 2L,
+        prob_grp2 == 'dog' & g_state_grp == 'behind' ~ 3L,
+        prob_grp2 == 'fav' & g_state_grp == 'ahead' ~ 4L
+      ),
+    grp = fct_reorder(grp, idx_grp)
+  ) %>% 
+  arrange(idx_grp)
+lab_grps
+
+fouls_by_team_pretty <-
+  fouls_by_team %>% 
+  left_join(
+    xengagement::team_accounts_mapping %>%
+      # mutate(href = .link_to_img(url_logo_espn)) %>% 
+      mutate(path_local = file.path(dir_img, sprintf('%s.png', team))) %>% 
+      select(team, path_local, url = url_logo_espn, color_pri)
+  ) %>% 
+  left_join(lab_grps)
+fouls_by_team_pretty
+
+labs_xy <-
+  fouls_by_team_pretty %>% 
+  group_by(idx_grp, grp) %>% 
+  summarize(
+    across(c(rnk_inv, n_foul_p90_diff), list(min = min, max = max))
+  ) %>% 
+  ungroup() %>% 
+  left_join(tibble(lab = labs_md) %>% mutate(idx_grp = row_number()))
+labs_xy
 
 team <- 'Tottenham'
 color_pri <- xengagement::team_accounts_mapping %>% filter(team == !!team) %>% pull(color_pri)
@@ -526,7 +756,7 @@ viz <-
   ggtext::geom_richtext(
     # fill = NA, 
     label.color = NA,
-    size = pts(14),
+    size = .pts(14),
     family = 'Karla',
     fontface = 'bold',
     inherit.aes = FALSE,
@@ -537,7 +767,7 @@ viz <-
   facet_wrap(~grp, scales = 'free_y', ncol = 2) +
   theme(
     strip.text = element_blank(),
-    strip.background = element_rect(color = '#ffffff', size = 10),
+    panel.background = element_rect(color = 'grey80', size = 2),
     plot.title = element_text(size = 18, hjust = 0),
     plot.subtitle = ggtext::element_markdown(size = 12, hjust = 0),
     plot.caption = ggtext::element_markdown(size = 12, hjust = 1),
@@ -548,20 +778,20 @@ viz <-
     title = 'Will Tottenham Continue Bus Parking Without Mourinho?',
     subtitle = glue::glue('Under Mourinho, <b><span style="color:{color_pri};">Tottenham</span></b> played more aggressively based on game state. Spurs are the only team that has fouled:<br/><br/><b><span style="color:{pal[1]};">(1) more often than their opponent when the underdog and playing with the lead</span></b>,<br/><b><span style="color:{pal[2]};">(2) more often when the favorite and playing from behind</span></b>,<br/><b><span style="color:{pal[3]};">(3) less often when the underdog and playing from ahead</span></b>, and<br/><b><span style="color:{pal[4]};">(4) less often when the favorite and playing with the lead</span></b>.'),
     caption = glue::glue('Teams with less than 90 minutes in a given state (e.g. Man City as the underdog playing from behind) are not shown.<br/>Favorites and underdogs determined based on @FiveThirtyEight\'s pre-game win probabilities.'),
-    tag = '**Viz**: Tony ElHabr',
+    tag = lab_tag,
     x = 'Fouls per 90 min. Relative to Opponent',
     y = NULL
   )
 viz
 
-# h <- 6
 ggsave(
   plot = viz,
   filename = file.path(dir_proj, 'viz_foul_p90_diff.png'),
-  # height = (2 * h),
-  # width = h * asp_ratio,
   height = 12,
   width = 11,
   type = 'cairo'
 )
+
+# Leeds has the largest difference in foul rate relative to their opponent when ahead vs. when behind. They have the 2nd lowest rate when winning and the 5th highest rate when losing. Is this the magic behind Bielsa ball,,,,?
+
 
