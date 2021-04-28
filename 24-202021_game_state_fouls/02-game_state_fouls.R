@@ -18,12 +18,12 @@ theme_update(
   panel.grid.minor.y = element_blank(),
   plot.margin = margin(10, 10, 10, 10),
   plot.background = element_rect(fill = '#ffffff', color = NA),
-  plot.caption = element_text('Karla', size = 14, color = 'gray20', hjust = 1),
+  plot.caption = ggtext::element_markdown('Karla', size = 14, color = 'gray20', hjust = 1),
   plot.caption.position = 'plot',
   plot.tag = ggtext::element_markdown('Karla', size = 14, color = 'gray20', hjust = 0), 
   plot.tag.position = c(.01, 0.01),
-  legend.text = element_text(size = 14),
-  strip.text = element_text(size = 14),
+  legend.text = element_text(color = 'gray20', size = 14),
+  strip.text = element_text(color = 'gray20', size = 14),
   strip.background = element_blank(),
   panel.background = element_rect(fill = '#ffffff', color = NA)
 )
@@ -487,7 +487,7 @@ if(FALSE) {
   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
 }
 
-lab_caption <- '**Viz**: Tony ElHabr<br/>**Data**: 2020-21 Premier League through Matchweek 32'
+lab_tag <- '**Viz**: Tony ElHabr | **Data**: 2020-21 Premier League through Matchweek 32'
 viz_by_state <-
   fouls_by_team_pretty %>% 
   ggplot() +
@@ -529,8 +529,8 @@ viz_by_state <-
   labs(
     title = 'Team Foul Rate Relative to Opponent',
     subtitle = glue::glue('Which teams foul more/less frequently than their opponent when playing <b><span style="color:{pal[1]};">with the lead</span></b> or <b><span style="color:{pal[2]};">from behind</span></b>?'),
-    caption = '',
-    tag = lab_caption,
+    # caption = '',
+    tag = lab_tag,
     x = 'Fouls per 90 min. Relative to Opponent',
     y = NULL
   )
@@ -634,8 +634,8 @@ viz_by_prob <-
   labs(
     title = 'Team Foul Rate Relative to Opponent',
     subtitle = glue::glue('Which teams foul more/less frequently than they are the pre-game <b><span style="color:{pal[1]};">underdog</span></b> vs. <b><span style="color:{pal[2]};">favorite</span></b>?'),
-    caption = 'Favorites and underdogs determined based on @FiveThirtyEight\'s pre-game win probabilities.',
-    tag = lab_caption,
+    # caption = 'Favorites and underdogs determined based on @FiveThirtyEight\'s pre-game win probabilities.',
+    tag = lab_tag,
     x = 'Fouls per 90 min. Relative to Opponent',
     y = NULL
   )
@@ -777,8 +777,9 @@ viz <-
   labs(
     title = 'Will Tottenham Continue Bus Parking Without Mourinho?',
     subtitle = glue::glue('Under Mourinho, <b><span style="color:{color_pri};">Tottenham</span></b> played more aggressively based on game state. Spurs are the only team that has fouled:<br/><br/><b><span style="color:{pal[1]};">(1) more often than their opponent when the underdog and playing with the lead</span></b>,<br/><b><span style="color:{pal[2]};">(2) more often when the favorite and playing from behind</span></b>,<br/><b><span style="color:{pal[3]};">(3) less often when the underdog and playing from ahead</span></b>, and<br/><b><span style="color:{pal[4]};">(4) less often when the favorite and playing with the lead</span></b>.'),
-    caption = glue::glue('Teams with less than 90 minutes in a given state (e.g. Man City as the underdog playing from behind) are not shown.<br/>Favorites and underdogs determined based on @FiveThirtyEight\'s pre-game win probabilities.'),
-    tag = lab_tag,
+    # caption = glue::glue('Teams with less than 90 minutes in a given state (e.g. Man City as the underdog playing from behind) are not shown.<br/>Favorites and underdogs determined based on @FiveThirtyEight\'s pre-game win probabilities.'),
+    caption = glue::glue('Teams with less than 90 minutes in a given state<br/>(e.g. Man City as the underdog playing from behind) are not shown.'
+    tag = lab_tag %>% str_replace('\\s|\\s', '<br/>')
     x = 'Fouls per 90 min. Relative to Opponent',
     y = NULL
   )
