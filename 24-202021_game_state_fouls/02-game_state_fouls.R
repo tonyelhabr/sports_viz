@@ -488,18 +488,38 @@ if(FALSE) {
 }
 
 lab_tag <- '**Viz**: Tony ElHabr | **Data**: 2020-21 Premier League through Matchweek 32'
+team <- 'Leeds'
+# color_pri <- xengagement::team_accounts_mapping %>% filter(team == !!team) %>% pull(color_pri)
+color_pri <- '#005b9e'
 viz_by_state <-
   fouls_by_team_pretty %>% 
   ggplot() +
   aes(y = rnk_inv, x = n_foul_p90_diff) +
   geom_vline(aes(xintercept = 0), linetype = 2) +
   geom_segment(
-    data = fouls_by_team_pretty,
+    data = fouls_by_team_pretty %>% filter(team != !!team),
     show.legend = FALSE,
-    size = 1,
+    size = 0.5,
     color = 'black',
     aes(x = n_foul_p90_diff, xend = 0, y = rnk_inv, yend = rnk_inv)
   ) +
+  geom_segment(
+    data = fouls_by_team_pretty %>% filter(team == !!team),
+    show.legend = FALSE,
+    size = 2,
+    color = color_pri,
+    aes(x = n_foul_p90_diff, xend = 0, y = rnk_inv, yend = rnk_inv)
+  ) +
+  # ggimage::geom_image(
+  #   data = fouls_by_team_pretty %>% filter(team != !!team_filt),
+  #   size = 0.05,
+  #   aes(image = path_local),
+  # ) +
+  # ggimage::geom_image(
+  #   data = fouls_by_team_pretty %>% filter(team == !!team_filt),
+  #   size = 0.1,
+  #   aes(image = path_local),
+  # ) +
   ggimage::geom_image(
     data = fouls_by_team_pretty,
     size = 0.05,
@@ -528,122 +548,20 @@ viz_by_state <-
   ) +
   labs(
     title = 'Team Foul Rate Relative to Opponent',
-    subtitle = glue::glue('Which teams foul more/less frequently than their opponent when playing <b><span style="color:{pal[1]};">with the lead</span></b> or <b><span style="color:{pal[2]};">from behind</span></b>?'),
+    # subtitle = glue::glue('Which teams foul more/less frequently than their opponent when playing <b><span style="color:{pal[1]};">with the lead</span></b> or <b><span style="color:{pal[2]};">from behind</span></b>?'),
+    subtitle = glue::glue('<b><span style="color:{color_pri}">Leads</span></b> foul their opponent <b><span style="color:black">less</span></b> frequently when playing <b><span style="color:{pal[1]};">with the lead</span></b> and <b><span style="color:black">more</span></b> frequently when playing <b><span style="color:{pal[2]};">from behind</span></b>?'),
     # caption = '',
     tag = lab_tag,
     x = 'Fouls per 90 min. Relative to Opponent',
     y = NULL
   )
-viz_by_state
+# viz_by_state
 
 h <- 8
-asp_ratio <- 1.618
+asp_ratio <- 16/9
 ggsave(
   plot = viz_by_state,
   filename = file.path(dir_proj, 'viz_foul_p90_diff_by_state.png'),
-  height = h,
-  width = h * asp_ratio,
-  type = 'cairo'
-)
-
-# by prob_grp2 ----
-fouls_by_team <- .group_by_team(prob_grp2)
-lvls_grp <-
-  c(
-    'Underdog',
-    'Favorite'
-  )
-pal <- c('#7a5195', '#ef5675')
-
-labs_md <- .map2_colors(lvls_grp, pal)
-labs_md
-
-lab_grps <-
-  crossing(
-    prob_grp2 = c('dog', 'fav')
-  ) %>% 
-  mutate(grp = prob_grp2) %>% 
-  mutate(
-    idx_grp =
-      case_when(
-        prob_grp2 == 'dog' ~ 1L,
-        prob_grp2 == 'fav' ~ 2L
-      ),
-    grp = fct_reorder(grp, idx_grp)
-  )
-lab_grps
-
-fouls_by_team_pretty <-
-  fouls_by_team %>% 
-  left_join(
-    xengagement::team_accounts_mapping %>%
-      mutate(path_local = file.path(dir_img, sprintf('%s.png', team))) %>% 
-      select(team, path_local, url = url_logo_espn, color_pri)
-  ) %>% 
-  left_join(lab_grps)
-fouls_by_team_pretty
-
-labs_xy <-
-  fouls_by_team_pretty %>% 
-  group_by(idx_grp, grp) %>% 
-  summarize(
-    across(c(rnk_inv, n_foul_p90_diff), list(min = min, max = max))
-  ) %>% 
-  ungroup() %>% 
-  left_join(tibble(lab = labs_md) %>% mutate(idx_grp = row_number()))
-labs_xy
-
-viz_by_prob <-
-  fouls_by_team_pretty %>% 
-  ggplot() +
-  aes(y = rnk_inv, x = n_foul_p90_diff) +
-  geom_vline(aes(xintercept = 0), linetype = 2) +
-  geom_segment(
-    data = fouls_by_team_pretty,
-    show.legend = FALSE,
-    size = 1,
-    color = 'black',
-    aes(x = n_foul_p90_diff, xend = 0, y = rnk_inv, yend = rnk_inv)
-  ) +
-  ggimage::geom_image(
-    data = fouls_by_team_pretty,
-    size = 0.05,
-    aes(image = path_local),
-  ) +
-  ggtext::geom_richtext(
-    # fill = NA, 
-    label.color = NA,
-    size = .pts(16),
-    family = 'Karla',
-    fontface = 'bold',
-    inherit.aes = FALSE,
-    data = labs_xy,
-    hjust = 0,
-    aes(y = rnk_inv_max, x = min(n_foul_p90_diff_min) + 0.1, label = lab)
-  ) +
-  facet_wrap(~grp, scales = 'free_y', ncol = 2) +
-  theme(
-    strip.text = element_blank(),
-    panel.background = element_rect(color = 'grey80', size = 2),
-    # strip.background = element_rect(color = '#000000', size = 10),
-    plot.title = element_text(size = 18, hjust = 0),
-    plot.subtitle = ggtext::element_markdown(size = 12, hjust = 0),
-    axis.text.y = element_blank(),
-    panel.grid.major.y = element_blank()
-  ) +
-  labs(
-    title = 'Team Foul Rate Relative to Opponent',
-    subtitle = glue::glue('Which teams foul more/less frequently than they are the pre-game <b><span style="color:{pal[1]};">underdog</span></b> vs. <b><span style="color:{pal[2]};">favorite</span></b>?'),
-    # caption = 'Favorites and underdogs determined based on @FiveThirtyEight\'s pre-game win probabilities.',
-    tag = lab_tag,
-    x = 'Fouls per 90 min. Relative to Opponent',
-    y = NULL
-  )
-viz_by_prob
-
-ggsave(
-  plot = viz_by_prob,
-  filename = file.path(dir_proj, 'viz_foul_p90_diff_by_prob.png'),
   height = h,
   width = h * asp_ratio,
   type = 'cairo'
@@ -726,17 +644,25 @@ labs_xy <-
 labs_xy
 
 team <- 'Tottenham'
-color_pri <- xengagement::team_accounts_mapping %>% filter(team == !!team) %>% pull(color_pri)
+# color_pri <- xengagement::team_accounts_mapping %>% filter(team == !!team) %>% pull(color_pri)
+color_pri <- '#11214b'
 viz <-
   fouls_by_team_pretty %>% 
   ggplot() +
   aes(y = rnk_inv, x = n_foul_p90_diff) +
   geom_vline(aes(xintercept = 0), linetype = 2) +
   geom_segment(
+    data = fouls_by_team_pretty %>% filter(team != !!team),
+    show.legend = FALSE,
+    color = 'black',
+    aes(x = n_foul_p90_diff, xend = 0, y = rnk_inv, yend = rnk_inv)
+  ) +
+  geom_segment(
     data = fouls_by_team_pretty %>% filter(team == !!team),
     show.legend = FALSE,
     size = 2,
-    aes(x = n_foul_p90_diff, xend = 0, y = rnk_inv, yend = rnk_inv, color = I(color_pri))
+    color = color_pri,
+    aes(x = n_foul_p90_diff, xend = 0, y = rnk_inv, yend = rnk_inv)
   ) +
   # geom_text(
   #   data = fouls_by_team_pretty,
@@ -744,14 +670,9 @@ viz <-
   #   show.legend = FALSE
   # ) +
   ggimage::geom_image(
-    data = fouls_by_team_pretty %>% filter(team != !!team),
+    data = fouls_by_team_pretty,
     size = 0.05,
-    aes(image = path_local), # , width = I(time_diff)), by= 'height'
-  ) +
-  ggimage::geom_image(
-    data = fouls_by_team_pretty %>% filter(team == !!team),
-    size = 0.15,
-    aes(image = path_local), # , width = I(time_diff)), by= 'height'
+    aes(image = path_local),
   ) +
   ggtext::geom_richtext(
     # fill = NA, 
@@ -764,7 +685,7 @@ viz <-
     hjust = 0,
     aes(y = rnk_inv_max, x = min(n_foul_p90_diff_min) + 0.1, label = lab)
   ) +
-  facet_wrap(~grp, scales = 'free_y', ncol = 2) +
+  facet_wrap(~grp, scales = 'free', ncol = 2) +
   theme(
     strip.text = element_blank(),
     panel.background = element_rect(color = 'grey80', size = 2),
@@ -778,21 +699,19 @@ viz <-
     title = 'Will Tottenham Continue Bus Parking Without Mourinho?',
     subtitle = glue::glue('Under Mourinho, <b><span style="color:{color_pri};">Tottenham</span></b> played more aggressively based on game state. Spurs are the only team that has fouled:<br/><br/><b><span style="color:{pal[1]};">(1) more often than their opponent when the underdog and playing with the lead</span></b>,<br/><b><span style="color:{pal[2]};">(2) more often when the favorite and playing from behind</span></b>,<br/><b><span style="color:{pal[3]};">(3) less often when the underdog and playing from ahead</span></b>, and<br/><b><span style="color:{pal[4]};">(4) less often when the favorite and playing with the lead</span></b>.'),
     # caption = glue::glue('Teams with less than 90 minutes in a given state (e.g. Man City as the underdog playing from behind) are not shown.<br/>Favorites and underdogs determined based on @FiveThirtyEight\'s pre-game win probabilities.'),
-    caption = glue::glue('Teams with less than 90 minutes in a given state<br/>(e.g. Man City as the underdog playing from behind) are not shown.'
-    tag = lab_tag %>% str_replace('\\s|\\s', '<br/>')
+    caption = glue::glue('Teams with less than 90 minutes in a given state<br/>(e.g. Man City as the underdog playing from behind) are not shown.'),
+    tag = '**Viz**: Tony ElHabr<br/>**Data**: 2020-21 Premier League through Matchweek 32',
     x = 'Fouls per 90 min. Relative to Opponent',
     y = NULL
   )
-viz
+# viz
 
 ggsave(
   plot = viz,
   filename = file.path(dir_proj, 'viz_foul_p90_diff.png'),
-  height = 12,
-  width = 11,
+  height = 8 * 1.5,
+  width = 7 * 1.5,
   type = 'cairo'
 )
 
 # Leeds has the largest difference in foul rate relative to their opponent when ahead vs. when behind. They have the 2nd lowest rate when winning and the 5th highest rate when losing. Is this the magic behind Bielsa ball,,,,?
-
-

@@ -171,6 +171,16 @@ vs. Lampard](22-202021_epl_tuchel/viz_tuchel_w_logo.png "Heatmaps for Passes, T
 ![European Super League Google Trends Animated
 GIF](23-superleague/superleague_timeline.gif "European Super League Google Trends Animated GIF")
 
+# 24. 2020-21 EPL Team Relative Fouling Rate by Game State
+
+![2020-21 EPL Team Fouling Rate Relative to Opponent by Game
+State](24-202021_game_state_fouls/viz_foul_p90_diff_by_state.png "2020-21 EPL Team Fouling Rate Relative to Opponent by Game State")
+
+# 25. Soccer Referee Activity Across Major Leagues
+
+![Beeswarm Plot of Referee Statistics By
+League](25-202021_soccer_refs/viz_big5_ref_p90.png "Beeswarm Plot of Referee Statistics By League")
+
 # Future Ideas
 
 -   Stability of goal-scoring rate and/or xG over-performance
@@ -182,7 +192,7 @@ GIF](23-superleague/superleague_timeline.gif "European Super League Google Trend
     near the end of the game due to an opposition error,
     overly-aggressive tactics by the opposition, etc.? (End of game
     depends on the sport. Ideally, we could use a win probability model
-    to help idenitfy end-of-game context, although it would still need
+    to help identify end-of-game context, although it would still need
     some adjustment.) Extension: In which sport are gamblers most likely
     to lose/win due to a back-door cover?
 
@@ -194,8 +204,6 @@ GIF](23-superleague/superleague_timeline.gif "European Super League Google Trend
 
 -   “Standardized” soccer shot data locations:
     <https://kloppy.pysport.org/changelog/#110-2020-08-07>
-
--   xG soccer model: <https://github.com/ML-KULeuven/soccer_xg>
 
 -   Transfer market data: <https://github.com/ewenme/transfers>
 

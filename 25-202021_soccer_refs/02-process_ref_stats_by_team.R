@@ -43,7 +43,7 @@ results <-
   janitor::clean_names() %>% 
   select(-matches('_2$'))
 results
-countries_filt <- c('ENG', 'ESP', 'FRA', 'GER', 'ITA', 'USA')
+countries_filt <- c('ENG', 'ESP', 'FRA', 'GER', 'ITA') # , 'USA')
 results_filt <- results %>% filter(country %in% countries_filt)
 
 stats <-
@@ -62,29 +62,33 @@ stats <-
 # teams_results
 # teams_stats %>%
 #   full_join(teams_results) %>%
-#   dplyr::filter(is.na(n_results)) %>%
-#   pull(team) %>% 
+#   dplyr::filter(is.na(n_stats)) %>%
+#   pull(team) %>%
 #   clipr::write_clip()
-
 team_corrections <-
   tibble(
-    team_stats = c('Atlanta','Brighton','Chicago',
-                   'Colorado','Columbus','Houston','Manchester Utd','Miami',
-                   'Minnesota','Montreal','Nashville','New England',
-                   'Newcastle Utd','NY Red Bulls','NYCFC','Philadelphia','Portland',
-                   'San Jose','Seattle','Sheffield Utd','Tottenham','Vancouver',
-                   'West Brom','West Ham','Wolves','Huddersfield Town'),
-    team_results = c('Atlanta United',
-                     'Brighton & Hove Albion','Chicago Fire','Colorado Rapids','Columbus Crew',
-                     'Houston Dynamo','Manchester United','Inter Miami',
-                     'Minnesota United','Montreal Impact','Nashville SC',
-                     'New England Revolution','Newcastle United','New York Red Bulls',
-                     'New York City FC','Philadelphia Union','Portland Timbers',
-                     'San Jose Earthquakes','Seattle Sounders FC','Sheffield United',
-                     'Tottenham Hotspur','Vancouver Whitecaps FC',
-                     'West Bromwich Albion','West Ham United','Wolverhampton Wanderers',
-                     'Huddersfield')
-  )
+  team_results = c("Atlanta United","Bayer Leverkusen",
+                   "Brighton & Hove Albion","Chicago Fire","Colorado Rapids",
+                   "Columbus Crew","Deportivo La Coruña","Eintracht Frankfurt",
+                   "Houston Dynamo","Huddersfield Town","Inter Miami",
+                   "Internazionale","Manchester United","Minnesota United",
+                   "Mönchengladbach","Montreal Impact","Nashville SC",
+                   "New England Revolution","New York City FC","New York Red Bulls",
+                   "Newcastle United","Paris Saint-Germain","Philadelphia Union",
+                   "Portland Timbers","Real Betis","San Jose Earthquakes",
+                   "Seattle Sounders FC","Sheffield United","Tottenham Hotspur",
+                   "Vancouver Whitecaps FC","West Bromwich Albion",
+                   "West Ham United","Wolverhampton Wanderers"),
+    team_stats = c("Atlanta","Leverkusen","Brighton",
+                   "Chicago","Colorado","Columbus","La Coruña",
+                   "Eint Frankfurt","Houston","Huddersfield","Miami",NA,"Manchester Utd",
+                   "Minnesota","M'Gladbach","Montreal","Nashville",
+                   "New England","NYCFC","NY Red Bulls","Newcastle Utd","Paris S-G",
+                   "Philadelphia","Portland","Betis","San Jose","Seattle",
+                   "Sheffield Utd","Tottenham","Vancouver","West Brom",
+                   "West Ham","Wolves")
+) %>% 
+  drop_na()
 
 .add_ratio_foul_tackle_col <- function(data) {
   data %>% mutate(ratio_foul_tackle = n_foul / n_tackle_won)
@@ -181,22 +185,22 @@ agg_by_game_team <-
   .add_ratio_foul_tackle_col()
 agg_by_game_team
 
-agg_by_game <-
-  agg_by_game_team %>% 
-  .do_group() %>% 
-  summarize(
-    across(
-      c(n_player:last_col()),
-      sum
-    )
-  ) %>% 
-  ungroup()
-agg_by_game
+# agg_by_game <-
+#   agg_by_game_team %>% 
+#   .do_group() %>% 
+#   summarize(
+#     across(
+#       c(n_player:last_col()),
+#       sum
+#     )
+#   ) %>% 
+#   ungroup()
+# agg_by_game
 
 .sum <- partial(sum, na.rm = TRUE, ... =)
 agg <-
-  agg_by_game %>% 
-  group_by(season, country, gender, referee) %>% 
+  agg_by_game_team %>% 
+  group_by(season, country, gender, team) %>% 
   summarize(
     n_game = sum(mp != 0),
     n_player = .sum(n_player),
@@ -210,7 +214,7 @@ agg <-
     # across(c(n_player:last_col()), sum, na.rm = TRUE)
   ) %>% 
   ungroup() %>% 
-  relocate(season, referee, n_game, n_player) %>% 
+  relocate(season, team, n_game, n_player) %>% 
   .add_ratio_foul_tackle_col() %>% 
   mutate(
     across(c(n_card_y:n_pk), ~11 * 90 * .x / mp)
@@ -218,17 +222,14 @@ agg <-
   arrange(desc(n_game))
 agg
 
-# agg %>% arrange(desc(n_card_r))
-# agg %>% count(country)
-# agg %>% count(tier)
-
 agg %>% skimr::skim()
 agg_filt <-
   agg %>% 
-  select(-n_tackle_won) %>% 
-  filter((country == 'USA' & n_game >= 2L) | n_game >= 5L)
+  select(-n_tackle_won) # %>% 
+  # filter((country == 'USA' & n_game >= 2L) | n_game >= 5L)
 agg_filt
 agg_filt %>% count(country)
+agg_filt %>% count(season)
 
 stat_labs <-
   tibble(
@@ -239,14 +240,14 @@ stat_labs <-
   mutate(across(stat_lab, ~fct_reorder(.x, idx_stat)))
 stat_labs
 
-pal <- c(scales::hue_pal()(5), 'black')
+pal <- c(scales::hue_pal()(5)) # , 'black')
 league_logos <-
   tibble(
     country = countries_filt,
-    path_logo = file.path(dir_proj, sprintf('%s.png', c('epl-150px', 'la-liga-150px', 'ligue-1', 'bundesliga', 'serie-a', 'mls'))),
+    path_logo = file.path(dir_proj, sprintf('%s.png', c('epl-150px', 'la-liga-150px', 'ligue-1', 'bundesliga', 'serie-a'))), # , 'mls'))),
     # path_logo = file.path(dir_proj, sprintf('%s.png', c('epl-150px', 'mls'))),
-    idx_logo = c(1L, 2L, 4L, 3L, 5L, 6L),
-    color = c(pal[5], pal[2], pal[3], pal[1], pal[4], pal[6])
+    idx_logo = c(1L, 2L, 4L, 3L, 5L), # , 6L),
+    color = c(pal[5], pal[2], pal[3], pal[1], pal[4]) # , pal[6])
   ) %>% 
   mutate(img = glue::glue("<img src={path_logo} width='40' height='40'/>")) %>% 
   # mutate(across(c(path_logo, img), ~fct_reorder(.x, idx_logo)))
@@ -265,6 +266,13 @@ agg_filt_long <-
   left_join(stat_labs, by = 'stat') %>% 
   left_join(league_logos, by = 'country') %>% 
   mutate(grp = tidytext::reorder_within(country, value, stat_lab))
+
+agg_filt_long %>%
+  filter(season == '2020-2021') %>% 
+  group_by(stat_lab) %>% 
+  slice_max(value) %>% 
+  ungroup() %>% 
+  select(season, team, country, stat_lab, value)
 
 grps <-
   agg_filt_long %>% 
@@ -292,20 +300,20 @@ viz <-
     legend.position = 'top'
   ) +
   labs(
-    title = 'Referee Activity, Big 5 Leagues... and MLS',
+    title = 'Referee Activity, Big 5 Leagues & MLS',
     subtitle = 'In which leagues are referees more involved in the action?',
-    caption = 'Each dot represents a single referee in a single season for 2019/20 and 2020/21.<br/>Minimum 5 appearances in a given season.',
+    caption = 'Each dot represents a single **team** in a single season for 2017/18 through 2020/21.<br/> ',
     tag = '**Viz**: Tony ElHabr<br/>**Data**: fbref',
     x = NULL,
     y = NULL
   )
 # viz
 
-# h <- 10
 ggsave(
   plot = viz,
-  filename = file.path(dir_proj, 'viz_filt_ref_p90_w_mls.png'),
+  filename = file.path(dir_proj, 'viz_filt_ref_p90_by_team.png'),
   height = 10,
   width = 12,
   type = 'cairo'
 )
+

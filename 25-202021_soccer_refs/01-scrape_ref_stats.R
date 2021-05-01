@@ -6,9 +6,9 @@ fs::dir_create(dir_data)
 
 params <-
   crossing(
-    country = 'USA', # c('ENG', 'ITA', 'GER', 'FRA', 'ESP', 'USA', 'MEX'),
+    country = c('ENG', 'ITA', 'GER', 'FRA', 'ESP'), # , 'USA', 'MEX'),
     gender = c('M'),
-    season_end_year = c(2019:2021),
+    season_end_year = c(2013:2021),
     tier = '1st'
   )
 params
@@ -37,13 +37,13 @@ scrape_results <- function(country, gender, season_end_year, tier, overwrite = F
 f <- possibly(scrape_results, otherwise = tibble())
 results <- 
   params %>% 
-  mutate(data = pmap(list(country, gender, season_end_year, tier), f)) %>% 
-  mutate(
-    data = map(data, ~mutate(.x, across(Wk, as.integer), across(matches('xG$'), as.numeric)))
-  ) %>% 
-  unnest(data) %>% 
-  janitor::clean_names() %>% 
-  select(-matches('_2$'))
+  mutate(data = pmap(list(country, gender, season_end_year, tier), f)) # %>% 
+  # mutate(
+  #   data = map(data, ~mutate(.x, across(Wk, as.integer), across(matches('xG$'), as.numeric)))
+  # ) %>% 
+  # unnest(data) %>% 
+  # janitor::clean_names() %>% 
+  # select(-matches('_2$'))
 results
 
 scrape_misc_stats <- function(url, stat_type = 'misc', team_or_player = 'player', overwrite = FALSE) {
@@ -64,10 +64,10 @@ scrape_misc_stats <- function(url, stat_type = 'misc', team_or_player = 'player'
 g <- possibly(scrape_misc_stats, otherwise = tibble())
 stats <-
   urls %>% 
-  mutate(data = map(url, g)) %>% 
-  unnest(data) %>% 
-  as_tibble() %>% 
-  janitor::clean_names()
+  mutate(data = map(url, g)) # %>% 
+  # unnest(data) %>% 
+  # as_tibble() %>% 
+  # janitor::clean_names()
 stats
 beepr::beep(3)
 

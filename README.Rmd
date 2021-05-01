@@ -77,9 +77,9 @@ As of 2020-09-06
 
 ## 13. Premier League Official Radar Charts
 
-![Anthony Taylor Radar Chart](13-soccer_refs/Anthony Taylor_w_logo.png "Anthony Taylor Radar Chart")
+![Anthony Taylor Radar Chart](13-soccer_refs/Anthony%20Taylor_w_logo.png "Anthony Taylor Radar Chart")
 
-![Mike Dean Radar Chart](13-soccer_refs/Mike Dean_w_logo.png "Mike Dean Radar Chart")
+![Mike Dean Radar Chart](13-soccer_refs/Mike%20Dean_w_logo.png "Mike Dean Radar Chart")
 
 ## 14. Non-Negative Matrix Factorization Heat Maps for Soccer Player Tracking
 
@@ -133,12 +133,19 @@ After week 7
 
 # 22. 2020-21 Chelsea Attack Under Tuchel Compared to Lampard
 
-![Heatmaps for  Passes, Touches, and Take-Ons for Kai Havertz and Mason Mount under Tuchel vs. Lampard](22-202021_epl_tuchel/viz_tuchel_w_logo.png "Heatmaps for  Passes, Touches, and Take-Ons for Kai Havertz and Mason Mount under Tuchel vs. Lampard")
+![Heatmaps for Passes, Touches, and Take-Ons for Kai Havertz and Mason Mount under Tuchel vs. Lampard](22-202021_epl_tuchel/viz_tuchel_w_logo.png "Heatmaps for Passes, Touches, and Take-Ons for Kai Havertz and Mason Mount under Tuchel vs. Lampard")
 
 # 23. European Super League Google Trends
 
 ![European Super League Google Trends Animated GIF](23-superleague/superleague_timeline.gif "European Super League Google Trends Animated GIF")
 
+# 24. 2020-21 EPL Team Relative Fouling Rate by Game State
+
+![2020-21 EPL Team Fouling Rate Relative to Opponent by Game State](24-202021_game_state_fouls/viz_foul_p90_diff_by_state.png "2020-21 EPL Team Fouling Rate Relative to Opponent by Game State")
+
+# 25. Soccer Referee Activity Across Major Leagues
+
+![Beeswarm Plot of Referee Statistics By League](25-202021_soccer_refs/viz_big5_ref_p90.png "Beeswarm Plot of Referee Statistics By League")
 
 # Future Ideas
 
@@ -146,15 +153,13 @@ After week 7
 
 -   Madden rating EDA with UMAP + kmeans clustering (for optimal \# of UMAP groups).
 
--   In which sport is the leading team most likely to further their lead near the end of the game due to an opposition error, overly-aggressive tactics by the opposition, etc.? (End of game depends on the sport. Ideally, we could use a win probability model to help idenitfy end-of-game context, although it would still need some adjustment.) Extension: In which sport are gamblers most likely to lose/win due to a back-door cover?
+-   In which sport is the leading team most likely to further their lead near the end of the game due to an opposition error, overly-aggressive tactics by the opposition, etc.? (End of game depends on the sport. Ideally, we could use a win probability model to help identify end-of-game context, although it would still need some adjustment.) Extension: In which sport are gamblers most likely to lose/win due to a back-door cover?
 
 -   Decision tree to filter down players in a sport to just one player who has achieved a very specific set of career totals/averages (i.e. <https://twitter.com/JacobEGoldstein/status/1296570734047686658>)
 
 ## Future data sets
 
 -   "Standardized" soccer shot data locations: <https://kloppy.pysport.org/changelog/#110-2020-08-07>
-
--   xG soccer model: <https://github.com/ML-KULeuven/soccer_xg>
 
 -   Transfer market data: <https://github.com/ewenme/transfers>
 
