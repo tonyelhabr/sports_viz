@@ -104,10 +104,10 @@ stats_agg <-
     season,
     team,
     url_logo,
-    rank_elo,
-    rank_salary,
     ucl_placing,
-    other_winnings
+    other_winnings,
+    rank_elo,
+    rank_salary
   )
 
 # Reference: https://themockup.blog/posts/2020-09-26-functions-and-themes-for-gt-tables/?panelset4=theme-code3
@@ -163,11 +163,12 @@ res <-
         season = 'Season',
         team = 'Team',
         url_logo = ' ',
-        rank_elo = 'ELO Rank',
-        rank_salary = 'Team Salary Rank',
-        # league_placing = 'League Placing',
         ucl_placing = 'UCL Placing',
-        other_winnings = 'Non-UCL Titles'
+        other_winnings = 'Non-UCL Titles',
+        # rank_elo = 'ELO Rank',
+        # rank_salary = 'Salary Rank',
+        rank_elo = gt::html('<b>ELO<br/>Rank</b>'),
+        rank_salary = gt::html('<b>Salary<br/>Rank</b>')
       )
   ) %>%
   gt::text_transform(
@@ -192,12 +193,12 @@ res <-
   ) %>%
   gt::cols_align(
     align = 'right',
-    columns = vars(season, rank_elo, rank_salary, league_placing, ucl_placing)
-  ) %>% 
+    columns = vars(season, rank_elo, rank_salary)
+  ) %>%
   gt::tab_footnote(
     footnote = gt::md('**Source**: http://clubelo.com/ (time-weighted average)'),
     locations = gt::cells_column_labels(columns = vars(rank_elo))
-  ) %>% 
+  ) %>%
   gt::tab_footnote(
     footnote = gt::md('**Source**: https://globalsportssalaries.com/ (based on average annual salary per player, relative to all soccer clubs)'),
     locations = gt::cells_column_labels(columns = vars(rank_salary))
@@ -208,8 +209,6 @@ res <-
   )
 res
 gt::gtsave(res, file.path(dir_proj, 'pep.png'))
-
-# Pep GODiola or FRAUDiola? Yes, Pep's Man City teams have not met their lofty #UCL expectations, but is he really playing with the most stacked deck? The last time his team had the largest salary was in 2012-13, just one year after he last won a UCL title.
 
 # man city v chelsea ----
 # https://en.wikipedia.org/wiki/List_of_European_Cup_and_UEFA_Champions_League_finals
