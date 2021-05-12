@@ -162,6 +162,6 @@ do_f <- function(f, path) {
 
 events <- do_f(.parse_events, path_events)
 meta <- do_f(.parse_meta, path_meta)
-
+meta
 # beepr::beep(3)
 

@@ -8,7 +8,7 @@ params <-
   crossing(
     country = c('ENG', 'ITA', 'GER', 'FRA', 'ESP'), # , 'USA', 'MEX'),
     gender = c('M'),
-    season_end_year = c(2013:2021),
+    season_end_year = c(2015:2021),
     tier = '1st'
   )
 params
@@ -19,11 +19,12 @@ urls <-
   unnest(url)
 urls
 
+# TODO: Why doesn't this go back before 2015, given that there are URLs for data here: https://raw.githubusercontent.com/JaseZiv/worldfootballR_data/master/raw-data/all_leages_and_cups/all_competitions.csv")
 scrape_results <- function(country, gender, season_end_year, tier, overwrite = FALSE) {
   # browser()
   path <- file.path(dir_data, sprintf('results-%s-%s-%s-%s.rds', country, gender, season_end_year, tier))
   suffix <- glue::glue('for `country = {country}`, `gender = "{gender}"`, `season_end_year = "{season_end_year}"`, `tier = "{tier}"`.')
-  
+  browser()
   if(file.exists(path) & !overwrite) {
     cat(glue::glue('{Sys.time()}: Returning early {suffix}'), sep = '\n')
     return(read_rds(path))
@@ -71,3 +72,7 @@ stats <-
 stats
 beepr::beep(3)
 
+url <- urls %>% filter(season_end_year == 2021) %>% slice(1) %>% pull(url)
+url
+x <- worldfootballR::get_match_summary(url) %>% as_tibble()
+x$event_type
