@@ -3,6 +3,23 @@ library(tidyverse)
 dir_proj <- '28-202021_vaep'
 dir_data <- file.path(dir_proj, 'data-socceraction')
 
+# #1
+# I didn't watch every #EPL match this season, so I had a machine do it for me. Here are it's best XI.
+# This is based on the VAEP framework, which is basically a method for quantifying how any player action influences the game's outcome.
+# #2
+# Here's a visual example for a possession in which Lingard scores a net negative VAEP. Note that this is not xG---actions can have negative values!
+# #3
+# VAEP correlates pretty strongly with transfer market values.
+# #4
+# VAEP has the strongest variability for forwards.
+# #5
+# Obligatory links:
+# Methodology authors: @TomDecroos, @LotteBransen, @JanVanHaaren, @jessejdavis1
+# Paper: # https://arxiv.org/pdf/1802.07127.pdf
+# @pwawrzynow's Aug. 2020 thread: https://twitter.com/pwawrzynow/status/1292095872583577600?s=20
+# My illustration from Sep. 2020: https://twitter.com/TonyElHabr/status/1304766718468857857?s=20
+
+
 dir_img <- file.path(dir_proj, 'img')
 img_info <-
   fs::dir_ls(
@@ -374,7 +391,7 @@ f_mark <- partial(
     # vjust = 0,
     x = (start_x + end_x) / 2 + x_buffer,
     # y = (start_y + end_y) / 2 - 30,
-    y = 20,
+    y = 18,
     label = sprintf('%+.2f: %s %s', vaep, str_replace_all(player_name, '(^.*\\s+)(.*$)', '\\2'), type_name)
   ),
   ... = 
@@ -685,93 +702,75 @@ retrieve_market_values <-
     res
   }
 
-market_values <- 
+mkt <- 
   2017:2020 %>% 
   setNames(., .) %>% 
   map_dfr(~retrieve_market_values(country_name = 'England', start_year = .x), .id = 'season_id') %>% 
   mutate(across(season_id, as.integer)) %>%
   as_tibble()
-market_values
+mkt
 
 # fuzzy-matching ----
 .add_z_col <- function(data, ...) {
   data %>% 
     mutate(
-      z = player_name %>% stringi::stri_trans_general(id = 'Latin-ASCII') %>% snakecase::to_snake_case()
+      z = player_name %>% 
+        stringi::stri_trans_general(id = 'Latin-ASCII') %>% 
+        snakecase::to_snake_case()
     )
 }
 
-players_mkt <-
-  market_values %>% 
+source(file.path(dir_proj, 'helpers.R'))
+x <-
+  mkt %>% 
   filter(season_id == 2020L) %>% 
   .add_z_col() %>% 
-  distinct(z, team = squad, euro = player_market_value_euro)
-players_mkt
+  distinct(z, season_id, player = player_name, team = squad, euro = player_market_value_euro)
 
-players_opta <- 
-  player_pos_filt %>% 
-  filter(season_id == 2020L) %>% 
-  .add_z_col() %>% 
-  distinct(z, team = team_name, mp = minutes_played)
-players_opta
-
-nms_mkt <- players_mkt %>% names()
-nms_opta <- players_opta %>% names()
-nms_share <- intersect(nms_mkt, nms_opta)
-nms_share
-
-players_fulljoin <- 
-  full_join(
-    players_opta %>% mutate(dummy = z) %>% rename_at(vars(one_of(nms_share)), ~paste0(., '_opta')),
-    players_mkt %>% mutate(dummy = z) %>% rename_at(vars(one_of(nms_share)), ~paste0(., '_mkt'))
-  ) %>% 
-  relocate(dummy)
-players_fulljoin
-
-players_nomatch_tidy <-
-  players_fulljoin %>% 
-  filter(is.na(z_opta) | is.na(z_mkt)) %>% 
-  # filter_at(vars(matches('players_'))
-  select(matches('z_')) %>% 
-  gather(key = 'src', value = 'z') %>% 
-  mutate_at(vars(src), ~str_remove(., 'z_')) %>% 
-  drop_na()
-players_nomatch_tidy
-players_nomatch_tidy %>% count(src)
-
-players_nomatch_combos <-
-  players_nomatch_tidy %>% 
-  pull(z) %>% 
-  tidystringdist::tidy_comb_all()
-players_nomatch_combos
-
-players_nomatch_sdist <- players_nomatch_combos %>% tidystringdist::tidy_stringdist()
-players_nomatch_sdist
-
-players_nomatch_sdist_arr <-
-  players_nomatch_sdist %>% 
-  rename(z_opta = V1, z_mkts = V2) %>% 
-  mutate(score = (cosine + jaccard + jw) * (soundex + 1)) %>% 
-  group_by(z_opta) %>% 
-  # arrange(cosine, jaccard, jw, soundex) %>% 
-  mutate(rnk = row_number(score)) %>% 
-  ungroup() %>% 
-  arrange(z_opta, rnk)
-players_nomatch_sdist_arr
-
-players_rematched <-
-  players_nomatch_sdist_arr %>% 
-  filter(rnk == 1L) %>% 
-  inner_join(
-    players_nomatch_tidy %>% filter(src == 'opta') %>% select(z_opta = z)
+res_av_mkt <-
+  join_fuzzily(
+    x,
+    player_pos_filt %>% 
+      filter(season_id == 2020L) %>% 
+      .add_z_col() %>% 
+      distinct(z, season_id, player = player_name, team = team_name, mp = minutes_played),
+    suffix = c('mkt', 'opta')
   )
-players_rematched
+res_av_mkt
 
-# players_rematched_redux <-
-#   players_rematched %>% 
-#   left_join(players_manual) %>% 
-#   mutate_at(vars(player_fsquads), ~coalesce(player_fsquads_manual, .))
-# players_rematched_redux
+av_mkt <-
+  x %>% 
+  anti_join(res_av_mkt %>% select(z = z_mkt)) %>% 
+  bind_rows(
+    res_av_mkt %>% 
+      # filter(score < 1) %>% 
+      select(z = z_opta, score) %>% 
+      left_join(x)
+  ) %>%
+  group_by(season_id) %>% 
+  mutate(
+    rnk = row_number(desc(euro))
+  ) %>% 
+  ungroup() %>% 
+  arrange(season_id, rnk)
+av_mkt
+
+av_mkt %>% filter(!is.na(score))
+
+av_mkt %>% 
+  # rename(player_name = player) %>% 
+  left_join(av_by_season_latest %>% .add_z_col()) %>% 
+  lm(euro ~ vaep, data = .) %>% 
+  broom::glance()
+
+av_mkt %>% 
+  # rename(player_name = player) %>% 
+  left_join(av_by_season_latest %>% .add_z_col()) %>% 
+  # filter(is.na(euro)) %>% 
+  ggplot() +
+  aes(x = euro, y = vaep) +
+  geom_point()
+
 
 # dev ----
 market_values %>% 
