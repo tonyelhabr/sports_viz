@@ -1,7 +1,7 @@
 
 library(tidyverse)
 dir_proj <- '28-202021_vaep'
-dir_data <- file.path(dir_proj, 'data-socceraction')
+dir_data <- file.path(dir_proj, 'data-socceraction', 'new')
 source(file.path(dir_proj, 'helpers.R'))
 do_save <- TRUE
 
@@ -10,16 +10,17 @@ do_save <- TRUE
 # This is based on the VAEP framework, which is basically a method for quantifying how any player action influences the game's outcome.
 # #2
 # Here's a visual example for a possession in which Lingard scores a net negative VAEP. Note that this is not xG---actions can have negative values!
+# YT Link: https://youtu.be/96_Rfnd1sKA?t=690
 # #3
-# We can plot market values vs. VAEP to identify players who may be over- and under-valued.
+# We can plot market values vs. VAEP to identify players who may be over- and under-valued. Kane, Salah, and TAA are still under-valued, despite everyone knowing how good they can be.
 # #4
 # Obligatory links:
-# Methodology authors: @TomDecroos, @LotteBransen, @JanVanHaaren, @jessejdavis1
-# Paper: # https://arxiv.org/pdf/1802.07127.pdf
+# VAEP authors: @TomDecroos, @LotteBransen, @JanVanHaaren, @jessejdavis1
+# VAEP paper: # https://arxiv.org/pdf/1802.07127.pdf
 # @pwawrzynow's Aug. 2020 thread: https://twitter.com/pwawrzynow/status/1292095872583577600?s=20
-# # My illustration from Sep. 2020: https://twitter.com/TonyElHabr/status/1304766718468857857?s=20
 # #6
-# To please xGod (@rwohan), here's a follow up, comparing DAVIES and VAEP. There's some correlation, but clearly they are not in complete agreement.
+# To please xGod (@rwohan), here's a follow up, comparing DAVIES and VAEP. There's some correlation, but clearly they are not in complete agreement. DAVIES is clearly too high on Werner, but VAEP has its own oddities. (Ashley Westwood is the English Iniesta, per VAEP.)
+# #7
 # DAVIES methodology: https://www.americansocceranalysis.com/home/2020/9/16/davies-determining-added-value-of-individual-effectiveness-including-style
 # Authors: @mimburgio @SamGoldberg1882
 
@@ -95,7 +96,6 @@ do_import <-
     assign(value = res, x = name, envir = .GlobalEnv)
   }
 
-
 pitch_gg <-
   function(pitch = ggsoccer::pitch_international,
            xlim = c(-1, 106),
@@ -123,20 +123,10 @@ pts <- function(x) {
   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
 }
 
-f_text <- partial(
-  ggtext::geom_richtext,
-  # fill = NA, 
-  label.color = NA,
-  family = 'Karla',
-  fontface = 'bold',
-  # inherit.aes = FALSE,
-  ...=
-)
-
 retrieve_market_values <-
   function(country_name = 'England',
            start_year = 2020,
-           dir = dir_data,
+           dir = dir_proj,
            ext = 'rds',
            file = sprintf('transfer_market_values_%s_%s', country_name, start_year),
            path = NULL,
@@ -326,19 +316,26 @@ av_by_season_latest <-
 av_by_season_latest
 
 # ex play ----
+player_filt <- 'Harry Kane'
 av_by_game %>% 
   filter(season_id == 2020L) %>% 
-  filter(player_name == 'Jesse Lingard') %>% 
+  filter(player_name == player_filt) %>% 
   arrange(desc(vaep_p90)) %>% 
   head(3)
 
 event <-
   av %>% 
   filter(season_id == 2020L) %>% 
-  filter(player_name == 'Jesse Lingard') %>% 
-  # filter(original_event_id == 2262104669L)
-  filter(game_id == 1485331 & action_id == 199L)
-event  
+  filter(player_name == player_filt) %>% 
+  arrange(desc(vaep)) %>% 
+  relocate(type_name, vaep, action_id) %>% 
+  # filter(type_name %>% str_detect('shot', negate = TRUE)) %>% 
+  filter(type_name %in% c('dribble', 'cross')) %>% 
+  slice(3)
+event
+event %>% 
+  select(game_id, period_id, time_seconds) %>% 
+  left_join(games)
 
 play <-
   event %>% 
@@ -348,7 +345,7 @@ play <-
       select(season_id, game_id, period_id, time_seconds, action_id)
   ) %>% 
   # filter((time_seconds >= (time_seconds_event - 10L)) & (time_seconds <= (time_seconds_event + 10L))) %>% 
-  filter(action_id >= (action_id_event - 3L) & (action_id <= (action_id_event + 1L))) %>% 
+  filter(action_id >= (action_id_event - 2L) & (action_id <= (action_id_event + 1L))) %>% 
   # select(-matches('_event$')) %>% 
   left_join(av) %>% 
   # left_join(teams) %>% 
@@ -357,6 +354,7 @@ play <-
     time_dummy = time_seconds - min(time_seconds)
   ) %>% 
   arrange(time_seconds) %>% 
+  # filter(team_id == 30L) %>% 
   select(player_name, type_name, action_id, start_x, end_x, start_y, end_y, vaep, lab)
 play
 
@@ -367,7 +365,7 @@ lim_x <-
   ) %>% 
   rowwise() %>% 
   mutate(
-    x_min = min(49, min(start_x_min, end_x_min) - 1L),
+    x_min = min(49, min(start_x_min, end_x_min) - 4L),
     x_max = max(start_x_max, end_x_max) + 1L
   ) %>% 
   select(x_min, x_max)
@@ -399,12 +397,33 @@ f_mark <- partial(
 )
 
 # This is a manual adjustment for this play, since it seems slightly off compared to the film.
-# https://www.youtube.com/watch?v=6jizRzA3cbw&t=171s
-x_buffer <- -3
-f_mark <- partial(
-  ggrepel::geom_text_repel,
+# https://youtu.be/96_Rfnd1sKA?t=690
+x_buffer <- -1
+f_text <- partial(
+  ggtext::geom_richtext,
+  # fill = NA, 
+  label.color = NA,
   family = 'Karla',
-  hjust = 0,
+  fontface = 'bold',
+  # inherit.aes = FALSE,
+  ...=
+)
+
+vaep_ex <-
+  play %>% 
+  filter(player_name == player_filt) %>% 
+  summarize(across(vaep, sum)) %>% 
+  pull(vaep)
+vaep_ex
+
+type_names_link <- c('pass', 'cross', 'shot')
+color_green <- '#005800'
+color_red <- '#832424'
+f_mark <- partial(
+  # ggrepel::geom_text_repel,
+  geom_text,
+  family = 'Karla',
+  hjust = 1,
   fontface = 'bold',
   size = pts(14),
   aes(
@@ -415,8 +434,10 @@ f_mark <- partial(
     # vjust = 0,
     x = (start_x + end_x) / 2 + x_buffer,
     # y = (start_y + end_y) / 2 - 30,
-    y = 18,
-    label = sprintf('%+.2f: %s %s', vaep, str_replace_all(player_name, '(^.*\\s+)(.*$)', '\\2'), type_name)
+    # y = start_y + 5,
+    # y = start_y,
+    y = 32,
+    label = sprintf('%+.3f: %s %s', vaep, str_replace_all(player_name, '(^.*\\s+)(.*$)', '\\2'), type_name)
   ),
   ... = 
 )
@@ -427,10 +448,10 @@ viz_ex <-
   pitch_gg(
     # xlim = c(lim_x$x_min, lim_x$x_max + 10),
     xlim = c(lim_x$x_max, lim_x$x_min),
-    aspect_ratio = 0.5 * 105/68
+    aspect_ratio = 0.3 * 105/68
   ) +
   ggforce::geom_link(
-    data = play %>% filter(type_name == 'pass'),
+    data = play %>% filter(type_name %in% type_names_link),
     aes(
       x = start_x + x_buffer,
       y = start_y,
@@ -442,7 +463,7 @@ viz_ex <-
     size = 1
   ) +
   geom_segment(
-    data = play %>% filter(type_name != 'pass'),
+    data = play %>% filter(!(type_name %in% type_names_link)),
     aes(
       x = start_x + x_buffer,
       y = start_y,
@@ -463,10 +484,10 @@ viz_ex <-
     # shape = 21
   ) +
   # scales::muted('red') and scales::muted('green')
-  f_mark(data = play %>% filter(player_name == 'Jesse Lingard' & vaep >= 0), colour = '#005800') +
-  f_mark(data = play %>% filter(player_name == 'Jesse Lingard' & vaep < 0), colour = '#832424') +
+  f_mark(data = play %>% filter(player_name == player_filt & vaep >= 0), colour = color_green) +
+  f_mark(data = play %>% filter(player_name == player_filt & vaep < 0), colour = color_red) +
   # gplots::col2hex('grey50')
-  f_mark(data = play %>% filter(player_name != 'Jesse Lingard' & action_id != min(action_id)), colour = '#7F7F7F') +
+  f_mark(data = play %>% filter(player_name != player_filt), colour = '#7F7F7F') +
   # f_mark(data = play, colour = '#7F7F7F') +
   theme(
     plot.title = ggtext::element_markdown(size = 18),
@@ -475,7 +496,7 @@ viz_ex <-
   # scale_x_reverse() +
   labs(
     title = 'VAEP Example',
-    subtitle = 'Jesse Lingard\'s net VAEP for possession: <span style="color:#832424">-0.04</span><br/>20201-02-21, West Ham v. Tottenham, 10th Minute',
+    subtitle = sprintf('%s\'s net VAEP for possession: <span style="color:%s">%+.3f</span><br/>2020-04-04, Tottenham v. Newcastle, 72nd Minute', player_filt, ifelse(vaep_ex >= 0, color_green, color_red), vaep_ex),
     caption = ' ',
     tag = lab_tag
   )
@@ -494,11 +515,11 @@ if(do_save) {
   
   add_logo(
     path_viz = path_viz_ex,
-    path_logo = file.path(dir_img, 'Jesse Lingard.png'),
+    path_logo = file.path(dir_img, sprintf('%s.png', player_filt)),
     idx_x = 0.1,
-    logo_scale = 0.2,
+    logo_scale = 0.15,
     # adjust_y = TRUE,
-    idx_y = 0.5
+    idx_y = 0.58
   )
 }
 
@@ -506,7 +527,7 @@ f_by_pos_11 <- function(av, n = 2) {
   av %>% 
     drop_na(pos_grp) %>% 
     # filter(minutes_played > (15 * 90)) %>% 
-    filter(minutes_played > 1000) %>% 
+    filter(minutes_played > 2000) %>% 
     group_by(pos_11) %>% 
     slice_max(vaep_p90, n = n) %>% 
     ungroup()
@@ -557,7 +578,7 @@ av_by_season_latest_pos <-
   left_join(pos_info_xy) %>% 
   left_join(team_info)%>% 
   left_join(img_info)
-av_by_season_latest_pos
+av_by_season_latest_pos %>% filter(idx == 2L)
 
 # best xi ----
 lab_subtitle <- '2020/21 Premier League, through Matchweek 34'
@@ -604,7 +625,7 @@ viz_team <-
   labs(
     title = 'VAEP XI of the Season',
     subtitle = lab_subtitle,
-    caption = '**VAEP**: Valuing Actions by Estimating Probabilities<br/>Rankings based on best VAEP per 90 minute, minimum 1,000 minutes played.<br/>Positions are based on minutes played but may not be reflective of recent form.',
+    caption = '**VAEP**: Valuing Actions by Estimating Probabilities<br/>Rankings based on best VAEP per 90 minute, minimum 2,000 minutes played.<br/>Positions are based on minutes played but may not be reflective of recent form.',
     tag = '**Viz**: Tony ElHabr'
   )
 viz_team
@@ -723,7 +744,7 @@ if(do_save) {
 
 # mkt ----
 mkt <-
-  2017:2020 %>% 
+  2020 %>% 
   setNames(., .) %>% 
   map_dfr(~retrieve_market_values(country_name = 'England', start_year = .x), .id = 'season_id') %>% 
   mutate(across(season_id, as.integer)) %>%
@@ -872,7 +893,7 @@ viz_mkt_by_pos <-
     # vjust = 1,
     data = tibble(
       x = 125000000,
-      y = 4,
+      y = -3,
       pos_grp_lab = ordered('Forward/Attacker'), # , levels = pos_grp_labs),
       lab = '<b><i><span style="color:red;font-size:18px";>OVERVALUED</span><i></b> <i><span style="color:black;font-size:14px";>(below line)</span></i>'
     )
@@ -881,7 +902,7 @@ viz_mkt_by_pos <-
     hjust = 0,
     data = tibble(
       x = 1000000,
-      y = 11,
+      y = 13,
       pos_grp_lab = ordered('Forward/Attacker'), # , levels = pos_grp_labs),
       lab = '<b><i><span style="color:red;font-size:18px";>UNDERVALUED</span><i></b> <i><span style="color:black;font-size:12px";>(above line)</span></i>'
     )
@@ -912,6 +933,7 @@ if(do_save) {
 # Source: https://samgoldberg1882.shinyapps.io/ShinyAlph/
 davies <- file.path(dir_proj, 'DAVIES.csv') %>% read_csv() %>% janitor::clean_names()
 davies
+
 davies_filt <-
   davies %>% 
   filter(league == 'Premier League' & season %in% c('2020-2021')) %>% # season %in% c('2019-2020', '2020-2021')) %>% 
@@ -985,7 +1007,8 @@ preds_davies
 av_davies_labs <-
   bind_rows(
     .f_slice_davies(slice_max, 'hi'),
-    .f_slice_davies(slice_min, 'lo')
+    .f_slice_davies(slice_min, 'lo'),
+    preds_davies %>% filter(player_name %in% c('Ruben Dias', 'Kevin De Bruyne'))
   )
 av_davies_labs
 
