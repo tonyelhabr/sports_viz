@@ -2,6 +2,8 @@
 library(tidyverse)
 dir_proj <- '28-202021_vaep'
 dir_data <- file.path(dir_proj, 'data-socceraction')
+source(file.path(dir_proj, 'helpers.R'))
+do_save <- TRUE
 
 # #1
 # I didn't watch every #EPL match this season, so I had a machine do it for me. Here are it's best XI.
@@ -53,7 +55,7 @@ theme_update(
   plot.caption = ggtext::element_markdown('Karla', size = 14, color = 'gray20', hjust = 1),
   plot.caption.position = 'plot',
   plot.tag = ggtext::element_markdown('Karla', size = 14, color = 'gray20', hjust = 0), 
-  plot.tag.position = c(.02, 0.01),
+  plot.tag.position = c(0.01, 0.025),
   legend.text = element_text(color = 'gray20', size = 14),
   strip.text = element_text(color = 'gray20', size = 14),
   strip.background = element_blank(),
@@ -91,6 +93,166 @@ do_import <-
     }
     assign(value = res, x = name, envir = .GlobalEnv)
   }
+
+
+pitch_gg <-
+  function(pitch = ggsoccer::pitch_international,
+           xlim = c(-1, 106),
+           ylim = c(-1, 69),
+           aspect_ratio = 105 / 68,
+           fill = 'white',
+           color = 'grey80',
+           limits = FALSE,
+           ...) {
+    list(
+      ...,
+      ggsoccer::annotate_pitch(
+        dimensions = pitch,
+        fill = fill,
+        colour = color,
+        limits = limits
+      ),
+      coord_flip(xlim = xlim, ylim = ylim),
+      ggsoccer::theme_pitch(aspect_ratio = aspect_ratio),
+      theme(legend.position = 'none')
+    )
+  }
+
+pts <- function(x) {
+  as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
+}
+
+f_text <- partial(
+  ggtext::geom_richtext,
+  # fill = NA, 
+  label.color = NA,
+  family = 'Karla',
+  fontface = 'bold',
+  # inherit.aes = FALSE,
+  ...=
+)
+
+retrieve_market_values <-
+  function(country_name = 'England',
+           start_year = 2020,
+           dir = dir_data,
+           ext = 'rds',
+           file = sprintf('transfer_market_values_%s_%s', country_name, start_year),
+           path = NULL,
+           f_import = read_rds,
+           f_export = write_rds,
+           overwrite = FALSE,
+           export = TRUE) {
+    if (is.null(path)) {
+      path <- file.path(dir, sprintf('%s.%s', file, ext))
+    }
+    
+    path_exists <- file.exists(path)
+    if (path_exists & !overwrite) {
+      # cat(glue::glue('{Sys.time()}: Returning early from `path = "{path}"`.'), sep = '\n')
+      return(f_import(path))
+    }
+    
+    res <- worldfootballR::get_player_market_values(country_name = country_name, start_year = start_year)
+    
+    if(export) {
+      f_export(res, path)
+    }
+    res
+  }
+
+.add_z_col <- function(data, ...) {
+  data %>% 
+    mutate(
+      z = player_name %>% 
+        stringi::stri_trans_general(id = 'Latin-ASCII') %>% 
+        snakecase::to_snake_case()
+    )
+}
+
+file.path(dir_data, sprintf('%s.parquet', c('actions_valued', 'games', 'players', 'player_games', 'teams'))) %>% 
+  walk(do_import)
+
+# main ----
+player_games_clean <-
+  player_games %>% 
+  # This Arsenal - Leicester game has an erroneous number of minutes
+  # https://www.whoscored.com/Matches/1485349/Live/England-Premier-League-2020-2021-Leicester-Arsenal
+  mutate(
+    across(minutes_played, ~case_when(game_id == 1485349L ~ 98L, TRUE ~ .x))
+  ) %>% 
+  rename(pos = starting_position_name, pos_id = starting_position_id)
+
+pos_grps <- c('F', 'M', 'D', 'G', 'z')
+pos_grp_labs <- c('Forward', 'Midfielder', 'Defender', 'Goalkeeper', 'Other')
+.factor_pos_grp_col <- function(data) {
+  data %>% 
+    mutate(
+      across(pos_grp, ~ordered(.x, pos_grps))
+    )
+}
+
+.factor_pos_grp_lab_col <- function(data) {
+  data %>% 
+    # mutate(
+    #   across(pos_grp_lab, ~ordered(.x, pos_grp_labs))
+    # ) %>% 
+    mutate(pos_grp_lab = ordered(pos_grp_lab, !!pos_grp_labs))
+}
+
+pos_grp_labs <-
+  tibble(
+    pos_grp = pos_grps,
+    pos_grp_lab = pos_grp_labs
+  ) %>% 
+  .factor_pos_grp_col() %>% 
+  .factor_pos_grp_lab_col()
+
+pos_info <-
+  tibble(
+    pos = c('AMC', 'AML', 'AMR', 'DC', 'DL', 'DMC', 'DML', 'DMR', 'DR', 'FW', 'FWL', 'FWR', 'GK', 'MC', 'ML', 'MR', 'Sub'),
+    pos_grp = c('F', 'F', 'F', 'D', 'D', 'M', 'M', 'M', 'D', 'F', 'F', 'F', 'G', 'M', 'M', 'M', 'z'),
+    pos_11 = c('FWC', 'FWL', 'FWR', 'DC', 'DL', 'MC', 'ML', 'MR', 'DR', 'FWC', 'FWL', 'FWR', 'GK', 'MC', 'ML', 'MR', 'z')
+  ) %>% 
+  .factor_pos_grp_col()
+pos_info
+
+pos_info_xy <-
+  tibble(
+    pos_11 = c('GK', 'DL', 'DCL', 'DCR', 'DR', 'ML', 'MC', 'MR', 'FWL', 'FWC', 'FWR'),
+    x = c(5, 30, 25, 25, 30, 55, 50, 55, 75, 70, 75),
+    y = c(50, 15, 38, 62, 85, 20, 50, 80, 20, 50, 80)
+  ) %>% 
+  mutate(across(c(x, y), as.integer))
+
+player_pos <-
+  player_games_clean %>% 
+  left_join(teams) %>% 
+  left_join(players) %>% 
+  left_join(games) %>% 
+  group_by(season_id, competition_id, team_id, team_name, player_id, player_name, pos_id, pos) %>% 
+  summarize(
+    across(c(minutes_played), sum, na.rm = TRUE)
+  ) %>% 
+  ungroup() %>% 
+  filter(minutes_played > 0L) %>% 
+  group_by(season_id, competition_id, team_id, team_name, player_id, player_name) %>% 
+  # Don't technically need the coalesce() here if we drop zero minutes played games.
+  mutate(total = sum(minutes_played), frac = coalesce(minutes_played / total, 0)) %>% 
+  # slice_max(frac, with_ties = FALSE) %>% 
+  # filter(pos != 'Sub') %>% 
+  ungroup() %>% 
+  left_join(pos_info)
+player_pos
+
+player_pos_filt <-
+  player_pos %>% 
+  filter(pos != 'Sub') %>% 
+  group_by(season_id, competition_id, team_id, team_name, player_id, player_name) %>% 
+  slice_max(frac, with_ties = FALSE) %>% 
+  ungroup() %>% 
+  select(-frac)
+player_pos_filt
 
 aggregate_av_by_game <- function(av, ...) {
   av %>% 
@@ -139,49 +301,6 @@ aggregate_av_by_season <- function(av_by_game, ...) {
     arrange(desc(vaep))
 }
 
-pitch_gg <-
-  function(pitch = ggsoccer::pitch_international,
-           xlim = c(-1, 106),
-           ylim = c(-1, 69),
-           aspect_ratio = 105 / 68,
-           fill = 'white',
-           color = 'grey80',
-           limits = FALSE,
-           ...) {
-    list(
-      ...,
-      ggsoccer::annotate_pitch(
-        dimensions = pitch,
-        fill = fill,
-        colour = color,
-        limits = limits
-      ),
-      coord_flip(xlim = xlim, ylim = ylim),
-      ggsoccer::theme_pitch(aspect_ratio = aspect_ratio),
-      theme(legend.position = 'none')
-    )
-  }
-
-pts <- function(x) {
-  as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
-}
-
-f_text <- partial(
-  ggtext::geom_richtext,
-  # fill = NA, 
-  label.color = NA,
-  family = 'Karla',
-  fontface = 'bold',
-  # inherit.aes = FALSE,
-  ...=
-)
-
-
-file.path(dir_data, sprintf('%s.parquet', c('actions_valued', 'games', 'players', 'player_games', 'teams'))) %>% 
-  walk(do_import)
-# file.path(dir_data, sprintf('%s.parquet', c('actions_valued_atomic'))) %>% 
-#   walk(do_import)
-
 av <- 
   actions_valued %>% 
   rename(
@@ -191,122 +310,26 @@ av <-
   )
 av
 
-# ava <- 
-#   actions_valued_atomic %>% 
-#   rename(
-#     off = offensive_value,
-#     def = defensive_value,
-#     vaep = vaep_value
-#   )
-# ava
-
 av_by_game <- av %>% aggregate_av_by_game()
 av_by_game
 
 av_by_season <- av_by_game %>% aggregate_av_by_season()
 av_by_season
 
-# ava_by_game <- ava %>% aggregate_av_by_game()
-# ava_by_game
-# 
-# ava_by_season <- ava_by_game %>% aggregate_av_by_season()
-# ava_by_season
-# ava_by_season %>% 
-#   filter(season_id == 2020L) %>% 
-#   arrange(desc(vaep))
-# ava %>% select(off, def) %>% skimr::skim()
-# av %>% select(off, def) %>% skimr::skim()
-# ava %>% 
-#   filter(is.na(off)) %>% 
-#   head(10) %>% 
-#   left_join(av %>% select(game_id, time_seconds, player_name, off_av = off, def_av = def, vaep_av = vaep)) -> z
-# z %>% glimpse()
-
-# main ----
-player_games_clean <-
-  player_games %>% 
-  # This Arsenal - Leicester game has an erroneous number of minutes
-  # https://www.whoscored.com/Matches/1485349/Live/England-Premier-League-2020-2021-Leicester-Arsenal
-  mutate(
-    across(minutes_played, ~case_when(game_id == 1485349L ~ 98L, TRUE ~ .x))
-  ) %>% 
-  rename(pos = starting_position_name, pos_id = starting_position_id)
-
-pos_info <-
-  tibble(
-    pos = c('AMC', 'AML', 'AMR', 'DC', 'DL', 'DMC', 'DML', 'DMR', 'DR', 'FW', 'FWL', 'FWR', 'GK', 'MC', 'ML', 'MR', 'Sub'),
-    pos_grp = c('F', 'F', 'F', 'D', 'D', 'M', 'M', 'M', 'D', 'F', 'F', 'F', 'G', 'M', 'M', 'M', 'z'),
-    pos_11 = c('FWC', 'FWL', 'FWR', 'DC', 'DL', 'MC', 'ML', 'MR', 'DR', 'FWC', 'FWL', 'FWR', 'GK', 'MC', 'ML', 'MR', 'z')
-  )
-pos_info
-
-pos_info_xy <-
-  tibble(
-    pos_11 = c('GK', 'DL', 'DCL', 'DCR', 'DR', 'ML', 'MC', 'MR', 'FWL', 'FWC', 'FWR'),
-    x = c(5, 30, 25, 25, 30, 55, 50, 55, 75, 70, 75),
-    y = c(50, 15, 38, 62, 85, 20, 50, 80, 20, 50, 80)
-  ) %>% 
-  mutate(across(c(x, y), as.integer))
-
-pos_grp_labs <- c('F', 'M', 'D', 'G', 'z')
-player_pos <-
-  player_games_clean %>% 
-  left_join(teams) %>% 
-  left_join(players) %>% 
-  left_join(games) %>% 
-  group_by(season_id, competition_id, team_id, team_name, player_id, player_name, pos_id, pos) %>% 
-  summarize(
-    across(c(minutes_played), sum, na.rm = TRUE)
-  ) %>% 
-  ungroup() %>% 
-  filter(minutes_played > 0L) %>% 
-  group_by(season_id, competition_id, team_id, team_name, player_id, player_name) %>% 
-  # Don't technically need the coalesce() here if we drop zero minutes played games.
-  mutate(total = sum(minutes_played), frac = coalesce(minutes_played / total, 0)) %>% 
-  # slice_max(frac, with_ties = FALSE) %>% 
-  # filter(pos != 'Sub') %>% 
-  ungroup() %>% 
-  left_join(pos_info) %>% 
-  mutate(
-    across(pos_grp, ~ordered(.x, pos_grp_labs))
-  )
-player_pos
-
-player_pos_filt <-
-  player_pos %>% 
-  filter(pos != 'Sub') %>% 
-  group_by(season_id, competition_id, team_id, team_name, player_id, player_name) %>% 
-  slice_max(frac, with_ties = FALSE) %>% 
-  ungroup() %>% 
-  select(-frac)
-player_pos_filt
-
 av_by_season_latest <-
   av_by_season %>% 
   filter(season_id == 2020L) %>% 
   filter(minutes_played > (2 * 90)) %>% 
-  left_join(pos_info) %>% 
+  # left_join(pos_info) %>% 
   arrange(desc(vaep_p90))
 av_by_season_latest
 
-# av_by_season_latest %>% 
-#   filter(pos_grp == 'G') -> z
-# 
-# av_by_game %>% 
-#   filter(player_name == 'Sam Johnstone')
-
+# ex play ----
 av_by_game %>% 
   filter(season_id == 2020L) %>% 
   filter(player_name == 'Jesse Lingard') %>% 
   arrange(desc(vaep_p90)) %>% 
   head(3)
-
-av %>% 
-  filter(season_id == 2020L) %>% 
-  filter(player_name == 'Jesse Lingard') %>% 
-  # filter(type_name == 'pass') %>%
-  arrange(desc(vaep)) %>% 
-  relocate(type_name, off, def, vaep) -> z
 
 event <-
   av %>% 
@@ -350,29 +373,29 @@ lim_x <-
 lim_x
 
 lab_tag <- '**Viz**: Tony ElHabr'
-# f_mark <- partial(
-#   ggforce::geom_mark_circle,
-#   expand = unit(0.01, 'mm'),
-#   label.family = 'Karla',
-#   # label.colour = '#832424',
-#   # label.colour = '#005800',
-#   color = 'black',
-#   label.buffer = unit(30, 'mm'),
-#   # check.overlap = TRUE,
-#   aes(
-#     group = action_id,
-#     # x = end_x, 
-#     # y = end_y,
-#     # x = (start_x + end_x) / 2,
-#     # y = (start_y + end_y) / 2,
-#     x = start_x,
-#     y = start_y,
-#     # description = sprintf('%s %s (%s)', str_replace_all(player_name, '(^.*\\s+)(.*$)', '\\2'), type_name, bodypart_name),
-#     description = sprintf('%s %s', str_replace_all(player_name, '(^.*\\s+)(.*$)', '\\2'), type_name),
-#     label = sprintf('%+.2f', vaep),
-#   ),
-#   ... = 
-# )
+f_mark <- partial(
+  ggforce::geom_mark_circle,
+  expand = unit(0.01, 'mm'),
+  label.family = 'Karla',
+  # label.colour = '#832424',
+  # label.colour = '#005800',
+  color = 'black',
+  label.buffer = unit(30, 'mm'),
+  # check.overlap = TRUE,
+  aes(
+    group = action_id,
+    # x = end_x,
+    # y = end_y,
+    # x = (start_x + end_x) / 2,
+    # y = (start_y + end_y) / 2,
+    x = start_x,
+    y = start_y,
+    # description = sprintf('%s %s (%s)', str_replace_all(player_name, '(^.*\\s+)(.*$)', '\\2'), type_name, bodypart_name),
+    description = sprintf('%s %s', str_replace_all(player_name, '(^.*\\s+)(.*$)', '\\2'), type_name),
+    label = sprintf('%+.2f', vaep),
+  ),
+  ... =
+)
 
 # This is a manual adjustment for this play, since it seems slightly off compared to the film.
 # https://www.youtube.com/watch?v=6jizRzA3cbw&t=171s
@@ -457,28 +480,30 @@ viz_ex <-
   )
 viz_ex
 
-h <- 10
-path_viz_ex <- file.path(dir_proj, 'viz_vaep_ex.png')
-ggsave(
-  plot = viz_ex,
-  filename = path_viz_ex,
-  height = h + 2,
-  width = h * 68 / 105,
-  type = 'cairo'
-)
-
-add_logo(
-  path_viz = path_viz_ex,
-  path_logo = file.path(dir_img, 'Jesse Lingard.png'),
-  idx_x = 0.1,
-  logo_scale = 0.2,
-  # adjust_y = TRUE,
-  idx_y = 0.5
-)
+if(do_save) {
+  h <- 10
+  path_viz_ex <- file.path(dir_proj, 'viz_vaep_ex.png')
+  ggsave(
+    plot = viz_ex,
+    filename = path_viz_ex,
+    height = h + 2,
+    width = h * 68 / 105,
+    type = 'cairo'
+  )
+  
+  add_logo(
+    path_viz = path_viz_ex,
+    path_logo = file.path(dir_img, 'Jesse Lingard.png'),
+    idx_x = 0.1,
+    logo_scale = 0.2,
+    # adjust_y = TRUE,
+    idx_y = 0.5
+  )
+}
 
 f_by_pos_11 <- function(av, n = 2) {
   av %>% 
-    filter(!is.na(pos_grp)) %>% 
+    drop_na(pos_grp) %>% 
     # filter(minutes_played > (15 * 90)) %>% 
     filter(minutes_played > 1000) %>% 
     group_by(pos_11) %>% 
@@ -533,6 +558,8 @@ av_by_season_latest_pos <-
   left_join(img_info)
 av_by_season_latest_pos
 
+# best xi ----
+lab_subtitle <- '2020/21 Premier League, through Matchweek 34'
 viz_team <-
   av_by_season_latest_pos %>% 
   ggplot() +
@@ -575,7 +602,7 @@ viz_team <-
   ) +
   labs(
     title = 'VAEP XI of the Season',
-    subtitle = '2020/21 Premier League, through Matchweek 34',
+    subtitle = lab_subtitle,
     caption = '**VAEP**: Valuing Actions by Estimating Probabilities<br/>Rankings based on best VAEP per 90 minute, minimum 1,000 minutes played.<br/>Positions are based on minutes played but may not be reflective of recent form.',
     # caption = '**VAEP**: Valuing Actions by Estimating Probabilities<br/>Rankings based on best total VAEP, minimum 1,000 minutes played.',
     # tag = '**Viz**: Tony ElHabr<br/>**Data**: 2020-21 Premier League through Matchweek 34'
@@ -583,170 +610,195 @@ viz_team <-
   )
 viz_team
 
-h <- 14
-path_viz_team <- file.path(dir_proj, 'viz_team_vaep_p90.png')
-ggsave(
-  plot = viz_team,
-  filename = path_viz_team,
-  height = h + 2,
-  width = h * 68 / 105,
-  type = 'cairo'
-)
+if(do_save) {
+  h <- 14
+  path_viz_team <- file.path(dir_proj, 'viz_team_vaep_p90.png')
+  ggsave(
+    plot = viz_team,
+    filename = path_viz_team,
+    height = h + 2,
+    width = h * 68 / 105,
+    type = 'cairo'
+  )
+  
+  add_logo_epl(
+    path_viz = path_viz_team,
+    idx_x = 0.13,
+    logo_scale = 0.1,
+    # adjust_y = TRUE,#
+    idx_y = 0.26
+  )
+}
 
-add_logo_epl(
-  path_viz = path_viz_team,
-  idx_x = 0.13,
-  logo_scale = 0.1,
-  # adjust_y = TRUE,
-  idx_y = 0.26
-)
-
-# idk yet ----
-av_by_pos_11 <-
+# scatter by pos ----
+# pal <- c('#003f5c', '#7a5195', '#ef5675', '#ffa600')
+pal <- c('#ef426f', '#00b2a9', '#ff8200', '#7a5195') %>% rev()
+# pal <- c('#1e3160', '#f05333', '#0a7ec2', '#fcbb30')
+.f_slice <- function(f = slice_max, lab = 'hi') {
   av_by_season_latest %>% 
-  filter(!is.na(pos_grp)) %>% 
-  filter(minutes_played > 1000) %>% # (15 * 90)) %>% 
-  left_join(pos_info) %>% 
-  group_by(pos_11) %>% 
-  slice_max(vaep_p90, n = 4) %>% 
-  ungroup()
-av_by_pos_11
+    # filter(pos != 'Sub') %>% 
+    drop_na(pos_grp) %>% 
+    filter(minutes_played >= 2000) %>% 
+    group_by(pos_grp) %>% 
+    f(vaep_p90, n = 3) %>% 
+    ungroup() %>% 
+    mutate(grp = !!lab)
+}
 
-pal <- c('#003f5c', '#7a5195', '#ef5675', '#ffa600')
-viz_latest <-
+av_by_season_labs <-
+  bind_rows(
+    .f_slice(slice_max, 'hi'),
+    .f_slice(slice_min, 'lo')
+  )
+av_by_season_labs
+
+lab_caption_vaep <- '**VAEP**: Valuing Actions by Estimating Probabilities'
+viz_by_pos <-
   av_by_season_latest %>% 
   # filter(pos != 'Sub') %>% 
-  filter(!is.na(pos_grp)) %>% 
-  select(-pos_grp) %>% 
+  drop_na(pos_grp) %>% 
   ggplot() +
   aes(x = minutes_played, y = vaep) +
   geom_point(color = 'grey80') +
-  geom_smooth(se = FALSE, color = 'black', size = 1.2) +
+  geom_smooth(
+    se = FALSE,
+    color = 'black',
+    size = 1.2,
+    formula = formula(y ~ x),
+    # method = 'loess'
+    method = 'lm'
+  ) +
   geom_point(
     data =
       av_by_season_latest %>% 
-      # filter(pos != 'Sub') %>% 
-      filter(!is.na(pos_grp)),
-    aes(color = pos_grp),
+      drop_na(pos_grp) %>% 
+      left_join(pos_grp_labs),
+    size = 2,
+    aes(color = pos_grp_lab),
     show.legend = FALSE
   ) +
+  # ggforce::geom_mark_circle(
+  #   data = 
+  #     av_by_season_labs %>% 
+  #     # filter(pos_grp == 'F') %>% 
+  #     left_join(pos_grp_labs),
+  #   expand = unit(0.01, 'mm'),
+  #   label.family = 'Karla',
+  #   # label.fill = NA,
+  #   label.fontface = 'bold',
+  #   # color = 'black',
+  #   # label.fontsize = pts(10),
+  #   # label.fontsize = 11,
+  #   label.buffer = unit(1, 'mm'),
+  #   aes(description = player_name)
+  # ) +
+  ggrepel::geom_label_repel(
+    data = 
+      av_by_season_labs %>% 
+      # filter(pos_grp == 'F') %>% 
+      left_join(pos_grp_labs),
+    family = 'Karla',
+    fontface = 'bold',
+    size = pts(12),
+    label.size = NA,
+    min.segment.length = 0, seed = 42, box.padding = 1,
+    aes(label = player_name)
+  ) +
+  scale_x_continuous(labels = scales::number_format(big.mark = ',')) +
   scale_color_manual(values = pal) +
-  facet_wrap(~pos_grp, scales = 'fixed') +
+  facet_wrap(~pos_grp_lab, scales = 'fixed') +
+  theme(
+    strip.text = element_text(face = 'bold', size = 16)
+  ) +
   labs(
-    title = 'Player Values',
+    title = 'VAEP By Position',
+    subtitle = lab_subtitle,
     y = 'VAEP',
-    caption = '**VAEP**: Valuing Actions by Estimating Probabilities',
+    caption = lab_caption_vaep,
+    tag = lab_tag,
     x = 'Minutes Played'
   )
-viz
+viz_by_pos
 
-av_by_season_compare <-
-  av_by_season %>% 
-  filter(season_id >= 2019L) %>% 
-  filter(minutes_played > (2 * 90)) %>% 
-  filter(!is.na(pos_grp)) %>% 
-  select(season_id, team_id, team_name, player_id, player_name, vaep_p90) %>% 
-  pivot_wider(
-    names_from = season_id,
-    values_from = vaep_p90,
-    names_prefix = 'vaep_p90_'
-  ) %>% 
-  left_join(
-    av_by_season %>% 
-      filter(season_id == 2020L) %>% 
-      select(season_id, team_id, team_name, player_id, player_name, pos_grp)
-  ) %>%
-  filter(!is.na(pos_grp))
-av_by_season_compare
+if(do_save) {
+  path_viz_by_pos <- file.path(dir_proj, 'viz_vaep_by_pos.png')
+  h <- 10
+  ggsave(
+    plot = viz_by_pos,
+    filename = path_viz_by_pos,
+    height = h,
+    width = h * 4/3,
+    type = 'cairo'
+  )
+  
+  add_logo_epl(
+    path_viz = path_viz_by_pos,
+    idx_x = 0.01,
+    logo_scale = 0.08,
+    # adjust_y = TRUE,
+    idx_y = 0.9
+  )
+}
 
-viz <-
-  av_by_season_compare %>% 
-  select(-pos_grp) %>% 
-  ggplot() +
-  aes(x = vaep_p90_2019, y = vaep_p90_2020) +
-  geom_point(color = 'grey80') +
-  geom_point(
-    data = av_by_season_compare,
-    aes(color = pos_grp)
-  ) +
-  scale_color_manual(values = pal) +
-  facet_wrap(~pos_grp, scales = 'fixed')
-viz
-
-retrieve_market_values <-
-  function(country_name = 'England',
-           start_year = 2020,
-           dir = dir_data,
-           ext = 'rds',
-           file = sprintf('transfer_market_values_%s_%s', country_name, start_year),
-           path = NULL,
-           f_import = read_rds,
-           f_export = write_rds,
-           overwrite = FALSE,
-           export = TRUE) {
-    if (is.null(path)) {
-      path <- file.path(dir, sprintf('%s.%s', file, ext))
-    }
-    
-    path_exists <- file.exists(path)
-    if (path_exists & !overwrite) {
-      # cat(glue::glue('{Sys.time()}: Returning early from `path = "{path}"`.'), sep = '\n')
-      return(f_import(path))
-    }
-    
-    res <- worldfootballR::get_player_market_values(country_name = country_name, start_year = start_year)
-    
-    if(export) {
-      f_export(res, path)
-    }
-    res
-  }
-
-mkt <- 
+# mkt ----
+mkt <-
   2017:2020 %>% 
   setNames(., .) %>% 
   map_dfr(~retrieve_market_values(country_name = 'England', start_year = .x), .id = 'season_id') %>% 
   mutate(across(season_id, as.integer)) %>%
-  as_tibble()
+  as_tibble() %>% 
+  rename(euro = player_market_value_euro) %>% 
+  drop_na(euro) # %>% 
+  # mutate(across(euro, ~.x / 10e5))
 mkt
 
-# fuzzy-matching ----
-.add_z_col <- function(data, ...) {
-  data %>% 
-    mutate(
-      z = player_name %>% 
-        stringi::stri_trans_general(id = 'Latin-ASCII') %>% 
-        snakecase::to_snake_case()
-    )
-}
-
-source(file.path(dir_proj, 'helpers.R'))
-x <-
+mkt_prep <-
   mkt %>% 
   filter(season_id == 2020L) %>% 
   .add_z_col() %>% 
-  distinct(z, season_id, player = player_name, team = squad, euro = player_market_value_euro)
+  distinct(z, season_id, player_name, euro)
+mkt_prep
+
+opta_prep <-
+  player_pos_filt %>% 
+  filter(season_id == 2020L) %>% 
+  .add_z_col() %>% 
+  distinct(z, season_id, player_name)
 
 res_av_mkt <-
   join_fuzzily(
-    x,
-    player_pos_filt %>% 
-      filter(season_id == 2020L) %>% 
-      .add_z_col() %>% 
-      distinct(z, season_id, player = player_name, team = team_name, mp = minutes_played),
+    mkt_prep,
+    opta_prep,
+    col = 'z',
     suffix = c('mkt', 'opta')
   )
 res_av_mkt
 
+# res_av_mkt %>% 
+#   filter(z_mkt %>% str_detect('^kepa_'))
+# 
+# mkt_prep %>% 
+#   filter(z %>% str_detect('heung_min'))
+# opta_prep %>% 
+#   filter(z %>% str_detect('heung_min'))
+
 av_mkt <-
-  x %>% 
+  mkt_prep %>% 
   anti_join(res_av_mkt %>% select(z = z_mkt)) %>% 
+  # Because I do the fuzzy join strictly, there will still be NAs
+  select(-player_name) %>% 
+  # left_join(opta_prep) %>% 
+  # drop_na(player_name) %>% 
+  inner_join(opta_prep) %>% 
   bind_rows(
     res_av_mkt %>% 
-      # filter(score < 1) %>% 
-      select(z = z_opta, score) %>% 
-      left_join(x)
+      left_join(mkt_prep %>% select(season_id, player_name, z_mkt = z, euro)) %>% 
+      relocate(euro) %>% 
+      filter(score < 1) %>% 
+      select(z = z_opta, score, euro) %>% 
+      inner_join(opta_prep)
   ) %>%
+  inner_join(av_by_season) %>% 
   group_by(season_id) %>% 
   mutate(
     rnk = row_number(desc(euro))
@@ -755,51 +807,355 @@ av_mkt <-
   arrange(season_id, rnk)
 av_mkt
 
-av_mkt %>% filter(!is.na(score))
+av_mkt %>% filter(is.na(vaep))
+av_mkt %>% filter(is.na(euro))
 
-av_mkt %>% 
-  # rename(player_name = player) %>% 
-  left_join(av_by_season_latest %>% .add_z_col()) %>% 
-  lm(euro ~ vaep, data = .) %>% 
-  broom::glance()
+# av_mkt_trend <-
+#   av_mkt %>% 
+#   drop_na(pos_grp) %>% 
+#   group_nest(pos_grp) %>% 
+#   mutate(res = map(data, ~lm(euro ~ vaep, data = .x) %>% broom::glance())) %>% 
+#   select(-data) %>% 
+#   unnest(res)
+# av_mkt_trend
 
-av_mkt %>% 
-  # rename(player_name = player) %>% 
-  left_join(av_by_season_latest %>% .add_z_col()) %>% 
-  # filter(is.na(euro)) %>% 
+.f_slice_mkt <- function(f = slice_max, lab = 'hi') {
+  av_mkt %>% 
+    # filter(pos != 'Sub') %>% 
+    drop_na(pos_grp) %>% 
+    filter(minutes_played >= 2000) %>% 
+    group_by(pos_grp) %>% 
+    f(vaep_p90, n = 3) %>% 
+    ungroup() %>% 
+    mutate(grp = !!lab)
+}
+
+av_mkt_labs <-
+  bind_rows(
+    .f_slice_mkt(slice_max, 'hi'),
+    .f_slice_mkt(slice_min, 'lo')
+  )
+av_mkt_labs
+
+# # https://stackoverflow.com/questions/49368754/adding-orthogonal-regression-line-in-ggplot
+# f_ortho <- function(data, col_x = 'euro', col_y = 'vaep', x0 = NULL, y0 = NULL){
+#   
+#   y <- data[[col_y]]
+#   x <- as.numeric(data[[col_x]])
+#   if(is.null(x0)) {
+#     x0 <- x
+#   }
+#   
+#   if(is.null(y0)) {
+#     y0 <- y
+#   }
+#   
+#   # deming <- MethComp::Deming(y = y, x = x)[1:2]
+#   # deming
+#   
+#   # Check with prcomp {stats}
+#   # r <- prcomp( ~ y + x)
+#   # b <- r$rotation[2,1] / r$rotation[1,1]
+#   # a <- r$center[2] - slope*r$center[1]
+#   fit <- lm(y ~ x)
+#   b <- fit$coefficients[1]
+#   a <- fit$coefficients[2]
+#   # finds endpoint for a perpendicular segment from the point (x0,y0) to the line
+#   # defined by ortho as y = a + b*x
+#   # a <- deming[1]
+#   # b <- deming[2]
+#   x1 <- (x0 + b* y0 - a*b)/(1 + b^2)
+#   y1 <- a + b*x1
+#   tibble(x0 = x0, y0 = y0, x1 = x1, y1 = y1)
+# }
+# 
+# av_mkt_ortho <-
+#   av_mkt %>% 
+#   drop_na(pos_grp) %>% 
+#   group_nest(pos_grp) %>% 
+#   mutate(
+#     res = map(data, ~f_ortho(.x, x0 = NULL, y0 = NULL))
+#   ) %>% 
+#   select(-data) %>% 
+#   unnest(res) %>% 
+#   left_join(pos_grp_labs) %>% 
+#   filter(x0 > 50) %>% 
+#   group_by(pos_grp) %>% 
+#   slice_max(y0) %>% 
+#   ungroup()
+# av_mkt_ortho
+
+av_mkt_w_pos <-
+  av_mkt %>% 
+  drop_na(pos_grp) %>% 
+  left_join(pos_grp_labs)
+av_mkt_w_pos
+
+f_text_mkt <- partial(
+  ggtext::geom_richtext,
+  fill = NA, 
+  label.color = NA,
+  fontface = 'bold',
+  family = 'Karla',
+  # size = pts(16),
+  aes(x = x, y = y, label = lab),
+  ... = 
+)
+
+viz_mkt_by_pos <-
+  av_mkt %>% 
+  drop_na(pos_grp) %>% 
   ggplot() +
   aes(x = euro, y = vaep) +
-  geom_point()
+  geom_point(color = 'grey80') +
+  geom_smooth(
+    data = av_mkt_w_pos,
+    se = FALSE,
+    # color = 'black',
+    size = 1.2,
+    formula = formula(y ~ x),
+    # method = 'loess'
+    method = 'lm',
+    show.legend = FALSE,
+    aes(color = pos_grp_lab)
+  ) +
+  # geom_segment(
+  #   data = av_mkt_ortho, 
+  #   aes(x = x0, y = y0, xend = x1, yend = y1, group = pos_grp_lab), 
+  #   colour = "blue"
+  # ) +
+  geom_point(
+    data = av_mkt_w_pos,
+    show.legend = FALSE,
+    size = 2,
+    aes(color = pos_grp_lab)
+  ) +
+  ggrepel::geom_label_repel(
+    data = 
+      av_mkt_labs %>% 
+      left_join(pos_grp_labs),
+    family = 'Karla',
+    fontface = 'bold',
+    size = pts(12),
+    label.size = NA,
+    min.segment.length = 0, seed = 42, box.padding = 1,
+    aes(label = player_name)
+  ) +
+  scale_x_continuous(
+    labels = scales::number_format(
+      big.mark = ',',
+      scale = 1e-6,
+      suffix = 'M',
+      prefix = ''
+    )
+  ) +
+  scale_color_manual(values = pal) +
+  facet_wrap( ~ pos_grp_lab, scales = 'free') +
+  theme(
+    strip.text = element_text(face = 'bold', size = 16)
+  ) +
+  labs(
+    title = 'VAEP & Market Values By Position',
+    subtitle = lab_subtitle,
+    y = 'VAEP',
+    caption = lab_caption_vaep,
+    tag = paste0(lab_tag, ' | **Market Data**: transfermarkt'),
+    x = 'Market Value (Euro)'
+  ) +
+  f_text_mkt(
+    hjust = 1,
+    # vjust = 1,
+    data = tibble(
+      x = 125000000,
+      y = 4,
+      pos_grp_lab = ordered('Forward'), # , levels = pos_grp_labs),
+      lab = '<b><i><span style="color:red;font-size:18px";>OVERVALUED</span><i></b> <i><span style="color:black;font-size:14px";>(below line)</span></i>'
+    )
+  ) +
+  f_text_mkt(
+    hjust = 0,
+    data = tibble(
+      x = 1000000,
+      y = 11,
+      pos_grp_lab = ordered('Forward'), # , levels = pos_grp_labs),
+      lab = '<b><i><span style="color:red;font-size:18px";>UNDERVALUED</span><i></b> <i><span style="color:black;font-size:12px";>(above line)</span></i>'
+    )
+  )
+viz_mkt_by_pos
 
-
-# dev ----
-market_values %>% 
-  filter(season_id == 2020L) %>% 
-  select(season_id, player_name, pos_tfmkt = player_position, euro = player_market_value_euro) %>% 
-  mutate(
-    z = player_name %>% stringi::stri_trans_general(id = 'Latin-ASCII') %>% snakecase::to_snake_case()
-  ) %>% 
-  full_join(
-    av_by_season_latest %>% 
-      filter(season_id == 2020L) %>% 
-      filter(player_name %>% str_detect('Heung')) %>% 
-      mutate(
-        z = player_name %>% stringi::stri_trans_general(id = 'Latin-ASCII') %>% snakecase::to_snake_case()
-      ) %>% 
-      select(-player_name)
-  ) %>% 
-  arrange(desc(euro)) %>% 
-  filter(is.na(minutes_played)) %>% 
-  select(player_name, z, euro)
+if(do_save) {
+  path_viz_mkt_by_pos <- file.path(dir_proj, 'viz_vaep_mkt_by_pos.png')
+  h <- 10
+  ggsave(
+    plot = viz_mkt_by_pos,
+    filename = path_viz_mkt_by_pos,
+    height = h,
+    width = h * 4/3,
+    type = 'cairo'
+  )
   
+  add_logo_epl(
+    path_viz = path_viz_mkt_by_pos,
+    idx_x = 0.01,
+    logo_scale = 0.08,
+    # adjust_y = TRUE,
+    idx_y = 0.9
+  )
+}
 
-av_by_season_latest %>% 
-  filter(player_name %>% str_detect('olo Kant'))
+davies <- file.path(dir_proj, 'DAVIES.csv') %>% read_csv() %>% janitor::clean_names()
+davies
+davies_filt <-
+  davies %>% 
+  filter(league == 'Premier League' & season %in% c('2020-2021')) %>% # season %in% c('2019-2020', '2020-2021')) %>% 
+  mutate(across(season, ~str_sub(.x, 1, 4) %>% as.integer())) %>% 
+  rename(player_name = player, season_id = season)
+davies_filt %>% count(season_id)
 
-write_rds(market_values, )
-game_info <-
-  av_atomic_by_game %>% 
-  filter(season_id == 2020L) %>% 
-  slice(1) %>% 
-  rename_with(~sprintf('%s_total', .x), matches('_value$'))
-game_info
+davies_prep <-
+  davies_filt %>%
+  .add_z_col() %>% 
+  distinct(z, player_name, season_id, davies)
+davies_prep
+
+res_av_davies <-
+  join_fuzzily(
+    davies_prep,
+    opta_prep,
+    col = 'z',
+    suffix = c('davies', 'opta')
+  )
+res_av_davies
+
+av_davies <-
+  davies_prep %>% 
+  anti_join(res_av_davies %>% select(z = z_davies)) %>% 
+  # Because I do the fuzzy join strictly, there will still be NAs
+  select(-player_name) %>% 
+  # left_join(opta_prep) %>% 
+  # drop_na(player_name) %>% 
+  inner_join(opta_prep) %>% 
+  bind_rows(
+    res_av_davies %>% 
+      left_join(davies_prep %>% select(season_id, player_name, z_davies = z, davies)) %>% 
+      relocate(davies) %>% 
+      filter(score < 2) %>% 
+      select(z = z_opta, score, davies) %>% 
+      inner_join(opta_prep)
+  ) %>%
+  inner_join(av_by_season) %>% 
+  group_by(season_id) %>% 
+  mutate(
+    rnk = row_number(desc(davies))
+  ) %>% 
+  ungroup() %>% 
+  arrange(season_id, rnk) %>% 
+  # Davies doesn't have goalkeepers.
+  filter(pos_grp %in% c('F', 'M', 'D')) %>% 
+  mutate(diff = vaep - davies)
+av_davies
+
+fit_davies <-
+  av_davies %>% 
+  lm(vaep ~ davies, data = .) 
+summ_davies <- fit_davies %>% broom::glance()
+summ_davies
+
+preds_davies <- 
+  fit_davies %>% 
+  broom::augment() %>% 
+  bind_cols(av_davies %>% select(-c(vaep, davies)))
+preds_davies
+
+.f_slice_davies <- function(f = slice_max, lab = 'hi') {
+  # av_davies %>% 
+  preds_davies %>% 
+    filter(minutes_played >= 1000) %>% 
+    # group_by(pos_grp) %>% 
+    f(.resid, n = 10) %>% 
+    # ungroup() %>% 
+    mutate(grp = !!lab)
+}
+
+av_davies_labs <-
+  bind_rows(
+    .f_slice_davies(slice_max, 'hi'),
+    .f_slice_davies(slice_min, 'lo')
+  )
+av_davies_labs
+
+f_text_davies <- f_text_mkt
+
+viz_davies_compare <-
+  av_davies %>% 
+  ggplot() +
+  aes(x = davies, y = vaep) +
+  geom_smooth(
+    data = av_davies,
+    se = FALSE,
+    color = 'black',
+    size = 1.2,
+    formula = formula(y ~ x),
+    method = 'lm'
+  ) +
+  geom_point(
+    data = preds_davies,
+    # show.legend = FALSE,
+    # size = 1,
+    aes(color = .resid, size = abs(.resid))
+  ) +
+  ggrepel::geom_label_repel(
+    data = av_davies_labs,
+    family = 'Karla',
+    fontface = 'bold',
+    size = pts(12),
+    label.size = NA,
+    min.segment.length = 0, seed = 42, box.padding = 1,
+    aes(label = player_name)
+  ) +
+  scale_color_viridis_c(option = 'H', guide = guide_colorbar(title = 'VAEP minus DAVIES')) +
+  guides(size = FALSE) +
+  theme(
+    legend.position = 'top',
+    plot.tag = ggtext::element_markdown(size = 10),
+    plot.caption = ggtext::element_markdown(size = 10),
+    legend.text = element_blank(),
+    legend.title = element_text(face = 'bold', size = 14),
+    strip.text = element_text(face = 'bold', size = 16)
+  ) +
+  labs(
+    title = 'VAEP & DAVIES Comparison',
+    subtitle = lab_subtitle,
+    y = 'VAEP',
+    caption = paste0(lab_caption_vaep, '<br/>**DAVIES**: Determining Added Value of Individual Effectiveness'),
+    tag = paste0(lab_tag, '<br/>**Davies Data**: @mimburgio & @SamGoldberg1882'),
+    x = 'Davies'
+  ) +
+  f_text_mkt(
+    hjust = 0,
+    data = tibble(
+      x = -3,
+      y = 11,
+      lab = glue::glue('<b><i><span style="color:red;font-size:34px";>R<sup>2</sup>: {sprintf("%.2f", summ_davies$r.squared)}</span><i></b>')
+    )
+  )
+viz_davies_compare
+
+if(do_save) {
+  path_viz_davies_compare <- file.path(dir_proj, 'viz_vaep_davies_compare.png')
+  h <- 8
+  ggsave(
+    plot = viz_davies_compare,
+    filename = path_viz_davies_compare,
+    height = h,
+    width = h,
+    type = 'cairo'
+  )
+  
+  add_logo_epl(
+    path_viz = path_viz_davies_compare,
+    idx_x = 0.01,
+    logo_scale = 1,
+    idx_y = 0.9
+  )
+}
