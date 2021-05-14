@@ -11,16 +11,17 @@ do_save <- TRUE
 # #2
 # Here's a visual example for a possession in which Lingard scores a net negative VAEP. Note that this is not xG---actions can have negative values!
 # #3
-# VAEP correlates pretty strongly with transfer market values.
+# We can plot market values vs. VAEP to identify players who may be over- and under-valued.
 # #4
-# VAEP has the strongest variability for forwards.
-# #5
 # Obligatory links:
 # Methodology authors: @TomDecroos, @LotteBransen, @JanVanHaaren, @jessejdavis1
 # Paper: # https://arxiv.org/pdf/1802.07127.pdf
 # @pwawrzynow's Aug. 2020 thread: https://twitter.com/pwawrzynow/status/1292095872583577600?s=20
-# My illustration from Sep. 2020: https://twitter.com/TonyElHabr/status/1304766718468857857?s=20
-
+# # My illustration from Sep. 2020: https://twitter.com/TonyElHabr/status/1304766718468857857?s=20
+# #6
+# To please xGod (@rwohan), here's a follow up, comparing DAVIES and VAEP. There's some correlation, but clearly they are not in complete agreement.
+# DAVIES methodology: https://www.americansocceranalysis.com/home/2020/9/16/davies-determining-added-value-of-individual-effectiveness-including-style
+# Authors: @mimburgio @SamGoldberg1882
 
 dir_img <- file.path(dir_proj, 'img')
 img_info <-
@@ -184,7 +185,7 @@ player_games_clean <-
   rename(pos = starting_position_name, pos_id = starting_position_id)
 
 pos_grps <- c('F', 'M', 'D', 'G', 'z')
-pos_grp_labs <- c('Forward', 'Midfielder', 'Defender', 'Goalkeeper', 'Other')
+pos_grp_labs <- c('Forward/Attacker', 'Midfielder', 'Defender', 'Goalkeeper', 'Other')
 .factor_pos_grp_col <- function(data) {
   data %>% 
     mutate(
@@ -564,7 +565,7 @@ viz_team <-
   av_by_season_latest_pos %>% 
   ggplot() +
   aes(x = x, y = y) +
-  pitch_gg(pitch = ggsoccer::pitch_opta, xlim = c(-1, 101), ylim = c(-1, 101)) +
+  pitch_gg(pitch = ggsoccer::pitch_opta, xlim = c(-1, 101), ylim = c(-1, 101), aspect_ratio = 1) +
   f_text(
     data = 
       av_by_season_latest_pos %>% 
@@ -590,7 +591,7 @@ viz_team <-
       filter(idx == 1L) %>% 
       # slice(1) %>% 
       mutate(x = x + 8L),
-    size = 0.1,
+    size = 0.08,
     aes(image = path)
   ) +
   theme(
@@ -604,36 +605,33 @@ viz_team <-
     title = 'VAEP XI of the Season',
     subtitle = lab_subtitle,
     caption = '**VAEP**: Valuing Actions by Estimating Probabilities<br/>Rankings based on best VAEP per 90 minute, minimum 1,000 minutes played.<br/>Positions are based on minutes played but may not be reflective of recent form.',
-    # caption = '**VAEP**: Valuing Actions by Estimating Probabilities<br/>Rankings based on best total VAEP, minimum 1,000 minutes played.',
-    # tag = '**Viz**: Tony ElHabr<br/>**Data**: 2020-21 Premier League through Matchweek 34'
     tag = '**Viz**: Tony ElHabr'
   )
 viz_team
 
 if(do_save) {
-  h <- 14
+  h <- 13
   path_viz_team <- file.path(dir_proj, 'viz_team_vaep_p90.png')
   ggsave(
     plot = viz_team,
     filename = path_viz_team,
     height = h + 2,
-    width = h * 68 / 105,
+    width = h * 68 / 105, # close enough to 16/9 ratio
     type = 'cairo'
   )
   
   add_logo_epl(
     path_viz = path_viz_team,
-    idx_x = 0.13,
+    idx_x = 0.1,
     logo_scale = 0.1,
-    # adjust_y = TRUE,#
     idx_y = 0.26
   )
 }
 
 # scatter by pos ----
-# pal <- c('#003f5c', '#7a5195', '#ef5675', '#ffa600')
-pal <- c('#ef426f', '#00b2a9', '#ff8200', '#7a5195') %>% rev()
-# pal <- c('#1e3160', '#f05333', '#0a7ec2', '#fcbb30')
+# pal <- c('#003f5c', '#7a5195', '#ef5675', '#ffa600') # default tony 4
+pal <- c('#ef426f', '#00b2a9', '#ff8200', '#7a5195') %>% rev() # spurs fiesta + purple
+# pal <- c('#1e3160', '#f05333', '#0a7ec2', '#fcbb30') # thunder
 .f_slice <- function(f = slice_max, lab = 'hi') {
   av_by_season_latest %>% 
     # filter(pos != 'Sub') %>% 
@@ -655,7 +653,6 @@ av_by_season_labs
 lab_caption_vaep <- '**VAEP**: Valuing Actions by Estimating Probabilities'
 viz_by_pos <-
   av_by_season_latest %>% 
-  # filter(pos != 'Sub') %>% 
   drop_na(pos_grp) %>% 
   ggplot() +
   aes(x = minutes_played, y = vaep) +
@@ -677,25 +674,9 @@ viz_by_pos <-
     aes(color = pos_grp_lab),
     show.legend = FALSE
   ) +
-  # ggforce::geom_mark_circle(
-  #   data = 
-  #     av_by_season_labs %>% 
-  #     # filter(pos_grp == 'F') %>% 
-  #     left_join(pos_grp_labs),
-  #   expand = unit(0.01, 'mm'),
-  #   label.family = 'Karla',
-  #   # label.fill = NA,
-  #   label.fontface = 'bold',
-  #   # color = 'black',
-  #   # label.fontsize = pts(10),
-  #   # label.fontsize = 11,
-  #   label.buffer = unit(1, 'mm'),
-  #   aes(description = player_name)
-  # ) +
   ggrepel::geom_label_repel(
     data = 
       av_by_season_labs %>% 
-      # filter(pos_grp == 'F') %>% 
       left_join(pos_grp_labs),
     family = 'Karla',
     fontface = 'bold',
@@ -748,8 +729,7 @@ mkt <-
   mutate(across(season_id, as.integer)) %>%
   as_tibble() %>% 
   rename(euro = player_market_value_euro) %>% 
-  drop_na(euro) # %>% 
-  # mutate(across(euro, ~.x / 10e5))
+  drop_na(euro) 
 mkt
 
 mkt_prep <-
@@ -774,21 +754,11 @@ res_av_mkt <-
   )
 res_av_mkt
 
-# res_av_mkt %>% 
-#   filter(z_mkt %>% str_detect('^kepa_'))
-# 
-# mkt_prep %>% 
-#   filter(z %>% str_detect('heung_min'))
-# opta_prep %>% 
-#   filter(z %>% str_detect('heung_min'))
-
 av_mkt <-
   mkt_prep %>% 
   anti_join(res_av_mkt %>% select(z = z_mkt)) %>% 
   # Because I do the fuzzy join strictly, there will still be NAs
   select(-player_name) %>% 
-  # left_join(opta_prep) %>% 
-  # drop_na(player_name) %>% 
   inner_join(opta_prep) %>% 
   bind_rows(
     res_av_mkt %>% 
@@ -807,18 +777,6 @@ av_mkt <-
   arrange(season_id, rnk)
 av_mkt
 
-av_mkt %>% filter(is.na(vaep))
-av_mkt %>% filter(is.na(euro))
-
-# av_mkt_trend <-
-#   av_mkt %>% 
-#   drop_na(pos_grp) %>% 
-#   group_nest(pos_grp) %>% 
-#   mutate(res = map(data, ~lm(euro ~ vaep, data = .x) %>% broom::glance())) %>% 
-#   select(-data) %>% 
-#   unnest(res)
-# av_mkt_trend
-
 .f_slice_mkt <- function(f = slice_max, lab = 'hi') {
   av_mkt %>% 
     # filter(pos != 'Sub') %>% 
@@ -836,54 +794,6 @@ av_mkt_labs <-
     .f_slice_mkt(slice_min, 'lo')
   )
 av_mkt_labs
-
-# # https://stackoverflow.com/questions/49368754/adding-orthogonal-regression-line-in-ggplot
-# f_ortho <- function(data, col_x = 'euro', col_y = 'vaep', x0 = NULL, y0 = NULL){
-#   
-#   y <- data[[col_y]]
-#   x <- as.numeric(data[[col_x]])
-#   if(is.null(x0)) {
-#     x0 <- x
-#   }
-#   
-#   if(is.null(y0)) {
-#     y0 <- y
-#   }
-#   
-#   # deming <- MethComp::Deming(y = y, x = x)[1:2]
-#   # deming
-#   
-#   # Check with prcomp {stats}
-#   # r <- prcomp( ~ y + x)
-#   # b <- r$rotation[2,1] / r$rotation[1,1]
-#   # a <- r$center[2] - slope*r$center[1]
-#   fit <- lm(y ~ x)
-#   b <- fit$coefficients[1]
-#   a <- fit$coefficients[2]
-#   # finds endpoint for a perpendicular segment from the point (x0,y0) to the line
-#   # defined by ortho as y = a + b*x
-#   # a <- deming[1]
-#   # b <- deming[2]
-#   x1 <- (x0 + b* y0 - a*b)/(1 + b^2)
-#   y1 <- a + b*x1
-#   tibble(x0 = x0, y0 = y0, x1 = x1, y1 = y1)
-# }
-# 
-# av_mkt_ortho <-
-#   av_mkt %>% 
-#   drop_na(pos_grp) %>% 
-#   group_nest(pos_grp) %>% 
-#   mutate(
-#     res = map(data, ~f_ortho(.x, x0 = NULL, y0 = NULL))
-#   ) %>% 
-#   select(-data) %>% 
-#   unnest(res) %>% 
-#   left_join(pos_grp_labs) %>% 
-#   filter(x0 > 50) %>% 
-#   group_by(pos_grp) %>% 
-#   slice_max(y0) %>% 
-#   ungroup()
-# av_mkt_ortho
 
 av_mkt_w_pos <-
   av_mkt %>% 
@@ -907,23 +817,17 @@ viz_mkt_by_pos <-
   drop_na(pos_grp) %>% 
   ggplot() +
   aes(x = euro, y = vaep) +
-  geom_point(color = 'grey80') +
+  # geom_point(color = 'grey80') +
   geom_smooth(
     data = av_mkt_w_pos,
     se = FALSE,
     # color = 'black',
     size = 1.2,
     formula = formula(y ~ x),
-    # method = 'loess'
     method = 'lm',
     show.legend = FALSE,
     aes(color = pos_grp_lab)
   ) +
-  # geom_segment(
-  #   data = av_mkt_ortho, 
-  #   aes(x = x0, y = y0, xend = x1, yend = y1, group = pos_grp_lab), 
-  #   colour = "blue"
-  # ) +
   geom_point(
     data = av_mkt_w_pos,
     show.legend = FALSE,
@@ -962,13 +866,14 @@ viz_mkt_by_pos <-
     tag = paste0(lab_tag, ' | **Market Data**: transfermarkt'),
     x = 'Market Value (Euro)'
   ) +
+  coord_cartesian(clip = 'off') +
   f_text_mkt(
     hjust = 1,
     # vjust = 1,
     data = tibble(
       x = 125000000,
       y = 4,
-      pos_grp_lab = ordered('Forward'), # , levels = pos_grp_labs),
+      pos_grp_lab = ordered('Forward/Attacker'), # , levels = pos_grp_labs),
       lab = '<b><i><span style="color:red;font-size:18px";>OVERVALUED</span><i></b> <i><span style="color:black;font-size:14px";>(below line)</span></i>'
     )
   ) +
@@ -977,7 +882,7 @@ viz_mkt_by_pos <-
     data = tibble(
       x = 1000000,
       y = 11,
-      pos_grp_lab = ordered('Forward'), # , levels = pos_grp_labs),
+      pos_grp_lab = ordered('Forward/Attacker'), # , levels = pos_grp_labs),
       lab = '<b><i><span style="color:red;font-size:18px";>UNDERVALUED</span><i></b> <i><span style="color:black;font-size:12px";>(above line)</span></i>'
     )
   )
@@ -990,7 +895,7 @@ if(do_save) {
     plot = viz_mkt_by_pos,
     filename = path_viz_mkt_by_pos,
     height = h,
-    width = h * 4/3,
+    width = h, #  * 4/3,
     type = 'cairo'
   )
   
@@ -1003,6 +908,8 @@ if(do_save) {
   )
 }
 
+# davies ----
+# Source: https://samgoldberg1882.shinyapps.io/ShinyAlph/
 davies <- file.path(dir_proj, 'DAVIES.csv') %>% read_csv() %>% janitor::clean_names()
 davies
 davies_filt <-
@@ -1030,15 +937,13 @@ res_av_davies
 av_davies <-
   davies_prep %>% 
   anti_join(res_av_davies %>% select(z = z_davies)) %>% 
-  # Because I do the fuzzy join strictly, there will still be NAs
   select(-player_name) %>% 
-  # left_join(opta_prep) %>% 
-  # drop_na(player_name) %>% 
   inner_join(opta_prep) %>% 
   bind_rows(
     res_av_davies %>% 
       left_join(davies_prep %>% select(season_id, player_name, z_davies = z, davies)) %>% 
       relocate(davies) %>% 
+      # A visual check indicates that I can safely accept >1 but not >2.
       filter(score < 2) %>% 
       select(z = z_opta, score, davies) %>% 
       inner_join(opta_prep)
@@ -1155,7 +1060,7 @@ if(do_save) {
   add_logo_epl(
     path_viz = path_viz_davies_compare,
     idx_x = 0.01,
-    logo_scale = 1,
+    logo_scale = 0.1,
     idx_y = 0.9
   )
 }

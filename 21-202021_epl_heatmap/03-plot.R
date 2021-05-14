@@ -81,11 +81,6 @@ add_logo <-
         viz,
         path_viz %>% str_replace(rgx_ext, sprintf('%s.%s', path_suffix, ext))
       )
-
-    if(!delete) {
-      return(res)
-    }
-    fs::file_delete(path_viz)
     res
   }
 

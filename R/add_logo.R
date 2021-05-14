@@ -9,7 +9,8 @@ add_logo <-
            logo_scale = 0.1,
            adjust_x = TRUE,
            adjust_y = TRUE,
-           path_suffix = '_w_logo') {
+           path_suffix = '_w_logo',
+           delete = TRUE) {
     plot <- path_viz %>% magick::image_read()
     logo_raw <- path_logo %>% magick::image_read()
     
@@ -44,6 +45,12 @@ add_logo <-
         viz,
         path_viz %>% str_replace(rgx_ext, sprintf('%s.%s', path_suffix, ext))
       )
+    res
+    
+    if(!delete) {
+      return(res)
+    }
+    fs::file_delete(path_viz)
     res
   }
 
