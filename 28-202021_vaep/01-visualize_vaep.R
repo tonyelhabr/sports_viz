@@ -3,26 +3,7 @@ library(tidyverse)
 dir_proj <- '28-202021_vaep'
 dir_data <- file.path(dir_proj, 'data-socceraction')
 source(file.path(dir_proj, 'helpers.R'))
-do_save <- FALSE
-
-# #1
-# I didn't watch every #EPL match this season, so I had a machine do it for me. Here are it's best XI.
-# This is based on the VAEP framework, which is basically a method for quantifying how any player action influences the game's outcome.
-# #2
-# Here's a visual example for a possession in which Lingard scores a net negative VAEP. Note that this is not xG---actions can have negative values!
-# YT Link: https://youtu.be/96_Rfnd1sKA?t=690
-# #3
-# We can plot market values vs. VAEP to identify players who may be over- and under-valued. Kane, Salah, and TAA are still under-valued, despite everyone knowing how good they can be.
-# #4
-# Obligatory links:
-# VAEP authors: @TomDecroos, @LotteBransen, @JanVanHaaren, @jessejdavis1
-# VAEP paper: # https://arxiv.org/pdf/1802.07127.pdf
-# @pwawrzynow's Aug. 2020 thread: https://twitter.com/pwawrzynow/status/1292095872583577600?s=20
-# #6
-# To please xGod (@rwohan), here's a follow up, comparing DAVIES and VAEP. There's some correlation, but clearly they are not in complete agreement. DAVIES is clearly too high on Werner, but VAEP has its own oddities. (Ashley Westwood is the English Iniesta, per VAEP.)
-# #7
-# DAVIES methodology: https://www.americansocceranalysis.com/home/2020/9/16/davies-determining-added-value-of-individual-effectiveness-including-style
-# Authors: @mimburgio @SamGoldberg1882
+do_save <- TRUE
 
 dir_img <- file.path(dir_proj, 'img')
 img_info <-
@@ -505,7 +486,7 @@ viz_ex <-
   # scale_x_reverse() +
   labs(
     title = 'VAEP Example',
-    subtitle = sprintf('%s\'s net VAEP for possession: <span style="color:%s">%+.3f</span><br/>2020-04-04, Tottenham v. Newcastle, 72nd Minute', player_filt, ifelse(vaep_ex >= 0, color_green, color_red), vaep_ex),
+    subtitle = sprintf('%s\'s net VAEP for possession: <span style="color:%s">%+.3f</span><br/>2021-04-04, Tottenham v. Newcastle, 72nd Minute', player_filt, ifelse(vaep_ex >= 0, color_green, color_red), vaep_ex),
     caption = ' ',
     tag = lab_tag
   )
@@ -590,7 +571,7 @@ av_by_season_latest_pos <-
 av_by_season_latest_pos %>% filter(idx == 2L)
 
 # best xi ----
-lab_subtitle <- '2020/21 Premier League, through Matchweek 34'
+lab_subtitle <- '2020/21 Premier League, through Matchweek 35'
 lab_caption_vaep <- '**VAEP**: Valuing Actions by Estimating Probabilities'
 viz_team <-
   av_by_season_latest_pos %>% 
@@ -1186,7 +1167,7 @@ cors_tb <-
     )
   ) %>% 
   rename(`Metric` = name) %>% 
-  mutate(y = sprintf('%s/%s-%s/%s', y1, str_sub(y1 + 1, 3, 4), y1 + 1L, str_sub(y1 + 2, 3, 4))) %>% 
+  mutate(y = sprintf('%s/%s-%s/%s', y1, str_sub(y1 + 1, 3, 4), str_sub(y1 + 1, 3, 4), str_sub(y1 + 2, 3, 4))) %>% 
   select(-c(y1, y2)) %>% 
   mutate(across(y, ~ordered(.x))) %>% 
   pivot_wider(
@@ -1226,3 +1207,11 @@ cors_tb <-
   )
 cors_tb
 gt::gtsave(cors_tb, file.path(dir_proj, 'metric_yoy_stability.png'))
+
+# alt text stuff
+# Best starting 11 players of the 2020/21 Premier League season (arranged in a 4-3-3), according to VAEP (Valuing Actions by Estimating Probabilities). Grealish, Kane, Salah, Jack Harrison, Gundogan, Raphinha, Cresswell, Zouma, Dunk, Alexander-Arnold, Sam Johnstone.
+# VAEP vs. minutes played for the 2020/21 Premier League season. Subplots made for each of four position groupings (Forward/Attacker, Midfielder, Defender, Goalkeeper).
+# Example of how VAEP scores each action in a possession. Example comes from a 2021-04-04 match between Tottenham and Newcastle, in which Kane misses a shot and gets net negative VAEP.
+# VAEP vs. transfer market value for the 2020/21 Premier League season. Subplots made for each of four position groupings (Forward/Attacker, Midfielder, Defender, Goalkeeper).
+# VAEP vs. DAVIES for the 2020/21 Premier League season.
+# Table showing year-over-year correlations for VAEP and DAVIES. Both average around 0.45.
