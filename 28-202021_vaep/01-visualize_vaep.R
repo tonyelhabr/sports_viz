@@ -1,9 +1,9 @@
 
 library(tidyverse)
 dir_proj <- '28-202021_vaep'
-dir_data <- file.path(dir_proj, 'data-socceraction', 'new')
+dir_data <- file.path(dir_proj, 'data-socceraction')
 source(file.path(dir_proj, 'helpers.R'))
-do_save <- TRUE
+do_save <- FALSE
 
 # #1
 # I didn't watch every #EPL match this season, so I had a machine do it for me. Here are it's best XI.
@@ -242,7 +242,14 @@ player_pos_filt <-
   group_by(season_id, competition_id, team_id, team_name, player_id, player_name) %>% 
   slice_max(frac, with_ties = FALSE) %>% 
   ungroup() %>% 
-  select(-frac)
+  select(-frac) # %>% 
+  # group_by(season_id, competition_id, player_id, player_name, pos, pos_grp) %>%
+  # mutate(n = n()) %>%
+  # summarize(
+  #   across(team_name, ~ifelse(n > 1L, paste0(.x, sep = '', collapse = '/'), .x))
+  # ) %>%
+  # ungroup() %>% 
+  # distinct()
 player_pos_filt
 
 aggregate_av_by_game <- function(av, ...) {
@@ -306,6 +313,8 @@ av_by_game
 
 av_by_season <- av_by_game %>% aggregate_av_by_season()
 av_by_season
+# Not sure what to do with these people who switched teams mid-season.
+av_by_season %>% count(season_id, player_id, player_name, sort = TRUE) %>% filter(season_id == 2020L)
 
 av_by_season_latest <-
   av_by_season %>% 
@@ -508,7 +517,7 @@ if(do_save) {
   ggsave(
     plot = viz_ex,
     filename = path_viz_ex,
-    height = h + 2,
+    height = h, #  + 2,
     width = h * 68 / 105,
     type = 'cairo'
   )
@@ -519,7 +528,7 @@ if(do_save) {
     idx_x = 0.1,
     logo_scale = 0.15,
     # adjust_y = TRUE,
-    idx_y = 0.58
+    idx_y = 0.59
   )
 }
 
@@ -576,12 +585,13 @@ av_by_season_latest_pos <-
   ) %>% 
   select(-idx2) %>% 
   left_join(pos_info_xy) %>% 
-  left_join(team_info)%>% 
+  left_join(team_info) %>% 
   left_join(img_info)
 av_by_season_latest_pos %>% filter(idx == 2L)
 
 # best xi ----
 lab_subtitle <- '2020/21 Premier League, through Matchweek 34'
+lab_caption_vaep <- '**VAEP**: Valuing Actions by Estimating Probabilities'
 viz_team <-
   av_by_season_latest_pos %>% 
   ggplot() +
@@ -591,9 +601,9 @@ viz_team <-
     data = 
       av_by_season_latest_pos %>% 
       filter(idx == 2L) %>% 
-      mutate(x = x - 2.52) %>% 
+      mutate(x = x - 3) %>% 
       mutate(
-        lab = sprintf('<span style="font-size:11px;color:#7F7F7F">%s (%s) </span><span style="font-size:11px;color:#7F7F7F">%.2f</span>', player_name, team_abbrv, vaep_p90)
+        lab = sprintf('<span style="font-size:12px;color:#7F7F7F">%s (%s) </span><span style="font-size:10px;color:#7F7F7F">%.2f</span>', player_name, team_abbrv, vaep_p90)
       ),
     aes(label = lab)
   ) +
@@ -602,7 +612,7 @@ viz_team <-
       av_by_season_latest_pos %>%
       filter(idx == 1L) %>% 
       mutate(
-        lab = sprintf('<span style="font-size:13px;color:black">%s (%s) </span><span style="font-size:11px;color:black">%.2f</span>', player_name, team_abbrv, vaep_p90)
+        lab = sprintf('<span style="font-size:14px;color:black">%s (%s) </span><span style="font-size:10px;color:black">%.2f</span>', player_name, team_abbrv, vaep_p90)
       ), 
     aes(label = lab)
   ) +
@@ -618,34 +628,31 @@ viz_team <-
   theme(
     plot.title = element_text(hjust = 0.5),
     plot.subtitle = element_text(hjust = 0.5),
-    plot.caption = ggtext::element_markdown(size = 11),
-    plot.tag.position = c(.1, 0.01),
-    plot.tag = ggtext::element_markdown(size = 11)
+    plot.caption = ggtext::element_markdown(size = 11)
   ) +
   labs(
     title = 'VAEP XI of the Season',
     subtitle = lab_subtitle,
-    caption = '**VAEP**: Valuing Actions by Estimating Probabilities<br/>Rankings based on best VAEP per 90 minute, minimum 2,000 minutes played.<br/>Positions are based on minutes played but may not be reflective of recent form.',
-    tag = '**Viz**: Tony ElHabr'
+    caption = glue::glue('{lab_caption_vaep}<br/>Rankings based on best VAEP per 90 minute, minimum 2,000 minutes played.<br/>{lab_tag}')
   )
 viz_team
 
 if(do_save) {
-  h <- 13
+  h <- 12
   path_viz_team <- file.path(dir_proj, 'viz_team_vaep_p90.png')
   ggsave(
     plot = viz_team,
     filename = path_viz_team,
-    height = h + 2,
+    height = h, #  + 2,
     width = h * 68 / 105, # close enough to 16/9 ratio
     type = 'cairo'
   )
   
   add_logo_epl(
     path_viz = path_viz_team,
-    idx_x = 0.1,
-    logo_scale = 0.1,
-    idx_y = 0.26
+    idx_x = 0.08,
+    logo_scale = 0.12,
+    idx_y = 0.22
   )
 }
 
@@ -671,7 +678,6 @@ av_by_season_labs <-
   )
 av_by_season_labs
 
-lab_caption_vaep <- '**VAEP**: Valuing Actions by Estimating Probabilities'
 viz_by_pos <-
   av_by_season_latest %>% 
   drop_na(pos_grp) %>% 
@@ -744,27 +750,31 @@ if(do_save) {
 
 # mkt ----
 mkt <-
-  2020 %>% 
+  2017:2020 %>% 
   setNames(., .) %>% 
   map_dfr(~retrieve_market_values(country_name = 'England', start_year = .x), .id = 'season_id') %>% 
   mutate(across(season_id, as.integer)) %>%
   as_tibble() %>% 
   rename(euro = player_market_value_euro) %>% 
-  drop_na(euro) 
+  drop_na(euro) %>% 
+  group_by(season_id, player_name) %>% 
+  slice_max(euro, with_ties = FALSE) %>% 
+  ungroup()
 mkt
 
 mkt_prep <-
   mkt %>% 
-  filter(season_id == 2020L) %>% 
+  # filter(season_id == 2020L) %>% 
   .add_z_col() %>% 
   distinct(z, season_id, player_name, euro)
 mkt_prep
 
 opta_prep <-
   player_pos_filt %>% 
-  filter(season_id == 2020L) %>% 
+  # filter(season_id == 2020L) %>% 
   .add_z_col() %>% 
   distinct(z, season_id, player_name)
+opta_prep
 
 res_av_mkt <-
   join_fuzzily(
@@ -780,28 +790,28 @@ av_mkt <-
   anti_join(res_av_mkt %>% select(z = z_mkt)) %>% 
   # Because I do the fuzzy join strictly, there will still be NAs
   select(-player_name) %>% 
-  inner_join(opta_prep) %>% 
+  inner_join(opta_prep) %>%
   bind_rows(
     res_av_mkt %>% 
       left_join(mkt_prep %>% select(season_id, player_name, z_mkt = z, euro)) %>% 
       relocate(euro) %>% 
       filter(score < 1) %>% 
-      select(z = z_opta, score, euro) %>% 
+      select(season_id, z = z_opta, score, euro) %>% 
       inner_join(opta_prep)
   ) %>%
   inner_join(av_by_season) %>% 
-  group_by(season_id) %>% 
-  mutate(
-    rnk = row_number(desc(euro))
-  ) %>% 
-  ungroup() %>% 
-  arrange(season_id, rnk)
+  arrange(desc(season_id), desc(euro))
 av_mkt
 
-.f_slice_mkt <- function(f = slice_max, lab = 'hi') {
+av_mkt_filt <-
   av_mkt %>% 
-    # filter(pos != 'Sub') %>% 
-    drop_na(pos_grp) %>% 
+  filter(season_id == 2020L) %>% 
+  # filter(pos != 'Sub') %>% 
+  drop_na(pos_grp)
+av_mkt_filt
+
+.f_slice_mkt <- function(f = slice_max, lab = 'hi') {
+  av_mkt_filt %>% 
     filter(minutes_played >= 2000) %>% 
     group_by(pos_grp) %>% 
     f(vaep_p90, n = 3) %>% 
@@ -817,8 +827,7 @@ av_mkt_labs <-
 av_mkt_labs
 
 av_mkt_w_pos <-
-  av_mkt %>% 
-  drop_na(pos_grp) %>% 
+  av_mkt_filt %>% 
   left_join(pos_grp_labs)
 av_mkt_w_pos
 
@@ -834,8 +843,7 @@ f_text_mkt <- partial(
 )
 
 viz_mkt_by_pos <-
-  av_mkt %>% 
-  drop_na(pos_grp) %>% 
+  av_mkt_filt %>% 
   ggplot() +
   aes(x = euro, y = vaep) +
   # geom_point(color = 'grey80') +
@@ -931,20 +939,22 @@ if(do_save) {
 
 # davies ----
 # Source: https://samgoldberg1882.shinyapps.io/ShinyAlph/
-davies <- file.path(dir_proj, 'DAVIES.csv') %>% read_csv() %>% janitor::clean_names()
+davies <- 
+  file.path(dir_proj, 'DAVIES.csv') %>% 
+  read_csv() %>%
+  janitor::clean_names() %>% 
+  filter(league == 'Premier League') %>% 
+  mutate(across(season, ~str_sub(.x, 1, 4) %>% as.integer())) %>% 
+  rename(player_name = player, season_id = season, xga = x_goals_added) %>% 
+  group_by(season_id, player_name) %>% 
+  summarize(across(c(xga, davies), sum)) %>% 
+  ungroup()
 davies
 
-davies_filt <-
-  davies %>% 
-  filter(league == 'Premier League' & season %in% c('2020-2021')) %>% # season %in% c('2019-2020', '2020-2021')) %>% 
-  mutate(across(season, ~str_sub(.x, 1, 4) %>% as.integer())) %>% 
-  rename(player_name = player, season_id = season)
-davies_filt %>% count(season_id)
-
 davies_prep <-
-  davies_filt %>%
+  davies %>%
   .add_z_col() %>% 
-  distinct(z, player_name, season_id, davies)
+  distinct(z, player_name, season_id, davies, xga)
 davies_prep
 
 res_av_davies <-
@@ -963,27 +973,27 @@ av_davies <-
   inner_join(opta_prep) %>% 
   bind_rows(
     res_av_davies %>% 
-      left_join(davies_prep %>% select(season_id, player_name, z_davies = z, davies)) %>% 
-      relocate(davies) %>% 
+      left_join(davies_prep %>% select(season_id, player_name, z_davies = z, davies, xga)) %>% 
       # A visual check indicates that I can safely accept >1 but not >2.
       filter(score < 2) %>% 
-      select(z = z_opta, score, davies) %>% 
+      select(season_id, z = z_opta, score, davies, xga) %>% 
+      # filter(player_name %>% str_detect('Gomez'))
       inner_join(opta_prep)
   ) %>%
   inner_join(av_by_season) %>% 
-  group_by(season_id) %>% 
-  mutate(
-    rnk = row_number(desc(davies))
-  ) %>% 
-  ungroup() %>% 
-  arrange(season_id, rnk) %>% 
-  # Davies doesn't have goalkeepers.
+  # DAVIES data set doesn't have keepers.
   filter(pos_grp %in% c('F', 'M', 'D')) %>% 
-  mutate(diff = vaep - davies)
+  mutate(diff_vaep_davies = vaep - davies) %>% 
+  arrange(desc(season_id), desc(abs(diff_vaep_davies)))
 av_davies
 
-fit_davies <-
+av_davies_filt <-
   av_davies %>% 
+  filter(season_id == 2020L)
+av_davies_filt
+
+fit_davies <-
+  av_davies_filt %>% 
   lm(vaep ~ davies, data = .) 
 summ_davies <- fit_davies %>% broom::glance()
 summ_davies
@@ -991,7 +1001,7 @@ summ_davies
 preds_davies <- 
   fit_davies %>% 
   broom::augment() %>% 
-  bind_cols(av_davies %>% select(-c(vaep, davies)))
+  bind_cols(av_davies_filt %>% select(-c(vaep, davies)))
 preds_davies
 
 .f_slice_davies <- function(f = slice_max, lab = 'hi') {
@@ -1015,11 +1025,10 @@ av_davies_labs
 f_text_davies <- f_text_mkt
 
 viz_davies_compare <-
-  av_davies %>% 
+  av_davies_filt %>% 
   ggplot() +
   aes(x = davies, y = vaep) +
   geom_smooth(
-    data = av_davies,
     se = FALSE,
     color = 'black',
     size = 1.2,
@@ -1087,3 +1096,133 @@ if(do_save) {
     idx_y = 0.9
   )
 }
+
+res_av <-
+  full_join(
+    av_mkt %>% select(season_id, player_name, team_name, pos_grp, pos_11, minutes_played, euro, ovaep = off, dvaep = def, vaep),
+    av_davies %>% select(season_id, player_name, team_name, davies, xga)
+  ) %>% 
+  arrange(desc(season_id), desc(vaep))
+res_av
+# res_av %>% count(season_id, team_name, player_name, sort = TRUE)
+write_csv(res_av, file.path(dir_proj, '2017-21_epl_vaep_davies_mkt.csv'), na = '')
+
+cors <-
+  res_av %>% 
+  # select(season_id, player_name, minutes_played, davies) %>% 
+  mutate(
+    across(c(vaep, davies, xga), ~90 * .x / minutes_played)
+  ) %>% 
+  select(season_id, player_name, team_name, vaep, davies, xga) %>% 
+  pivot_longer(
+    -c(season_id:team_name)
+  ) %>% 
+  pivot_wider(
+    names_from = season_id,
+    values_from = value
+  ) %>% 
+  select(-c(player_name, team_name)) %>% 
+  group_nest(name) %>% 
+  mutate(data = map(data, corrr::correlate)) %>% 
+  unnest(data) %>% 
+  rename(y1 = term) %>% 
+  pivot_longer(
+    -c(name, y1),
+    names_to = 'y2'
+  ) %>% 
+  mutate(across(c(y1, y2), as.integer)) %>% 
+  filter(y1 == (y2 - 1L))
+cors
+# Reference: https://themockup.blog/posts/2020-09-26-functions-and-themes-for-gt-tables/?panelset4=theme-code3
+.gt_theme_538 <- function(data,...) {
+  data %>%
+    gt::opt_all_caps()  %>%
+    gt::opt_table_font(
+      font = list(
+        gt::google_font('Karla'),
+        gt::default_fonts()
+      )
+    ) %>%
+    gt::tab_style(
+      style = gt::cell_borders(
+        sides = 'bottom', color = 'transparent', weight = gt::px(2)
+      ),
+      locations = gt::cells_body(
+        columns = TRUE,
+        # This is a relatively sneaky way of changing the bottom border
+        # Regardless of data size
+        rows = nrow(data$`_data`)
+      )
+    )  %>% 
+    gt::tab_options(
+      column_labels.background.color = 'white',
+      table.border.top.width = gt::px(3),
+      table.border.top.color = 'transparent',
+      table.border.bottom.color = 'transparent',
+      table.border.bottom.width = gt::px(3),
+      column_labels.border.top.width = gt::px(3),
+      column_labels.border.top.color = 'transparent',
+      column_labels.border.bottom.width = gt::px(3),
+      column_labels.border.bottom.color = 'black',
+      data_row.padding = gt::px(3),
+      footnotes.font.size = 8,
+      source_notes.font.size = 8,
+      table.font.size = 16,
+      heading.align = 'left',
+      ...
+    ) 
+}
+
+cors_tb <-
+  cors %>% 
+  filter(name != 'xga') %>% 
+  mutate(
+    across(
+      name,
+      ~case_when(
+        .x != 'xga' ~ toupper(.x),
+        .x == 'xga' ~ 'xGoalsAdded'
+      )
+    )
+  ) %>% 
+  rename(`Metric` = name) %>% 
+  mutate(y = sprintf('%s/%s-%s/%s', y1, str_sub(y1 + 1, 3, 4), y1 + 1L, str_sub(y1 + 2, 3, 4))) %>% 
+  select(-c(y1, y2)) %>% 
+  mutate(across(y, ~ordered(.x))) %>% 
+  pivot_wider(
+    names_sort = TRUE, 
+    names_from = y,
+    values_from = value
+  ) %>% 
+  gt::gt() %>% 
+  # gt::cols_align(
+  #   align = 'right',
+  #   columns = 2:4
+  # ) %>%
+  gt::fmt_number(
+    columns = 2:4,
+    decimals = 2,
+    suffixing = TRUE
+  ) %>% 
+  gt::tab_header(
+    title = 'Year-over-Year Metric Correlations'
+  ) %>% 
+  .gt_theme_538() %>% 
+  # gt::tab_footnote(
+  #   locations = gt::cells_
+  #   gt::md('Higher correlation ~ more "stable".')
+  # ) %>% 
+  gt::tab_source_note(
+    gt::md('**Data**: English Premier League')
+  ) %>% 
+  gt::tab_source_note(
+    gt::md('**DAVIES**: @mimburgio @SamGoldberg1882')
+  ) %>%
+  gt::tab_source_note(
+    gt::md('**VAEP**: @TomDecroos, @LotteBransen, @JanVanHaaren, @jessejdavis1')
+  ) %>% 
+  gt::tab_source_note(
+    gt::md('**Table theme** (538 style): @thomas_mock') # 
+  )
+cors_tb
+gt::gtsave(cors_tb, file.path(dir_proj, 'metric_yoy_stability.png'))
