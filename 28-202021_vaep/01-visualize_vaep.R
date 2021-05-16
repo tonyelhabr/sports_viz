@@ -3,7 +3,7 @@ library(tidyverse)
 dir_proj <- '28-202021_vaep'
 dir_data <- file.path(dir_proj, 'data-socceraction')
 source(file.path(dir_proj, 'helpers.R'))
-do_save <- TRUE
+do_save <- FALSE
 
 dir_img <- file.path(dir_proj, 'img')
 img_info <-
@@ -186,7 +186,8 @@ pos_info <-
     pos_grp = c('F', 'F', 'F', 'D', 'D', 'M', 'M', 'M', 'D', 'F', 'F', 'F', 'G', 'M', 'M', 'M', 'z'),
     pos_11 = c('FWC', 'FWL', 'FWR', 'DC', 'DL', 'MC', 'ML', 'MR', 'DR', 'FWC', 'FWL', 'FWR', 'GK', 'MC', 'ML', 'MR', 'z')
   ) %>% 
-  .factor_pos_grp_col()
+  .factor_pos_grp_col() %>% 
+  filter(!(pos %in% c('GK', 'Sub')))
 pos_info
 
 pos_info_xy <-
@@ -223,14 +224,8 @@ player_pos_filt <-
   group_by(season_id, competition_id, team_id, team_name, player_id, player_name) %>% 
   slice_max(frac, with_ties = FALSE) %>% 
   ungroup() %>% 
-  select(-frac) # %>% 
-  # group_by(season_id, competition_id, player_id, player_name, pos, pos_grp) %>%
-  # mutate(n = n()) %>%
-  # summarize(
-  #   across(team_name, ~ifelse(n > 1L, paste0(.x, sep = '', collapse = '/'), .x))
-  # ) %>%
-  # ungroup() %>% 
-  # distinct()
+  select(-frac) 
+# distinct()
 player_pos_filt
 
 aggregate_av_by_game <- function(av, ...) {
@@ -286,7 +281,9 @@ av <-
     off = offensive_value,
     def = defensive_value,
     vaep = vaep_value
-  )
+  ) # %>% 
+  # for non-shot
+  # filter(type_name %>% str_detect('shot'), negate = TRUE)
 av
 
 av_by_game <- av %>% aggregate_av_by_game()
@@ -323,6 +320,7 @@ event <-
   filter(type_name %in% c('dribble', 'cross')) %>% 
   slice(3)
 event
+
 event %>% 
   select(game_id, period_id, time_seconds) %>% 
   left_join(games)
@@ -379,7 +377,6 @@ f_mark <- partial(
     # y = (start_y + end_y) / 2,
     x = start_x,
     y = start_y,
-    # description = sprintf('%s %s (%s)', str_replace_all(player_name, '(^.*\\s+)(.*$)', '\\2'), type_name, bodypart_name),
     description = sprintf('%s %s', str_replace_all(player_name, '(^.*\\s+)(.*$)', '\\2'), type_name),
     label = sprintf('%+.2f', vaep),
   ),
@@ -423,7 +420,6 @@ f_mark <- partial(
     # y = end_y - 1,
     # vjust = 0,
     x = (start_x + end_x) / 2 + x_buffer,
-    # y = (start_y + end_y) / 2 - 30,
     # y = start_y + 5,
     # y = start_y,
     y = 32,
@@ -1000,7 +996,8 @@ av_davies_labs <-
     .f_slice_davies(slice_max, 'hi'),
     .f_slice_davies(slice_min, 'lo'),
     preds_davies %>% filter(player_name %in% c('Ruben Dias', 'Kevin De Bruyne'))
-  )
+  ) %>% 
+  distinct(player_name, .keep_all = TRUE)
 av_davies_labs
 
 f_text_davies <- f_text_mkt
@@ -1060,7 +1057,7 @@ viz_davies_compare <-
 viz_davies_compare
 
 if(do_save) {
-  path_viz_davies_compare <- file.path(dir_proj, 'viz_vaep_davies_compare.png')
+  path_viz_davies_compare <- file.path(dir_proj, 'viz_vaep_davies_compare_nonshot.png')
   h <- 8
   ggsave(
     plot = viz_davies_compare,
@@ -1086,7 +1083,9 @@ res_av <-
   arrange(desc(season_id), desc(vaep))
 res_av
 # res_av %>% count(season_id, team_name, player_name, sort = TRUE)
-write_csv(res_av, file.path(dir_proj, '2017-21_epl_vaep_davies_mkt.csv'), na = '')
+if(do_save) {
+  write_csv(res_av, file.path(dir_proj, '2017-21_epl_vaep_davies_mkt.csv'), na = '')
+}
 
 cors <-
   res_av %>% 
@@ -1114,6 +1113,7 @@ cors <-
   mutate(across(c(y1, y2), as.integer)) %>% 
   filter(y1 == (y2 - 1L))
 cors
+
 # Reference: https://themockup.blog/posts/2020-09-26-functions-and-themes-for-gt-tables/?panelset4=theme-code3
 .gt_theme_538 <- function(data,...) {
   data %>%
@@ -1176,10 +1176,6 @@ cors_tb <-
     values_from = value
   ) %>% 
   gt::gt() %>% 
-  # gt::cols_align(
-  #   align = 'right',
-  #   columns = 2:4
-  # ) %>%
   gt::fmt_number(
     columns = 2:4,
     decimals = 2,
@@ -1189,10 +1185,6 @@ cors_tb <-
     title = 'Year-over-Year Metric Correlations'
   ) %>% 
   .gt_theme_538() %>% 
-  # gt::tab_footnote(
-  #   locations = gt::cells_
-  #   gt::md('Higher correlation ~ more "stable".')
-  # ) %>% 
   gt::tab_source_note(
     gt::md('**Data**: English Premier League')
   ) %>% 
@@ -1206,12 +1198,6 @@ cors_tb <-
     gt::md('**Table theme** (538 style): @thomas_mock') # 
   )
 cors_tb
-gt::gtsave(cors_tb, file.path(dir_proj, 'metric_yoy_stability.png'))
-
-# alt text stuff
-# Best starting 11 players of the 2020/21 Premier League season (arranged in a 4-3-3), according to VAEP (Valuing Actions by Estimating Probabilities). Grealish, Kane, Salah, Jack Harrison, Gundogan, Raphinha, Cresswell, Zouma, Dunk, Alexander-Arnold, Sam Johnstone.
-# VAEP vs. minutes played for the 2020/21 Premier League season. Subplots made for each of four position groupings (Forward/Attacker, Midfielder, Defender, Goalkeeper).
-# Example of how VAEP scores each action in a possession. Example comes from a 2021-04-04 match between Tottenham and Newcastle, in which Kane misses a shot and gets net negative VAEP.
-# VAEP vs. transfer market value for the 2020/21 Premier League season. Subplots made for each of four position groupings (Forward/Attacker, Midfielder, Defender, Goalkeeper).
-# VAEP vs. DAVIES for the 2020/21 Premier League season.
-# Table showing year-over-year correlations for VAEP and DAVIES. Both average around 0.45.
+if(do_save) {
+  gt::gtsave(cors_tb, file.path(dir_proj, 'metric_yoy_stability.png'))
+}

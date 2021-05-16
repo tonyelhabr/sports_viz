@@ -147,20 +147,38 @@ After week 7
 
 ![Beeswarm Plot of Referee Statistics By League](25-202021_soccer_refs/viz_big5_ref_p90.png "Beeswarm Plot of Referee Statistics By League")
 
+# 27. Pep Guardiola Non-UCL Titles
+
+![Table with Pep Guardiola's Non-UCL Titles Won Since His Las UCL Title](27-pep/pep.png "Table with Pep Guardiola's Non-UCL Titles Won Since His Las UCL Title")
+
+# 28. 2020-21 EPL Season Review with VAEP
+
+![Best starting 11 players of the 2020/21 Premier League season (arranged in a 4-3-3), according to VAEP (Valuing Actions by Estimating Probabilities). Grealish, Kane, Salah, Jack Harrison, Gundogan, Raphinha, Cresswell, Zouma, Dunk, Alexander-Arnold, Sam Johnstone.](28-202021_vaep/viz_team_vaep_p90_w_logo.png "VAEP'S Best XI, 2020-21 EPL")
+
+![Example of how VAEP scores each action in a possession. Example comes from a 2021-04-04 match between Tottenham and Newcastle, in which Kane misses a shot and gets net negative VAEP.](28-202021_vaep/viz_vaep_ex_w_logo.png "Visual Example of VAEP")
+
+![VAEP vs. minutes played for the 2020/21 Premier League season. Subplots made for each of four position groupings (Forward/Attacker, Midfielder, Defender, Goalkeeper).](28-202021_vaep/viz_vaep_by_pos_w_logo.png "VAEP vs. minutes played, by position")
+
+![VAEP vs. transfer market value for the 2020/21 Premier League season. Subplots made for each of four position groupings (Forward/Attacker, Midfielder, Defender, Goalkeeper).](28-202021_vaep/viz_vaep_mkt_by_pos_w_logo.png "VAEP vs. transfer market value, by position")
+
+![VAEP vs. DAVIES for the 2020/21 Premier League season.](28-202021_vaep/viz_vaep_davies_compare_w_logo.png "VAEP vs. DAVIES, by position")
+
+![Table showing year-over-year correlations for VAEP and DAVIES. Both average around 0.45.](28-202021_vaep/metric_yoy_stability.png "Year-over-year correlations for VAEP and DAVIES")
+
+# 
+# 
+# 
+# 
+# 
+
+
 # Future Ideas
 
 -   Stability of goal-scoring rate and/or xG over-performance
 
--   Madden rating EDA with UMAP + kmeans clustering (for optimal \# of UMAP groups).
+-   UMAP + GMM clustering (for optimal \# of UMAP groups).
 
 -   In which sport is the leading team most likely to further their lead near the end of the game due to an opposition error, overly-aggressive tactics by the opposition, etc.? (End of game depends on the sport. Ideally, we could use a win probability model to help identify end-of-game context, although it would still need some adjustment.) Extension: In which sport are gamblers most likely to lose/win due to a back-door cover?
 
 -   Decision tree to filter down players in a sport to just one player who has achieved a very specific set of career totals/averages (i.e. <https://twitter.com/JacobEGoldstein/status/1296570734047686658>)
 
-## Future data sets
-
--   "Standardized" soccer shot data locations: <https://kloppy.pysport.org/changelog/#110-2020-08-07>
-
--   Transfer market data: <https://github.com/ewenme/transfers>
-
--   FIFA data: <https://github.com/RobWHickman/fifadb>
