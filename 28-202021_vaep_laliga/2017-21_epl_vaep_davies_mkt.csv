@@ -1,0 +1,1687 @@
+season_id,player_name,team_name,pos_grp,pos_11,minutes_played,euro,ovaep,dvaep,vaep,davies,xga
+2020,Daniel Parejo,Villarreal,M,MC,3137,25000000,11.99275841691764,-0.07831281679682434,11.914445600120816,4.25,6.81
+2020,Sergio Herrera,Osasuna,G,GK,3048,20000000,5.902093614335172,2.1642258886713535,8.066319503006525,,
+2020,Ruben Duarte,Deportivo Alaves,D,DL,2519,70000000,6.757495326164179,-0.6584900255547836,6.099005300609395,1.19,4.05
+2020,Fernando,Sevilla,M,MC,2616,2500000,5.403741759015247,0.39609258994460106,5.799834348959848,1.63,3.53
+2020,Daniel Wass,Valencia,D,DR,3107,18000000,5.178620781806044,0.05936508363811299,5.237985865444157,2.55,4.84
+2020,Marco Asensio,Real Madrid,F,FWR,1871,13000000,4.173111600887962,-0.0015463343588635325,4.1715652665290985,1.59,4.64
+2020,Angel Montoro,Granada,M,MC,1448,3000000,3.590918736866422,-0.10617528698639944,3.4847434498800225,-0.69,1.87
+2020,Pablo Maffeo,SD Huesca,M,MR,1927,7000000,4.931074251886457,-1.4914610509295017,3.4396132009569556,-0.13,3.3
+2020,Alfonso Espino,Cadiz,D,DL,2727,6000000,3.6118186701787636,-0.35421509307343513,3.2576035771053284,0.76,3.62
+2020,Ruben Vezo,Levante,D,DC,2429,50000000,4.242999207810499,-1.2144582602195442,3.0285409475909546,0.94,3.96
+2020,Mickael Malsa,Levante,M,MC,2298,4500000,2.6599096129648387,0.3084597806446254,2.968369393609464,0.65,2.71
+2020,Shon Weissman,Real Valladolid,F,FWC,2080,6000000,2.806664494681172,-0.35790760681265965,2.4487568878685124,-0.44,3.14
+2020,David Timor,Getafe,D,DC,1432,250000,3.1766436087973418,-0.7412231366033666,2.435420472193975,-0.15,1.76
+2020,Renato Tapia,Celta Vigo,M,MC,2862,300000,2.14935795601923,0.03150819585425779,2.180866151873488,1.4,3.46
+2020,Sergio Ramos,Real Madrid,D,DC,1360,1500000,2.1971560841230264,-0.23891395382815972,1.958242130294867,2.54,4.25
+2020,Jairo Izquierdo,Cadiz,D,DL,1338,5000000,1.5316460940940306,0.3967229820555076,1.9283690761495382,-1.54,1.59
+2020,Robin Le Normand,Real Sociedad,D,DC,2726,4000000,1.5072681630845182,0.11363185790833086,1.620900020992849,1.4,4.42
+2020,Emerson,Real Betis,D,DR,3036,15000000,3.7450054209912196,-2.2907838905230165,1.4542215304682031,2.49,5.23
+2020,Nemanja Maksimovic,Getafe,M,MC,2691,10000000,1.7424865769571625,-0.4403903254424222,1.3020962515147403,-0.89,2.24
+2020,Jaime Seoane,SD Huesca,M,MC,2016,60000000,1.5436104050474242,-0.5653842386673205,0.9782261663801037,-0.68,2.45
+2020,Kevin Gameiro,Valencia,F,FWC,1176,1500000,1.3768413931247778,-0.4699190743267536,0.9069223187980242,-1.82,2.01
+2020,Pedro Leon,Eibar,M,MR,955,35000000,1.0312532161986456,-0.2003909884369932,0.8308622277616524,-1.93,1.74
+2020,Marcos de Sousa,Real Valladolid,F,FWC,1159,85000000,1.0423599168425426,-0.22113455721409991,0.8212253596284427,,
+2020,Aaron Escandell,Granada,G,GK,288,6000000,0.3678157743997872,0.23733574768994004,0.6051515220897272,,
+2020,Kike Garcia,Eibar,F,FWC,3055,20000000,1.3460183778079227,-0.7515154908760451,0.5945028869318776,,
+2020,Thomas Partey,Atletico,M,MC,213,45000000,0.5515165499462746,0.018840939737856388,0.570357489684131,,
+2020,Jaume Costa,Villarreal,D,DR,377,2500000,0.4748264322374016,0.05684688239125535,0.531673314628657,-1.59,0.7
+2020,David Gil,Cadiz,G,GK,197,22000000,0.28017388831358403,0.10795751283876598,0.38813140115235,,
+2020,Christian Oliva,Valencia,M,MC,230,800000,0.0936698499135673,0.01645631605060771,0.11012616596417502,,
+2020,Kelechi Nwakali,SD Huesca,M,MC,157,15000000,0.0409661375451833,0.05536857491824776,0.09633471246343106,,
+2020,Diego Llorente,Real Sociedad,D,DC,99,20000000,0.08278315304778516,-0.034555960446596146,0.04822719260118902,,
+2020,Okay Yokuslu,Celta Vigo,M,MC,510,5000000,0.22268830449320376,-0.19293828355148435,0.029750020941719413,-1.32,0.74
+2020,Juan Sanchez Mino,Elche,D,DL,531,28000000,0.057128702057525516,-0.07383142079925165,-0.01670271874172613,-1.46,0.44
+2020,Ruben Sobrino,Valencia,,,74,2000000,-0.02299593319185078,-5.728690885007381e-4,-0.02356880228035152,,
+2020,Gabriel Veiga,Celta Vigo,M,MC,141,25000000,-0.035684638016391546,-0.004633456177543849,-0.040318094193935394,,
+2020,Ramon Azeez,Granada,M,MC,115,2500000,-0.0617377347080037,0.0021145265782251954,-0.059623208129778504,,
+2020,Martin Odegaard,Real Madrid,F,FWC,257,40000000,-0.12497600018605588,-0.04785027931211516,-0.17282627949817106,,
+2020,Ruben Sobrino,Cadiz,F,FWC,1068,2000000,-0.10781763913109899,-0.1514552644221112,-0.2592729035532102,-0.65,2.41
+2020,Denis Vavro,SD Huesca,D,DC,568,20000000,0.5396728138439357,-0.8263947244267911,-0.28672191058285534,-2.54,0.48
+2020,Luka Jovic,Real Madrid,F,FWC,162,10000000,-0.3596039719413966,-0.034183046664111316,-0.3937870186055079,,
+2020,Guillem Molina,Valencia,D,DR,160,16000000,0.10611192020587623,-0.754506291646976,-0.6483943714410998,,
+2020,Willian Jose,Real Sociedad,F,FWC,738,20000000,-0.6517173020674587,-0.16552164865424857,-0.8172389507217073,-1.48,2.1
+2020,Deyverson,Deportivo Alaves,F,FWC,973,56000000,-0.28960109245963395,-0.5842422409332357,-0.8738433333928697,-2,1.67
+2020,Yan Eteki,Granada,M,MC,1224,38000000,0.25796251196879894,-1.385161696409341,-1.127199184440542,-1.54,0.52
+2020,Sergi Guardiola,Real Valladolid,F,FWC,1887,25000000,-3.1705497091715635,-0.2963197206845507,-3.4668694298561142,-0.44,3.15
+2020,Lionel Messi,Barcelona,,,,,,,,13.51,17.18
+2020,Marcos Llorente,Atletico,,,,,,,,2.21,5.34
+2020,Jose Luis Morales,Levante,,,,,,,,2.37,6.19
+2020,Cristian Tello,Real Betis,,,,,,,,-1.1,2.84
+2020,Sergio Canales,Real Betis,,,,,,,,1.38,5.04
+2020,Karim Benzema,Real Madrid,,,,,,,,7.02,10.84
+2020,Sergio Busquets,Barcelona,,,,,,,,1.88,3.78
+2020,Jesus Navas,Sevilla,,,,,,,,2.45,5.23
+2020,Suso,Sevilla,,,,,,,,-0.08,3.86
+2020,Toni Kroos,Real Madrid,,,,,,,,4.04,6.59
+2020,Sandro Ramirez,SD Huesca,,,,,,,,-1.78,1.81
+2020,Damian Suarez,Getafe,,,,,,,,1.85,4.14
+2020,Roberto Lopez,Real Sociedad,,,,,,,,-2.86,0.76
+2020,Joaquin,Real Betis,,,,,,,,-2.92,2.33
+2020,Roberto Soldado,Granada,,,,,,,,-1.41,2.73
+2020,Portu,Real Sociedad,,,,,,,,1.47,5.06
+2020,Augusto Solari,Celta Vigo,,,,,,,,-2.25,1.17
+2020,Eden Hazard,Real Madrid,,,,,,,,-2.4,1.57
+2020,Josan,Elche,,,,,,,,-0.2,3.42
+2020,Unai Lopez,Athletic Bilbao,,,,,,,,-0.87,2.26
+2020,David Silva,Real Sociedad,,,,,,,,-1.96,3.29
+2020,Iago Aspas,Celta Vigo,,,,,,,,4.7,8.67
+2020,Iker Muniain,Athletic Bilbao,,,,,,,,1.27,5.21
+2020,Alberto Perea,Cadiz,,,,,,,,-0.97,3
+2020,Lucas Ocampos,Sevilla,,,,,,,,4.13,7.18
+2020,Fran Beltran,Celta Vigo,,,,,,,,-1.25,1.39
+2020,Domingos Quina,Granada,,,,,,,,-2.7,0.3
+2020,Joao Felix,Atletico,,,,,,,,0.57,4.19
+2020,Fabian Orellana,Real Valladolid,,,,,,,,-0.92,4.33
+2020,Kieran Trippier,Atletico,,,,,,,,0.64,4.27
+2020,Gabriel Paulista,Valencia,,,,,,,,2.1,4.73
+2020,Jorge Molina,Granada,,,,,,,,-0.91,3.24
+2020,Fidel,Elche,,,,,,,,0.82,4.44
+2020,Jordi Alba,Barcelona,,,,,,,,3.2,6.83
+2020,Roberto Torres,Osasuna,,,,,,,,-0.35,3.32
+2020,Rafa Soares,Eibar,,,,,,,,-0.75,2.11
+2020,Alberto Soro,Granada,,,,,,,,-3.11,0.52
+2020,Sergio Escudero,Sevilla,,,,,,,,-2.85,0.78
+2020,Joseba Zaldua,Real Sociedad,,,,,,,,-2.57,0.85
+2020,Youssef En-Nesyri,Sevilla,,,,,,,,3.87,7.46
+2020,Jony,Osasuna,,,,,,,,-2.08,1.85
+2020,Alex Fernandez,Cadiz,,,,,,,,-0.38,2.75
+2020,David Ferreiro,SD Huesca,,,,,,,,0.62,4.29
+2020,Darko Brasanac,Osasuna,,,,,,,,-2.26,1.33
+2020,Oscar Mingueza,Barcelona,,,,,,,,1.17,3.17
+2020,Andoni Gorosabel,Real Sociedad,,,,,,,,0.46,3.88
+2020,Jon Morcillo,Athletic Bilbao,,,,,,,,-0.92,2.7
+2020,Alvaro Odriozola,Real Madrid,,,,,,,,-2.35,1.07
+2020,Manu Vallejo,Valencia,,,,,,,,-0.63,2.96
+2020,Federico Valverde,Real Madrid,,,,,,,,0.16,2.8
+2020,Luis Milla,Granada,,,,,,,,-0.21,1.85
+2020,Gonzalo Melero,Levante,,,,,,,,-0.49,2.64
+2020,Pablo Hervias,Real Valladolid,,,,,,,,-0.71,2.71
+2020,Carlos Soler,Valencia,,,,,,,,1.57,4.7
+2020,Raul Garcia,Real Valladolid,,,,,,,,-1.94,4.17
+2020,Michel,Real Valladolid,,,,,,,,-0.68,1.22
+2020,Alvaro Gimenez,Cadiz,,,,,,,,-2.96,0.63
+2020,Javi Galan,SD Huesca,,,,,,,,3.57,6.99
+2020,Carles Alena,Getafe,,,,,,,,-2.16,1.77
+2020,Waldo Rubio,Real Valladolid,,,,,,,,-3.45,0.48
+2020,Yuri Berchiche,Athletic Bilbao,,,,,,,,0.96,4.59
+2020,Koke,Atletico,,,,,,,,2.47,4.53
+2020,Luka Modric,Real Madrid,,,,,,,,4.31,5.53
+2020,Toni Villa,Real Valladolid,,,,,,,,-1.39,2.54
+2020,Jorge Pombo,Cadiz,,,,,,,,-2.79,1.15
+2020,Ander Capa,Athletic Bilbao,,,,,,,,0.87,4.29
+2020,Aissa Mandi,Real Betis,,,,,,,,1.34,4.36
+2020,Francisco Portillo,Getafe,,,,,,,,-3.06,0.61
+2020,Inigo Martinez,Athletic Bilbao,,,,,,,,1.52,4.53
+2020,Lucas Olaza,Real Valladolid,,,,,,,,-0.67,5.05
+2020,Joan Jordan,Sevilla,,,,,,,,0.84,3.97
+2020,Marcos Mauro,Cadiz,,,,,,,,-1.17,1.46
+2020,Jose Campana,Levante,,,,,,,,-1.97,1.97
+2020,Martin Aguirregabiria,Deportivo Alaves,,,,,,,,-1.07,1.79
+2020,Luis Suarez,Atletico,,,,,,,,3.43,7.25
+2020,Takefusa Kubo,Villarreal,,,,,,,,-3.48,2.5
+2020,Manu Sanchez,Osasuna,,,,,,,,-1.51,1.24
+2020,Takefusa Kubo,Getafe,,,,,,,,-3.48,2.5
+2020,Yeray Alvarez,Athletic Bilbao,,,,,,,,-0.12,2.9
+2020,Oscar De Marcos,Athletic Bilbao,,,,,,,,-1.13,2.5
+2020,Martin Merquelanz,Real Sociedad,,,,,,,,-2.83,1.11
+2020,Yannick Carrasco,Atletico,,,,,,,,3.82,6.88
+2020,Kevin Rodrigues,Eibar,,,,,,,,-1.96,1.46
+2020,Son,Levante,,,,,,,,-1.48,1.94
+2020,Inigo Lekue,Athletic Bilbao,,,,,,,,-2.27,1.15
+2020,Ibai Gomez,Athletic Bilbao,,,,,,,,-3.35,0.32
+2020,Mauro Arambarri,Getafe,,,,,,,,0.72,3.85
+2020,Dani Calvo,Elche,,,,,,,,-0.56,1.93
+2020,Fali,Cadiz,,,,,,,,-0.85,2.17
+2020,Borja Iglesias,Real Betis,,,,,,,,-0.08,3.51
+2020,Alejandro Pozo,Eibar,,,,,,,,0.06,2.8
+2020,Pedro Mosquera,SD Huesca,,,,,,,,0.29,2.19
+2020,Geoffrey Kondogbia,Atletico,,,,,,,,-2.64,1.48
+2020,Juan Carlos Real,SD Huesca,,,,,,,,-3.35,0.62
+2020,Sergi Roberto,Barcelona,,,,,,,,-1.56,1.86
+2020,Darwin Machis,Granada,,,,,,,,1.56,4.62
+2020,Marcelo,Real Madrid,,,,,,,,-1.46,2.17
+2020,Kenedy,Granada,,,,,,,,-0.23,2.82
+2020,Denis Suarez,Celta Vigo,,,,,,,,1.2,4.33
+2020,Ander Barrenetxea,Real Sociedad,,,,,,,,-0.59,2.4
+2020,Helibelton Palacios,Elche,,,,,,,,-2.01,0.85
+2020,Lucas Torreira,Atletico,,,,,,,,-1.36,0.7
+2020,Papu Gomez,Sevilla,,,,,,,,-0.58,1.98
+2020,Alex Moreno,Real Betis,,,,,,,,-0.06,3.36
+2020,Goncalo Guedes,Valencia,,,,,,,,1.35,4.4
+2020,Luis Rioja,Deportivo Alaves,,,,,,,,1.18,4.23
+2020,Juan Cruz,Osasuna,,,,,,,,-0.55,2.31
+2020,Igor Zubeldia,Real Sociedad,,,,,,,,-0.15,2.86
+2020,Carlos Akapo,Cadiz,,,,,,,,-1.85,1.01
+2020,Rober Correa,Eibar,,,,,,,,-1.04,1.82
+2020,Samuel Umtiti,Barcelona,,,,,,,,-1.9,1.12
+2020,Paulo Oliveira,Eibar,,,,,,,,-0.22,2.8
+2020,Javier Ontiveros,SD Huesca,,,,,,,,-0.36,2.7
+2020,Geoffrey Kondogbia,Valencia,,,,,,,,-2.64,1.48
+2020,Ante Budimir,Osasuna,,,,,,,,0.43,4.01
+2020,Nolito,Celta Vigo,,,,,,,,2.83,6.5
+2020,Alex Berenguer,Athletic Bilbao,,,,,,,,2.29,6.22
+2020,Marc Cucurella,Getafe,,,,,,,,0.78,4.4
+2020,Rodrigo Ely,Deportivo Alaves,,,,,,,,-1.93,0.56
+2020,Saidy Janko,Real Valladolid,,,,,,,,-1.31,1.55
+2020,Ruben Garcia,Osasuna,,,,,,,,1.25,5.19
+2020,Andres Guardado,Real Betis,,,,,,,,-0.55,1.35
+2020,Nemanja Gudelj,Sevilla,,,,,,,,-2.12,0.9
+2020,Munir El Haddadi,Sevilla,,,,,,,,-0.4,2.66
+2020,Aihen Munoz,Real Sociedad,,,,,,,,-0.76,2.1
+2020,Anaitz Arbilla,Eibar,,,,,,,,2.32,5.07
+2020,Ruben Pena,Villarreal,,,,,,,,-1.52,1.9
+2020,Ander Guevara,Real Sociedad,,,,,,,,0.18,2.24
+2020,Pere Pons,Deportivo Alaves,,,,,,,,-2,1.13
+2020,Sergio Carreira,Celta Vigo,,,,,,,,-2.05,0.42
+2020,Aaron Martin,Celta Vigo,,,,,,,,-1.8,1.62
+2020,Aridane Hernandez,Osasuna,,,,,,,,-0.54,2.09
+2020,Josema,Elche,,,,,,,,-0.31,2.71
+2020,Mikel Oyarzabal,Real Sociedad,,,,,,,,2.25,6.19
+2020,Aleix Vidal,Sevilla,,,,,,,,-2.4,1.22
+2020,Sime Vrsaljko,Atletico,,,,,,,,-2.19,0.66
+2020,Ivan Alejo,Cadiz,,,,,,,,-1.55,1.51
+2020,Jason,Valencia,,,,,,,,-2.81,0.61
+2020,Ferland Mendy,Real Madrid,,,,,,,,0.44,3.86
+2020,Mikel Balenziaga,Athletic Bilbao,,,,,,,,-0.54,1.75
+2020,Manu Trigueros,Villarreal,,,,,,,,1.69,4.82
+2020,Aleix Garcia,Eibar,,,,,,,,-2.53,0.6
+2020,Javi Martinez,Osasuna,,,,,,,,-2.15,0.5
+2020,Facundo Roncaglia,Osasuna,,,,,,,,-0.98,1.77
+2020,Gerard Pique,Barcelona,,,,,,,,-0.41,2.34
+2020,Jon Moncayola,Osasuna,,,,,,,,0.59,2.58
+2020,Stefan Savic,Atletico,,,,,,,,1.15,3.9
+2020,Luis Perez,Real Valladolid,,,,,,,,-1.18,1.68
+2020,Joselu,Deportivo Alaves,,,,,,,,2.91,6.73
+2020,Raphael Varane,Real Madrid,,,,,,,,1.42,4.44
+2020,Samuel Chukwueze,Villarreal,,,,,,,,1.91,4.9
+2020,Lucas Vazquez,Real Madrid,,,,,,,,1.84,5.26
+2020,Oscar Rodriguez,Sevilla,,,,,,,,-2.62,1.01
+2020,Facundo Ferreyra,Celta Vigo,,,,,,,,-3.21,0.62
+2020,Carlos Fernandez,Sevilla,,,,,,,,-2.97,0.61
+2020,Recio,Eibar,,,,,,,,-1.76,0.8
+2020,Pedro Lopez,SD Huesca,,,,,,,,-0.64,1.77
+2020,Thomas Lemar,Atletico,,,,,,,,-0.51,3.43
+2020,German Sanchez,Granada,,,,,,,,0.04,2.67
+2020,Vinicius Junior,Real Madrid,,,,,,,,3.58,6.57
+2020,Roger Marti,Levante,,,,,,,,0.17,4
+2020,Sergi Gomez,Sevilla,,,,,,,,-1.86,0.63
+2020,Esteban Burgos,Eibar,,,,,,,,-1.27,1.74
+2020,Vitolo,Atletico,,,,,,,,-2.91,1.06
+2020,Ousmane Dembele,Barcelona,,,,,,,,3.21,6.26
+2020,Emre Mor,Celta Vigo,,,,,,,,-2.91,0.68
+2020,Nestor Araujo,Celta Vigo,,,,,,,,1.03,3.51
+2020,Nemanja Radoja,Levante,,,,,,,,-1,1.06
+2020,Jeison Murillo,Celta Vigo,,,,,,,,0.79,3.28
+2020,Pedri,Barcelona,,,,,,,,3.19,4.55
+2020,Bruno Gonzalez,Real Valladolid,,,,,,,,-0.84,1.79
+2020,Javi Sanchez,Real Valladolid,,,,,,,,-1.67,0.82
+2020,Alejandro Cantero,Levante,,,,,,,,-2.36,0.63
+2020,Sergio Postigo,Levante,,,,,,,,-0.15,2.48
+2020,Ansu Fati,Barcelona,,,,,,,,0.67,2.9
+2020,Carlos Neva,Granada,,,,,,,,-1.21,1.65
+2020,Adnan Januzaj,Real Sociedad,,,,,,,,0.25,4.19
+2020,Guido Carrillo,Elche,,,,,,,,-1.94,1.65
+2020,Borja Sainz,Deportivo Alaves,,,,,,,,-2.03,0.96
+2020,William Carvalho,Real Betis,,,,,,,,-0.07,1.99
+2020,Erick Cabaco,Getafe,,,,,,,,-1.31,1.71
+2020,Rober Pier,Levante,,,,,,,,-1.12,1.9
+2020,Hugo Mallo,Celta Vigo,,,,,,,,2.91,5.77
+2020,Fede Vico,Granada,,,,,,,,-1.99,1.06
+2020,Sidnei,Real Betis,,,,,,,,-1.81,0.82
+2020,Carlos Clerc,Levante,,,,,,,,3.25,6.11
+2020,Rafa Mir,SD Huesca,,,,,,,,3.19,6.78
+2020,Domingos Duarte,Granada,,,,,,,,0.2,3.22
+2020,Casemiro,Real Madrid,,,,,,,,3.56,5.62
+2020,Adrian Lopez,Osasuna,,,,,,,,-2.65,1.18
+2020,Quini,Granada,,,,,,,,-0.81,1.48
+2020,Inigo Perez,Osasuna,,,,,,,,-0.98,1.58
+2020,Aritz Elustondo,Real Sociedad,,,,,,,,-0.16,2.86
+2020,Juan Miranda,Real Betis,,,,,,,,-0.09,2.39
+2020,Ximo Navarro,Deportivo Alaves,,,,,,,,1.33,3.62
+2020,Brais Mendez,Celta Vigo,,,,,,,,2.73,5.86
+2020,Jawad El Yamiq,Real Valladolid,,,,,,,,-1.17,1.32
+2020,Carlos Fernandez,Real Sociedad,,,,,,,,-2.97,0.61
+2020,Renan Lodi,Atletico,,,,,,,,-1.2,2.23
+2020,Victor Rodriguez,Elche,,,,,,,,-1.45,0.45
+2020,Juanmi,Real Betis,,,,,,,,-2.01,1.58
+2020,Lucas Olaza,Celta Vigo,,,,,,,,-0.67,5.05
+2020,Kevin Vazquez,Celta Vigo,,,,,,,,-2.45,0.41
+2020,Raul Guti,Elche,,,,,,,,0.4,2.46
+2020,Jorge Miramon,Levante,,,,,,,,1.45,3.74
+2020,Facundo Pellistri,Deportivo Alaves,,,,,,,,-2.36,0.63
+2020,Martin Zubimendi,Real Sociedad,,,,,,,,0.05,2.04
+2020,Ronald Araujo,Barcelona,,,,,,,,-0.17,2.35
+2020,Marcos Acuna,Sevilla,,,,,,,,2.37,5.79
+2020,Lee Kang-In,Valencia,,,,,,,,-1.48,2.15
+2020,Nacho Vidal,Osasuna,,,,,,,,0.41,3.26
+2020,Miralem Pjanic,Barcelona,,,,,,,,-1.05,1.51
+2020,Eder Militao,Real Madrid,,,,,,,,-1.44,1.57
+2020,Hector Herrera,Atletico,,,,,,,,-0.88,1.02
+2020,Filip Malbasic,Cadiz,,,,,,,,-2.97,0.62
+2020,Angel Correa,Atletico,,,,,,,,2.48,6.07
+2020,Allan-Romeo Nyom,Getafe,,,,,,,,-0.82,2.8
+2020,Asier Illarramendi,Real Sociedad,,,,,,,,-1.4,0.5
+2020,Nacho,Real Valladolid,,,,,,,,1.03,6.07
+2020,Gaston Silva,SD Huesca,,,,,,,,-2.22,0.8
+2020,Jota,Deportivo Alaves,,,,,,,,-1.21,1.92
+2020,Paul Akouokou,Real Betis,,,,,,,,-1.66,0.4
+2020,Eliaquim Mangala,Valencia,,,,,,,,-2.22,0.41
+2020,Tono,Levante,,,,,,,,-1.52,0.77
+2020,Miguel Baeza,Celta Vigo,,,,,,,,-1.67,0.97
+2020,Nacho Monreal,Real Sociedad,,,,,,,,0.46,2.87
+2020,Sergio Gomez,SD Huesca,,,,,,,,-1.48,1.26
+2020,Bryan Gil,Eibar,,,,,,,,1.94,4.93
+2020,Pablo Insua,SD Huesca,,,,,,,,-0.77,1.72
+2020,Pedro Alcala,Cadiz,,,,,,,,-1.99,0.64
+2020,Karim Rekik,Sevilla,,,,,,,,-1.93,0.93
+2020,Borja Garcia,SD Huesca,,,,,,,,-1.04,1.52
+2020,Victor Laguardia,Deportivo Alaves,,,,,,,,1,3.63
+2020,Modibo Sagnan,Real Sociedad,,,,,,,,-1.69,0.83
+2020,Tomas Pina,Deportivo Alaves,,,,,,,,0.2,2.11
+2020,Yann Bodiger,Cadiz,,,,,,,,-1.88,0.17
+2020,Jose Mari,Cadiz,,,,,,,,-0.69,1.22
+2020,Victor Diaz,Granada,,,,,,,,-1.02,1.28
+2020,Omenuke Mfulu,Elche,,,,,,,,-1.74,0.32
+2020,David Garcia,Osasuna,,,,,,,,1.13,4.15
+2020,Denis Cheryshev,Valencia,,,,,,,,-1.43,2.24
+2020,Tachi,Deportivo Alaves,,,,,,,,-0.91,1.58
+2020,Victor Ruiz,Real Betis,,,,,,,,0.19,2.94
+2020,Jose Gimenez,Atletico,,,,,,,,-0.18,2.84
+2020,Alvaro Negredo,Cadiz,,,,,,,,0.59,4.73
+2020,Roque Mesa,Real Valladolid,,,,,,,,-0.03,2.53
+2020,Jose Manuel Fontan,Celta Vigo,,,,,,,,-1.34,1.18
+2020,Ruben Alcaraz,Real Valladolid,,,,,,,,0.88,2.78
+2020,Sergio Leon,Levante,,,,,,,,-2.6,1.23
+2020,Etienne Capoue,Villarreal,,,,,,,,-0.84,1.07
+2020,Idrissa Doumbia,SD Huesca,,,,,,,,-1.45,0.6
+2020,Pervis Estupinan,Villarreal,,,,,,,,-0.6,2.82
+2020,Miguel Angel Atienza,Eibar,,,,,,,,-1.59,0.4
+2020,Oscar Duarte,Levante,,,,,,,,0.23,2.86
+2020,Mariano,Real Madrid,,,,,,,,-2.59,1
+2020,Kike Barja,Osasuna,,,,,,,,0.06,3.11
+2020,Unai Vencedor,Athletic Bilbao,,,,,,,,0.21,2.2
+2020,Carlos Bacca,Villarreal,,,,,,,,-1.94,1.88
+2020,Sergi Enrich,Eibar,,,,,,,,-0.78,3.05
+2020,Unai Garcia,Osasuna,,,,,,,,-1.81,1.21
+2020,Hugo Guillamon,Valencia,,,,,,,,0.3,2.82
+2020,Cifu,Elche,,,,,,,,-1.44,0.46
+2020,Johan Mojica,Elche,,,,,,,,-0.88,1.98
+2020,Raul Albiol,Villarreal,,,,,,,,3.6,5.31
+2020,Antoine Griezmann,Barcelona,,,,,,,,5.52,9.49
+2020,Ramiro Funes Mori,Villarreal,,,,,,,,-1.02,1.74
+2020,Pere Milla,Elche,,,,,,,,-0.74,2.85
+2020,Raul Garcia,Athletic Bilbao,,,,,,,,-1.94,4.17
+2020,Toni Lato,Valencia,,,,,,,,-1.78,1.08
+2020,Frenkie de Jong,Barcelona,,,,,,,,5.58,8.71
+2020,Vicente Iborra,Villarreal,,,,,,,,-0.97,0.93
+2020,Jota,Real Valladolid,,,,,,,,-1.21,1.92
+2020,Xabier Etxeita,Getafe,,,,,,,,-1.85,0.9
+2020,Manu Sanchez,Atletico,,,,,,,,-1.51,1.24
+2020,Edgar Mendez,Deportivo Alaves,,,,,,,,-0.54,3.43
+2020,Jon Ander Garrido,Cadiz,,,,,,,,-1.27,0.64
+2020,Augusto Fernandez,Cadiz,,,,,,,,-1.57,0.12
+2020,Rodrigo Battaglia,Deportivo Alaves,,,,,,,,0.04,2.1
+2020,Dani Escriche,SD Huesca,,,,,,,,-1.04,2.01
+2020,Thierry Correia,Valencia,,,,,,,,1.01,3.48
+2020,Isco,Real Madrid,,,,,,,,-1.24,2.69
+2020,Martin Braithwaite,Barcelona,,,,,,,,-0.68,2.91
+2020,Jose Gaya,Valencia,,,,,,,,2.16,5.58
+2020,Clement Lenglet,Barcelona,,,,,,,,2.36,5.38
+2020,Nehuen Perez,Granada,,,,,,,,-1.3,0.76
+2020,Dani Garcia,Athletic Bilbao,,,,,,,,-0.11,1.79
+2020,Diego Lainez,Real Betis,,,,,,,,-1.26,1.73
+2020,Joseph Aidoo,Celta Vigo,,,,,,,,-0.66,1.83
+2020,Francis Coquelin,Villarreal,,,,,,,,-1.22,0.84
+2020,Jon Guridi,Real Sociedad,,,,,,,,-1.5,1.63
+2020,Kike Perez,Real Valladolid,,,,,,,,-0.96,2.17
+2020,Mathias Olivera,Getafe,,,,,,,,1.76,4.62
+2020,Oliver Torres,Sevilla,,,,,,,,-0.66,2.46
+2020,Takashi Inui,Eibar,,,,,,,,-0.61,3.21
+2020,Luuk de Jong,Sevilla,,,,,,,,-1.81,2.01
+2020,Daniel Carvajal,Real Madrid,,,,,,,,-1.31,2.11
+2020,Diego Gonzalez,Elche,,,,,,,,-0.87,1.62
+2020,Dimitri Foulquier,Granada,,,,,,,,0.85,3.71
+2020,Fede San Emeterio,Real Valladolid,,,,,,,,-1.34,0.72
+2020,Joaquin Fernandez,Real Valladolid,,,,,,,,0.18,2.67
+2020,Mario Hermoso,Atletico,,,,,,,,2.43,4.48
+2020,Yangel Herrera,Granada,,,,,,,,0.36,3.49
+2020,Sergino Dest,Barcelona,,,,,,,,1.24,3.98
+2020,Angel Rodriguez,Getafe,,,,,,,,-1.49,2.34
+2020,Ivan Marcone,Elche,,,,,,,,0.76,2.66
+2020,Kenan Kodro,Real Valladolid,,,,,,,,-2.59,1
+2020,Jesus Vallejo,Granada,,,,,,,,-0.99,1.5
+2020,Enis Bardhi,Levante,,,,,,,,0.07,3.2
+2020,Ivan Rakitic,Sevilla,,,,,,,,1.9,4.46
+2020,Nikola Vukcevic,Levante,,,,,,,,-1.64,0.42
+2020,Nabil Fekir,Real Betis,,,,,,,,3.6,7.54
+2020,Sergio Alvarez,Eibar,,,,,,,,-0.65,1.4
+2020,Mikel Rico,SD Huesca,,,,,,,,1.37,2.6
+2020,Paco Alcacer,Villarreal,,,,,,,,0.67,4.26
+2020,Dani Gomez,Levante,,,,,,,,0.01,3
+2020,Juan Foyth,Villarreal,,,,,,,,0.14,2.2
+2020,Coke,Levante,,,,,,,,-1.3,0.99
+2020,Antonio Barragan,Elche,,,,,,,,1.29,3.58
+2020,Pedro Bigas,Eibar,,,,,,,,-0.65,2.1
+2020,Maxi Gomez,Valencia,,,,,,,,2.25,5.84
+2020,Rodrygo,Real Madrid,,,,,,,,-0.55,2.44
+2020,Mikel Merino,Real Sociedad,,,,,,,,1.32,4.45
+2020,Pau Torres,Villarreal,,,,,,,,3.3,6.32
+2020,Philippe Coutinho,Barcelona,,,,,,,,-0.31,2.74
+2020,Aitor Ruibal,Real Betis,,,,,,,,0.53,3.58
+2020,Marc Bartra,Real Betis,,,,,,,,-0.95,1.8
+2020,Jorge Pulido,SD Huesca,,,,,,,,1.94,4.57
+2020,Enes Unal,Getafe,,,,,,,,-1.03,2.56
+2020,Asier Villalibre,Athletic Bilbao,,,,,,,,-0.41,3.18
+2020,Emiliano Rigoni,Elche,,,,,,,,-0.69,2.37
+2020,Loren Moron,Real Betis,,,,,,,,-1.78,1.81
+2020,Yunus Musah,Valencia,,,,,,,,-0.16,1.58
+2020,Sofian Chakla,Getafe,,,,,,,,-1.81,0.68
+2020,Inaki Williams,Athletic Bilbao,,,,,,,,2.07,5.66
+2020,Florian Lejeune,Deportivo Alaves,,,,,,,,1.97,4.46
+2020,Felipe,Atletico,,,,,,,,-0.26,2.37
+2020,Enric Gallego,Osasuna,,,,,,,,-2.69,1.14
+2020,Oihan Sancet,Athletic Bilbao,,,,,,,,-0.9,2.09
+2020,Antonio Puertas,Granada,,,,,,,,0.68,3.74
+2020,Moi Gomez,Villarreal,,,,,,,,0.97,4.1
+2020,Mouctar Diakhaby,Valencia,,,,,,,,0.25,2.74
+2020,Jaime Mata,Getafe,,,,,,,,-0.4,3.42
+2020,Lucas Boye,Elche,,,,,,,,-0.08,3.51
+2020,Tete Morente,Elche,,,,,,,,0.41,3.46
+2020,Santi Mina,Celta Vigo,,,,,,,,1.72,5.3
+2020,Antonio Sanabria,Real Betis,,,,,,,,-1.24,2.35
+2020,Fernando Nino,Villarreal,,,,,,,,-0.8,2.19
+2020,Ruben Rochina,Levante,,,,,,,,0.69,3.25
+2020,Uros Racic,Valencia,,,,,,,,0.18,2.23
+2020,Shinji Okazaki,SD Huesca,,,,,,,,-2.98,1.17
+2020,Edu Exposito,Eibar,,,,,,,,0.38,3.51
+2020,Gerard Moreno,Villarreal,,,,,,,,5.44,9.02
+2020,Luis Suarez,Granada,,,,,,,,3.43,7.25
+2020,Alexander Isak,Real Sociedad,,,,,,,,5.88,8.87
+2020,Maxime Gonalons,Granada,,,,,,,,-0.01,1.89
+2020,Jonathan Calleri,Osasuna,,,,,,,,0.24,3.82
+2020,Diego Carlos,Sevilla,,,,,,,,1.21,3.7
+2020,Guido Rodriguez,Real Betis,,,,,,,,1.49,3.55
+2020,Dimitrios Siovas,SD Huesca,,,,,,,,2.53,5.16
+2020,Lucas Torro,Osasuna,,,,,,,,-0.16,1.9
+2020,Lucas Perez,Deportivo Alaves,,,,,,,,0.68,4.5
+2020,Jens Jonsson,Cadiz,,,,,,,,0,2.06
+2020,Unai Nunez,Athletic Bilbao,,,,,,,,0.91,3.93
+2020,Alfonso Pedraza,Villarreal,,,,,,,,2.05,5.48
+2020,Mikel Vesga,Athletic Bilbao,,,,,,,,0.23,2.29
+2020,Jorge de Frutos,Levante,,,,,,,,2.96,6.02
+2020,Anthony Lozano,Cadiz,,,,,,,,-0.28,3.3
+2020,Ilaix Moriba,Barcelona,,,,,,,,-0.31,1.05
+2020,Mario Gaspar,Villarreal,,,,,,,,1.49,3.78
+2020,Saul Niguez,Atletico,,,,,,,,-0.17,2.96
+2020,Gonzalo Verdu,Elche,,,,,,,,1.91,4.54
+2020,Yoshinori Muto,Eibar,,,,,,,,-1.21,2.38
+2020,Yeremi Pino,Villarreal,,,,,,,,0.42,2.16
+2020,Nacho,Real Madrid,,,,,,,,1.03,6.07
+2020,Oscar Plano,Real Valladolid,,,,,,,,0.79,3.35
+2020,Jules Kounde,Sevilla,,,,,,,,3.73,6.25
+2020,Manu Garcia,Deportivo Alaves,,,,,,,,-1,0.69
+2020,Oier Sanjurjo,Osasuna,,,,,,,,0.42,2.32
+2019,Daniel Parejo,Valencia,M,MC,3313,12000000,11.224820626451045,-0.8525016168132424,10.372319009637803,5.44,7.5
+2019,Sergio Ramos,Real Madrid,D,DC,3229,2800000,8.115566452743362,0.5058584930375218,8.621424945780884,6.07,8.82
+2019,Karim Benzema,Real Madrid,F,FWC,3334,1200000,8.356311583289541,-0.7205036329105496,7.635807950378992,7.52,11.35
+2019,Marc-Andre ter Stegen,Barcelona,G,GK,3470,9500000,3.4664638383546844,3.3933358239009976,6.859799662255682,,
+2019,David Lopez,Espanyol,D,DC,2723,12000000,6.092740508145653,0.5514852093765512,6.644225717522204,1.8,3.86
+2019,Nabil Fekir,Real Betis,F,FWC,2907,4000000,6.861006464917425,-0.7556144041009247,6.1053920608165,6.39,9.45
+2019,Emerson,Real Betis,D,DR,3082,24000000,5.826399248442613,-0.6226482728961855,5.203750975546427,2.92,5.66
+2019,David Timor,Getafe,M,MC,1073,250000,4.581463794831652,0.0710893202922307,4.652553115123883,-1.95,1.18
+2019,Angel Montoro,Granada,M,MC,1069,6500000,4.509501365555916,0.06500279338797554,4.574504158943892,-0.7,1.86
+2019,Sergi Guardiola,Real Valladolid,F,FWC,2830,52000000,4.771991526215084,-0.449781330593396,4.322210195621688,0.86,4.45
+2019,Ruben Pena,Villarreal,D,DR,2069,9000000,5.292818571906537,-1.1312977682682686,4.161520803638268,1.26,4.12
+2019,Nacho Monreal,Real Sociedad,D,DL,2577,3200000,4.417167718580458,-0.34136549924733117,4.075802219333127,2.04,4.34
+2019,Roberto Torres,Osasuna,M,MR,2915,800000,5.2805704598861185,-1.2358081678394228,4.044762292046696,1.48,5.41
+2019,Arthur,Barcelona,M,MC,1252,6500000,3.826575700962916,0.13652389479102567,3.963099595753942,-0.45,2.19
+2019,Roberto Rosales,Leganes,D,DR,2025,4800000,3.977072408807464,-0.113685664429795,3.863386744377669,-0.04,2.82
+2019,Sergio Herrera,Osasuna,G,GK,1833,16000000,2.750504810770508,0.9992407676763833,3.749745578446891,,
+2019,Daniel Wass,Valencia,D,DR,2977,22500000,3.3973479302916676,0.0935527085675858,3.4909006388592534,1.6,4.46
+2019,Marco Asensio,Real Madrid,F,FWR,377,20000000,3.3392395395752974,0.026428918761666864,3.3656684583369643,-1.69,1.3
+2019,Oliver Torres,Sevilla,M,MC,1707,7200000,3.222655434132088,0.017037531069945544,3.2396929652020336,0.11,3.24
+2019,Bernardo Espinosa,Espanyol,D,DC,2521,80000000,3.1385638603242114,0.09577708080178127,3.2343409411259927,1.15,3.64
+2019,Ruben Vezo,Levante,D,DC,2840,40000000,3.662068070261739,-0.546197002986446,3.115871067275293,1.78,4.27
+2019,Fernando,Sevilla,M,MC,2899,8000000,1.6693496447405778,0.8835141473100521,2.55286379205063,1.16,3.91
+2019,Mario Gaspar,Villarreal,D,DR,2131,3200000,2.564574259798974,-0.12672590906731784,2.437848350731656,0.56,3.42
+2019,Domingos Duarte,Granada,D,DC,3358,12000000,4.8260574312880635,-2.4396627994137816,2.386394631874282,1.42,3.9
+2019,Dimitri Foulquier,Granada,D,DR,1224,2000000,2.108145326434169,-0.04889483464648947,2.0592504917876795,-1.58,1.28
+2019,Kenedy,Getafe,M,ML,653,9500000,1.8590082062678412,0.05181030003586784,1.910818506303709,-2.42,1.2
+2019,Nemanja Maksimovic,Getafe,M,MC,3136,16000000,1.3619024286745116,0.34755483688786626,1.7094572655623779,-0.07,3.06
+2019,Aissa Mandi,Real Betis,D,DC,2798,5500000,1.7089921450824477,-0.02155001921346411,1.6874421258689836,1.57,4.59
+2019,Adrian Embarba,Espanyol,M,ML,1472,2300000,2.041178659265142,-0.35374526400119066,1.6874333952639513,-1.35,2.59
+2019,Ander Guevara,Real Sociedad,M,MC,994,9500000,1.3616146530257538,0.1925026342505589,1.5541172872763127,-0.7,1.29
+2019,Jorge Molina,Getafe,F,FWC,2093,8000000,1.6411640591723435,-0.3339229070697911,1.3072411521025524,0,4.14
+2019,Victor Camarasa,Deportivo Alaves,M,MC,1388,4000000,1.0577210235283712,0.026316423842217773,1.0840374473705887,-1.88,1.25
+2019,Aaron Escandell,Granada,G,GK,293,6500000,0.5166518781334162,0.5435272756731138,1.06017915380653,,
+2019,Yan Eteki,Granada,M,MC,1640,33500000,0.5099523236276582,0.2923930190736428,0.802345342701301,-1.08,0.92
+2019,Martin Braithwaite,Leganes,F,FWC,2086,325000,1.1359602248722016,-0.3755303131765686,0.7604299116956331,-1.7000000000000002,5.47
+2019,Ruben Sobrino,Valencia,F,FWC,222,2000000,0.7529560406692326,0.002268226526211947,0.7552242671954446,,
+2019,Manuel Morlanes,Villarreal,M,MC,287,16000000,0.6583657519626431,0.05873652285663411,0.7171022748192772,-1.52,0.47
+2019,Luka Jovic,Real Madrid,F,FWC,493,20000000,0.7265261551947333,-0.14953426376450807,0.5769918914302252,-1.77,1.23
+2019,Bruno Soriano,Villarreal,M,MC,295,2300000,0.5316190419252962,0.013175128086004406,0.5447941700113006,-1.53,0.37
+2019,Pedro Leon,Eibar,M,MR,2008,11500000,0.8937528780899012,-0.41848978243069723,0.475263095659204,0.08,3.75
+2019,Nicolas Melamed,Espanyol,F,FWL,216,14500000,0.47695852088183166,-0.019444986304733902,0.45751353457709776,,
+2019,Sebastien Corchia,Espanyol,D,DR,279,36000000,0.49971393960807475,-0.08556429989403114,0.4141496397140436,-2.92,0.5
+2019,Christian Rivera,Leganes,M,MC,336,68000000,0.3119078886229545,0.09435264416970313,0.4062605327926576,-2.25,0.22
+2019,Adrian Marin,Deportivo Alaves,D,DL,940,1600000,1.2054442505403422,-0.942773965827655,0.26267028471268716,-1.11,1.36
+2019,Miquel Parera,Mallorca,G,GK,101,800000,0.10698797646909952,0.09510844654869288,0.2020964230177924,,
+2019,David Costas,Celta Vigo,D,DC,372,12000000,0.0667788767023012,0.1205170935136266,0.1872959702159278,-2.04,0.45
+2019,Ismail Koybasi,Granada,M,ML,248,24500000,0.24080396484350786,-0.06474312581121922,0.17606083903228864,,
+2019,Cristiano Piccini,Valencia,D,DR,87,54000000,0.06960805971175432,3.2059912336990237e-4,0.06992865883512422,,
+2019,Jesus Vallejo,Granada,D,DC,696,6000000,0.46829325426369905,-0.4502449865103699,0.018048267753329128,-1.39,0.67
+2019,Sebastian Cristoforo,Eibar,M,MC,974,1200000,-0.04323021814366802,-0.07926627685083076,-0.12249649499449877,-2.27,0.86
+2019,Ibrahim Amadou,Leganes,M,MC,841,5500000,-0.08218434936134145,-0.055292111821472645,-0.1374764611828141,-1.54,0.51
+2019,Denis Cheryshev,Valencia,M,ML,1029,800000,0.4839115404174663,-0.6454967034514993,-0.16158516303403303,-0.24,2.81
+2019,Aleix Febas,Mallorca,M,MC,1794,25500000,-0.22839433379704133,0.008243993506766856,-0.22015034029027447,-0.13,2.52
+2019,Andres Fernandez,Villarreal,G,GK,390,1800000,0.38332252111285925,-0.6532172625884414,-0.2698947414755821,,
+2019,Martin Braithwaite,Barcelona,F,FWL,457,325000,-0.31692358560394496,-0.12902226916048676,-0.4459458547644317,-1.7000000000000002,5.47
+2019,Brandon,Osasuna,F,FWC,428,200000,-0.295365609403234,-0.179728411429096,-0.47509402083233,-2.97,0.62
+2019,Deyverson,Getafe,F,FWC,225,56000000,-0.618080024025403,-0.13647434202721342,-0.7545543660526164,,
+2019,Victor Campuzano,Espanyol,F,FWC,958,6500000,-1.1042815843247809,-0.04654183454113081,-1.1508234188659117,-1.71,1.28
+2019,Chicharito,Sevilla,F,FWC,491,6800000,-1.4744377646129578,-0.200462375767529,-1.6749001403804868,,
+2019,Kike Garcia,Eibar,F,FWC,1894,6300000,-2.2810890073888004,-0.755134531587828,-3.0362235389766283,,
+2019,Lionel Messi,Barcelona,,,,,,,,14.54,18.2
+2019,Joaquin,Real Betis,,,,,,,,0.32,5.57
+2019,Oscar Rodriguez,Leganes,,,,,,,,0.46,4.08
+2019,Martin Odegaard,Real Sociedad,,,,,,,,2.54,6.16
+2019,Kieran Trippier,Atletico,,,,,,,,0.75,4.17
+2019,Victor Diaz,Granada,,,,,,,,2.81,5.1
+2019,Salva Sevilla,Mallorca,,,,,,,,2.62,4.52
+2019,Nolito,Sevilla,,,,,,,,-3.58,3.76
+2019,Jesus Navas,Sevilla,,,,,,,,4.3,7.93
+2019,Enes Unal,Real Valladolid,,,,,,,,3.49,6.48
+2019,Nacho,Real Valladolid,,,,,,,,-1.04,4.68
+2019,Jose Arnaiz,Osasuna,,,,,,,,-4.98,1.6600000000000001
+2019,Lucas Perez,Deportivo Alaves,,,,,,,,1.92,5.5
+2019,Alvaro Vadillo,Granada,,,,,,,,-1.84,2.1
+2019,Jose Arnaiz,Leganes,,,,,,,,-4.98,1.6600000000000001
+2019,Ruben Garcia,Osasuna,,,,,,,,1.46,5.4
+2019,Rafinha,Celta Vigo,,,,,,,,1.06,4.19
+2019,Ander Capa,Athletic Bilbao,,,,,,,,3.33,6.19
+2019,Marcelo,Real Madrid,,,,,,,,0.45,4.07
+2019,Adnan Januzaj,Real Sociedad,,,,,,,,-1.35,2.59
+2019,Moi Gomez,Villarreal,,,,,,,,0.86,4.79
+2019,Pedro Bigas,Eibar,,,,,,,,-0.34,2.67
+2019,Erick Cabaco,Levante,,,,,,,,-3.91,1.5899999999999999
+2019,Marc Roca,Espanyol,,,,,,,,2.72,4.72
+2019,Leandro Cabrera,Getafe,,,,,,,,-1.1500000000000001,4.35
+2019,Suso,Sevilla,,,,,,,,-2.41,1.52
+2019,Toni Kroos,Real Madrid,,,,,,,,3.06,6.19
+2019,Leandro Cabrera,Espanyol,,,,,,,,-1.1500000000000001,4.35
+2019,Pablo De Blasis,Eibar,,,,,,,,0,3.63
+2019,Anaitz Arbilla,Eibar,,,,,,,,0.31,3.06
+2019,Sergio Busquets,Barcelona,,,,,,,,3.2,5.1
+2019,Darwin Machis,Granada,,,,,,,,2.56,5.61
+2019,Clement Lenglet,Barcelona,,,,,,,,2.45,5.46
+2019,Santi Cazorla,Villarreal,,,,,,,,3.54,6.09
+2019,Enis Bardhi,Levante,,,,,,,,0.8,4.73
+2019,Nolito,Celta Vigo,,,,,,,,-3.58,3.76
+2019,Frenkie de Jong,Barcelona,,,,,,,,1.3,3.94
+2019,Loren Moron,Real Betis,,,,,,,,1.35,4.94
+2019,Inigo Perez,Osasuna,,,,,,,,-1.02,1.54
+2019,Thomas Partey,Atletico,,,,,,,,2.47,4.53
+2019,Unai Lopez,Athletic Bilbao,,,,,,,,-0.08,2.56
+2019,Erick Cabaco,Getafe,,,,,,,,-3.91,1.5899999999999999
+2019,Kenan Kodro,Athletic Bilbao,,,,,,,,-3.42,0.17
+2019,Unai Garcia,Osasuna,,,,,,,,-2.26,0.76
+2019,Fede Vico,Granada,,,,,,,,-2.79,1.14
+2019,Edu Exposito,Eibar,,,,,,,,0,2.65
+2019,Alvaro Tejero,Eibar,,,,,,,,-0.32,2.15
+2019,Angel Rodriguez,Getafe,,,,,,,,-0.06,3.76
+2019,Munir El Haddadi,Sevilla,,,,,,,,-0.21,2.79
+2019,James Rodriguez,Real Madrid,,,,,,,,-2.77,1.17
+2019,Esteban Burgos,Eibar,,,,,,,,-1.58,1.44
+2019,Aleix Vidal,Deportivo Alaves,,,,,,,,0.59,4.52
+2019,Damian Suarez,Getafe,,,,,,,,3.67,5.96
+2019,Iker Muniain,Athletic Bilbao,,,,,,,,0.7,4.63
+2019,Ruben Rochina,Levante,,,,,,,,1.02,4.14
+2019,Jordi Alba,Barcelona,,,,,,,,0.97,4.39
+2019,Ramon Azeez,Granada,,,,,,,,-1.74,1.39
+2019,Casemiro,Real Madrid,,,,,,,,3.55,5.61
+2019,Cristian Tello,Real Betis,,,,,,,,-2.33,1.6
+2019,Lucas Olaza,Celta Vigo,,,,,,,,3.65,6.51
+2019,Saul Niguez,Atletico,,,,,,,,2.63,5.49
+2019,Sergi Roberto,Barcelona,,,,,,,,0.48,3.9
+2019,Ibai Gomez,Athletic Bilbao,,,,,,,,-2.5,1.44
+2019,Gerard Moreno,Villarreal,,,,,,,,6.18,10.12
+2019,Franco Vazquez,Sevilla,,,,,,,,-1.18,1.95
+2019,Manu Garcia,Deportivo Alaves,,,,,,,,0.25,2.15
+2019,Marcos Llorente,Atletico,,,,,,,,0.39,3.45
+2019,Marc Cucurella,Getafe,,,,,,,,2.09,5.71
+2019,Hernani,Levante,,,,,,,,-1.28,1.77
+2019,Xavi Quintilla,Villarreal,,,,,,,,-0.8,1.94
+2019,Antonio Barragan,Real Betis,,,,,,,,-2.68,0.94
+2019,Koke,Atletico,,,,,,,,2.03,5.16
+2019,Luka Modric,Real Madrid,,,,,,,,2.22,4.78
+2019,Samuel Umtiti,Barcelona,,,,,,,,-1.32,1.7
+2019,Roque Mesa,Leganes,,,,,,,,-0.86,3.08
+2019,Kevin Rodrigues,Leganes,,,,,,,,0.16,3.58
+2019,Ivan Ramis,Eibar,,,,,,,,-2.2,0.55
+2019,Oscar De Marcos,Athletic Bilbao,,,,,,,,-2.79,0.63
+2019,Luca Sangalli,Real Sociedad,,,,,,,,-3.2,0.74
+2019,Joan Sastre,Mallorca,,,,,,,,-0.43,2.31
+2019,Manu Trigueros,Villarreal,,,,,,,,0.06,3.18
+2019,Toni Lato,Osasuna,,,,,,,,-1.51,0.96
+2019,Juanmi,Real Betis,,,,,,,,-2.89,0.7
+2019,Gabriel Paulista,Valencia,,,,,,,,1.76,4.25
+2019,Luuk de Jong,Sevilla,,,,,,,,2.01,5.59
+2019,Raphael Varane,Real Madrid,,,,,,,,1.19,4.2
+2019,Daniel Carvajal,Real Madrid,,,,,,,,4.72,8.14
+2019,Aridane Hernandez,Osasuna,,,,,,,,0.53,3.02
+2019,Paco Alcacer,Villarreal,,,,,,,,-0.99,2.6
+2019,Maxi Gomez,Valencia,,,,,,,,0.79,3.79
+2019,Federico Valverde,Real Madrid,,,,,,,,0.99,3.63
+2019,Oscar Melendo,Espanyol,,,,,,,,-3.09,0.54
+2019,Manu Vallejo,Valencia,,,,,,,,-1.88,1.11
+2019,Vitolo,Atletico,,,,,,,,-0.02,3.03
+2019,Allan-Romeo Nyom,Getafe,,,,,,,,0.51,2.8
+2019,Thomas Lemar,Atletico,,,,,,,,-2.31,1.31
+2019,Ever Banega,Sevilla,,,,,,,,4.01,6.57
+2019,Santiago Arias,Atletico,,,,,,,,-0.75,2.11
+2019,Carlos Soler,Valencia,,,,,,,,-1.3,2.32
+2019,Rafa Soares,Eibar,,,,,,,,-2.29,0.57
+2019,Jonathan Calleri,Espanyol,,,,,,,,-0.43,3.16
+2019,Ansu Fati,Barcelona,,,,,,,,1.87,3.6
+2019,Francisco Portillo,Getafe,,,,,,,,-3.18,0.75
+2019,Aihen Munoz,Real Sociedad,,,,,,,,-1.59,1.15
+2019,Sime Vrsaljko,Atletico,,,,,,,,-2.43,0.43
+2019,Aritz Elustondo,Real Sociedad,,,,,,,,-0.75,2.27
+2019,Lumor Agbenyenu,Mallorca,,,,,,,,0.94,3.41
+2019,Jeison Murillo,Celta Vigo,,,,,,,,-0.64,1.85
+2019,Sergi Gomez,Sevilla,,,,,,,,-2.15,0.86
+2019,Sergio Reguilon,Sevilla,,,,,,,,3.97,6.71
+2019,Jose Antonio Martinez,Granada,,,,,,,,-1.71,1.31
+2019,Luis Rioja,Deportivo Alaves,,,,,,,,-1.14,1.92
+2019,Ramiro Funes Mori,Villarreal,,,,,,,,-2.41,0.61
+2019,Mikel Merino,Real Sociedad,,,,,,,,3.42,6.06
+2019,Nemanja Radoja,Levante,,,,,,,,-0.15,1.91
+2019,Ruben Perez,Leganes,,,,,,,,0.15,2.21
+2019,Sidnei,Real Betis,,,,,,,,-0.89,1.6
+2019,Joaquin Fernandez,Real Valladolid,,,,,,,,-0.35,1.64
+2019,Pere Pons,Deportivo Alaves,,,,,,,,-1.72,1.41
+2019,Federico Barba,Real Valladolid,,,,,,,,-2.34,0.52
+2019,David Junca,Celta Vigo,,,,,,,,-2.45,0.41
+2019,Edgar Mendez,Deportivo Alaves,,,,,,,,-2.19,0.86
+2019,Pervis Estupinan,Osasuna,,,,,,,,4.39,7.13
+2019,Kenneth Omeruo,Leganes,,,,,,,,-0.48,2.01
+2019,Rober Correa,Eibar,,,,,,,,-1.48,1.38
+2019,Naldo,Espanyol,,,,,,,,-1.42,1.6
+2019,Sergio Escudero,Sevilla,,,,,,,,-0.94,1.92
+2019,Alexander Isak,Real Sociedad,,,,,,,,2.4,4.63
+2019,Lago Junior,Mallorca,,,,,,,,0.66,3.71
+2019,Benat Etxebarria,Athletic Bilbao,,,,,,,,-2.12,0.43
+2019,Mario Hermoso,Atletico,,,,,,,,-0.93,2.08
+2019,Goncalo Guedes,Valencia,,,,,,,,-0.32,2.67
+2019,Facundo Ferreyra,Espanyol,,,,,,,,-2.59,1
+2019,Quini,Granada,,,,,,,,-2.73,0.69
+2019,Martin Valjent,Mallorca,,,,,,,,1.23,3.75
+2019,Paulo Oliveira,Eibar,,,,,,,,-0.47,2.55
+2019,Facundo Roncaglia,Osasuna,,,,,,,,-0.61,2.14
+2019,Lucas Vazquez,Real Madrid,,,,,,,,-0.93,2.5
+2019,Victor Laguardia,Deportivo Alaves,,,,,,,,1.34,3.82
+2019,Tono,Levante,,,,,,,,0.21,3.06
+2019,Fran Gamez,Mallorca,,,,,,,,0.13,2.99
+2019,Eder Militao,Real Madrid,,,,,,,,-1.26,1.26
+2019,Sergi Enrich,Eibar,,,,,,,,-1.33,2.26
+2019,Oghenekaro Etebo,Getafe,,,,,,,,-1.78,0.86
+2019,Inaki Williams,Athletic Bilbao,,,,,,,,2.78,6.37
+2019,Stefan Savic,Atletico,,,,,,,,-0.46,2.56
+2019,Recio,Leganes,,,,,,,,-1.58,1.55
+2019,Ivan Rakitic,Barcelona,,,,,,,,0.18,2.74
+2019,Lucas Ocampos,Sevilla,,,,,,,,5.16,8.21
+2019,Xabier Etxeita,Getafe,,,,,,,,-1.54,1.21
+2019,Fernando Calero,Espanyol,,,,,,,,-1.42,1.1
+2019,Oier Sanjurjo,Osasuna,,,,,,,,1.35,3.25
+2019,Juan Hernandez,Celta Vigo,,,,,,,,-2.54,1.29
+2019,Nestor Araujo,Celta Vigo,,,,,,,,1.37,3.85
+2019,Gil Dias,Granada,,,,,,,,-1.92,0.72
+2019,Raul Navas,Osasuna,,,,,,,,-1.7,0.93
+2019,Ousmane Dembele,Barcelona,,,,,,,,-1.78,1.21
+2019,Sergi Darder,Espanyol,,,,,,,,0.11,3.23
+2019,Kevin Gameiro,Valencia,,,,,,,,0.06,3.88
+2019,Faycal Fajr,Getafe,,,,,,,,-2.6,0.52
+2019,Mikel Balenziaga,Athletic Bilbao,,,,,,,,-1.72,0.57
+2019,Raul Garcia,Athletic Bilbao,,,,,,,,0.19999999999999996,6.88
+2019,Daniel Carrico,Sevilla,,,,,,,,-1.84,1.18
+2019,Nacho,Real Madrid,,,,,,,,-1.04,4.68
+2019,Pape Cheikh Diop Gueye,Celta Vigo,,,,,,,,-2.02,0.63
+2019,Kiko Olivas,Real Valladolid,,,,,,,,1.47,3.96
+2019,Arturo Vidal,Barcelona,,,,,,,,1.62,4.18
+2019,Yuri Berchiche,Athletic Bilbao,,,,,,,,2.58,6
+2019,Andoni Gorosabel,Real Sociedad,,,,,,,,-1.64,1.1
+2019,Fran Merida,Osasuna,,,,,,,,-0.2,1.86
+2019,Ferland Mendy,Real Madrid,,,,,,,,0.59,4.01
+2019,Thierry Correia,Valencia,,,,,,,,-2.07,0.41
+2019,Jason,Getafe,,,,,,,,-1.77,2.17
+2019,Alessandro Florenzi,Valencia,,,,,,,,-1.5,1.36
+2019,Zouhair Feddal,Real Betis,,,,,,,,-0.04,2.98
+2019,Waldo Rubio,Real Valladolid,,,,,,,,-1.57,1.42
+2019,Fedor Smolov,Celta Vigo,,,,,,,,-2.04,1.55
+2019,Esteban Granero,Espanyol,,,,,,,,-1.41,1.15
+2019,Ruben Alcaraz,Real Valladolid,,,,,,,,1.03,3.09
+2019,Lluis Lopez,Espanyol,,,,,,,,-2.1,0.42
+2019,Lisandro Magallan,Deportivo Alaves,,,,,,,,-1.27,1.75
+2019,Junior Firpo,Barcelona,,,,,,,,-0.89,1.85
+2019,Pione Sisto,Celta Vigo,,,,,,,,-1.3,1.76
+2019,Maxime Gonalons,Granada,,,,,,,,-0.3,1.76
+2019,Rodrigo Ely,Deportivo Alaves,,,,,,,,0.09,2.58
+2019,Martin Aguirregabiria,Deportivo Alaves,,,,,,,,0.68,3.15
+2019,Gonzalo Melero,Levante,,,,,,,,-1.2,1.93
+2019,Kevin Vazquez,Celta Vigo,,,,,,,,-1.08,1.78
+2019,Unai Bustinza,Leganes,,,,,,,,1.33,4.34
+2019,Sergio Postigo,Levante,,,,,,,,1.15,3.64
+2019,Charles,Eibar,,,,,,,,-1.44,2.38
+2019,Jonathan Silva,Leganes,,,,,,,,2.25,5.11
+2019,Jorge Miramon,Levante,,,,,,,,1.38,4.24
+2019,Carles Perez,Barcelona,,,,,,,,-1.94,1.06
+2019,Isco,Real Madrid,,,,,,,,-1.01,2.92
+2019,Hector Herrera,Atletico,,,,,,,,-0.75,2.38
+2019,Alvaro Odriozola,Real Madrid,,,,,,,,-1.93,0.81
+2019,Rober Ibanez,Osasuna,,,,,,,,-2.04,1.02
+2019,Aleksander Sedlar,Mallorca,,,,,,,,-1.31,1.18
+2019,Javier Ontiveros,Villarreal,,,,,,,,0.28,3.27
+2019,Jon Moncayola,Osasuna,,,,,,,,-0.44,1.55
+2019,Alejandro Pozo,Mallorca,,,,,,,,-0.11,2.63
+2019,Karl Toko Ekambi,Villarreal,,,,,,,,0.37,3.95
+2019,Hugo Mallo,Celta Vigo,,,,,,,,0.54,3.4
+2019,Joan Jordan,Sevilla,,,,,,,,1.76,4.88
+2019,Mikel Oyarzabal,Real Sociedad,,,,,,,,3.89,6.88
+2019,Pablo Hervias,Real Valladolid,,,,,,,,-1.1,1.95
+2019,Tomas Pina,Deportivo Alaves,,,,,,,,-0.06,1.85
+2019,Carlos Clerc,Levante,,,,,,,,0.36,3.21
+2019,Toni Villa,Real Valladolid,,,,,,,,-0.43,2.63
+2019,Willian Jose,Real Sociedad,,,,,,,,1.69,5.27
+2019,Kike Barja,Osasuna,,,,,,,,-2.14,0.86
+2019,Bruno Gonzalez,Levante,,,,,,,,-2.11,0.38
+2019,Guido Rodriguez,Real Betis,,,,,,,,-0.76,1.3
+2019,Yangel Herrera,Granada,,,,,,,,0.39,3.03
+2019,Yeray Alvarez,Athletic Bilbao,,,,,,,,1.34,4.35
+2019,Asier Villalibre,Athletic Bilbao,,,,,,,,-1.57,1.42
+2019,Martin Zubimendi,Real Sociedad,,,,,,,,-1.2,0.79
+2019,Borja Mayoral,Levante,,,,,,,,1.88,4.88
+2019,German Sanchez,Granada,,,,,,,,0,2.63
+2019,Jaume Costa,Valencia,,,,,,,,-0.2,2.09
+2019,Nikola Vukcevic,Levante,,,,,,,,-0.86,1.2
+2019,Antonito,Real Valladolid,,,,,,,,-0.59,1.71
+2019,Stanislav Lobotka,Celta Vigo,,,,,,,,-0.67,1.39
+2019,Portu,Real Sociedad,,,,,,,,1.9,5.49
+2019,Nacho Vidal,Osasuna,,,,,,,,1.35,4.21
+2019,Inigo Lekue,Athletic Bilbao,,,,,,,,-2.48,0.95
+2019,Carles Alena,Real Betis,,,,,,,,-1.49,1.15
+2019,Alfonso Pedraza,Real Betis,,,,,,,,0.18,2.92
+2019,Bruno Gonzalez,Getafe,,,,,,,,-2.11,0.38
+2019,Michel,Real Valladolid,,,,,,,,1.08,2.98
+2019,Guido Carrillo,Leganes,,,,,,,,-0.96,2.63
+2019,Javier Eraso,Leganes,,,,,,,,-3.13,0.8
+2019,Youssef En-Nesyri,Sevilla,,,,,,,,-0.69,5.3
+2019,Sergio Canales,Real Betis,,,,,,,,3.98,7.11
+2019,Chidozie Awaziem,Leganes,,,,,,,,-0.01,2.51
+2019,Diego Carlos,Sevilla,,,,,,,,2.18,4.67
+2019,Antonio Puertas,Granada,,,,,,,,2.44,6.03
+2019,Jorge Saenz,Celta Vigo,,,,,,,,-1.77,0.3
+2019,Fede San Emeterio,Real Valladolid,,,,,,,,-1.16,0.83
+2019,Oscar Duarte,Levante,,,,,,,,-1.74,0.75
+2019,Ante Budimir,Mallorca,,,,,,,,2.22,5.81
+2019,Denis Suarez,Celta Vigo,,,,,,,,1.17,5.11
+2019,Gabriel Fernandez,Celta Vigo,,,,,,,,-2.68,0.91
+2019,Sergio Alvarez,Eibar,,,,,,,,-1.13,0.93
+2019,Mauro Arambarri,Getafe,,,,,,,,0.35,3
+2019,Renan Lodi,Atletico,,,,,,,,0.72,3.47
+2019,Aleksandar Trajkovski,Mallorca,,,,,,,,-1.61,1.44
+2019,Filip Bradaric,Celta Vigo,,,,,,,,-0.99,1.07
+2019,Jose Gimenez,Atletico,,,,,,,,-0.17,2.32
+2019,Marc Bartra,Real Betis,,,,,,,,1.57,4.58
+2019,Lee Kang-In,Valencia,,,,,,,,-0.45,0.73
+2019,Darko Brasanac,Osasuna,,,,,,,,0.07,3.2
+2019,Marc Cardona,Osasuna,,,,,,,,-2.02,1.57
+2019,Inigo Cordoba,Athletic Bilbao,,,,,,,,-1.28,1.72
+2019,Ruben Duarte,Deportivo Alaves,,,,,,,,2.52,5
+2019,Enric Gallego,Osasuna,,,,,,,,-2.08,1.74
+2019,Gareth Bale,Real Madrid,,,,,,,,-0.89,3.05
+2019,Jose Luis Morales,Levante,,,,,,,,1.71,5.54
+2019,Roger Assale,Leganes,,,,,,,,-0.43,3.15
+2019,Jose Campana,Levante,,,,,,,,3.68,6.81
+2019,Manu Sanchez,Atletico,,,,,,,,-1.28,0.48
+2019,Javi Moyano,Real Valladolid,,,,,,,,0.41,2.7
+2019,Carlos Neva,Granada,,,,,,,,-0.03,2.45
+2019,Sergio Leon,Levante,,,,,,,,-2.45,1.14
+2019,Igor Zubeldia,Real Sociedad,,,,,,,,0.91,3.43
+2019,Pipa,Espanyol,,,,,,,,-1.69,0.78
+2019,Luis Suarez,Barcelona,,,,,,,,4.22,8.04
+2019,Takashi Inui,Eibar,,,,,,,,-0.24,3.73
+2019,Enric Gallego,Getafe,,,,,,,,-2.08,1.74
+2019,Hugo Guillamon,Valencia,,,,,,,,-0.69,0.82
+2019,Gerard Pique,Barcelona,,,,,,,,4.26,7.01
+2019,Eden Hazard,Real Madrid,,,,,,,,2.58,5.63
+2019,Xisco Campos,Mallorca,,,,,,,,-1.26,0.44
+2019,Mikel Vesga,Athletic Bilbao,,,,,,,,-0.52,1.54
+2019,Raul Garcia,Real Valladolid,,,,,,,,0.19999999999999996,6.88
+2019,Mikel San Jose,Athletic Bilbao,,,,,,,,-1.64,0.42
+2019,Ljubomir Fejsa,Deportivo Alaves,,,,,,,,-1.62,0.44
+2019,Coke,Levante,,,,,,,,-0.13,2.16
+2019,Nemanja Gudelj,Sevilla,,,,,,,,-1,1.06
+2019,David Garcia,Osasuna,,,,,,,,0.96,3.98
+2019,Bryan Gil,Leganes,,,,,,,,-0.33,1.4
+2019,Joselu,Deportivo Alaves,,,,,,,,3.04,6.63
+2019,Pau Torres,Villarreal,,,,,,,,3.96,6.03
+2019,Borja Iglesias,Real Betis,,,,,,,,-0.23,3.36
+2019,Carles Alena,Barcelona,,,,,,,,-1.49,1.15
+2019,Mouctar Diakhaby,Valencia,,,,,,,,-0.19,1.88
+2019,Vinicius Junior,Real Madrid,,,,,,,,4.04,5.78
+2019,Ferran Torres,Valencia,,,,,,,,3.19,4.93
+2019,Eliaquim Mangala,Valencia,,,,,,,,-1.94,0.55
+2019,Ezequiel Garay,Valencia,,,,,,,,-0.61,2.02
+2019,Mathias Olivera,Getafe,,,,,,,,1.09,3.57
+2019,Aitor Ruibal,Leganes,,,,,,,,-0.74,1.91
+2019,Dimitrios Siovas,Leganes,,,,,,,,0.07,3.09
+2019,Alex Moreno,Real Betis,,,,,,,,1.8,5.22
+2019,William Carvalho,Real Betis,,,,,,,,-0.7,1.36
+2019,Alberto Moreno,Villarreal,,,,,,,,0.42,3.28
+2019,Iddrisu Baba,Mallorca,,,,,,,,1.18,3.17
+2019,Rafinha,Barcelona,,,,,,,,1.06,4.19
+2019,Javi Lopez,Espanyol,,,,,,,,-0.12,2.17
+2019,Rodrigo,Valencia,,,,,,,,1.6,5.19
+2019,Hugo Duro,Getafe,,,,,,,,-1.01,1.22
+2019,Adrian Lopez,Osasuna,,,,,,,,-1.24,2.59
+2019,Diego Costa,Atletico,,,,,,,,-0.52,3.07
+2019,Sandro Ramirez,Real Valladolid,,,,,,,,-0.33,3.26
+2019,Ximo Navarro,Deportivo Alaves,,,,,,,,-0.49,2.52
+2019,Javi Sanchez,Real Valladolid,,,,,,,,-1.49,0.58
+2019,Brais Mendez,Celta Vigo,,,,,,,,-1.35,2.28
+2019,Yannick Carrasco,Atletico,,,,,,,,-0.46,2.6
+2019,Okay Yokuslu,Celta Vigo,,,,,,,,0.08,2.14
+2019,Matias Vargas,Espanyol,,,,,,,,-1.41,2.22
+2019,Rodrigo Tarin,Leganes,,,,,,,,-1.29,0.78
+2019,Santi Mina,Celta Vigo,,,,,,,,1.99,4.99
+2019,Roberto Soldado,Granada,,,,,,,,0.25,4.07
+2019,Youssef En-Nesyri,Leganes,,,,,,,,-0.69,5.3
+2019,Miguel Angel Guerrero,Leganes,,,,,,,,-2.43,1.16
+2019,Pedro Porro,Real Valladolid,,,,,,,,-0.04,1.05
+2019,Carlos Bacca,Villarreal,,,,,,,,-1.64,2.18
+2019,Vicente Iborra,Villarreal,,,,,,,,1.6,3.5
+2019,Andres Guardado,Real Betis,,,,,,,,-0.21,2.34
+2019,Roger Marti,Levante,,,,,,,,2.06,5.65
+2019,Oihan Sancet,Athletic Bilbao,,,,,,,,-0.68,1.05
+2019,Rodrygo,Real Madrid,,,,,,,,1.06,2.79
+2019,Fran Beltran,Celta Vigo,,,,,,,,-0.3,1.69
+2019,Ander Barrenetxea,Real Sociedad,,,,,,,,-0.36,1.38
+2019,Francis Coquelin,Valencia,,,,,,,,0.06,2.11
+2019,Joseba Zaldua,Real Sociedad,,,,,,,,1.43,4.29
+2019,Dani Rodriguez,Mallorca,,,,,,,,3.74,6.3
+2019,Gonzalo Escalante,Eibar,,,,,,,,0.22,3.35
+2019,Antonio Raillo,Mallorca,,,,,,,,1.53,4.02
+2019,Dani Garcia,Athletic Bilbao,,,,,,,,0.51,2.57
+2019,Angel Correa,Atletico,,,,,,,,2.15,5.74
+2019,Wu Lei,Espanyol,,,,,,,,0.33,3.92
+2019,Diego Lainez,Real Betis,,,,,,,,-0.96,0.77
+2019,Javi Garcia,Real Betis,,,,,,,,-1.6,0.3
+2019,Raul Garcia,Getafe,,,,,,,,0.19999999999999996,6.88
+2019,Didac Vila,Espanyol,,,,,,,,1.35,4.21
+2019,Alvaro Morata,Atletico,,,,,,,,3.84,7.43
+2019,Victor Sanchez,Espanyol,,,,,,,,0.22,2.12
+2019,Raul de Tomas,Espanyol,,,,,,,,-0.72,2.87
+2019,Adria Pedrosa,Espanyol,,,,,,,,-0.57,2.17
+2019,Oscar Plano,Real Valladolid,,,,,,,,1.13,4.26
+2019,Jose Gaya,Valencia,,,,,,,,0.78,4.21
+2019,Borja Sainz,Deportivo Alaves,,,,,,,,-0.45,1.29
+2019,Edgar Gonzalez,Real Betis,,,,,,,,-1.57,0.95
+2019,Unai Nunez,Athletic Bilbao,,,,,,,,-0.03,2.04
+2019,Felipe,Atletico,,,,,,,,0.35,2.83
+2019,Raul Albiol,Villarreal,,,,,,,,3.01,5.64
+2019,Carlos Fernandez,Granada,,,,,,,,2.97,5.97
+2019,Geoffrey Kondogbia,Valencia,,,,,,,,0.4,2.46
+2019,Robin Le Normand,Real Sociedad,,,,,,,,1.19,3.71
+2019,Fabian Orellana,Eibar,,,,,,,,2.18,6.15
+2019,Diego Llorente,Real Sociedad,,,,,,,,1.27,4.29
+2019,Jaime Mata,Getafe,,,,,,,,1.52,5.11
+2019,Antoine Griezmann,Barcelona,,,,,,,,3.23,6.29
+2019,Mohammed Salisu,Real Valladolid,,,,,,,,1.15,3.22
+2019,Iago Aspas,Celta Vigo,,,,,,,,4.87,8.69
+2019,Samuel Chukwueze,Villarreal,,,,,,,,3.27,6.27
+2019,Andre-Frank Zambo Anguissa,Villarreal,,,,,,,,2.76,4.75
+2019,Inigo Martinez,Athletic Bilbao,,,,,,,,2.83,5.85
+2019,Riqui Puig,Barcelona,,,,,,,,0.02,1.2
+2019,Jules Kounde,Sevilla,,,,,,,,1.86,4.38
+2019,Oliver Burke,Deportivo Alaves,,,,,,,,-0.22,2.77
+2019,Takefusa Kubo,Mallorca,,,,,,,,4.38,6.12
+2019,Joseph Aidoo,Celta Vigo,,,,,,,,0.96,3.02
+2019,Joao Felix,Atletico,,,,,,,,2.89,5.12
+2019,Nelson Semedo,Barcelona,,,,,,,,1.86,5.28
+2018,Ruben Pena,Eibar,D,DR,2850,7000000,12.613733352802228,-0.2352137512061745,12.378519601596054,4.38,7.8
+2018,Pablo Sarabia,Sevilla,M,MC,2899,3500000,10.97892963985794,-0.4151307475985959,10.563798892259344,6.06,10
+2018,Ivan Cuellar,Leganes,G,GK,3242,10000000,5.050921086978633,3.827169222291559,8.878090309270192,,
+2018,Jonathan Silva,Leganes,D,DL,2868,1000000,8.88216184520349,-0.29603017994668335,8.586131665256806,2.1,4.96
+2018,Alejandro Granell,Girona,M,MC,2558,50000,8.093371589394753,-0.062287170614581555,8.031084418780171,,
+2018,Ousmane Dembele,Barcelona,F,FWL,1726,12000000,7.718236577928532,-0.29376769973896444,7.424468878189567,3.36,6.35
+2018,Aissa Mandi,Real Betis,D,DC,3262,7000000,6.751243590202648,0.6710409969091415,7.42228458711179,3.09,6.11
+2018,Marc-Andre ter Stegen,Barcelona,G,GK,3324,15000000,2.702588517800905,4.306095181382261,7.008683699183166,,
+2018,Jorge Molina,Getafe,F,FWC,2836,12000000,7.199828766348265,-0.4806608000653796,6.719167966282885,2.94,7.09
+2018,Sergio Ramos,Real Madrid,D,DC,2619,3500000,5.640424873892814,0.6857310547493398,6.326155928642154,4.07,6.83
+2018,Pau Lopez,Real Betis,G,GK,3164,100000000,2.903212132048793,3.2652226525824517,6.168434784631245,,
+2018,Marcelo,Real Madrid,D,DL,1968,500000,6.140704902803991,-0.12635210517328233,6.014352797630709,1.35,4.77
+2018,Roberto Rosales,Espanyol,D,DR,1857,7000000,6.334121471561957,-1.3562691131955944,4.977852358366363,0.51,3.37
+2018,Aleix Garcia,Girona,M,MC,1771,3000000,4.673430160986725,0.2754757722723298,4.948905933259055,-0.22,2.42
+2018,Sofiane Boufal,Celta Vigo,M,ML,2201,12000000,5.016342742982321,-0.3457391926785931,4.670603550303728,4.37,7.42
+2018,Leandro Cabrera,Getafe,D,DC,3000,3000000,5.021615395962726,-0.4101626221090555,4.611452773853671,1.6,4.62
+2018,Hector Moreno,Real Sociedad,D,DC,2070,40000000,3.884215688740369,0.4876282867626287,4.371843975502998,0.37,3.38
+2018,David Ferreiro,SD Huesca,M,ML,2455,30000000,4.795349922776222,-0.5926645540166646,4.202685368759558,1.23,5.17
+2018,Cristhian Stuani,Girona,F,FWC,2924,6000000,4.618619703376797,-0.595238060457632,4.023381642919165,2.49,6.31
+2018,Cristiano Piccini,Valencia,D,DR,1987,60000000,4.133347580383997,-0.13693124864948913,3.9964163317345083,-0.15,3.27
+2018,Fernando Calero,Real Valladolid,D,DC,3338,3500000,4.125057392113376,-0.4625835811602883,3.662473810953088,1.89,3.96
+2018,Ruben Vezo,Levante,D,DC,1415,45000000,3.225723176554311,0.278619916876778,3.504343093431089,-0.4,2.09
+2018,Andre Silva,Sevilla,F,FWC,2310,13000000,3.5950069726095535,-0.2199477080721408,3.3750592645374127,4.46,7.46
+2018,Thomas Lemar,Atletico,M,ML,1907,4000000,3.366859602873214,-0.3754966934211552,2.9913629094520586,0.93,3.93
+2018,Dimitri Foulquier,Getafe,M,MR,1907,3500000,3.167577170068398,-0.21064031188143417,2.956936858186964,-1.48,2.46
+2018,Alvaro Medran,Rayo Vallecano,M,MC,1246,750000,3.5988631561459044,-0.6722414415562525,2.926621714589652,-0.93,2.2
+2018,Vicente Iborra,Villarreal,M,MC,1776,9000000,2.2547002132050693,0.5179260101285763,2.7726262233336456,0.18,2.23
+2018,Christian Rivera,SD Huesca,M,MC,1798,100000000,2.1023447610787116,0.639048722863663,2.7413934839423746,0.12,2.12
+2018,Bernardo Espinosa,Girona,D,DC,2982,100000000,2.37640282913344,0.29787913663312793,2.6742819657665677,1.18,3.67
+2018,Alvaro Morata,Atletico,F,FWC,1127,50000000,2.876555391412694,-0.22051658254349604,2.656038808869198,0.47,4.06
+2018,Marco Asensio,Real Madrid,F,FWL,1883,40000000,2.6136062373174354,-0.21754921902902424,2.396057018288411,3.59,6.59
+2018,Carles Alena,Barcelona,M,MC,686,8000000,2.325799877461046,-0.006163907004520297,2.3196359704565257,-2.32,1.31
+2018,Arthur,Barcelona,M,MC,1487,7000000,1.6711078415261582,0.2020291972439736,1.8731370387701318,-0.73,1.91
+2018,Andres Guardado,Real Betis,M,MC,2483,500000,2.3438785471785812,-0.6134791388176382,1.7303994083609433,1.26,3.82
+2018,Kenneth Omeruo,Leganes,D,DC,2581,5000000,2.152247903170064,-0.47153295867610723,1.6807149444939569,-0.12,2.36
+2018,Brahim Diaz,Real Madrid,F,FWL,402,17000000,1.5800916110165417,-0.12895986711373553,1.4511317439028062,-0.44,1.29
+2018,Kevin Gameiro,Valencia,F,FWC,1727,3000000,1.62167733151,-0.1786355635849759,1.443041767925024,1.71,5.54
+2018,Marc Cardona,Eibar,F,FWC,665,35000000,1.5359766990295611,-0.10652264807140455,1.4294540509581566,-1.14,1.86
+2018,Douglas Luiz,Girona,M,MC,1608,2500000,1.6287568544954993,-0.333317082375288,1.2954397721202113,0.25,2.24
+2018,Wesley Hoedt,Celta Vigo,D,DC,959,12000000,0.8770355075248517,0.40268175111850724,1.279717258643359,-1.04,1.44
+2018,Abdoulaye Ba,Rayo Vallecano,D,DC,2352,25000000,2.070711813401431,-0.912074348772876,1.1586374646285549,0.56,3.05
+2018,David Costas,Celta Vigo,D,DC,1269,15000000,1.0910370632191189,0.023510104685556144,1.114547167904675,-0.57,1.5
+2018,Andrew Hjulsager,Celta Vigo,M,MR,422,12000000,1.1102636206098833,-0.0010427862289361656,1.109220834380947,-2.96,0.67
+2018,Leonardo Suarez,Real Valladolid,F,FWC,558,2500000,1.0766731614712626,-0.03426621371181682,1.0424069477594458,-2.49,1.14
+2018,Rodrigo Tarin,Leganes,D,DC,1519,1750000,1.044510593463201,-0.009230140538420528,1.0352804529247805,-1.13,1.39
+2018,Amath Ndiaye,Getafe,M,ML,1048,60000000,1.0869707856876776,-0.09397391398670152,0.9929968717009761,,
+2018,Andriy Lunin,Leganes,G,GK,391,20000000,0.44903753290418535,0.5081301883328706,0.957167721237056,,
+2018,Manuel Morlanes,Villarreal,M,MC,637,20000000,0.7817611469654366,0.15863959584385157,0.9404007428092882,-0.52,0.84
+2018,Antonio Barragan,Real Betis,M,MR,987,7000000,1.0102205547736958,-0.07857641391456127,0.9316441408591345,-2.3,1.33
+2018,David Lopez,Espanyol,D,DC,1963,20000000,1.5816264929017052,-0.8295928442967124,0.7520336486049928,1.05,4.07
+2018,Pedro Bigas,Eibar,D,DC,623,7000000,0.8130039037787355,-0.08551804459420964,0.7274858591845259,-2.15,0.87
+2018,Stefan Savic,Atletico,D,DC,1508,2000000,0.6518009077990428,0.04540722904494032,0.6972081368439831,-0.92,1.57
+2018,Patrick Roberts,Girona,F,FWC,668,5000000,0.6723323477199301,0.0010268816840834916,0.6733592294040136,-1.55,1.44
+2018,Sebastian Cristoforo,Getafe,M,MC,514,3500000,0.46401589403580873,0.13263524160720408,0.5966511356430129,-1.02,1.04
+2018,Junior Alonso,Celta Vigo,D,DL,578,4500000,0.717101002286654,-0.12451201875228435,0.5925889835343696,-1.98,0.88
+2018,Ivan Ramis,Eibar,D,DC,1759,5000000,0.7182913620490581,-0.1434173570596613,0.5748740049893968,0,2.75
+2018,Joris Gnagnon,Sevilla,D,DC,482,65000000,0.40566720493370667,0.08991031581535935,0.495577520749066,-1.87,0.65
+2018,Ander Barrenetxea,Real Sociedad,F,FWL,428,25000000,0.4293131921440363,-0.09938537608832121,0.3299278160557151,-0.81,0.93
+2018,Nikola Vukcevic,Levante,M,MC,768,20000000,0.6455234738532454,-0.37319842720171437,0.272325046651531,-1.39,0.66
+2018,Emerson,Real Betis,M,MR,342,15000000,0.20024057204136625,0.041526328248437494,0.24176690028980374,-1.17,0.59
+2018,Ander Guevara,Real Sociedad,M,MC,94,15000000,0.19578014081344008,0.024538310943171382,0.22031845175661147,,
+2018,Jean-Clair Todibo,Barcelona,D,DC,162,25000000,0.22012650524266064,-0.06246788683347404,0.1576586184091866,,
+2018,Ruben Vezo,Valencia,D,DR,215,45000000,0.23847317305626348,-0.09858210041420534,0.13989107264205813,-0.4,2.09
+2018,Adrian Marin,Deportivo Alaves,D,DL,314,3000000,0.2442879918962717,-0.14858245226787403,0.09570553962839767,-1.96,0.51
+2018,Andres Solano,Atletico,D,DL,47,15000000,0.03663276124279946,0.052431196032557636,0.0890639572753571,,
+2018,Dani Torres,Deportivo Alaves,M,MC,68,8000000,0.02133465395309031,0.043516973324585706,0.06485162727767602,,
+2018,Ezequiel Munoz,Leganes,D,DC,224,3000000,-0.06213303154800087,0.05527835979592055,-0.006854671752080321,,
+2018,Nemanja Maksimovic,Getafe,M,MC,3436,30000000,-0.062362765602301806,-0.04087425576290116,-0.10323702136520296,0.01,2.65
+2018,Sergi Guardiola,Getafe,,,39,65000000,-0.09528291050810367,-0.018354641506448388,-0.11363755201455206,,
+2018,Dani Ojeda,Leganes,M,MR,210,2500000,-0.07132201310340314,-0.045567528693936765,-0.1168895417973399,,
+2018,Mathias Jensen,Celta Vigo,M,MR,253,1500000,-0.20339875301904975,0.0274738505249843,-0.17592490249406545,,
+2018,Sergi Guardiola,Real Valladolid,F,FWC,1609,65000000,0.10965533819583062,-0.294038483989425,-0.1843831457935945,0.73,4.31
+2018,Michael Santos,Leganes,F,FWC,605,3000000,-0.29073843301739544,-0.15358247503172606,-0.4443209080491215,-2.48,1.11
+2018,Alejandro Catena,Rayo Vallecano,D,DC,192,70000000,0.02223069209139794,-0.7087744876043871,-0.6865437955129892,,
+2018,Michy Batshuayi,Valencia,F,FWC,576,30000000,-0.7030792776495218,-0.154745853447821,-0.8578251310973428,-2.25,1.34
+2018,Sandro Ramirez,Real Sociedad,F,FWC,1135,4000000,-0.6961156127513386,-0.23154656839324161,-0.9276621811445802,-0.86,2.14
+2018,Sabin Merino,Leganes,F,FWC,340,5000000,-0.8265741602517664,-0.12148847966454923,-0.9480626399163157,-2.73,0.86
+2018,Guido Carrillo,Leganes,F,FWC,2098,7500000,-3.050225746550426,-0.4398990462650545,-3.4901247928154806,0.78,4.37
+2018,Lionel Messi,Barcelona,,,,,,,,14.26,17.93
+2018,Jony,Deportivo Alaves,,,,,,,,3.24,7.18
+2018,Daniel Parejo,Valencia,,,,,,,,5.74,8.87
+2018,Damian Suarez,Getafe,,,,,,,,5.14,8
+2018,Joaquin,Real Betis,,,,,,,,-0.32,4.93
+2018,Sergi Enrich,Eibar,,,,,,,,3.97,7.56
+2018,Iago Aspas,Celta Vigo,,,,,,,,4.52,7.57
+2018,Ibai Gomez,Deportivo Alaves,,,,,,,,-4.33,3.53
+2018,Koke,Atletico,,,,,,,,1.5,4.63
+2018,Moi Gomez,SD Huesca,,,,,,,,1.69,4.81
+2018,Goncalo Guedes,Valencia,,,,,,,,0.8,4.42
+2018,Juanfran,Leganes,,,,,,,,-1.4100000000000001,5.640000000000001
+2018,Ivan Rakitic,Barcelona,,,,,,,,1.73,4.86
+2018,Jesus Navas,Sevilla,,,,,,,,3.56,7.19
+2018,Antoine Griezmann,Atletico,,,,,,,,5.18,9.11
+2018,Nabil El Zhar,Leganes,,,,,,,,-2.18,1.79
+2018,Takashi Inui,Deportivo Alaves,,,,,,,,-3.91,2.2
+2018,Ibai Gomez,Athletic Bilbao,,,,,,,,-4.33,3.53
+2018,Joan Jordan,Eibar,,,,,,,,2.28,5.41
+2018,Benat Etxebarria,Athletic Bilbao,,,,,,,,0.04,2.6
+2018,Jose Campana,Levante,,,,,,,,4.07,6.13
+2018,Filipe Luis,Atletico,,,,,,,,0.78,4.41
+2018,Rodrigo,Valencia,,,,,,,,5.3,8.89
+2018,Nacho,Real Valladolid,,,,,,,,2.78,7.699999999999999
+2018,Ryad Boudebouz,Celta Vigo,,,,,,,,-4.08,2.9
+2018,Allan-Romeo Nyom,Leganes,,,,,,,,-1.13,2.29
+2018,Ximo Navarro,Deportivo Alaves,,,,,,,,0.32,3.34
+2018,Ruben Rochina,Levante,,,,,,,,1.87,5
+2018,Pablo De Blasis,Eibar,,,,,,,,-0.59,2.83
+2018,Anaitz Arbilla,Eibar,,,,,,,,0.57,3.33
+2018,Toni Kroos,Real Madrid,,,,,,,,1.66,4.79
+2018,Asier Illarramendi,Real Sociedad,,,,,,,,0.7,2.76
+2018,Jorge Miramon,SD Huesca,,,,,,,,2.26,5.11
+2018,Karim Benzema,Real Madrid,,,,,,,,6.72,10.3
+2018,Gonzalo Escalante,Eibar,,,,,,,,-0.43,2.7
+2018,Esteban Granero,Espanyol,,,,,,,,0.48,3.04
+2018,Sergi Darder,Espanyol,,,,,,,,2.2,5.33
+2018,Juanfran,Atletico,,,,,,,,-1.4100000000000001,5.640000000000001
+2018,Thomas Partey,Atletico,,,,,,,,1.7,3.75
+2018,Facundo Roncaglia,Celta Vigo,,,,,,,,-3.45,1.9300000000000002
+2018,Luka Modric,Real Madrid,,,,,,,,2.82,5.38
+2018,Facundo Roncaglia,Valencia,,,,,,,,-3.45,1.9300000000000002
+2018,Yuri Berchiche,Athletic Bilbao,,,,,,,,2.14,5.56
+2018,Burgui,Deportivo Alaves,,,,,,,,-2.94,1
+2018,Antonito,Real Valladolid,,,,,,,,-0.23,3.19
+2018,Ruben Pardo,Real Sociedad,,,,,,,,-0.19,2.94
+2018,Ezequiel Garay,Valencia,,,,,,,,1.03,3.66
+2018,Pedro Lopez,Levante,,,,,,,,-2.69,0.94
+2018,Jordi Alba,Barcelona,,,,,,,,3.99,7.42
+2018,Santiago Arias,Atletico,,,,,,,,-0.34,3.09
+2018,Markel Susaeta,Athletic Bilbao,,,,,,,,-1.99,1.94
+2018,Coke,Levante,,,,,,,,1.3,3.59
+2018,Gerard Pique,Barcelona,,,,,,,,5.5,8.25
+2018,Waldo Rubio,Real Valladolid,,,,,,,,-2.89,0.74
+2018,Portu,Girona,,,,,,,,2.77,6.36
+2018,Joseba Zaldua,Real Sociedad,,,,,,,,1.08,3.94
+2018,Alex Gallar,SD Huesca,,,,,,,,-0.91,3.03
+2018,Samuel Umtiti,Barcelona,,,,,,,,-0.92,2.1
+2018,Fabian Orellana,Eibar,,,,,,,,3.79,7.76
+2018,Raul Garcia,Athletic Bilbao,,,,,,,,-1.88,7.66
+2018,Juanpi Anor,SD Huesca,,,,,,,,-2.57,1.36
+2018,Francisco Portillo,Getafe,,,,,,,,-1.43,2.5
+2018,Mario Hermoso,Espanyol,,,,,,,,2.74,4.81
+2018,Pedro Leon,Eibar,,,,,,,,-2.89,0.77
+2018,Oscar Rodriguez,Leganes,,,,,,,,1.15,4.78
+2018,Alvaro Garcia,Rayo Vallecano,,,,,,,,0.46,3.52
+2018,Adria Pedrosa,Espanyol,,,,,,,,-1.56,1.19
+2018,Cristian Tello,Real Betis,,,,,,,,1.97,5.1
+2018,Jose Pozo,Rayo Vallecano,,,,,,,,0.51,3.51
+2018,Daniel Carvajal,Real Madrid,,,,,,,,1.52,4.94
+2018,Santi Cazorla,Villarreal,,,,,,,,4.15,6.71
+2018,Ever Banega,Sevilla,,,,,,,,4.67,6.73
+2018,Gaku Shibasaki,Getafe,,,,,,,,-3.5,0.43
+2018,Sergio Busquets,Barcelona,,,,,,,,1.73,3.79
+2018,Ryad Boudebouz,Real Betis,,,,,,,,-4.08,2.9
+2018,Takashi Inui,Real Betis,,,,,,,,-3.91,2.2
+2018,Marc Roca,Espanyol,,,,,,,,3.34,5.33
+2018,Raul Garcia,Girona,,,,,,,,-1.88,7.66
+2018,Pione Sisto,Celta Vigo,,,,,,,,-1.13,1.86
+2018,Alex Moreno,Rayo Vallecano,,,,,,,,2.95,6.37
+2018,Giannelli Imbula,Rayo Vallecano,,,,,,,,-0.8,2.33
+2018,Peru Nolaskoain,Athletic Bilbao,,,,,,,,-1.17,0.93
+2018,Ander Capa,Athletic Bilbao,,,,,,,,-0.22,3.21
+2018,Ruben Alcaraz,Real Valladolid,,,,,,,,2.09,4.15
+2018,Nestor Araujo,Celta Vigo,,,,,,,,1.23,3.72
+2018,Oscar De Marcos,Athletic Bilbao,,,,,,,,0.7,4.12
+2018,Iker Muniain,Athletic Bilbao,,,,,,,,3.01,6.94
+2018,Dani Ceballos,Real Madrid,,,,,,,,0.07,2.71
+2018,Alfonso Pedraza,Villarreal,,,,,,,,2.71,5.46
+2018,Ignasi Miquel,Getafe,,,,,,,,-2.74,0.28
+2018,Dani Garcia,Athletic Bilbao,,,,,,,,-0.26,1.8
+2018,Samu Saiz,Getafe,,,,,,,,-2.33,0.72
+2018,Daniele Verde,Real Valladolid,,,,,,,,-2.18,1.44
+2018,Miguel Layun,Villarreal,,,,,,,,-2.99,0.94
+2018,Pere Milla,Eibar,,,,,,,,-3.55,0.39
+2018,Roque Mesa,Sevilla,,,,,,,,0.24,3.37
+2018,Ruben Duarte,Deportivo Alaves,,,,,,,,1.55,4.02
+2018,Ruben Perez,Leganes,,,,,,,,0.93,2.99
+2018,Tomas Pina,Deportivo Alaves,,,,,,,,0.83,2.89
+2018,Diego Reyes,Leganes,,,,,,,,-2.36,0.66
+2018,Sergio Postigo,Levante,,,,,,,,-0.52,1.97
+2018,Javi Garcia,Real Betis,,,,,,,,-1.92,0.83
+2018,Pablo Insua,SD Huesca,,,,,,,,-2.4,0.61
+2018,Lucas Hernandez,Atletico,,,,,,,,-0.49,1.98
+2018,Unai Bustinza,Leganes,,,,,,,,0.29,3.31
+2018,Marc Bartra,Real Betis,,,,,,,,2.69,5.7
+2018,Mikel Vesga,Leganes,,,,,,,,-1.06,2.07
+2018,Mikel Balenziaga,Athletic Bilbao,,,,,,,,-2.27,0.59
+2018,Hugo Mallo,Celta Vigo,,,,,,,,3.28,6.14
+2018,Antonio Luna,Levante,,,,,,,,-0.7,2.16
+2018,Brais Mendez,Celta Vigo,,,,,,,,2.07,5.69
+2018,Dimitrios Siovas,Leganes,,,,,,,,2.28,5.29
+2018,Sidnei,Real Betis,,,,,,,,-0.04,2.98
+2018,Robin Le Normand,Real Sociedad,,,,,,,,-1.93,0.59
+2018,Daniel Carrico,Sevilla,,,,,,,,0.01,3.02
+2018,John Guidetti,Deportivo Alaves,,,,,,,,-2.45,1.13
+2018,Luis Advincula,Rayo Vallecano,,,,,,,,1.62,5.04
+2018,Luis Suarez,Barcelona,,,,,,,,10.35,14.17
+2018,Jorge Pulido,SD Huesca,,,,,,,,0.96,3.97
+2018,Jaume Costa,Villarreal,,,,,,,,-0.08,2.78
+2018,Denis Cheryshev,Valencia,,,,,,,,1.26,5.2
+2018,Angel Rodriguez,Getafe,,,,,,,,1.35,5.17
+2018,Moi Delgado,Real Valladolid,,,,,,,,-2.6,0.26
+2018,Diego Rolan,Leganes,,,,,,,,-2.57,0.49
+2018,Thomas Vermaelen,Barcelona,,,,,,,,-2.15,0.6
+2018,Martin Aguirregabiria,Deportivo Alaves,,,,,,,,0.59,3.07
+2018,Aritz Elustondo,Real Sociedad,,,,,,,,1.01,4.02
+2018,Tito,Rayo Vallecano,,,,,,,,-0.81,1.48
+2018,Nikola Kalinic,Atletico,,,,,,,,-2.61,0.98
+2018,Carlos Akapo,SD Huesca,,,,,,,,-1.12,1.74
+2018,Juan Aguilera,SD Huesca,,,,,,,,-2.11,0.45
+2018,Unai Lopez,Athletic Bilbao,,,,,,,,-2.09,0.55
+2018,Gael Kakuta,Rayo Vallecano,,,,,,,,-2.8,1.14
+2018,Mikel San Jose,Athletic Bilbao,,,,,,,,-0.94,2.19
+2018,Kevin Rodrigues,Real Sociedad,,,,,,,,-1.73,1.13
+2018,Vasyl Kravets,Leganes,,,,,,,,-2.04,0.7
+2018,Javi Lopez,Espanyol,,,,,,,,1.15,3.44
+2018,Sergi Gomez,Sevilla,,,,,,,,0.83,3.84
+2018,Carlos Vigaray,Deportivo Alaves,,,,,,,,-1.56,0.91
+2018,Victor Ruiz,Villarreal,,,,,,,,0.74,3.76
+2018,Carles Planas,Girona,,,,,,,,-2.2,0.66
+2018,Quincy Promes,Sevilla,,,,,,,,1.66,5.08
+2018,Roger Marti,Levante,,,,,,,,2.44,6.02
+2018,Erick Cabaco,Levante,,,,,,,,0.16,2.68
+2018,Sanjin Prcic,Levante,,,,,,,,-1.41,0.65
+2018,Carlos Bacca,Villarreal,,,,,,,,0.07,3.9
+2018,Oscar Duarte,Espanyol,,,,,,,,-2.29,0.73
+2018,Paulo Oliveira,Eibar,,,,,,,,-0.5,2.52
+2018,Pedro Alcala,Girona,,,,,,,,0.22,2.71
+2018,Gerard Gumbau,Leganes,,,,,,,,-1.44,1.2
+2018,Sergio Reguilon,Real Madrid,,,,,,,,-0.77,1.97
+2018,Maximilian Wober,Sevilla,,,,,,,,-1.61,0.86
+2018,Yeray Alvarez,Athletic Bilbao,,,,,,,,1.57,4.09
+2018,Alvaro Gonzalez,Villarreal,,,,,,,,1.86,4.88
+2018,Raphael Varane,Real Madrid,,,,,,,,1.32,4.34
+2018,Gabriel Mercado,Sevilla,,,,,,,,-0.08,2.67
+2018,Mario Suarez,Rayo Vallecano,,,,,,,,-0.24,1.66
+2018,Fran Beltran,Celta Vigo,,,,,,,,-0.06,1.3
+2018,Lucas Olaza,Celta Vigo,,,,,,,,-1.49,1.37
+2018,Enric Gallego,SD Huesca,,,,,,,,-0.85,2.98
+2018,Xavi Quintilla,Villarreal,,,,,,,,-1.55,0.92
+2018,Bruno Gonzalez,Getafe,,,,,,,,-1.69,1.33
+2018,Stanislav Lobotka,Celta Vigo,,,,,,,,0.88,2.87
+2018,Andoni Gorosabel,Real Sociedad,,,,,,,,-1.88,0.59
+2018,Enes Unal,Real Valladolid,,,,,,,,0.53,3.53
+2018,Gareth Bale,Real Madrid,,,,,,,,1.88,5.46
+2018,Simon Kjaer,Sevilla,,,,,,,,0.17,2.66
+2018,Recio,Leganes,,,,,,,,-0.84,1.22
+2018,Seydou Doumbia,Girona,,,,,,,,-1.91,1.68
+2018,Oscar Melendo,Espanyol,,,,,,,,-0.91,2.71
+2018,Sergio Escudero,Sevilla,,,,,,,,0.33,3.19
+2018,Luisinho,SD Huesca,,,,,,,,-1.55,0.75
+2018,Ramiro Funes Mori,Villarreal,,,,,,,,1.05,4.07
+2018,Munir El Haddadi,Sevilla,,,,,,,,-0.29,2.7
+2018,Javi Moyano,Real Valladolid,,,,,,,,0.28,2.57
+2018,Francis Coquelin,Valencia,,,,,,,,0.17,2.23
+2018,Marc Muniesa,Girona,,,,,,,,-0.46,2.56
+2018,William Carvalho,Real Betis,,,,,,,,1.43,3.49
+2018,Luca Sangalli,Real Sociedad,,,,,,,,-1.46,2.17
+2018,Ruben Sobrino,Deportivo Alaves,,,,,,,,-1.49,2.1
+2018,Maxime Gonalons,Sevilla,,,,,,,,-1.39,0.66
+2018,Emre Mor,Celta Vigo,,,,,,,,-2.31,0.68
+2018,Serdar Gurler,SD Huesca,,,,,,,,-2.26,0.79
+2018,Naldo,Espanyol,,,,,,,,-0.63,1.85
+2018,Aihen Munoz,Real Sociedad,,,,,,,,-1.09,1.38
+2018,Aleix Vidal,Sevilla,,,,,,,,-1.94,1.48
+2018,Federico Valverde,Real Madrid,,,,,,,,-1.08,0.92
+2018,Toni Villa,Real Valladolid,,,,,,,,1.25,4.24
+2018,Vitolo,Atletico,,,,,,,,-1.32,1.73
+2018,Borja Baston,Deportivo Alaves,,,,,,,,-0.57,3.02
+2018,David Zurutuza,Real Sociedad,,,,,,,,-0.33,1.57
+2018,Uche Agbo,Rayo Vallecano,,,,,,,,-1.73,0.26
+2018,Sergio Leon,Real Betis,,,,,,,,-3.06,0.53
+2018,Raul Garcia,Leganes,,,,,,,,-1.88,7.66
+2018,Igor Zubeldia,Real Sociedad,,,,,,,,0.91,2.91
+2018,Lluis Lopez,Espanyol,,,,,,,,-1.43,0.64
+2018,Sergio Alvarez,Eibar,,,,,,,,-1.14,0.91
+2018,Raul Navas,Real Sociedad,,,,,,,,-0.49,1.99
+2018,Gorka Elustondo,Rayo Vallecano,,,,,,,,-1.54,0.36
+2018,Martin Mantovani,SD Huesca,,,,,,,,-1.7,0.93
+2018,Diego Godin,Atletico,,,,,,,,2.08,4.71
+2018,Jose Gaya,Valencia,,,,,,,,4.17,6.64
+2018,Moses Simon,Levante,,,,,,,,-1.21,1.78
+2018,Okay Yokuslu,Celta Vigo,,,,,,,,1.95,4.01
+2018,Santiago Comesana,Rayo Vallecano,,,,,,,,0.7,2.69
+2018,Daniel Wass,Valencia,,,,,,,,1.41,4.83
+2018,Marko Rog,Sevilla,,,,,,,,-1.51,0.48
+2018,Arturo Vidal,Barcelona,,,,,,,,1.66,4.21
+2018,Marcos Llorente,Real Madrid,,,,,,,,-1.42,0.57
+2018,Mariano,Real Madrid,,,,,,,,-1.81,1.78
+2018,Loren Moron,Real Betis,,,,,,,,2.07,5.66
+2018,Rodrigo Ely,Deportivo Alaves,,,,,,,,-1.95,0.54
+2018,Wilfrid Kaptoum,Real Betis,,,,,,,,-1.97,0.67
+2018,Javi Galan,SD Huesca,,,,,,,,0.47,2.94
+2018,Mathias Olivera,Getafe,,,,,,,,-0.62,1.85
+2018,Wissam Ben Yedder,Sevilla,,,,,,,,7.75,11.34
+2018,Mathieu Flamini,Getafe,,,,,,,,-1.68,0.22
+2018,Santiago Caseres,Villarreal,,,,,,,,0.01,2.01
+2018,Malcom,Barcelona,,,,,,,,-1.11,1.88
+2018,Jason,Levante,,,,,,,,1.21,4.63
+2018,Theo Hernandez,Real Sociedad,,,,,,,,1.14,3.88
+2018,Pedro Porro,Girona,,,,,,,,2.87,4.63
+2018,Mikel Merino,Real Sociedad,,,,,,,,2.18,4.83
+2018,Darko Brasanac,Deportivo Alaves,,,,,,,,-0.51,1.55
+2018,Diego Rolan,Deportivo Alaves,,,,,,,,-2.57,0.49
+2018,Joaquin Fernandez,Real Valladolid,,,,,,,,-1.33,0.73
+2018,Ferran Torres,Valencia,,,,,,,,0.77,1.95
+2018,Charles,Eibar,,,,,,,,0.72,4.54
+2018,Pablo Piatti,Espanyol,,,,,,,,-0.99,2.07
+2018,Unai Nunez,Athletic Bilbao,,,,,,,,-0.73,1.79
+2018,Guilherme Arana,Sevilla,,,,,,,,-1.3,0.7
+2018,Michel,Real Valladolid,,,,,,,,2.3,4.36
+2018,Ruben Semedo,SD Huesca,,,,,,,,-1.42,1.06
+2018,Junior Firpo,Real Betis,,,,,,,,2.17,4.91
+2018,Manu Garcia,Deportivo Alaves,,,,,,,,1,2.9
+2018,Manu Trigueros,Villarreal,,,,,,,,-0.05,2
+2018,David Junca,Celta Vigo,,,,,,,,-0.04,2.82
+2018,Gerard Moreno,Villarreal,,,,,,,,3.13,6.71
+2018,Marc Cucurella,Eibar,,,,,,,,0.08,3.7
+2018,Jaime Mata,Getafe,,,,,,,,2.61,6.2
+2018,Adnan Januzaj,Real Sociedad,,,,,,,,0.07,3.69
+2018,Tono,Levante,,,,,,,,0.36,3.78
+2018,Hernan Perez,Espanyol,,,,,,,,-0.47,2.58
+2018,Martin Braithwaite,Leganes,,,,,,,,-0.48,3.11
+2018,Rodrigo,Atletico,,,,,,,,5.3,8.89
+2018,Victor Sanchez,Espanyol,,,,,,,,-0.63,1.43
+2018,Borja Fernandez,Real Valladolid,,,,,,,,-0.92,0.77
+2018,Lucas Vazquez,Real Madrid,,,,,,,,0.34,4.27
+2018,Saul Niguez,Atletico,,,,,,,,3.13,5.77
+2018,Wu Lei,Espanyol,,,,,,,,-0.38,3.21
+2018,Hugo Duro,Getafe,,,,,,,,-1.38,0.84
+2018,Jese,Real Betis,,,,,,,,-1.48,2.11
+2018,Jonathan Calleri,Deportivo Alaves,,,,,,,,2.45,6.03
+2018,Ibrahim Amadou,Sevilla,,,,,,,,-1,1.06
+2018,Jesus Vallejo,Real Madrid,,,,,,,,-1.43,0.64
+2018,Borja Garcia,Girona,,,,,,,,0.68,3.81
+2018,Gabriel Paulista,Valencia,,,,,,,,1.41,3.89
+2018,Guillermo Maripan,Deportivo Alaves,,,,,,,,0.53,3.02
+2018,Philippe Coutinho,Barcelona,,,,,,,,4.17,7.23
+2018,Enis Bardhi,Levante,,,,,,,,2.61,5.26
+2018,Casemiro,Real Madrid,,,,,,,,1.94,4
+2018,Mauro Arambarri,Getafe,,,,,,,,0.66,3.31
+2018,Samuele Longo,SD Huesca,,,,,,,,-2.11,1.48
+2018,Mario Gaspar,Villarreal,,,,,,,,2.16,5.02
+2018,Ruben Sobrino,Valencia,,,,,,,,-1.49,2.1
+2018,Toni Lato,Valencia,,,,,,,,-2,0.47
+2018,Bebe,Rayo Vallecano,,,,,,,,0.12,3.17
+2018,Javier Puado,Espanyol,,,,,,,,-1.8,1.19
+2018,Adrian Dieguez,SD Huesca,,,,,,,,-1.35,0.72
+2018,Damian Musto,SD Huesca,,,,,,,,-0.03,1.87
+2018,Clement Lenglet,Barcelona,,,,,,,,1.31,3.83
+2018,Samuel Chukwueze,Villarreal,,,,,,,,3.59,5.32
+2018,Emmanuel Boateng,Levante,,,,,,,,-1.97,1.03
+2018,Zouhair Feddal,Real Betis,,,,,,,,0.6,3.61
+2018,Oscar Plano,Real Valladolid,,,,,,,,1.84,5.78
+2018,Victor Laguardia,Deportivo Alaves,,,,,,,,2.43,4.92
+2018,Javier Eraso,Leganes,,,,,,,,-1.67,1.38
+2018,Cheick Doukoure,Levante,,,,,,,,-1.75,0.31
+2018,Sergio Canales,Real Betis,,,,,,,,2.95,6.89
+2018,Jozabed,Celta Vigo,,,,,,,,-0.58,1.47
+2018,Didac Vila,Espanyol,,,,,,,,2.67,5.53
+2018,Jose Gimenez,Atletico,,,,,,,,0.53,2.6
+2018,Kiko Olivas,Real Valladolid,,,,,,,,1.13,3.62
+2018,Inigo Cordoba,Athletic Bilbao,,,,,,,,-0.81,2.18
+2018,Giovani Lo Celso,Real Betis,,,,,,,,4.56,7.55
+2018,Mouctar Diakhaby,Valencia,,,,,,,,0.24,2.31
+2018,Jonas Ramalho,Girona,,,,,,,,-0.7,1.79
+2018,Rober Pier,Levante,,,,,,,,1.68,3.74
+2018,Nelson Semedo,Barcelona,,,,,,,,0.08,3.51
+2018,Diego Lainez,Real Betis,,,,,,,,-1.21,0.52
+2018,Sergi Roberto,Barcelona,,,,,,,,0.27,3.7
+2018,Nacho,Real Madrid,,,,,,,,2.78,7.699999999999999
+2018,Juanmi,Real Sociedad,,,,,,,,0.72,4.31
+2018,Alvaro Odriozola,Real Madrid,,,,,,,,0.8,3.54
+2018,Sergio Garcia,Espanyol,,,,,,,,0.11,3.78
+2018,Anthony Lozano,Girona,,,,,,,,-1.47,2.12
+2018,Geoffrey Kondogbia,Valencia,,,,,,,,0.65,2.71
+2018,Diego Llorente,Real Sociedad,,,,,,,,0.31,2.8
+2018,Santi Mina,Valencia,,,,,,,,1.97,4.97
+2018,Munir El Haddadi,Barcelona,,,,,,,,-0.29,2.7
+2018,Inaki Williams,Athletic Bilbao,,,,,,,,4.79,8.37
+2018,Diego Costa,Atletico,,,,,,,,-1.79,1.8
+2018,Karl Toko Ekambi,Villarreal,,,,,,,,4.26,7.85
+2018,Leo Baptistao,Espanyol,,,,,,,,0.39,3.44
+2018,Yangel Herrera,SD Huesca,,,,,,,,-0.49,1.5
+2018,Jordi Amat,Rayo Vallecano,,,,,,,,1.06,4.08
+2018,Jon Bautista,Real Sociedad,,,,,,,,-1.16,1.84
+2018,Angel Correa,Atletico,,,,,,,,2.32,5.32
+2018,Gustavo Cabral,Celta Vigo,,,,,,,,-0.46,2.29
+2018,Borja Mayoral,Levante,,,,,,,,0.37,3.36
+2018,Maxi Gomez,Celta Vigo,,,,,,,,3.2,6.2
+2018,Xabier Etxeita,SD Huesca,,,,,,,,1.52,4.01
+2018,Antonio Sanabria,Real Betis,,,,,,,,-1.22,1.78
+2018,Mikel Oyarzabal,Real Sociedad,,,,,,,,5.03,8.03
+2018,Adrian Embarba,Rayo Vallecano,,,,,,,,2.23,6.17
+2018,Raul de Tomas,Rayo Vallecano,,,,,,,,4.49,7.48
+2018,Pablo Fornals,Villarreal,,,,,,,,1.84,5.46
+2018,Juanpe,Girona,,,,,,,,2.56,5.05
+2018,Pere Pons,Girona,,,,,,,,1.39,3.45
+2018,Carlos Soler,Valencia,,,,,,,,2.41,5.15
+2018,Oscar Trejo,Rayo Vallecano,,,,,,,,0.39,3.52
+2018,Alex Lopez,Espanyol,,,,,,,,-0.07,2.42
+2018,Franco Vazquez,Sevilla,,,,,,,,2.73,5.86
+2018,Inigo Martinez,Athletic Bilbao,,,,,,,,2.58,5.6
+2018,Willian Jose,Real Sociedad,,,,,,,,0.92,4.5
+2018,Jose Luis Morales,Levante,,,,,,,,6.69,10.51
+2018,Emiliano Velazquez,Rayo Vallecano,,,,,,,,0.11,2.59
+2018,Gonzalo Melero,SD Huesca,,,,,,,,0.44,3.57
+2018,Borja Iglesias,Espanyol,,,,,,,,5.29,8.88
+2018,Bebe,Eibar,,,,,,,,0.12,3.17
+2018,Youssef En-Nesyri,Leganes,,,,,,,,1.79,4.78
+2018,Aritz Aduriz,Athletic Bilbao,,,,,,,,-2.8,1.34
+2018,Vinicius Junior,Real Madrid,,,,,,,,1.78,4.01
+2018,Isco,Real Madrid,,,,,,,,-0.11,3.82
+2018,Duje Cop,Real Valladolid,,,,,,,,-1.21,2.38
+2018,Keko,Real Valladolid,,,,,,,,0.68,3.73
+2017,Roberto Rosales,Malaga,D,DR,3278,7000000,9.305261523261201,-1.7140594299999066,7.591202093261295,3.8,6.66
+2017,Philippe Coutinho,Barcelona,F,FWL,1344,100000000,7.558541605195962,-0.35094100853893906,7.207600596657023,1.26,4.32
+2017,Marc-Andre ter Stegen,Barcelona,G,GK,3489,20000000,3.321019366849214,3.283775853458792,6.604795220308006,,
+2017,Andres Iniesta,Barcelona,M,ML,1878,40000000,6.195159432416782,0.043158579617738724,6.2383180120345205,-0.19,3.48
+2017,Pau Lopez,Espanyol,G,GK,2712,90000000,3.3928173680906184,2.6849489888409153,6.077766356931534,,
+2017,Angel Correa,Atletico,M,MR,2346,1000000,5.866895092932507,0.10600920004071668,5.972904292973224,2.78,5.77
+2017,Ander Capa,Eibar,D,DR,2383,15000000,6.2021736345486715,-0.4584237393573858,5.743749895191286,1.14,4.56
+2017,Jordi Alba,Barcelona,D,DL,2874,250000,5.48232557787234,0.25774067820748314,5.740066256079823,2.45,5.88
+2017,Marco Asensio,Real Madrid,M,ML,1950,40000000,5.822825822641607,-0.2021655019489117,5.6206603206926955,2.38,6.01
+2017,David Lopez,Espanyol,D,DC,3503,25000000,4.951552701299079,0.645826018997468,5.597378720296547,2.65,5.67
+2017,Cristhian Stuani,Girona,F,FWC,2814,6000000,5.962361208085102,-0.4298220831551589,5.532539124929943,3.81,7.4
+2017,Jan Oblak,Atletico,G,GK,3494,2500000,3.7006287130643614,1.7795779707375914,5.480206683801953,,
+2017,Sergio Ramos,Real Madrid,D,DC,2429,5000000,5.083953448256649,0.281289697275497,5.365243145532146,3.83,6.58
+2017,Aaron Martin,Espanyol,D,DL,2965,45000000,5.443930899261497,-0.40546385757625103,5.038467041685246,1.46,4.2
+2017,Pablo Sarabia,Sevilla,F,FWR,2522,5000000,5.279999753984836,-0.2469021364231594,5.033097617561676,2.74,6.68
+2017,Gabriel Pires,Leganes,M,MC,2473,80000000,3.7987608459389097,0.31616247189231217,4.114923317831222,,
+2017,Andres Guardado,Real Betis,M,MC,2399,500000,4.424584182568573,-0.5114165340200998,3.9131676485484728,0.62,3.75
+2017,Emre Colak,Deportivo,F,FWC,1512,30000000,3.696783339041285,-0.11965431197313592,3.5771290270681493,-0.7,3.23
+2017,Steven Nzonzi,Sevilla,M,MC,2340,10000000,2.288088009110652,0.6533005440142006,2.9413885531248525,1.4,3.46
+2017,Achraf Hakimi,Real Madrid,D,DR,788,1000000,2.6478369570104405,0.2167117816861719,2.8645487386966124,-0.11,1.65
+2017,Inigo Martinez,Real Sociedad,D,DC,1105,1500000,3.2083173828432336,-0.36137515312293544,2.846942229720298,-0.32,5.720000000000001
+2017,Inigo Martinez,Athletic Bilbao,D,DC,1518,1500000,2.3275499075534754,0.49052675999701023,2.8180766675504856,-0.32,5.720000000000001
+2017,Ousmane Dembele,Barcelona,F,FWR,962,18000000,3.359386156981811,-0.6806446582195349,2.678741498762276,0.61,3.6
+2017,Alvaro Medran,Deportivo Alaves,M,MC,1006,500000,2.41404983044602,0.16256801661802456,2.5766178470640444,-1.05,1.6
+2017,Dani Castellano,Las Palmas,D,DL,2138,3500000,2.3394472681102343,0.0942108067101799,2.433658074820414,-0.06,2.79
+2017,Aymeric Laporte,Athletic Bilbao,D,DC,1805,50000000,2.6037030746228993,-0.1706763373222202,2.433026737300679,1.05,3.57
+2017,Jose Gimenez,Atletico,D,DC,1792,2000000,2.050508012645878,0.3146157450391911,2.365123757685069,0.59,2.65
+2017,Javier Mascherano,Barcelona,D,DC,568,5000000,1.9719237172976136,0.11613549431785941,2.088059211615473,-1.25,1.5
+2017,Federico Ricca,Malaga,D,DL,1157,8000000,1.764656299550552,0.0964729804545641,1.861129280005116,-0.75,1.72
+2017,Pedro Bigas,Las Palmas,D,DC,941,8000000,1.4706147990073077,0.3540869279531762,1.824701726960484,-0.72,1.77
+2017,Amath Ndiaye,Getafe,M,ML,2959,65000000,1.88616320095025,-0.11082041345071048,1.7753427874995396,,
+2017,Dani Torres,Deportivo Alaves,M,MC,1277,20000000,1.387298773683142,0.36317024391610175,1.7504690175992437,-0.98,1.07
+2017,Francis Coquelin,Valencia,M,MC,697,12000000,1.2731074762996286,0.12005407636752352,1.3931615526671521,-1.11,0.95
+2017,Stefan Savic,Atletico,D,DC,2412,4000000,1.9602749001933262,-0.5810236308607273,1.379251269332599,-0.28,2.21
+2017,David Simon,Las Palmas,D,DR,764,5000000,1.2266306584351696,0.13936758047202602,1.3659982389071956,-1.69,1.73
+2017,Ezequiel Munoz,Leganes,D,DC,1476,4500000,0.6216846709139645,0.7347099920734763,1.3563946629874408,-1.06,1.43
+2017,Costel Pantilimon,Deportivo,G,GK,576,1500000,0.6574761274969205,0.4865585049847141,1.1440346324816346,,
+2017,Miguel Torres,Malaga,D,DL,709,3500000,0.7600807275739498,0.3507575820549391,1.110838309628889,-1.74,1.01
+2017,Hector Moreno,Real Sociedad,D,DC,753,40000000,1.0523198444861919,0.04999083612347022,1.102310680609662,-0.94,1.55
+2017,Martin Mantovani,Leganes,D,DC,1079,500000,1.6194259084295481,-0.5286603604326956,1.0907655479968525,-1.45,1.18
+2017,Omar Ramos,Leganes,F,FWR,1494,8000000,1.0060265709562228,-0.12414557137526572,0.8818809995809571,-1.99,1.95
+2017,Bernardo Espinosa,Girona,D,DC,3006,50000000,0.6925761572783813,0.1883197171264328,0.8808958744048141,1.4,3.89
+2017,Nordin Amrabat,Leganes,F,FWL,1736,3000000,1.582747423316352,-0.7139889797545038,0.8687584435618483,-0.17,3.42
+2017,Daniel Carrico,Sevilla,D,DC,491,6000000,0.549904155835975,0.2623226233990863,0.8122267792350613,-1.79,0.69
+2017,Andres Prieto,Malaga,G,GK,370,25000000,0.4959915259387344,0.19396077876444906,0.6899523047031835,,
+2017,Michael Krohn-Dehli,Sevilla,M,MC,576,20000000,0.7269465230051428,-0.0915177880669944,0.6354287349381484,-4.720000000000001,1.5
+2017,Carlos Fernandez,Sevilla,F,FWC,140,3500000,0.592414399725385,-0.018433760793413967,0.573980638931971,,
+2017,Michael Krohn-Dehli,Deportivo,M,MC,749,20000000,0.3218202633401379,0.2520500047248788,0.5738702680650167,-4.720000000000001,1.5
+2017,Roque Mesa,Sevilla,M,MC,366,7000000,0.5339981618421152,0.0245235656038858,0.558521727446001,-1.58,0.48
+2017,Aly Abeid,Levante,D,DL,78,18000000,0.18812141771195456,0.07041306607425213,0.2585344837862067,,
+2017,Victor Lopez,Deportivo Alaves,M,MR,61,25000000,0.18939318385347725,0.05296296364394948,0.24235614749742673,,
+2017,Isaac Success,Malaga,M,MR,507,2000000,0.31049611524213105,-0.0895067200763151,0.22098939516581595,-1.68,1.31
+2017,Christian Rivera,Eibar,M,MC,265,80000000,-0.0015684706158936024,0.20755869656568393,0.20599022594979033,,
+2017,Alvaro Medran,Valencia,M,MC,74,500000,0.17611490713898093,0.014443825231865048,0.19055873237084597,-1.05,1.6
+2017,Alfred N'Diaye,Villarreal,D,DC,110,8000000,0.0584152644732967,0.029757339041680098,0.0881726035149768,,
+2017,Adrian Marin,Villarreal,D,DL,244,1500000,0.17182412242982537,-0.10616106761153787,0.06566305481828749,,
+2017,Nemanja Maksimovic,Valencia,M,MR,598,40000000,-0.05378811509581283,0.04959816817427054,-0.004189946921542287,-1.77,0.87
+2017,Armando Sadiku,Levante,F,FWC,284,1000000,-0.3687902783276513,-0.030314362433273345,-0.39910464076092467,-3.3,0.28
+2017,Alex Mula,Malaga,F,FWL,595,1500000,-0.4742497165086679,-0.03028397838352248,-0.5045336948921904,-0.54,2.51
+2017,Gerard Deulofeu,Barcelona,M,MR,529,14000000,-1.0187998652532697,-0.05353524995734915,-1.0723351152106189,-1.45,1.54
+2017,Roberto Soriano,Villarreal,M,MC,1203,80000000,-1.1347710797078907,-0.0723856661352329,-1.2071567458431236,-1.96,1.97
+2017,Sandro Ramirez,Sevilla,F,FWC,765,10000000,-1.291329846517183,-0.2077356376685202,-1.4990654841857032,-0.96,2.03
+2017,Jorge Molina,Getafe,F,FWC,2934,15000000,-3.2775281168759167,-0.6811174930771813,-3.958645609953098,6.05,9.87
+2017,Jonathan Calleri,Las Palmas,F,FWC,3266,2000000,-3.965323426140342,-1.5980239163036458,-5.563347342443987,3.82,6.82
+2017,Lionel Messi,Barcelona,,,,,,,,17.38,20.44
+2017,Asier Illarramendi,Real Sociedad,,,,,,,,4.92,6.98
+2017,Antoine Griezmann,Atletico,,,,,,,,4.71,8.65
+2017,Enis Bardhi,Levante,,,,,,,,-0.57,3.05
+2017,Toni Kroos,Real Madrid,,,,,,,,3.66,6.79
+2017,Iago Aspas,Celta Vigo,,,,,,,,7.54,11.13
+2017,Portu,Girona,,,,,,,,3.57,7.15
+2017,Marcelo,Real Madrid,,,,,,,,4.42,7.84
+2017,Cedric Bakambu,Villarreal,,,,,,,,-0.67,2.91
+2017,Gabi,Atletico,,,,,,,,1.73,3.63
+2017,Daniel Parejo,Valencia,,,,,,,,4.54,7.67
+2017,Isco,Real Madrid,,,,,,,,3.07,7.01
+2017,Koke,Atletico,,,,,,,,3.02,6.14
+2017,Loic Remy,Las Palmas,,,,,,,,-2.82,4.36
+2017,Eneko Boveda,Athletic Bilbao,,,,,,,,-5.26,1.18
+2017,Iker Muniain,Athletic Bilbao,,,,,,,,-1.24,2.7
+2017,Joaquin,Real Betis,,,,,,,,0.49,5.74
+2017,Antonio Sanabria,Real Betis,,,,,,,,-0.52,2.47
+2017,Luciano Vietto,Valencia,,,,,,,,-4.33,1.66
+2017,Thomas Partey,Atletico,,,,,,,,1.53,3.58
+2017,Ibai Gomez,Deportivo Alaves,,,,,,,,1.5,5.44
+2017,Damian Suarez,Getafe,,,,,,,,3.29,6.14
+2017,Juanpe,Girona,,,,,,,,2.4,5.42
+2017,Juanfran,Deportivo,,,,,,,,0.7999999999999998,7.85
+2017,Eneko Boveda,Deportivo,,,,,,,,-5.26,1.18
+2017,Loren Moron,Real Betis,,,,,,,,-0.49,2.5
+2017,Aritz Elustondo,Real Sociedad,,,,,,,,-0.02,2.5
+2017,Carlos Bacca,Villarreal,,,,,,,,4.68,8.27
+2017,Enes Unal,Villarreal,,,,,,,,-2,3.99
+2017,Ivan Ramis,Eibar,,,,,,,,-0.56,2.2
+2017,Gareth Bale,Real Madrid,,,,,,,,5.67,8.73
+2017,Anaitz Arbilla,Eibar,,,,,,,,1.63,4.65
+2017,Andreas Pereira,Valencia,,,,,,,,-1.62,2
+2017,Casemiro,Real Madrid,,,,,,,,2.44,4.5
+2017,Goncalo Guedes,Valencia,,,,,,,,3.54,7.16
+2017,Ruben Pena,Eibar,,,,,,,,-0.54,2.89
+2017,Coke,Levante,,,,,,,,0.54,3.4
+2017,Vitolo,Las Palmas,,,,,,,,-2.75,3.3600000000000003
+2017,Samu Castillejo,Villarreal,,,,,,,,2.43,6.05
+2017,Ivan Rakitic,Barcelona,,,,,,,,2.55,5.68
+2017,Dani Ceballos,Real Madrid,,,,,,,,-1.8,0.85
+2017,Santi Mina,Valencia,,,,,,,,2.16,5.15
+2017,David Timor,Girona,,,,,,,,-0.94,1.12
+2017,Loic Remy,Getafe,,,,,,,,-2.82,4.36
+2017,Cristian Tello,Real Betis,,,,,,,,0.73,3.79
+2017,Ever Banega,Sevilla,,,,,,,,4.19,7.32
+2017,Joseba Zaldua,Leganes,,,,,,,,1.12,3.98
+2017,Filipe Luis,Atletico,,,,,,,,-0.1,3.53
+2017,Christian Santos,Deportivo Alaves,,,,,,,,-2.92,0.67
+2017,Zouhair Feddal,Real Betis,,,,,,,,-0.84,2.18
+2017,Angel Rodriguez,Getafe,,,,,,,,3.38,6.97
+2017,Borja Garcia,Girona,,,,,,,,-0.07,3.87
+2017,Ganso,Sevilla,,,,,,,,-2.08,1.05
+2017,Sergio Busquets,Barcelona,,,,,,,,2.79,4.85
+2017,Maxi Gomez,Celta Vigo,,,,,,,,5.1,8.09
+2017,Miguel Layun,Sevilla,,,,,,,,-1.09,2.33
+2017,Alberto de la Bella,Real Sociedad,,,,,,,,-0.96,2.67
+2017,Faycal Fajr,Getafe,,,,,,,,-0.01,3.12
+2017,Alen Halilovic,Las Palmas,,,,,,,,-0.58,3.04
+2017,Benat Etxebarria,Athletic Bilbao,,,,,,,,-1.4,1.73
+2017,David Lomban,Eibar,,,,,,,,-1.81,1.21
+2017,Kevin Gameiro,Atletico,,,,,,,,-0.81,2.77
+2017,Antonio Luna,Levante,,,,,,,,0.62,3.48
+2017,Victor Ruiz,Villarreal,,,,,,,,1.28,3.77
+2017,Fabian Ruiz,Real Betis,,,,,,,,2.16,4.8
+2017,Carles Gil,Deportivo,,,,,,,,-3.1,0.84
+2017,Oscar Romero,Deportivo Alaves,,,,,,,,-3.7,0.23
+2017,Clement Lenglet,Sevilla,,,,,,,,3.01,5.53
+2017,Sergio Escudero,Sevilla,,,,,,,,1.03,4.45
+2017,Ezequiel Garay,Valencia,,,,,,,,-0.15,2.34
+2017,Sergio Postigo,Levante,,,,,,,,0.79,3.28
+2017,Sergio Leon,Real Betis,,,,,,,,1.3,4.89
+2017,Sergi Roberto,Barcelona,,,,,,,,1.75,5.17
+2017,Xabi Prieto,Real Sociedad,,,,,,,,0.04,3.71
+2017,Juankar,Malaga,,,,,,,,-1.7,1.16
+2017,Luciano Vietto,Atletico,,,,,,,,-4.33,1.66
+2017,Martin Aguirregabiria,Deportivo Alaves,,,,,,,,0.08,2.56
+2017,Javi Fuego,Espanyol,,,,,,,,-2.41,1.3900000000000001
+2017,Markel Susaeta,Athletic Bilbao,,,,,,,,0.75,4.69
+2017,Sergio Canales,Real Sociedad,,,,,,,,1.82,5.76
+2017,Jonathan Viera,Las Palmas,,,,,,,,2.28,6.22
+2017,Marc Bartra,Real Betis,,,,,,,,0.41,3.43
+2017,Nacho,Real Madrid,,,,,,,,0.08,2.94
+2017,Pione Sisto,Celta Vigo,,,,,,,,2.84,5.83
+2017,Giampaolo Pazzini,Levante,,,,,,,,-3.31,0.52
+2017,Ander Iturraspe,Athletic Bilbao,,,,,,,,0.32,2.38
+2017,Johannes Geis,Sevilla,,,,,,,,-1.42,1.1
+2017,Mario Gaspar,Villarreal,,,,,,,,2.69,5.55
+2017,David Junca,Eibar,,,,,,,,-0.76,1.98
+2017,Matias Aguirregaray,Las Palmas,,,,,,,,-1.5,1.92
+2017,Mikel Oyarzabal,Real Sociedad,,,,,,,,4.36,7.35
+2017,Sergi Darder,Espanyol,,,,,,,,1.84,3.84
+2017,Victor Laguardia,Deportivo Alaves,,,,,,,,-0.31,2.18
+2017,Tomas Pina,Deportivo Alaves,,,,,,,,0.46,2.51
+2017,Xabier Etxeita,Athletic Bilbao,,,,,,,,-2.46,0.56
+2017,Karim Benzema,Real Madrid,,,,,,,,3.9,7.48
+2017,David Garcia,Las Palmas,,,,,,,,-1.31,1.44
+2017,Adrian Gonzalez,Malaga,,,,,,,,-0.61,2.52
+2017,Paco Alcacer,Barcelona,,,,,,,,-0.81,2.18
+2017,Luka Modric,Real Madrid,,,,,,,,3.01,5.57
+2017,Daniel Wass,Celta Vigo,,,,,,,,1.62,5.04
+2017,Oscar De Marcos,Athletic Bilbao,,,,,,,,0.11,3.53
+2017,Mikel Balenziaga,Athletic Bilbao,,,,,,,,-1.52,1.9
+2017,Andreu Fontas,Celta Vigo,,,,,,,,-1.41,1.61
+2017,Adrian Lopez,Deportivo,,,,,,,,3.61,7.19
+2017,Ruben Castro,Real Betis,,,,,,,,-3.43,0.71
+2017,Nicola Sansone,Villarreal,,,,,,,,-0.84,2.21
+2017,Francisco Portillo,Getafe,,,,,,,,-0.85,3.09
+2017,Igor Zubeldia,Real Sociedad,,,,,,,,-0.69,1.31
+2017,Lionel Carole,Sevilla,,,,,,,,-2.7,0.72
+2017,Luis Hernandez,Malaga,,,,,,,,1.65,4.14
+2017,Yannick Carrasco,Atletico,,,,,,,,-0.3,2.69
+2017,Geoffrey Kondogbia,Valencia,,,,,,,,2.88,4.93
+2017,Ryad Boudebouz,Real Betis,,,,,,,,-1.42,2.51
+2017,Alex Robles,Malaga,,,,,,,,3.22,6.35
+2017,Wissam Ben Yedder,Sevilla,,,,,,,,2.31,5.9
+2017,Nacho Vidal,Valencia,,,,,,,,-1.84,0.63
+2017,Cristiano Ronaldo,Real Madrid,,,,,,,,9.02,12.84
+2017,Aleix Garcia,Girona,,,,,,,,-1.01,0.99
+2017,Pedro Alcala,Girona,,,,,,,,-1.93,1.08
+2017,Mikel Vesga,Athletic Bilbao,,,,,,,,-2.06,1.07
+2017,Kevin Rodrigues,Real Sociedad,,,,,,,,-0.56,2.18
+2017,Burgui,Deportivo Alaves,,,,,,,,-1.3,2.32
+2017,Sidnei,Deportivo,,,,,,,,-0.08,2.41
+2017,Nolito,Sevilla,,,,,,,,1.13,5.06
+2017,Bebe,Eibar,,,,,,,,-3.45,0.49
+2017,Nicolas Pareja,Sevilla,,,,,,,,-2.12,0.63
+2017,Markel Bergara,Getafe,,,,,,,,-0.63,1.92
+2017,Ivan Alejo,Eibar,,,,,,,,-1.21,1.78
+2017,Fernando Navarro,Deportivo,,,,,,,,-0.77,1.52
+2017,Borja Mayoral,Real Madrid,,,,,,,,-1.22,1.77
+2017,Jesus Navas,Sevilla,,,,,,,,0.19,3.86
+2017,Nacho Gil,Valencia,,,,,,,,-2.74,0.89
+2017,Inigo Lekue,Athletic Bilbao,,,,,,,,0.34,3.76
+2017,Nacho Gil,Las Palmas,,,,,,,,-2.74,0.89
+2017,Stanislav Lobotka,Celta Vigo,,,,,,,,1.78,3.77
+2017,Samuel Umtiti,Barcelona,,,,,,,,1.8,4.32
+2017,Simon Kjaer,Sevilla,,,,,,,,-0.3,2.19
+2017,Ruben Perez,Leganes,,,,,,,,1.57,3.63
+2017,Mauro Arambarri,Getafe,,,,,,,,0.18,2.17
+2017,Recio,Malaga,,,,,,,,-0.82,2.31
+2017,Luisinho,Deportivo,,,,,,,,2.78,5.07
+2017,Sime Vrsaljko,Atletico,,,,,,,,-1.18,2.24
+2017,Jose Campana,Levante,,,,,,,,1.94,5.07
+2017,Jesus Vallejo,Real Madrid,,,,,,,,-1.8,0.72
+2017,Alvaro Jimenez,Getafe,,,,,,,,-2.3,0.7
+2017,Paul Baysse,Malaga,,,,,,,,-1.05,1.44
+2017,Gustavo Cabral,Celta Vigo,,,,,,,,-0.11,2.64
+2017,Celso Borges,Deportivo,,,,,,,,0.96,4.09
+2017,Fabian Orellana,Eibar,,,,,,,,-1.07,2.9
+2017,Marc Muniesa,Girona,,,,,,,,-1.14,1.88
+2017,Riza Durmisi,Real Betis,,,,,,,,0.46,3.21
+2017,Vitolo,Atletico,,,,,,,,-2.75,3.3600000000000003
+2017,Leandro Cabrera,Getafe,,,,,,,,-1.82,1.04
+2017,Hugo Mallo,Celta Vigo,,,,,,,,3.5,6.36
+2017,Dani Raba,Villarreal,,,,,,,,-0.8,2.83
+2017,Darko Brasanac,Leganes,,,,,,,,-1.1,2.03
+2017,Mauro Dos Santos,Leganes,,,,,,,,-1.55,0.94
+2017,Joan Jordan,Eibar,,,,,,,,1.45,4.1
+2017,Pedro Lopez,Levante,,,,,,,,-0.11,2.18
+2017,Borja Valle,Deportivo,,,,,,,,-1.64,1.95
+2017,Aritz Aduriz,Athletic Bilbao,,,,,,,,0.64,4.78
+2017,Maxime Lestienne,Malaga,,,,,,,,-2.86,1.08
+2017,Aleix Vidal,Barcelona,,,,,,,,-2.53,1.4
+2017,Enric Saborit,Athletic Bilbao,,,,,,,,-1.18,1.68
+2017,Tana,Las Palmas,,,,,,,,-0.61,2.52
+2017,Jeison Murillo,Valencia,,,,,,,,-0.83,1.65
+2017,Yeray Alvarez,Athletic Bilbao,,,,,,,,-1.34,1.18
+2017,Marc Navarro,Espanyol,,,,,,,,-1.14,1.6
+2017,Johan Mojica,Girona,,,,,,,,0.22,3.64
+2017,Gonzalo Escalante,Eibar,,,,,,,,-1.26,1.87
+2017,Naldo,Espanyol,,,,,,,,-1.74,0.75
+2017,Pablo Hernandez,Celta Vigo,,,,,,,,1.29,3.34
+2017,Jose Luis Morales,Levante,,,,,,,,6.01,9.06
+2017,Tono,Levante,,,,,,,,-1.41,2.02
+2017,Alexis Ruano,Deportivo Alaves,,,,,,,,-0.05,2.58
+2017,Thomas Vermaelen,Barcelona,,,,,,,,-1.26,1.5
+2017,Esteban Granero,Espanyol,,,,,,,,-0.98,2.15
+2017,Gaku Shibasaki,Getafe,,,,,,,,-1.98,1.14
+2017,Dani Garcia,Eibar,,,,,,,,0.37,2.43
+2017,Sergio Garcia,Espanyol,,,,,,,,0.06,3.89
+2017,Munir El Haddadi,Deportivo Alaves,,,,,,,,2.85,5.84
+2017,Juanpi Anor,Malaga,,,,,,,,-2.68,0.94
+2017,Unai Bustinza,Leganes,,,,,,,,0.13,3.15
+2017,Diego Rico,Leganes,,,,,,,,2.71,5.57
+2017,Juanmi,Real Sociedad,,,,,,,,0.12,3.71
+2017,Fede Cartabia,Deportivo,,,,,,,,0.33,3.38
+2017,Anthony Lozano,Girona,,,,,,,,-2.21,1.38
+2017,Michael Olunga,Girona,,,,,,,,-1.34,1.65
+2017,Javi Lopez,Espanyol,,,,,,,,-0.66,1.63
+2017,Yerry Mina,Barcelona,,,,,,,,-1.79,0.73
+2017,Junior Firpo,Real Betis,,,,,,,,-0.69,2.06
+2017,Inigo Cordoba,Athletic Bilbao,,,,,,,,-0.39,2.6
+2017,Cheick Doukoure,Levante,,,,,,,,-2.18,0.95
+2017,Zdravko Kuzmanovic,Malaga,,,,,,,,-1.54,0.52
+2017,Tito,Leganes,,,,,,,,-1.6,0.69
+2017,Javi Garcia,Real Betis,,,,,,,,0.03,2.09
+2017,Antonio Rukavina,Villarreal,,,,,,,,-0.8,1.49
+2017,Sebastien Corchia,Sevilla,,,,,,,,-2.21,1.21
+2017,Lucas Digne,Barcelona,,,,,,,,-1.72,1.71
+2017,Fernando Torres,Atletico,,,,,,,,-1.33,2.49
+2017,Ruben Duarte,Deportivo Alaves,,,,,,,,0.66,3.13
+2017,Javi Fuego,Villarreal,,,,,,,,-2.41,1.3900000000000001
+2017,Emre Mor,Celta Vigo,,,,,,,,-0.88,2.11
+2017,Marc Roca,Espanyol,,,,,,,,-1.64,0.36
+2017,Franco Vazquez,Sevilla,,,,,,,,1.89,5.82
+2017,Victor Sanchez,Espanyol,,,,,,,,-0.2,2.66
+2017,Sergi Gomez,Celta Vigo,,,,,,,,1.59,4.08
+2017,Erik Exposito,Las Palmas,,,,,,,,-2.21,0.79
+2017,Didac Vila,Espanyol,,,,,,,,-1.9,1.52
+2017,Raphael Varane,Real Madrid,,,,,,,,0.52,3.54
+2017,Shaquell Moore,Levante,,,,,,,,-1.71,0.76
+2017,Brown Ideye,Malaga,,,,,,,,-2.74,0.85
+2017,Gerard Gumbau,Leganes,,,,,,,,-0.65,1.34
+2017,Sulley Muntari,Deportivo,,,,,,,,-1.48,0.42
+2017,Antonio Barragan,Real Betis,,,,,,,,0.06,3.49
+2017,Mehdi Lacen,Malaga,,,,,,,,-1.09,0.81
+2017,Marcos Llorente,Real Madrid,,,,,,,,-1.58,0.42
+2017,Momo,Las Palmas,,,,,,,,-1.38,1.18
+2017,Oscar Duarte,Espanyol,,,,,,,,-1.02,1.47
+2017,Manuel Iturra,Malaga,,,,,,,,-0.15,1.75
+2017,Ruben Sobrino,Deportivo Alaves,,,,,,,,-0.87,2.72
+2017,Hernan Perez,Deportivo Alaves,,,,,,,,-2.11,0.94
+2017,Florin Andone,Deportivo,,,,,,,,1.21,4.8
+2017,Pedro Leon,Eibar,,,,,,,,-2.04,1.9
+2017,Carlos Sanchez,Espanyol,,,,,,,,-1.2,0.7
+2017,Guido Pizarro,Sevilla,,,,,,,,0.69,2.75
+2017,Denis Suarez,Barcelona,,,,,,,,-0.44,2.55
+2017,Javi Castellano,Las Palmas,,,,,,,,-0.71,1.34
+2017,Nemanja Radoja,Celta Vigo,,,,,,,,-2.02,1.11
+2017,Lucas Vazquez,Real Madrid,,,,,,,,2.74,6.68
+2017,Oussama Tannane,Las Palmas,,,,,,,,-2.51,1.12
+2017,Gerard Pique,Barcelona,,,,,,,,3.47,5.95
+2017,Gabriel Penalba,Las Palmas,,,,,,,,-1.35,0.55
+2017,Imoh Ezekiel,Las Palmas,,,,,,,,-2,0.99
+2017,Adrian Dieguez,Deportivo Alaves,,,,,,,,-1.78,0.69
+2017,John Guidetti,Deportivo Alaves,,,,,,,,-0.96,2.63
+2017,Hernan Perez,Espanyol,,,,,,,,-2.11,0.94
+2017,Manu Trigueros,Villarreal,,,,,,,,2.73,4.79
+2017,Brais Mendez,Celta Vigo,,,,,,,,-1.91,1.72
+2017,Aissa Mandi,Real Betis,,,,,,,,2.55,5.57
+2017,Alin Tosca,Real Betis,,,,,,,,-2.31,0.55
+2017,Mathieu Flamini,Getafe,,,,,,,,-1.67,0.23
+2017,Carlos Vela,Real Sociedad,,,,,,,,-1.64,2.3
+2017,Ruben Vezo,Valencia,,,,,,,,0.15,2.22
+2017,Keko,Malaga,,,,,,,,-1.29,1.77
+2017,Facundo Roncaglia,Celta Vigo,,,,,,,,0.22,2.7
+2017,Mateo Kovacic,Real Madrid,,,,,,,,-0.48,2.17
+2017,Jose Gaya,Valencia,,,,,,,,3.8,6.54
+2017,Takashi Inui,Eibar,,,,,,,,0.99,4.04
+2017,Fabian Schar,Deportivo,,,,,,,,1.91,4.4
+2017,Lucas Boye,Celta Vigo,,,,,,,,-2.23,0.76
+2017,Paulinho,Barcelona,,,,,,,,2.76,5.89
+2017,Jairo Samperio,Las Palmas,,,,,,,,-2.3,0.76
+2017,Sergio Mora,Getafe,,,,,,,,-0.95,0.74
+2017,Saul Niguez,Atletico,,,,,,,,3.2,5.84
+2017,Luis Muriel,Sevilla,,,,,,,,1.69,5.28
+2017,Mikel Rico,Athletic Bilbao,,,,,,,,-1.35,1.21
+2017,Raul Garcia,Leganes,,,,,,,,2.4099999999999997,9.1
+2017,Daniele Bonera,Villarreal,,,,,,,,-0.17,1.54
+2017,Andre Gomes,Barcelona,,,,,,,,-2.13,1
+2017,Raul Navas,Real Sociedad,,,,,,,,0.77,3.26
+2017,Juanjo Narvaez,Real Betis,,,,,,,,-1.77,0.22
+2017,Carlos Vigaray,Deportivo Alaves,,,,,,,,-1.48,0.99
+2017,Bruno Gonzalez,Getafe,,,,,,,,-1.38,1.11
+2017,Esteban Rolon,Malaga,,,,,,,,-1.75,0.24
+2017,Lucas Hernandez,Atletico,,,,,,,,0.62,3.09
+2017,Daniel Carvajal,Real Madrid,,,,,,,,0.98,4.4
+2017,Pablo Piatti,Espanyol,,,,,,,,0.01,3.94
+2017,Francisco Molinero,Getafe,,,,,,,,-1.51,0.79
+2017,Simone Zaza,Valencia,,,,,,,,2.41,6
+2017,Alberto Aquilani,Las Palmas,,,,,,,,-0.38,1.52
+2017,Hernan Toledo,Las Palmas,,,,,,,,-1.49,1.5
+2017,Alvaro Gonzalez,Villarreal,,,,,,,,1.56,4.05
+2017,Diego Gonzalez,Malaga,,,,,,,,-0.63,1.44
+2017,Luis Suarez,Barcelona,,,,,,,,11.21,14.8
+2017,Charles,Eibar,,,,,,,,0.29,4.11
+2017,Sergi Enrich,Eibar,,,,,,,,-0.61,2.97
+2017,Paulo Oliveira,Eibar,,,,,,,,-0.61,2.41
+2017,Alex Alegria,Levante,,,,,,,,-3.05,0.54
+2017,Gerard Moreno,Espanyol,,,,,,,,6.81,10.4
+2017,Hernan,Las Palmas,,,,,,,,-1.5,0.56
+2017,Jozabed,Celta Vigo,,,,,,,,-0.93,2.2
+2017,Lucas Perez,Deportivo,,,,,,,,4.72,8.31
+2017,Oghenekaro Etebo,Las Palmas,,,,,,,,-0.79,1.21
+2017,Jonas Ramalho,Girona,,,,,,,,-0.44,2.58
+2017,Gabriel Paulista,Valencia,,,,,,,,1.25,3.74
+2017,Sabin Merino,Athletic Bilbao,,,,,,,,-2.14,1.45
+2017,Erick Cabaco,Levante,,,,,,,,-0.33,1.73
+2017,Dimitrios Siovas,Leganes,,,,,,,,0.29,2.78
+2017,Ignasi Miquel,Malaga,,,,,,,,-0.33,2.16
+2017,Nabil El Zhar,Leganes,,,,,,,,0.68,3.74
+2017,Zakaria Bakkali,Deportivo,,,,,,,,-1.59,1.4
+2017,Enes Unal,Levante,,,,,,,,-2,3.99
+2017,Gonzalo Castro,Malaga,,,,,,,,3.77,6.51
+2017,Guillermo Maripan,Deportivo Alaves,,,,,,,,-0.41,1.66
+2017,Bojan,Deportivo Alaves,,,,,,,,-1.79,0.85
+2017,Willian Jose,Real Sociedad,,,,,,,,1.87,5.46
+2017,Diego Llorente,Real Sociedad,,,,,,,,2.19,4.71
+2017,Alfonso Pedraza,Deportivo Alaves,,,,,,,,3.09,6.09
+2017,Roger Marti,Levante,,,,,,,,-1.31,2.28
+2017,Mauricio Lemos,Las Palmas,,,,,,,,0.07,2.14
+2017,Raul Garcia,Athletic Bilbao,,,,,,,,2.4099999999999997,9.1
+2017,Jaume Costa,Villarreal,,,,,,,,1.59,5.01
+2017,Sasa Lukic,Levante,,,,,,,,-0.55,1.44
+2017,Joao Cancelo,Valencia,,,,,,,,1.45,4.87
+2017,Jefferson Lerma,Levante,,,,,,,,0.32,2.32
+2017,Rodrigo,Valencia,,,,,,,,6.28,9.86
+2017,Nelson Semedo,Barcelona,,,,,,,,0.74,3.49
+2017,Martin Montoya,Valencia,,,,,,,,0.48,3.34
+2017,Javier Ontiveros,Malaga,,,,,,,,-0.4,0.78
+2017,Pablo Fornals,Villarreal,,,,,,,,1.91,5.53
+2017,Raul Albentosa,Deportivo,,,,,,,,-0.16,2.33
+2017,Pedro Mosquera,Deportivo,,,,,,,,0.3,2.35
+2017,Adalberto Penaranda,Malaga,,,,,,,,-2.13,0.87
+2017,Oscar Melendo,Espanyol,,,,,,,,-0.73,0.63
+2017,Ferran Torres,Valencia,,,,,,,,-0.51,0.67
+2017,Manu Garcia,Deportivo Alaves,,,,,,,,1.42,3.32
+2017,Theo Hernandez,Real Madrid,,,,,,,,0.38,2.14
+2017,Inaki Williams,Athletic Bilbao,,,,,,,,4.51,7.5
+2017,Jose Manuel Jurado,Espanyol,,,,,,,,-0.69,1.86
+2017,Alvaro Odriozola,Real Sociedad,,,,,,,,2.57,5.31
+2017,Borja Baston,Malaga,,,,,,,,-1.69,1.9
+2017,Douglas Luiz,Girona,,,,,,,,-0.68,0.68
+2017,Youssef En-Nesyri,Malaga,,,,,,,,-0.24,2.76
+2017,Toni Lato,Valencia,,,,,,,,0.28,1.37
+2017,Miguel Angel Guerrero,Leganes,,,,,,,,-0.86,2.73
+2017,Pablo Maffeo,Girona,,,,,,,,1.52,4.26
+2017,Juanfran,Atletico,,,,,,,,0.7999999999999998,7.85
+2017,Alejandro Arribas,Deportivo,,,,,,,,-2.24,0.25
+2017,Claudio Beauvue,Leganes,,,,,,,,-1.05,2.53
+2017,Javier Eraso,Leganes,,,,,,,,-0.03,3.56
+2017,Diego Rolan,Malaga,,,,,,,,1.72,4.77
+2017,Denis Cheryshev,Villarreal,,,,,,,,1.21,4.26
+2017,Mikel San Jose,Athletic Bilbao,,,,,,,,0.66,2.72
+2017,Olarenwaju Kayode,Girona,,,,,,,,-1.66,1.93
+2017,Carlos Soler,Valencia,,,,,,,,1.91,4.56
+2017,Guilherme,Deportivo,,,,,,,,1.26,3.32
+2017,Diego Costa,Atletico,,,,,,,,-0.37,3.22
+2017,Rober Pier,Levante,,,,,,,,-0.32,1.74
+2017,Jason,Levante,,,,,,,,0.13,3.12
+2017,David Zurutuza,Real Sociedad,,,,,,,,0.89,2.79
+2017,Emmanuel Boateng,Levante,,,,,,,,1.1,4.1
+2017,Victor Camarasa,Real Betis,,,,,,,,-0.87,1.78
+2017,Joaquin Correa,Sevilla,,,,,,,,0.03,3.02
+2017,Federico Valverde,Deportivo,,,,,,,,0.03,1.39
+2017,Rodrigo,Villarreal,,,,,,,,6.28,9.86
+2017,Diego Godin,Atletico,,,,,,,,1.55,4.18
+2017,Gabriel Mercado,Sevilla,,,,,,,,0.72,3.57
+2017,Mario Hermoso,Espanyol,,,,,,,,0.86,2.93
+2017,Ximo Navarro,Las Palmas,,,,,,,,0.91,3.4
+2017,Vicente Gomez,Las Palmas,,,,,,,,-0.98,1.08
+2017,Unai Nunez,Athletic Bilbao,,,,,,,,3.04,5.56
+2017,Rodrigo Ely,Deportivo Alaves,,,,,,,,0.95,3.02
+2017,Leo Baptistao,Espanyol,,,,,,,,3.67,7.26
+2017,Adnan Januzaj,Real Sociedad,,,,,,,,2.52,5.51
+2017,Pere Pons,Girona,,,,,,,,0.7,2.76
+2017,Jordi Amat,Real Betis,,,,,,,,-0.23,2.79
