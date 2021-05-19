@@ -265,7 +265,7 @@ anim <-
 path_gif <- fs::path(dir_proj, 'viz_ux.gif')
 n_sec <- nrow(lab_grps) * (1.5 + 0.5)
 fps <- 20
-n_sec_end <- 2
+n_sec_end <- 1.5
 height <- 800
 width <- 800
 n_frame <- (n_sec + n_sec_end) * fps
