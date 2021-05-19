@@ -19,7 +19,6 @@ urls <-
   unnest(url)
 urls
 
-# TODO: Why doesn't this go back before 2015, given that there are URLs for data here: https://raw.githubusercontent.com/JaseZiv/worldfootballR_data/master/raw-data/all_leages_and_cups/all_competitions.csv")
 scrape_results <- function(country, gender, season_end_year, tier, overwrite = FALSE) {
   # browser()
   path <- file.path(dir_data, sprintf('results-%s-%s-%s-%s.rds', country, gender, season_end_year, tier))
