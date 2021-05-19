@@ -55,3 +55,4 @@ add_logo <-
   }
 
 add_logo_epl <- purrr::partial(add_logo, path_logo = file.path('data', 'premier-league.png'), ... = )
+add_logo_ll <- purrr::partial(add_logo, path_logo = file.path('data', 'la-liga-150px.png'), ... = )
