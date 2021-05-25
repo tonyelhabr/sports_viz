@@ -3,7 +3,7 @@ library(tidyverse)
 dir_proj <- '28-202021_vaep'
 dir_data <- file.path('..', 'whoscraped', 'data-test-socceraction')
 source(file.path(dir_proj, 'helpers.R'))
-do_save <- FALSE
+do_save <- TRUE
 
 dir_img <- file.path(dir_proj, 'img')
 img_info <-
@@ -208,8 +208,8 @@ pos_info <-
     pos_grp = c('F', 'F', 'F', 'D', 'D', 'M', 'M', 'M', 'D', 'F', 'F', 'F', 'G', 'M', 'M', 'M', 'z'),
     pos_11 = c('FWC', 'FWL', 'FWR', 'DC', 'DL', 'MC', 'ML', 'MR', 'DR', 'FWC', 'FWL', 'FWR', 'GK', 'MC', 'ML', 'MR', 'z')
   ) %>% 
-  .factor_pos_grp_col() %>% 
-  filter(!(pos %in% c('GK', 'Sub')))
+  .factor_pos_grp_col() #  %>% 
+  # filter(!(pos %in% c('GK', 'Sub')))
 pos_info
 
 pos_info_xy <-
@@ -397,14 +397,14 @@ av_join_by_season <-
   ava_by_season %>% 
   rename_with(
     ~sprintf('%s_atomic', .x),
-    c(off:vaep_p90_atomic)
+    c(off:vaep_p90)
   ) %>% 
   left_join(
     av_by_season %>% 
       filter(season_id == 2020L) %>% 
       rename_with(
         ~sprintf('%s_orig', .x),
-        c(off:vaep_p90_atomic)
+        c(off:vaep_p90)
       )
   ) %>% 
   relocate(pos:pos_11, .after = last_col()) %>% 
@@ -1142,91 +1142,3 @@ cors <-
   mutate(across(c(y1, y2), as.integer)) %>% 
   filter(y1 == (y2 - 1L))
 cors
-
-# Reference: https://themockup.blog/posts/2020-09-26-functions-and-themes-for-gt-tables/?panelset4=theme-code3
-.gt_theme_538 <- function(data,...) {
-  data %>%
-    gt::opt_all_caps()  %>%
-    gt::opt_table_font(
-      font = list(
-        gt::google_font('Karla'),
-        gt::default_fonts()
-      )
-    ) %>%
-    gt::tab_style(
-      style = gt::cell_borders(
-        sides = 'bottom', color = 'transparent', weight = gt::px(2)
-      ),
-      locations = gt::cells_body(
-        columns = TRUE,
-        # This is a relatively sneaky way of changing the bottom border
-        # Regardless of data size
-        rows = nrow(data$`_data`)
-      )
-    )  %>% 
-    gt::tab_options(
-      column_labels.background.color = 'white',
-      table.border.top.width = gt::px(3),
-      table.border.top.color = 'transparent',
-      table.border.bottom.color = 'transparent',
-      table.border.bottom.width = gt::px(3),
-      column_labels.border.top.width = gt::px(3),
-      column_labels.border.top.color = 'transparent',
-      column_labels.border.bottom.width = gt::px(3),
-      column_labels.border.bottom.color = 'black',
-      data_row.padding = gt::px(3),
-      footnotes.font.size = 8,
-      source_notes.font.size = 8,
-      table.font.size = 16,
-      heading.align = 'left',
-      ...
-    ) 
-}
-
-cors_tb <-
-  cors %>% 
-  filter(name != 'xga') %>% 
-  mutate(
-    across(
-      name,
-      ~case_when(
-        .x != 'xga' ~ toupper(.x),
-        .x == 'xga' ~ 'xGoalsAdded'
-      )
-    )
-  ) %>% 
-  rename(`Metric` = name) %>% 
-  mutate(y = sprintf('%s/%s-%s/%s', y1, str_sub(y1 + 1, 3, 4), str_sub(y1 + 1, 3, 4), str_sub(y1 + 2, 3, 4))) %>% 
-  select(-c(y1, y2)) %>% 
-  mutate(across(y, ~ordered(.x))) %>% 
-  pivot_wider(
-    names_sort = TRUE, 
-    names_from = y,
-    values_from = value
-  ) %>% 
-  gt::gt() %>% 
-  gt::fmt_number(
-    columns = 2:4,
-    decimals = 2,
-    suffixing = TRUE
-  ) %>% 
-  gt::tab_header(
-    title = 'Year-over-Year Metric Correlations'
-  ) %>% 
-  .gt_theme_538() %>% 
-  gt::tab_source_note(
-    gt::md('**Data**: English Premier League')
-  ) %>% 
-  gt::tab_source_note(
-    gt::md('**DAVIES**: @mimburgio @SamGoldberg1882')
-  ) %>%
-  gt::tab_source_note(
-    gt::md('**VAEP**: @TomDecroos, @LotteBransen, @JanVanHaaren, @jessejdavis1')
-  ) %>% 
-  gt::tab_source_note(
-    gt::md('**Table theme** (538 style): @thomas_mock') # 
-  )
-cors_tb
-if(do_save) {
-  gt::gtsave(cors_tb, file.path(dir_proj, 'metric_yoy_stability.png'))
-}
