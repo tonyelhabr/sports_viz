@@ -33,7 +33,7 @@ if(!file.exists(path_stats) & overwrite) {
     parameters_array <- ifelse(length(parameters_array) > 0,
                                paste0("?", paste0(parameters_array, collapse = "&")),
                                "")
-    
+    browser()
     return(jsonlite::fromJSON(httr::content(httr::GET(paste0(path, endpoint, parameters_array)),
                                       as = "text", encoding = "UTF-8")))
   }
@@ -51,11 +51,12 @@ if(!file.exists(path_stats) & overwrite) {
     all_teams[[key]] %>%
     as_tibble()
   tms
+  
   gms <-
     all_games[[key]] %>%
     as_tibble()
   gms
-  # 
+  
   # players <-
   #   all_players[[key]] %>% 
   #   as_tibble()
@@ -83,6 +84,12 @@ if(!file.exists(path_stats) & overwrite) {
   #       )
   #   )
   # stats
+  api_request(
+    endpoint = assemble_endpoint('mls', 'xgoals', 'games'),
+    parameters = list(
+      season_name = 2020
+    )
+  )
   
   stats <-
     tibble(
