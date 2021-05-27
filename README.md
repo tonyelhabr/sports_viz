@@ -216,15 +216,10 @@ season.](28-202021_vaep/viz_vaep_davies_compare_w_logo.png "VAEP vs. DAVIES, by 
 average around
 0.45.](28-202021_vaep/metric_yoy_stability.png "Year-over-year correlations for VAEP and DAVIES")
 
-# 
+# 29. 2020-21 EPL Games Started by Young Players
 
-# 
-
-# 
-
-# 
-
-# 
+![Animated Bar Plot GIF of 2020-21 EPL Games Started by Young
+Players](29-202021_u2x/viz_ux.gif "Animated bar plot GIF showing how the youngest 2021-21 EPL team changes as you change the age cutoff used to determine the definition of young")
 
 # Future Ideas
 
