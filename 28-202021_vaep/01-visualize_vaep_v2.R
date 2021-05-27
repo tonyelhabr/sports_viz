@@ -411,14 +411,16 @@ av_join_by_season <-
   arrange(desc(vaep_atomic))
 av_join_by_season
 
-av_join_by_season %>% 
+av_rnk <-
+  av_join_by_season %>% 
   mutate(
     across(
       matches('^(off|def|vaep)_(atomic|orig)$'),
-      list(rnk = ~row_number(desc(.x)))
+      ~row_number(desc(.x))
     )
   ) %>% 
-  arrange(desc(vaep_orig))
+  arrange(vaep_atomic)
+av_rnk
 
 ava_by_season %>% arrange(desc(def))
 
@@ -924,7 +926,7 @@ davies
 davies_prep <-
   davies %>%
   .add_z_col() %>% 
-  distinct(z, player_name, season_id, davies, xga, salary)
+  distinct(z, player_name, season_id, davies, xga)
 davies_prep
 
 res_av_davies <-
