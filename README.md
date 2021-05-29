@@ -186,6 +186,10 @@ League](25-202021_soccer_refs/viz_big5_ref_p90.png "Beeswarm Plot of Referee Sta
 ![Table with Pep Guardiola’s Non-UCL Titles Won Since His Las UCL
 Title](27-pep/pep.png "Table with Pep Guardiola's Non-UCL Titles Won Since His Las UCL Title")
 
+![Timeline Plot of Champions League Re-matches between Teams from the
+Same
+League](27-pep/viz_ucl_rematches_manual.png "Timeline Plot of Champions League Re-matches between Teams from the Same League")
+
 # 28. 2020-21 EPL Season Review with VAEP
 
 ![Best starting 11 players of the 2020/21 Premier League season

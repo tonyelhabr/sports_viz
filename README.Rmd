@@ -151,6 +151,8 @@ After week 7
 
 ![Table with Pep Guardiola's Non-UCL Titles Won Since His Las UCL Title](27-pep/pep.png "Table with Pep Guardiola's Non-UCL Titles Won Since His Las UCL Title")
 
+![Timeline Plot of Champions League Re-matches between Teams from the Same League](27-pep/viz_ucl_rematches_manual.png "Timeline Plot of Champions League Re-matches between Teams from the Same League")
+
 # 28. 2020-21 EPL Season Review with VAEP
 
 ![Best starting 11 players of the 2020/21 Premier League season (arranged in a 4-3-3), according to VAEP (Valuing Actions by Estimating Probabilities). Grealish, Kane, Salah, Jack Harrison, Gundogan, Raphinha, Cresswell, Zouma, Dunk, Alexander-Arnold, Sam Johnstone.](28-202021_vaep/viz_team_vaep_p90_w_logo.png "VAEP'S Best XI, 2020-21 EPL")
