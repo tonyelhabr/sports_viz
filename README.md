@@ -225,6 +225,11 @@ average around
 ![Animated Bar Plot GIF of 2020-21 EPL Games Started by Young
 Players](29-202021_u2x/viz_ux.gif "Animated bar plot GIF showing how the youngest 2021-21 EPL team changes as you change the age cutoff used to determine the definition of young")
 
+# 30. EPL Subjective VAR calls
+
+![EPL Subjective VAR calls by Team since
+2019-20](30-var/viz_var_subjective_w_logo.png "EPL Subjective VAR calls by Team since 2019-20")
+
 # Future Ideas
 
 -   Stability of goal-scoring rate and/or xG over-performance

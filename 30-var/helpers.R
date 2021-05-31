@@ -182,3 +182,53 @@ do_scrape <- function(season, overwrite = FALSE, dir = '30-var') {
   write_rds(incidents, path_incidents)
   list(agg = agg, incidents = incidents)
 }
+
+extrafont::loadfonts(device = 'win', quiet = TRUE)
+theme_set(theme_minimal())
+theme_update(
+  text = element_text(family = 'Karla'),
+  title = element_text('Karla', size = 14, color = 'gray20'),
+  plot.title = ggtext::element_markdown('Karla', face = 'bold', size = 24, color = 'gray20'),
+  plot.title.position = 'plot',
+  plot.subtitle = ggtext::element_markdown('Karla', face = 'bold', size = 18, color = 'gray50'),
+  axis.text = element_text('Karla', size = 14),
+  axis.title = element_text(size = 14, face = 'bold', hjust = 0.99),
+  axis.line = element_blank(),
+  panel.grid.major = element_line(color = 'gray80'),
+  panel.grid.minor = element_line(color = 'gray80'),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  plot.margin = margin(10, 10, 10, 10),
+  plot.background = element_rect(fill = '#ffffff', color = NA),
+  # plot.caption = ggtext::element_markdown('Karla', size = 16, color = 'gray20', hjust = 1),
+  plot.caption = element_text('Karla', size = 12, color = 'gray20', hjust = 1),
+  plot.caption.position = 'plot',
+  plot.tag = ggtext::element_markdown('Karla', size = 12, color = 'gray20', hjust = 0), 
+  plot.tag.position = c(.01, 0.01),
+  legend.text = element_text(color = 'gray20', size = 14),
+  strip.text = element_text(color = 'gray20', size = 14),
+  strip.background = element_blank(),
+  panel.background = element_rect(fill = '#ffffff', color = NA)
+)
+update_geom_defaults('text', list(family = 'Karla', size = 4))
+
+f_segment <- partial(
+  geom_segment,
+  size = 1.1,
+  arrow = arrow(length = unit(5, 'pt'), type = 'closed'),
+  show.legend = FALSE,
+  ... = 
+)
+
+pts <- function(x) {
+  as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
+}
+
+f_text <- partial(
+  ggtext::geom_richtext,
+  # fill = NA, 
+  label.color = NA,
+  family = 'Karla',
+  size = pts(12),
+  ... =
+)
