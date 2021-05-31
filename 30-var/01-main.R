@@ -114,7 +114,7 @@ p <-
     strip.text.x = element_text(family = 'Karla', face = 'bold', size = 16),
     panel.background = element_rect(color = 'grey80', size = 2),
     # plot.title = element_text(size = 18, hjust = 0),
-    plot.subtitle = ggtext::element_markdown(size = 12, hjust = 0),
+    plot.subtitle = ggtext::element_markdown(size = 13, hjust = 0),
     # plot.caption = ggtext::element_markdown(size = 12, hjust = 1),
     axis.text.y = element_blank(),
     # plot.caption = element_text(),
