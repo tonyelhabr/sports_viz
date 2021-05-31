@@ -13,6 +13,7 @@ params <-
     season = c(2019, 2020)
   )
 options(readr.num_columns = 0)
+
 if(!file.exists(path_shots) & overwrite) {
   if(!file.exists(path_matches) & overwrite) {
     # Reference: https://gist.github.com/Torvaney/42cd82addb3ba2c4f33ec3247e66889c
@@ -65,7 +66,7 @@ if(!file.exists(path_shots) & overwrite) {
 
     matches <-
       params %>% 
-      mutate(data = map2(league, season, get_maches)) %>% 
+      mutate(data = map2(league, season, get_matches, overwrite = TRUE)) %>% 
       unnest(data)
     matches
     
