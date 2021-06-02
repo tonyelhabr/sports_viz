@@ -1,18 +1,27 @@
 
 library(tidyverse)
-dir_proj <- '24-202021_game_state_fouls'
+dir_proj <- '31-wp_soccer'
 path_shots <- file.path(dir_proj, 'shots.rds')
+path_matches <- file.path(dir_proj, 'matches.rds')
 path_states <- file.path(dir_proj, 'states.rds')
 
-shots <- path_shots %>% read_rds()
-matches <-
-  shots %>% 
+shots <- 
+  path_shots %>% 
+  read_rds() %>% 
+  filter(league == 'EPL') %>% 
   mutate(
     across(date, lubridate::date),
     across(c(season, match_id, minute), as.integer)
   ) %>% 
   rename(team_h = h_team, team_a = a_team, side = h_a)
-matches
+shots
+
+match_ids <- 
+  path_matches %>%
+  read_rds() %>% 
+  filter(league == 'EPL') %>% 
+  distinct(match_id)
+match_ids
 
 .f_select <- function(data, ...) {
   data %>% 
@@ -20,7 +29,7 @@ matches
 }
 
 goals <-
-  matches %>% 
+  shots %>% 
   filter(result == 'Goal') %>% 
   select(-result) %>% 
   arrange(date, match_id, minute) %>% 
@@ -28,16 +37,19 @@ goals <-
 goals
 
 matches_nogoals <-
-  matches %>% 
+  shots %>% 
   distinct(match_id) %>% 
-  anti_join(goals %>% distinct(match_id)) %>% 
+  anti_join(goals %>% distinct(match_id))
+
+shots_matches_nogoals <-
+  matches_nogoals %>% 
   left_join(
-    matches %>% .f_select()
+    shots %>% .f_select()
   ) %>% 
   mutate(minute = NA_integer_)
-matches_nogoals
+shots_matches_nogoals
 
-# Pad such that minutes after last event for games with last shot before 90 min (e.g. last shot at 87th minute) gets counted.
+# Need to pad such that minutes after last event for games with last shot before 90 min (e.g. last shot at 87th minute) gets counted.
 goals_redux_init <-
   bind_rows(
     goals %>% 
@@ -50,13 +62,24 @@ goals_redux_init <-
   arrange(league, season, date, match_id, minute)
 goals_redux_init
 
+# Checking when the last shot comes in.
+goals_redux_init %>% 
+  group_by(league, season, date, match_id) %>% 
+  slice_max(minute, with_ties = FALSE) %>% 
+  ungroup() %>% 
+  summarize(
+    across(minute, list(min = min, max = max, median = median, mean = mean), .names = '{fn}')
+  ) %>% 
+  glimpse()
+
 goals_redux_pad <-
   goals_redux_init %>% 
   group_by(league, season, date, match_id) %>% 
   slice_max(minute, with_ties = FALSE) %>% 
   ungroup() %>% 
+  # For games where the last shot is before the last minute
   filter(minute < 90) %>% 
-  mutate(minute = 90) %>% 
+  mutate(minute = 96) %>% 
   select(league, season, date, match_id, team_h, team_a, side, minute)
 goals_redux_pad
 
@@ -90,12 +113,21 @@ goals_redux
     mutate(side = !!side)
 }
 
+states_simple <- 
+  bind_rows(.f_rename('h'), .f_rename('a')) %>% 
+  mutate(
+    across(g_state, list(grp = ~case_when(.x < 0L ~ 'behind', .x > 0L ~ 'ahead', TRUE ~ 'neutral')))
+  ) %>%
+  arrange(league, season, date, match_id, team, minute)
+states_simple
+
+# old? ----
 goals_by_team <- bind_rows(.f_rename('h'), .f_rename('a'))
 
 matches_bind <-
   bind_rows(
     goals_by_team, 
-    matches_nogoals %>% mutate(g = 0L, g_opp = 0L, g_state = 0L, g_state_opp = 0L)
+    shots_matches_nogoals %>% mutate(g = 0L, g_opp = 0L, g_state = 0L, g_state_opp = 0L)
   )
 
 matches_dummy <-
@@ -107,7 +139,7 @@ matches_dummy <-
 matches_dummy
 
 states <-
-  bind_rows(matches_bind, batches_dummy) %>% 
+  bind_rows(matches_bind, matches_dummy) %>% 
   arrange(league, season, date, match_id, team, team_opp, minute) %>% 
   select(-g_state_opp) %>% 
   mutate(
@@ -116,4 +148,5 @@ states <-
   # Just to have something at the end that I don't comment out when testing.
   arrange(league, season, date, match_id, minute, team)
 states
+states %>% filter(match_id == first(match_id), team == 'Liverpool')
 write_rds(states, path_states)
