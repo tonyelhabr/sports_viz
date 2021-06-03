@@ -9,6 +9,7 @@ path_meta <- file.path(dir_proj, 'meta.rds')
 path_league_teams_stats <- file.path(dir_proj, 'league_teams_stats.rds')
 path_teams_players_stats <- file.path(dir_proj, 'teams_players_stats.rds')
 overwrite <- FALSE
+path_spi <- file.path(dir_proj, 'spi_538.csv')
 
 params <-
   crossing(
@@ -74,7 +75,7 @@ fetch_matches <- function(league = 'EPL', season = 2020) {
 
 get_matches <- function(league = 'EPL', season = 2020, overwrite = FALSE) {
   path <- file.path(dir_data, sprintf('matches-%s-%s.rds', league, season)) 
-  suffix <- glue::glue('`league = "{league}"`, `season = {season}`')
+  suffix <- glue::glue(' for `league = "{league}"`, `season = {season}`')
   if(file.exists(path) & !overwrite) {
     .display_info_early('{suffix}')
     return(read_rds(path))
@@ -87,14 +88,15 @@ get_matches <- function(league = 'EPL', season = 2020, overwrite = FALSE) {
 
 matches <-
   params %>% 
-  mutate(data = map2(league, season, get_matches, overwrite = TRUE)) %>% 
+  mutate(data = map2(league, season, get_matches)) %>% 
   unnest(data)
 matches
 write_rds(matches, path_matches)
+matches %>% filter(league == 'EPL') %>% count(season)
 
 get_shots <- function(match_id, overwrite = FALSE) {
   path <- file.path(dir_data, sprintf('%s.rds', match_id))
-  suffix <- glue::glue('for `match_id = {match_id}`')
+  suffix <- glue::glue(' for `match_id = {match_id}`')
   if(file.exists(path) & !overwrite) {
     .display_info_early('{suffix}')
     return(read_rds(path))
@@ -104,18 +106,37 @@ get_shots <- function(match_id, overwrite = FALSE) {
   write_rds(res, path)
   res
 }
+
 get_shots_slowly <- slowly(possibly(get_shots, tibble()))
 
+match_ids <- matches %>% distinct(season, league, match_id)
+get_paths_match <- function() {
+  fs::dir_ls(dir_data, regexp = '[0-9]{5}[.]rds$')
+}
+
+match_ids_existing <- 
+  get_paths_match() %>% 
+  basename() %>%
+  tools::file_path_sans_ext() %>% 
+  as.integer() %>% 
+  tibble(match_id = .)
+match_ids_existing
+
+match_ids %>% 
+  anti_join(match_ids_existing) %>% 
+  count(league, season)
+
 shots_nested <-
-  matches %>% 
+  match_ids %>% 
+  anti_join(match_ids_existing) %>% 
+  filter(!(league == 'Ligue_1' & season == 2019)) %>% 
   select(league, season, match_id) %>% 
   mutate(data = map(match_id, get_shots_slowly))
 shots_nested
 
 shots <-
-  shots_nested %>% 
-  select(-c(season, match_id)) %>% 
-  unnest(data)
+  get_paths_match() %>% 
+  map_dfr(read_rds)
 shots
 # beepr::beep(3)
 write_rds(shots, path_shots)
@@ -136,7 +157,7 @@ leagues_meta <- get_leagues_meta()
 
 get_league_teams_stats <- function(league_name, year, overwrite = FALSE) {
   path <- file.path(dir_data, sprintf('league_teams_stats-%s-%s.rds', league_name, year))
-  suffix <- glue::glue(' league_name = "{league_name}"`, `year = {year}`')
+  suffix <- glue::glue(' for league_name = "{league_name}"`, `year = {year}`')
   if(file.exists(path) & !overwrite) {
     .display_info_early('{suffix}')
     return(read_rds(path))
@@ -160,7 +181,7 @@ teams
 
 get_team_players_stats <- function(team_name, year, overwrite = FALSE) {
   path <- file.path(dir_data, sprintf('team_players_stats-%s-%s.rds', team_name, year))
-  suffix <- glue::glue(' team_name = "{team_name}"`, `year = {year}`')
+  suffix <- glue::glue(' for team_name = "{team_name}"`, `year = {year}`')
   if(file.exists(path) & !overwrite) {
     .display_info_early('{suffix}')
     return(read_rds(path))
@@ -180,3 +201,7 @@ team_players_stats <-
   unnest(data)
 team_players_stats
 write_rds(team_players_stats, path_teams_players_stats)
+
+
+read_csv('https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv') %>% 
+  write_csv(path_spi, na = '')

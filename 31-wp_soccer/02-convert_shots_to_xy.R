@@ -4,6 +4,8 @@ dir_proj <- '31-wp_soccer'
 path_shots <- file.path(dir_proj, 'shots.rds')
 path_matches <- file.path(dir_proj, 'matches.rds')
 path_team_players_stats <- file.path(dir_proj, 'team_players_stats.rds')
+path_spi <- file.path(dir_proj, 'spi_538.csv')
+path_matches <- file.path(dir_proj, 'matches.rds')
 
 path_model_data <- file.path(dir_proj, 'model_data.rds')
 
@@ -33,11 +35,21 @@ team_players_stats <-
   )
 team_players_stats
 
-shots <- 
-  path_shots %>% 
-  read_rds() %>% 
-  # janitor::clean_names() %>% 
+matches <- path_matches %>% read_rds()
+
+match_ids <-
+  matches %>% 
   filter(league == 'EPL') %>% 
+  distinct(league, season, match_id)
+match_ids
+
+shots_init <- path_shots %>% read_rds()
+
+shots <- 
+  shots_init %>% 
+  # janitor::clean_names() %>% 
+  # filter(league == 'EPL') %>% 
+  inner_join(match_ids) %>% 
   mutate(
     across(date, lubridate::date),
     across(c(season, match_id, minute), as.integer)
@@ -63,10 +75,10 @@ shots <-
 shots
 
 # # Just use this for debugging, probably.
-# scorelines <-
-#   shots %>% 
-#   distinct(league, season, match_id, team_h, team_a, g_h = g_h_final, g_a = g_a_final)
-# scorelines
+scorelines <-
+  shots %>%
+  distinct(league, season, match_id, team_h, team_a, g_h = g_h_final, g_a = g_a_final)
+scorelines
 # 
 # match_ids <- 
 #   path_matches %>%
@@ -108,23 +120,30 @@ xg <-
         TRUE ~ 0
       ),
   ) %>% 
+  select(-team) %>% 
   group_by(league, season, match_id) %>% 
   mutate(
-    across(matches('x?g_[ha]$'), cumsum) # list(cumu = cumsum))
+    across(matches('x?g_[ha]$'), cumsum)
   ) %>% 
   ungroup() %>% 
+  select(-xg) %>% 
   rename(team_understat_h = team_h, team_understat_a = team_a) %>% 
-  # select(-team) %>% 
   left_join(team_mapping %>% select(team_h = team, team_understat_h = team_understat)) %>% 
   left_join(team_mapping %>% select(team_a = team, team_understat_a = team_understat)) %>% 
   select(-matches('^team_understat')) 
 xg
 
 probs_init <-
-  read_csv(
-    'https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv'
-  ) %>% 
-  rename(league_538 = league, team_538_h = team1, team_538_a = team2, probtie_538 = probtie) %>% 
+  path_spi %>%
+  read_csv() %>% 
+  rename(
+    league_538 = league,
+    team_538_h = team1,
+    team_538_a = team2,
+    prob_d_538 = probtie,
+    imp_h = importance1,
+    imp_a = importance2
+  ) %>%
   left_join(leagues_mapping) %>% 
   select(-league_538) %>% 
   filter(season >= 2019) %>% 
@@ -136,40 +155,62 @@ probs_init <-
   left_join(team_mapping %>% select(team_h = team, team_538_h = team_538)) %>% 
   left_join(team_mapping %>% select(team_a = team, team_538_a = team_538)) %>% 
   select(-matches('^team_538')) %>% 
-  rename(prob_h = prob_538_h, prob_a = prob_538_a, probtie = probtie_538) %>% 
-  select(season, league, date, matches('^team_'), matches('^score_'), matches('^prob'))
+  rename(prob_h = prob_538_h, prob_a = prob_538_a, prob_d = prob_d_538) %>% 
+  select(season, league, date, matches('^team_'), matches('^score_'), matches('imp'), matches('^prob'))
 probs_init
 
-probs_init %>% count(league)
-probs_init %>% count(year = lubridate::year(date), season)
-xg %>% count(year = lubridate::year(date), season)
+# xg_probs <- xg %>% full_join(probs_init %>% rename(date2 = date, league2 = league))
+xg_probs <- xg %>% full_join(probs_init %>% select(-c(date, league)))
+# xg_probs <- xg %>% full_join(probs_init %>% select(season, team_h, team_a, prob_h, prob_a, date2 = date))
+xg_probs %>% skimr::skim()
+xg_probs %>% filter(is.na(match_id)) -> z
 
-xg_probs <-
-  xg %>% 
-  full_join(
-    probs_init %>%
-      select(season, team_h, team_a, prob_h, prob_a, probtie)
-  )
-xg_probs
-write_rds(xg_probs, path_model_data)
+# xg %>% filter(team_h == 'Arsenal', team_a == 'Everton', season == 2020)
+# write_rds(xg_probs, path_model_data)
 
-
+# # Debug mis-match with teams.
 xg_probs %>% filter(is.na(prob_h)) %>% distinct(match_id, team_h) %>% count(team_h, sort = TRUE)
 xg_probs %>% filter(is.na(prob_a)) %>% distinct(match_id, team_a) %>% count(team_a, sort = TRUE)
 
-
-# todo ----
+# TODO: Add number of men on field and number of subs remaining.
 .f_rename <- function(side) {
   suffix <- sprintf('_%s$', side)
   side_opp <- ifelse(side == 'h', 'a', 'h')
   suffix_opp <- sprintf('_%s$', side_opp)
-  xg_redux %>% 
+  xg_probs %>% 
     # select(-matches('_cumu$')) %>% 
     rename_with(~str_replace(.x, suffix, ''), c(matches(suffix))) %>% 
     rename_with(~str_replace(.x, suffix_opp, '_opp'), c(matches(suffix_opp))) %>% 
-    mutate(side = !!side)
+    filter(side == !!side)
 }
 
-states <- 
-  bind_rows(.f_rename('h'), .f_rename('a')) 
-
+minute_max <- xg_probs %>% slice_max(minute, with_ties = FALSE) %>% pull(minute)
+df <-
+  bind_rows(.f_rename('h'), .f_rename('a')) %>% 
+  mutate(
+    idx = row_number(),
+    is_w = if_else((score_538 - score_538_opp) > 0, 1L, 0L),
+    is_h = if_else(side == 'h', 1L, 0L),
+    gd = g - g_opp,
+    xgd = xg - xg_opp,
+    min_elapsed = minute / !!minute_max,
+    prob_d = (1 - prob - prob_opp) * exp(-pi * min_elapsed)
+  ) %>% 
+  mutate(
+    across(c(prob, prob_opp, imp, imp_opp), ~{.x * (exp(-pi * min_elapsed))}),
+    gd_ratio = gd / (exp(-pi * min_elapsed))
+  ) %>% 
+  select(
+    is_w,
+    idx,
+    league,
+    season,
+    match_id,
+    minute,
+    is_h,
+    matches('^x?g'),
+    matches('prob'),
+    matches('ratio$')
+  )
+df
+write_rds(df, path_model_data)
