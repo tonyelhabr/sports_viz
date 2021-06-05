@@ -25,7 +25,7 @@ team_mapping
 team_players_stats <- 
   path_team_players_stats %>% 
   read_rds() %>%
-  filter(league_name == 'EPL') %>% 
+  filter(league_name == 'EPL', year %in% 2019L:2020L) %>% 
   select(
     league = league_name,
     season = year,
@@ -39,7 +39,7 @@ matches <- path_matches %>% read_rds()
 
 match_ids <-
   matches %>% 
-  filter(league == 'EPL') %>% 
+  filter(league == 'EPL', season %in% 2019L:2020L) %>% 
   distinct(league, season, match_id)
 match_ids
 
@@ -77,7 +77,7 @@ shots
 # # Just use this for debugging, probably.
 scorelines <-
   shots %>%
-  distinct(league, season, match_id, team_h, team_a, g_h = g_h_final, g_a = g_a_final)
+  distinct(league, season, date, match_id, team_h, team_a, g_h = g_h_final, g_a = g_a_final)
 scorelines
 # 
 # match_ids <- 
@@ -89,12 +89,23 @@ scorelines
 
 shots_w_teams <-
   shots %>% 
-  select(-matches('_final$')) %>% 
-  left_join(team_players_stats)
+  select(-id, -matches('_final$')) %>% 
+  left_join(team_players_stats %>% select(-player_id)) %>% 
+  select(-c(player))
 shots_w_teams
 
-xg <-
+shots_w_teams_0 <-
   shots_w_teams %>% 
+  filter(minute == 0L) %>% 
+  distinct(league, season, date, match_id, .keep_all = TRUE)
+shots_w_teams_0
+
+xg <-
+  bind_rows(
+    scorelines %>% anti_join(shots_w_teams_0) %>% mutate(minute = 0L, side = 'h'), 
+    scorelines %>% anti_join(shots_w_teams_0) %>% mutate(minute = 0L, side = 'a'), 
+    shots_w_teams
+  ) %>% 
   arrange(league, season, match_id, minute) %>% 
   mutate(
     g_h = 
@@ -161,16 +172,13 @@ probs_init
 
 # xg_probs <- xg %>% full_join(probs_init %>% rename(date2 = date, league2 = league))
 xg_probs <- xg %>% full_join(probs_init %>% select(-c(date, league)))
-# xg_probs <- xg %>% full_join(probs_init %>% select(season, team_h, team_a, prob_h, prob_a, date2 = date))
-xg_probs %>% skimr::skim()
-xg_probs %>% filter(is.na(match_id)) -> z
-
+xg_probs
 # xg %>% filter(team_h == 'Arsenal', team_a == 'Everton', season == 2020)
 # write_rds(xg_probs, path_model_data)
 
 # # Debug mis-match with teams.
-xg_probs %>% filter(is.na(prob_h)) %>% distinct(match_id, team_h) %>% count(team_h, sort = TRUE)
-xg_probs %>% filter(is.na(prob_a)) %>% distinct(match_id, team_a) %>% count(team_a, sort = TRUE)
+# xg_probs %>% filter(is.na(prob_h)) %>% distinct(match_id, team_h) %>% count(team_h, sort = TRUE)
+# xg_probs %>% filter(is.na(prob_a)) %>% distinct(match_id, team_a) %>% count(team_a, sort = TRUE)
 
 # TODO: Add number of men on field and number of subs remaining.
 .f_rename <- function(side) {
@@ -184,24 +192,41 @@ xg_probs %>% filter(is.na(prob_a)) %>% distinct(match_id, team_a) %>% count(team
     filter(side == !!side)
 }
 
+
 minute_max <- xg_probs %>% slice_max(minute, with_ties = FALSE) %>% pull(minute)
+match_mins <- match_ids %>% crossing(tibble(minute = 0L:minute_max)) %>% crossing(tibble(side = c('h', 'a')))
+match_mins
+# Can I determine first or second half?
+xg_probs %>% filter(minute == 46L) %>% filter(result == 'Goal') %>% arrange(desc(date))
+
+exp_decay <- pi
+exp_decay <- 2
 df <-
   bind_rows(.f_rename('h'), .f_rename('a')) %>% 
+  full_join(match_mins) %>% 
+  arrange(league, season, match_id, side, minute) %>% 
+  fill(matches('.*'), .direction = 'downup') %>% 
   mutate(
     idx = row_number(),
-    is_w = if_else((score_538 - score_538_opp) > 0, 1L, 0L),
+    # is_w = if_else((score_538 - score_538_opp) > 0, 1L, 0L),
+    res = case_when(
+      score_538 ==score_538_opp ~ 0L,
+      score_538 < score_538_opp ~ -1L,
+      score_538 > score_538_opp ~ 1L
+    ),
     is_h = if_else(side == 'h', 1L, 0L),
     gd = g - g_opp,
     xgd = xg - xg_opp,
-    min_elapsed = minute / !!minute_max,
-    prob_d = (1 - prob - prob_opp) * exp(-pi * min_elapsed)
+    wt_decay = minute / !!minute_max,
+    prob_d = (1 - prob - prob_opp) * exp(-!!exp_decay * wt_decay)
   ) %>% 
   mutate(
-    across(c(prob, prob_opp, imp, imp_opp), ~{.x * (exp(-pi * min_elapsed))}),
-    gd_ratio = gd / (exp(-pi * min_elapsed))
+    across(c(prob, prob_opp, imp, imp_opp), ~{.x * (exp(-!!exp_decay * wt_decay))}),
+    # xgd_ratio = xgd / (exp(-pi * wt_decay))
+    gd_wt = gd / (exp(-!!exp_decay * wt_decay))
   ) %>% 
   select(
-    is_w,
+    res,
     idx,
     league,
     season,
@@ -210,7 +235,29 @@ df <-
     is_h,
     matches('^x?g'),
     matches('prob'),
-    matches('ratio$')
+    matches('wt$')
   )
 df
+df %>%
+  filter(match_id == first(match_id)) %>%
+  select(-c(gd, xgd)) %>% 
+  pivot_longer(
+    matches('prob')
+    # matches('^x?g')
+  ) %>%
+  ggplot() +
+  aes(x = minute, y = value, color = name) +
+  geom_step() +
+  facet_wrap(~is_h)
+df %>% filter(minute == 100L) %>% distinct()
 write_rds(df, path_model_data)
+
+df_tst_dummy <-
+  crossing(
+    is_h = c(0L, 1L),
+    g = seq.int(0, 3),
+    g_opp = seq.int(0, 3),
+    xg = seq(0, 3, by = 0.25),
+    xg_opp = seq(0, 3, by = 0.25)
+  )
+df_tst_dummy

@@ -14,7 +14,7 @@ path_spi <- file.path(dir_proj, 'spi_538.csv')
 params <-
   crossing(
     league = c('EPL', 'La_liga', 'Bundesliga', 'Serie_A', 'Ligue_1'),
-    season = c(2019, 2020)
+    season = c(2017L:2020L)
   )
 params
 options(readr.num_columns = 0)
@@ -201,7 +201,6 @@ team_players_stats <-
   unnest(data)
 team_players_stats
 write_rds(team_players_stats, path_teams_players_stats)
-
 
 read_csv('https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv') %>% 
   write_csv(path_spi, na = '')
