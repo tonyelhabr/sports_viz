@@ -79,7 +79,7 @@ import_bands <- memoise::memoise({
 })
 
 # instructions:
-# 1. Make a copy of https://drive.google.com/open?id=1BRTPCLzc09oW6NpqPoHabXwKwjzwxOVO to your local google drive (link originally found here: https://www.6atexasfootball.com/forum/main-forum/199726-complete-game-by-game-football-histories/page10).
+# 1. Make a copy of https://onedrive.live.com/view.aspx?resid=86C60DC641D3140!60246&ithint=file%2cxlsx&authkey=!AECe-7m6LioN5U0 to your local google drive (link originally found here: https://www.6atexasfootball.com/forum/main-forum/199726-complete-game-by-game-football-histories/page10).
 # 2. Download a copy of this workbook.
 # 3. Show formulas on the Data sheet for column A.
 # 4. Copy-paste formulas to a text file.
