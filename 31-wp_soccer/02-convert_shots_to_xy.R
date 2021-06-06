@@ -1,14 +1,24 @@
 
+# setup
 library(tidyverse)
 dir_proj <- '31-wp_soccer'
+
+# inputs
 path_shots <- file.path(dir_proj, 'shots.rds')
 path_matches <- file.path(dir_proj, 'matches.rds')
 path_team_players_stats <- file.path(dir_proj, 'team_players_stats.rds')
 path_spi <- file.path(dir_proj, 'spi_538.csv')
 path_matches <- file.path(dir_proj, 'matches.rds')
 
+f_read_ws <- function(x) {
+  file.path(dir_proj, sprintf('201718-202021_epl_%s.parquet', x)) %>% 
+    arrow::read_parquet()
+}
+
+# outputs
 path_df <- file.path(dir_proj, 'model_data.parquet')
 
+# understat ----
 leagues_mapping <-
   tibble(
     league = c('epl'),
@@ -28,6 +38,13 @@ filter_understat <- function(data) {
     filter(league == 'EPL', season_id %in% 2017L:2020L)
 }
 
+fix_understat_league_col <- function(data) {
+  data %>% 
+    rename(league_understat = league) %>% 
+    inner_join(leagues_mapping %>% select(league, league_understat)) %>% 
+    select(-league_understat)
+}
+
 team_players_stats <- 
   path_team_players_stats %>% 
   read_rds() %>%
@@ -38,25 +55,30 @@ team_players_stats <-
     player = player_name,
     team = team_name
   ) %>% 
-  filter_understat()
+  filter_understat() %>% 
+  fix_understat_league_col()
 team_players_stats
-teams2 <- team_players_stats %>% distinct(team) %>% arrange(team)
-teams2
-matches <- path_matches %>% read_rds()
+
+matches <-
+  path_matches %>% 
+  read_rds() %>% 
+  fix_understat_league_col()
+matches
 
 match_ids <-
   matches %>% 
   rename(season_id = season) %>% 
-  filter_understat() %>% 
+  # filter_understat() %>% 
   distinct(league, season_id, match_id)
 match_ids
 
-shots_init <- path_shots %>% read_rds()
+shots_init <- 
+  path_shots %>% 
+  read_rds()
+shots_init
 
 shots <- 
   shots_init %>% 
-  # janitor::clean_names() %>% 
-  # filter(league == 'EPL') %>% 
   inner_join(match_ids) %>% 
   mutate(
     across(date, lubridate::date),
@@ -143,9 +165,15 @@ xg <-
   select(-matches('^team_understat')) 
 xg
 
+# 538 ----
+filter_538 <- function(data) {
+  data %>%
+    filter(league_id == 2411L, season %in% 2017L:2020L)
+}
 probs_init <-
   path_spi %>%
   read_csv() %>% 
+  filter_538() %>% 
   select(-league) %>% 
   rename(
     season_id = season,
@@ -158,7 +186,7 @@ probs_init <-
   ) %>%
   inner_join(leagues_mapping) %>% 
   select(-league_id_538) %>% 
-  filter(season_id %>% between(2017L, 2020L)) %>% 
+  # filter(season_id %>% between(2017L, 2020L)) %>% 
   # select(-c(league_id)) %>% 
   # filter(league == 'epl') %>% 
   mutate(across(season_id, as.integer)) %>% 
@@ -168,14 +196,11 @@ probs_init <-
   left_join(team_mapping %>% select(team_a = team, team_538_a = team_538)) %>% 
   select(-matches('^team_538')) %>% 
   rename(prob_h = prob_538_h, prob_a = prob_538_a, prob_d = prob_d_538) %>% 
-  select(season_id, league, date, matches('^team_'), matches('^score_'), matches('imp'), matches('^prob'))
+  select(league, season_id, date, matches('^team_'), matches('^score_'), matches('imp'), matches('^prob'))
 probs_init
 
-# xg_probs <- xg %>% full_join(probs_init %>% rename(date2 = date, league2 = league))
 xg_probs <- xg %>% full_join(probs_init %>% select(-c(date, league)))
 xg_probs
-# xg %>% filter(team_h == 'Arsenal', team_a == 'Everton', season_id == 2020)
-# write_rds(xg_probs, path_df)
 
 # # Debug mis-match with teams.
 # xg_probs %>% filter(is.na(prob_h)) %>% distinct(match_id, team_h) %>% count(team_h, sort = TRUE)
@@ -200,14 +225,13 @@ f_rename_xg <- function(side) {
 }
 
 minute_max <- 110L # xg_probs %>% slice_max(minute, with_ties = FALSE) %>% pull(minute)
-match_mins <- match_ids %>% crossing(tibble(minute = 0L:minute_max)) %>% crossing(tibble(side = c('h', 'a')))
-match_mins
+# match_mins <- match_ids %>% crossing(tibble(minute = 0L:minute_max)) %>% crossing(tibble(side = c('h', 'a')))
 # # Can I determine first or second half?
 # xg_probs %>% filter(minute == 46L) %>% filter(result == 'Goal') %>% arrange(desc(date))
 
 # exp_decay <- pi
 exp_decay <- 2
-df <-
+df_understat_538 <-
   bind_rows(f_rename_xg('h'), f_rename_xg('a')) %>% 
   # full_join(match_mins) %>% 
   arrange(league, season_id, match_id, minute, team) %>% 
@@ -241,6 +265,7 @@ df <-
     date,
     team_h,
     team_a,
+    side,
     team,
     player,
     result,
@@ -251,9 +276,9 @@ df <-
     matches('prob'),
     matches('wt$')
   )
-df
+df_understat_538
 
-# df %>%
+# df_understat_538 %>%
 #   filter(match_id == first(match_id)) %>%
 #   select(-c(gd, xgd)) %>% 
 #   pivot_longer(
@@ -264,15 +289,265 @@ df
 #   aes(x = minute, y = value, color = name) +
 #   geom_step() +
 #   facet_wrap(~is_h)
-# df %>% filter(minute == 100L) %>% distinct()
-arrow::write_parquet(df, path_df)
+# df_understat_538 %>% filter(minute == 100L) %>% distinct()
+# arrow::write_parquet(df_understat_538, path_df)
+# 
+# df_tst_dummy <-
+#   crossing(
+#     is_h = c(0L, 1L),
+#     g = seq.int(0, 3),
+#     g_opp = seq.int(0, 3),
+#     xg = seq(0, 3, by = 0.25),
+#     xg_opp = seq(0, 3, by = 0.25)
+#   )
+# df_tst_dummy
+# ws ----
+events_init <- f_read_ws('events')
+meta <- 
+  f_read_ws('meta') %>% 
+  mutate(across(start_date, ~lubridate::ymd_hms(.x) %>% lubridate::date())) %>% 
+  rename(date = start_date)
 
-df_tst_dummy <-
-  crossing(
-    is_h = c(0L, 1L),
-    g = seq.int(0, 3),
-    g_opp = seq.int(0, 3),
-    xg = seq(0, 3, by = 0.25),
-    xg_opp = seq(0, 3, by = 0.25)
+events_teams <-
+  events_init %>% 
+  group_by(match_id, team = team_name) %>% 
+  slice(1) %>% 
+  ungroup() %>% 
+  select(match_id, team, side) %>% 
+  pivot_wider(
+    names_from = side,
+    values_from = team,
+    names_prefix = 'team_'
+  ) %>% 
+  rename(team_h = team_home, team_a = team_away)
+events_teams
+
+add_time_col <- function(data) {
+  data %>% 
+    mutate(time = sprintf('%s:%s', expanded_minute, second) %>% lubridate::ms() %>% as.double())
+}
+
+events <- 
+  events_init %>% 
+  # rename(team = team_name, league_whoscored = league) %>% 
+  # left_join(leagues_mapping) %>% 
+  # select(-league_whoscored) %>% 
+  rename_all(~str_remove(.x, '_name')) %>% 
+  mutate(across(side, ~case_when(.x == 'home' ~ 'h', .x == 'away' ~ 'a'))) %>% 
+  left_join(meta %>% select(match_id, date)) %>% 
+  mutate(
+    across(season_id, ~ str_sub(.x, 1, 4) %>% as.integer()),
+    across(c(minute, expanded_minute, second), as.integer),
+    across(second, ~coalesce(.x, 0L))
+  ) %>% 
+  add_time_col() %>% 
+  left_join(events_teams) %>% 
+  mutate(team_opp = ifelse(team == team_h, team_a, team_h)) %>% 
+  arrange(competition_id, season_id, match_id, date, time, team) %>% 
+  mutate(idx = row_number()) %>% 
+  relocate(idx, competition_id, season_id, match_id, date, time)
+events
+# events %>% filter(is.na(time))
+
+f_rename_ws <- function(side) {
+  suffix <- sprintf('_%s$', side)
+  side_opp <- ifelse(side == 'h', 'a', 'h')
+  suffix_opp <- sprintf('_%s$', side_opp)
+  col_team <- sprintf('team_%s', side)
+  col_team_sym <- sym(col_team)
+  events %>% 
+    filter(!!col_team_sym == team) %>% 
+    mutate(
+      team = if_else(side == 'h', team_h, team_a),
+      team_opp = if_else(side == 'h', team_a, team_h)
+    ) %>% 
+    select(
+      idx,
+      competition_id,
+      season_id,
+      match_id,
+      date,
+      minute,
+      expanded_minute,
+      second,
+      time,
+      side,
+      team,
+      team_opp,
+      team_h,
+      team_a,
+      player,
+      related_player_id,
+      type,
+      outcome_type,
+      card_type
+    )
+}
+
+events <- 
+  bind_rows(f_rename_ws('h'), f_rename_ws('a')) %>% 
+  arrange(competition_id, season_id, date, match_id, time, team)
+events
+
+# Avoid the name conflict with understat shots.
+shots_ws <-
+  events %>% 
+  filter(type %>% str_detect('Shot|Goal'))
+shots_ws
+
+if(FALSE) {
+  full_join(
+    shots_ws %>% 
+      mutate(idx1 = row_number()) %>% 
+      select(idx1, season_id, date, team_h, team_a, team, side, minute, expanded_minute, second, type_ws = type),
+    df_understat_538 %>%
+      mutate(idx2 = row_number()) %>% 
+      select(idx2, season_id, date, team_h, team_a, team, side, minute, xg, type_understat = result)
+  ) %>% 
+    relocate(idx1, idx2) %>% 
+    arrange(idx1, idx2) %>% 
+    group_by(idx1) %>% 
+    slice_min(idx2) %>% 
+    ungroup()
+  
+  shots_ws %>% filter(match_id == 1375927L) %>% arrange(time)
+  df_understat_538 %>% filter(match_id == 11643L) %>% filter(is_shot) %>% arrange(minute)
+}
+
+subs_off <-
+  events %>% 
+  # filter(type %>% str_detect('Substitution'))
+  filter(type == 'SubstitutionOff') %>% 
+  mutate(sub = 1L)
+subs_off
+
+# subs_off_cumu <-
+#   subs_off %>% 
+#   group_by(match_id, team) %>% 
+#   mutate(sub = cumsum(sub)) %>% 
+#   ungroup()
+# subs_off_cumu
+# subs %>% filter(type == 'SubstitutionOff' & lead(type) != 'SubstitutionOn')
+# events %>% filter(idx %>% between (1006176, 1006185))
+
+cards <- events %>% filter(type == 'Card')
+cards
+
+cards_y <- cards %>% filter(card_type == 'Yellow') %>% mutate(cards_y = 1L) 
+cards_y
+
+# cards_y_cumu <-
+#   cards_y %>% 
+#   group_by(match_id, team) %>% 
+#   mutate(cards_y = cumsum(cards_y)) %>% 
+#   ungroup()
+# cards_y_cumu
+
+cards_r <- cards %>% filter(card_type == 'Red') %>% mutate(cards_r = 1L)
+cards_r
+
+# cards_r_cumu <-
+#   cards_r %>% 
+#   group_by(match_id, team) %>% 
+#   mutate(cards_r = cumsum(cards_r)) %>% 
+#   ungroup()
+# cards_r_cumu %>% filter(cards_r > 1L)
+
+cards_agg <-
+  cards %>% 
+  group_by(match_id, player) %>% 
+  summarize(n = n(), minute = max(minute)) %>% 
+  ungroup()
+cards_agg
+
+cards_double <- cards_agg %>% filter(n > 1L)
+cards_double
+
+send_offs <-
+  full_join(
+    cards_red %>% drop_na(player) %>% distinct(match_id, player, minute) %>% mutate(which = 'red'),
+    cards_double %>% select(match_id, player, minute) %>% mutate(which = 'double')
   )
-df_tst_dummy
+send_offs
+
+cards_non_send_offs <-
+  cards %>% 
+  anti_join(send_offs)
+cards_non_send_offs
+
+events_ws <-
+  bind_rows(
+    subs_off,
+    cards_y,
+    cards_r
+  ) %>% 
+  arrange(idx) %>%
+  select(
+    competition_id,
+    season_id,
+    match_id,
+    date,
+    time,
+    team,
+    team_opp,
+    team_h,
+    team_a,
+    side,
+    minute,
+    sub,
+    cards_y,
+    cards_r
+  )
+events_ws
+
+subs_off %>% filter(side == 'a') %>% filter(match_id == first(match_id))
+events_ws %>% filter(side == 'a') %>% filter(match_id == first(match_id))
+cards_y %>% filter(match_id == 1190174)
+
+events_ws_agg <-
+  events_ws %>% 
+  group_by(competition_id, season_id, match_id, date, team, team_opp, team_h, team_a, side, minute) %>% 
+  summarize(across(c(sub, cards_y, cards_r), sum, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  arrange(competition_id, season_id, match_id, date, team, minute) %>% 
+  group_by(competition_id, season_id, match_id, date, team, team_opp, team_h, team_a, side) %>% 
+  mutate(across(c(sub, cards_y, cards_r), cumsum)) %>% 
+  ungroup()
+events_ws_agg
+
+events_ws_redux <-
+  events_ws_agg %>% 
+  select(competition_id, season_id, match_id, team_h, team_a, minute) %>% 
+  left_join(
+    events_ws_agg %>% 
+      filter(side == 'h') %>% 
+      select(match_id, minute, team, sub, cards_y, cards_r) %>% 
+      rename_with(~sprintf('%s_h', .x), c(team, sub, cards_y, cards_r))
+  ) %>% 
+  left_join(
+    events_ws_agg %>% 
+      filter(side == 'a') %>% 
+      select(match_id, minute, team, sub, cards_y, cards_r) %>% 
+      rename_with(~sprintf('%s_a', .x), c(team, sub, cards_y, cards_r))
+  ) %>% 
+  arrange(competition_id, season_id, match_id, minute, team_h) %>% 
+  group_by(match_id) %>% 
+  fill(matches('.*')) %>% 
+  ungroup() %>% 
+  mutate(across(where(is.integer), ~replace_na(.x, 0L))) %>% 
+  mutate(
+    is_h = !is.na(sub_h),
+    team = if_else(is_h, team_h, team_a),
+    sub = if_else(is_h, sub_h, sub_a),
+    sub_opp = if_else(is_h, sub_a, sub_h),
+    cards_y = if_else(is_h, cards_y_h, cards_y_a),
+    cards_y_opp = if_else(is_h, cards_y_a, cards_y_h),
+    cards_r = if_else(is_h, cards_r_h, cards_r_a),
+    cards_r_opp = if_else(is_h, cards_r_a, cards_r_h)
+  )
+events_ws_redux
+
+full_join(
+  events_ws %>% filter(side == 'h'),
+  events_ws %>% filter(side == 'a')
+)
