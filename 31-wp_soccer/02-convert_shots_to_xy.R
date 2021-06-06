@@ -92,11 +92,6 @@ shots <-
   )
 shots
 
-# scorelines <-
-#   shots %>%
-#   distinct(league, season, date, match_id, team_h, team_a, g_h = g_h_final, g_a = g_a_final)
-# scorelines
-
 shots_w_teams <-
   shots %>% 
   select(-id, -matches('_final$')) %>% 
@@ -111,12 +106,6 @@ shots_w_teams_0
 
 rgx_xg_cumu <- '^x?g'
 xg_cumu_init <-
-  # # TBH I don't think i even need this scorelines stuff anymore.
-  # bind_rows(
-  #   # scorelines %>% anti_join(shots_w_teams_0) %>% mutate(minute = 0L, side = 'h', is_shot = FALSE), 
-  #   # scorelines %>% anti_join(shots_w_teams_0) %>% mutate(minute = 0L, side = 'a', is_shot = FALSE), 
-  #   shots_w_teams %>% mutate(is_shot = TRUE)
-  # ) %>% 
   shots_w_teams %>% 
   arrange(league, season, match_id, minute) %>% 
   mutate(
@@ -154,69 +143,37 @@ xg_cumu_init <-
   left_join(team_mapping %>% select(team_a = team, team_understat_a = team_understat)) %>% 
   select(-matches('^team_understat')) %>%  
   # Aggregate by last in minute. 
-  group_by(league, season, date, match_id, team_h, team_a, minute, side, team) %>% 
+  group_by(league, season, date, match_id, team_h, team_a, minute) %>% 
   mutate(idx_intra = row_number(xg_h + xg_a + g_h + g_a)) %>% 
   slice_max(idx_intra) %>% 
   ungroup() %>% 
   select(
-    league, season, date, match_id, team_h, team_a, minute, side, team,
+    league, season, date, match_id, team_h, team_a, minute,
     matches(rgx_xg_cumu)
   )
 xg_cumu_init
 
-f_rename_xg_cumu <- function(.side) {
+xg_cumu_h <-
   xg_cumu_init %>% 
-    filter(side == .side) %>% 
-    select(match_id, minute, team, matches(rgx_xg_cumu)) %>% 
-    rename_with(~sprintf('%s_%s', .x, .side), -c(match_id, minute))
-}
-
-xg_cumu <-
-  xg_cumu_init %>% 
-  select(match_id, team_h, team_a, minute) %>% 
-  left_join(f_rename_xg_cumu('h')) %>% 
-  left_join(f_rename_xg_cumu('a')) %>% 
-  arrange(match_id, minute, team_h) %>% 
-  group_by(match_id) %>% 
-  fill(matches('.*')) %>% 
-  ungroup() %>% 
-  mutate(
-    across(where(matches('^g')), ~replace_na(.x, 0L)),
-    across(where(matches('^xg')), ~coalesce(.x, 0))
+  rename(
+    xg = xg_h,
+    xg_opp = xg_a,
+    g = g_h,
+    g_opp = g_a
   )
-xg_cumu
+xg_cumu_h
 
-
-# old?
-f_rename_xg <- function(.side) {
-  suffix <- sprintf('_%s$', .side)
-  side_opp <- ifelse(.side == 'h', 'a', 'h')
-  suffix_opp <- sprintf('_%s$', side_opp)
-  col_team <- sprintf('team_%s', .side)
-  col_team_sym <- sym(col_team)
-  xg %>% 
-    filter(!!col_team_sym == team) %>% 
-    rename_with(~str_replace(.x, suffix, ''), c(matches(suffix), -matches('^team_'))) %>% 
-    rename_with(~str_replace(.x, suffix_opp, '_opp'), c(matches(suffix_opp), -matches('^team_')))
-}
-
-xg_redux_init <-
-  bind_rows(f_rename_xg('h'), f_rename_xg('a')) %>% 
-  arrange(league, season, date, match_id, minute, team)
-xg_redux_init
-
-
-xg_redux <-
+xg_cumu_redux <-
   bind_rows(
-    xg_redux_init %>% mutate(team = team_h),
-    xg_redux_init %>% 
-      mutate(team = team_a) %>% 
+    xg_cumu_h %>% mutate(team = team_h, side = 'h'),
+    xg_cumu_h %>% 
+      mutate(team = team_a, side = 'a') %>% 
       rename_with(~sprintf('%s_z', .x), c(matches(rgx_xg_cumu), -matches(sprintf('%s.*_opp$', rgx_xg_cumu)))) %>% 
       rename_with(~str_remove(.x, '_opp'), c(matches(sprintf('%s.*_opp$', rgx_xg_cumu)))) %>% 
       rename_with(~str_replace(.x, '_z', '_opp'), c(matches(sprintf('%s.*_z$', rgx_xg_cumu))))
   ) %>% 
   arrange(league, season, date, match_id, minute, team)
-xg_redux
+xg_cumu_redux
 
 # ws ----
 fix_ws_meta <- function(data) {
@@ -239,7 +196,7 @@ meta <-
   mutate(has_attendance = attendance > 0L) %>% 
   select(match_id, date = start_date, has_attendance, max_minute)
 meta
-meta %>% filter(!has_attendance)
+# meta %>% filter(!has_attendance)
 
 events_teams <-
   events_init %>% 
@@ -257,7 +214,7 @@ events_teams <-
   left_join(team_mapping %>% select(team_a = team, team_ws_a = team_ws)) %>% 
   select(-matches('_ws'))
 events_teams
-events_teams %>% skimr::skim()
+# events_teams %>% skimr::skim()
 
 add_time_col <- function(data) {
   data %>% 
@@ -436,11 +393,10 @@ events_ws_cumu_redux <-
   bind_rows(
     events_ws_cumu %>% mutate(side = 'h'),
     events_ws_cumu %>% 
-      mutate(team = team_a) %>% 
+      mutate(team = team_a, side = 'a') %>% 
       rename_with(~sprintf('%s_z', .x), c(matches(rgx_ws_cumu), -matches(sprintf('%s.*_opp$', rgx_ws_cumu)))) %>% 
       rename_with(~str_remove(.x, '_opp'), c(matches(sprintf('%s.*_opp$', rgx_ws_cumu)))) %>% 
-      rename_with(~str_replace(.x, '_z', '_opp'), c(matches(sprintf('%s.*_z$', rgx_ws_cumu)))) %>% 
-      mutate(side = 'a')
+      rename_with(~str_replace(.x, '_z', '_opp'), c(matches(sprintf('%s.*_z$', rgx_ws_cumu))))
   ) %>% 
   left_join(events_ws %>% distinct(league, season, date, match_id, has_attendance, max_minute)) %>% 
   arrange(league, season, date, match_id, minute, team)
@@ -455,8 +411,7 @@ events_ws_cumu_redux
 
 df_intra_game <-
   bind_rows(
-    # xg_probs %>% select(-c(league, match_id)),
-    xg %>% select(-c(match_id)),
+    xg_cumu_redux %>% select(-c(match_id)),
     events_ws_cumu_redux %>% select(-c(match_id))
   ) %>% 
   arrange(league, season, date, minute, team_h, team_a, team) %>% 
@@ -468,8 +423,7 @@ df_intra_game <-
   ungroup() %>% 
   mutate(
     across(where(is.integer), ~coalesce(.x, 0L)),
-    # across(where(~is.double(.x) & !lubridate::is.Date(.x)), ~coalesce(.x, 0))
-    across(matches('^x?g'), ~coalesce(.x, 0))
+    across(matches(rgx_xg_cumu), ~coalesce(.x, 0))
   )
 df_intra_game
 # df_intra_game %>% count(team = team_h) %>% filter(is.na(team))
@@ -508,105 +462,73 @@ probs <-
   left_join(team_mapping %>% select(team_h = team, team_538_h = team_538)) %>% 
   left_join(team_mapping %>% select(team_a = team, team_538_a = team_538)) %>% 
   select(-matches('^team_538')) %>% 
-  rename(prob_h = prob_538_h, prob_a = prob_538_a, prob_d = prob_d_538) %>% 
+  rename(prob_h = prob_538_h, prob_a = prob_538_a, prob_d = prob_d_538, score_h = score_538_h, score_a = score_538_a) %>% 
   select(league, season, date, matches('^team_'), matches('^score_'), matches('imp'), matches('^prob'))
 probs
 
-# xg_probs <- xg %>% full_join(probs %>% select(-c(date, league)))
-# xg_probs
-probs %>% filter(date == '2017-08-12')
-team_mapping
-
-# 538 has the Fulham Burnley 2018-08-26 game correct, while other data has it on 2018-08-25
-df_intra_game %>% 
+# # 538 has the Fulham Burnley 2018-08-26 game correct, while other data has it on 2018-08-25
+# df_intra_game %>% 
+#   anti_join(probs) %>% 
+#   # count(team = team_a, sort = TRUE) %>% 
+#   # filter(date == '2017-08-12') %>% 
+#   distinct(league, season, date, team_h, team_a)
+rgx_538 <- '^(prob|score|imp)'
+df_all <-
+  df_intra_game %>% 
   select(-date) %>% 
   left_join(probs) %>% 
-  relocate(date, .after = season)
+  relocate(date, .after = season) %>% 
+  mutate(
+    is_h = side == 'h',
+    prob = if_else(is_h, prob_h, prob_a),
+    prob_opp = if_else(is_h, prob_a, prob_h),
+    imp = if_else(is_h, imp_h, imp_a),
+    imp_opp = if_else(is_h, imp_a, imp_h),
+    score = if_else(is_h, score_h, score_a),
+    score_opp = if_else(is_h, score_a, score_h)
+  ) %>% 
+  select(-is_h, -matches(sprintf('%s.*_[ha]$', rgx_538)))
+df_all
 
-df_intra_game %>% 
-  anti_join(probs) %>% 
-  # count(team = team_a, sort = TRUE) %>% 
-  # filter(date == '2017-08-12') %>% 
-  distinct(league, season, date, team_h, team_a)
-
-# # Debug mis-match with teams.
-# xg_probs %>% filter(is.na(prob_h)) %>% distinct(match_id, team_h) %>% count(team_h, sort = TRUE)
-# xg_probs %>% filter(is.na(prob_a)) %>% distinct(match_id, team_a) %>% count(team_a, sort = TRUE)
-
-# TODO: Add number of men on field and number of subs remaining.
-f_rename_xg <- function(side) {
-  suffix <- sprintf('_%s$', side)
-  side_opp <- ifelse(side == 'h', 'a', 'h')
-  suffix_opp <- sprintf('_%s$', side_opp)
-  col_team <- sprintf('team_%s', side)
-  col_team_sym <- sym(col_team)
-  xg_probs %>% 
-    filter(!!col_team_sym == team) %>% 
-    rename_with(~str_replace(.x, suffix, ''), c(matches(suffix), -matches('^team_'))) %>% 
-    rename_with(~str_replace(.x, suffix_opp, '_opp'), c(matches(suffix_opp), -matches('^team_'))) %>% 
-    mutate(
-      team = if_else(side == 'h', team_h, team_a),
-      team_opp = if_else(side == 'a', team_a, team_h)
-    )
-}
-
-minute_max <- 110L # xg_probs %>% slice_max(minute, with_ties = FALSE) %>% pull(minute)
-# match_mins <- match_ids %>% crossing(tibble(minute = 0L:minute_max)) %>% crossing(tibble(side = c('h', 'a')))
-# # Can I determine first or second half?
-# xg_probs %>% filter(minute == 46L) %>% filter(result == 'Goal') %>% arrange(desc(date))
-
-# exp_decay <- pi
-exp_decay <- 2
-xg_probs_redux <-
-  bind_rows(f_rename_xg('h'), f_rename_xg('a')) %>% 
-  # full_join(match_mins) %>% 
-  arrange(league, season_id, match_id, minute, team) %>% 
-  # fill(-c(is_shot), .direction = 'downup') %>% 
-  # replace_na(list(is_shot = FALSE)) %>% 
+df  <-
+  df_all %>% 
+  arrange(league, season, date, team_h, team_a, minute, team) %>% 
   mutate(
     idx = row_number(),
-    across(c(season_id, match_id, minute), as.integer),
+    across(has_attendance, as.integer),
+    across(c(season, minute), as.integer),
     target = case_when(
-      score_538 == score_538_opp ~ 0L,
-      score_538 < score_538_opp ~ -1L,
-      score_538 > score_538_opp ~ 1L
+      score == score_opp ~ 0L,
+      score < score_opp ~ -1L,
+      score > score_opp ~ 1L
     ),
     is_h = if_else(side == 'h', 1L, 0L),
     gd = g - g_opp,
     xgd = xg - xg_opp
-  )
-xg_probs_redux
-
-df <-
-  xg_probs_redux %>% 
-  mutate(
-    wt_decay = minute / !!minute_max,
-    prob_d = (1 - prob - prob_opp) * exp(-!!exp_decay * wt_decay)
   ) %>% 
   mutate(
-    across(c(prob, prob_opp, imp, imp_opp), ~{.x * (exp(-!!exp_decay * wt_decay))}),
+    wt_decay = (1 - minute / max_minute)^2
+  ) %>% 
+  mutate(
+    across(matches('^(prob|imp)'), ~{.x * wt_decay}),
     # xgd_ratio = xgd / (exp(-pi * wt_decay))
-    gd_wt = gd / (exp(-!!exp_decay * wt_decay))
+    gd_wt = gd / wt_decay
   ) %>% 
-  select(
+  relocate(
     target,
     idx,
     league,
-    season_id,
-    match_id,
+    season,
     date,
     team_h,
     team_a,
+    matches('^score'),
     side,
     team,
-    player,
-    result,
+    max_minute,
     minute,
-    is_h,
-    is_shot,
-    matches('^x?g'),
-    matches('prob'),
-    matches('wt$')
+    wt_decay,
+    is_h
   )
 df
-
+arrow::write_parquet(df, path_df)
