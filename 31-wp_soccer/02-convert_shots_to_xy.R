@@ -73,6 +73,10 @@ shots <-
     across(date, lubridate::date),
     across(c(season, match_id, minute), as.integer)
   ) %>% 
+  # Some weird bad record.
+  mutate(
+    across(date, ~case_when(match_id == 9220L ~ lubridate::ymd('2018-08-26'), TRUE ~ .x))
+  ) %>% 
   select(
     league,
     season,
@@ -189,14 +193,20 @@ events_init <-
   rename_all(~str_remove(.x, '_name'))
 events_init
 
-meta <- 
+meta_init <- 
   f_read_ws('meta') %>% 
-  fix_ws_meta() %>% 
+  fix_ws_meta()
+meta_init
+
+meta <-
+  meta_init %>% 
   mutate(across(start_date, ~lubridate::ymd_hms(.x) %>% lubridate::date())) %>% 
   mutate(has_attendance = attendance > 0L) %>% 
   select(match_id, date = start_date, has_attendance, max_minute)
 meta
 # meta %>% filter(!has_attendance)
+# meta %>% filter(match_id == 1284763L)
+# events_init %>% filter(date == '2018-08-25', team_h == 'Fulham')
 
 events_teams <-
   events_init %>% 
@@ -223,10 +233,12 @@ add_time_col <- function(data) {
 
 events <- 
   events_init %>% 
+  rename(team_ws = team) %>% 
+  left_join(team_mapping %>% select(team, team_ws = team_ws)) %>% 
+  select(-team_ws) %>% 
   mutate(across(side, ~case_when(.x == 'home' ~ 'h', .x == 'away' ~ 'a'))) %>% 
   left_join(meta) %>% 
   mutate(
-    # across(season, ~ str_sub(.x, 1, 4) %>% as.integer()),
     across(c(minute, expanded_minute, second), as.integer),
     across(second, ~coalesce(.x, 0L))
   ) %>% 
@@ -311,7 +323,7 @@ send_offs_agg <-
   select(match_id, minute, team, player, which) %>% 
   mutate(send_off = 1L)
 send_offs_agg
-send_offs_agg %>% filter(which %>% str_detect(','))
+# send_offs_agg %>% filter(which %>% str_detect(','))
 
 events_ws <-
   bind_rows(
@@ -411,34 +423,34 @@ events_ws_cumu_redux
 
 df_intra_game <-
   bind_rows(
-    xg_cumu_redux %>% select(-c(match_id)),
-    events_ws_cumu_redux %>% select(-c(match_id))
+    xg_cumu_redux %>% select(-match_id), #  rename(match_id_understat = match_id),
+    events_ws_cumu_redux %>% select(-match_id) # rename(match_id_ws = match_id)
   ) %>% 
   arrange(league, season, date, minute, team_h, team_a, team) %>% 
   group_by(league, season, date, team_h, team_a, team) %>% 
   fill(matches('.*')) %>% 
   ungroup() %>% 
   group_by(league, season, date, team_h, team_a) %>% 
-  fill(has_attendance, max_minute, .direction = 'up') %>% 
+  fill(has_attendance, max_minute, .direction = 'updown') %>% 
   ungroup() %>% 
   mutate(
     across(where(is.integer), ~coalesce(.x, 0L)),
     across(matches(rgx_xg_cumu), ~coalesce(.x, 0))
   )
 df_intra_game
-# df_intra_game %>% count(team = team_h) %>% filter(is.na(team))
-# df_intra_game %>% count(team = team_a) %>% filter(is.na(team))
-# df_intra_game %>% filter(is.na(date))
+
+# # I'm missing some games?
+# events_ws_cumu_redux %>% filter(season == 2020L, team_h == 'Man United') %>% distinct(match_id, team_h, team_a)
+# events_init %>% distinct(match_id) %>% filter(match_id %>% between(1485306 - 4, 1485306 + 4))
+# events_init %>% filter(match_id == 1485306)
+# events %>% filter(match_id == 1485306)
+# df_intra_game %>% filter(is.na(has_attendance)) %>% count(date, team_h, team_a)
+# df_intra_game %>% filter(is.na(has_attendance)) %>% count(date, team_h, team_a)
 
 # 538 ----
-# filter_538 <- function(data) {
-#   data %>%
-#     filter(league_id == 2411L, season %in% 2017L:2020L)
-# }
 probs <-
   path_spi %>%
   read_csv() %>% 
-  # filter_538() %>% 
   select(-league) %>% 
   mutate(across(season, as.integer)) %>% 
   rename(league_id_538 = league_id) %>% 
@@ -466,13 +478,13 @@ probs <-
   select(league, season, date, matches('^team_'), matches('^score_'), matches('imp'), matches('^prob'))
 probs
 
-# # 538 has the Fulham Burnley 2018-08-26 game correct, while other data has it on 2018-08-25
-# df_intra_game %>% 
-#   anti_join(probs) %>% 
-#   # count(team = team_a, sort = TRUE) %>% 
-#   # filter(date == '2017-08-12') %>% 
+# Check bad dates.
+# df_intra_game %>%
+#   anti_join(probs) %>%
 #   distinct(league, season, date, team_h, team_a)
+
 rgx_538 <- '^(prob|score|imp)'
+df_intra_game %>% filter(is.na(has_attendance))
 df_all <-
   df_intra_game %>% 
   select(-date) %>% 
@@ -506,14 +518,6 @@ df  <-
     gd = g - g_opp,
     xgd = xg - xg_opp
   ) %>% 
-  mutate(
-    wt_decay = (1 - minute / max_minute)^2
-  ) %>% 
-  mutate(
-    across(matches('^(prob|imp)'), ~{.x * wt_decay}),
-    # xgd_ratio = xgd / (exp(-pi * wt_decay))
-    gd_wt = gd / wt_decay
-  ) %>% 
   relocate(
     target,
     idx,
@@ -527,8 +531,13 @@ df  <-
     team,
     max_minute,
     minute,
-    wt_decay,
     is_h
   )
 df
+df %>% skimr::skim()
 arrow::write_parquet(df, path_df)
+
+# data checking ----
+# df %>% 
+#   filter(is.na(imp)) %>% 
+#   distinct(league, season, date, team_h, team_a)
