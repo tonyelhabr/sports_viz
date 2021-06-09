@@ -38,15 +38,7 @@ do_scrape <- function(season, overwrite = FALSE, dir = '30-var') {
     html_text2(preserve_nbsp = TRUE) %>% 
     str_split(pattern = '\n')
   lst
-  
-  ps <-
-    lst %>% 
-    enframe() %>% 
-    unnest(value) %>% 
-    mutate(across(value, ~str_replace(.x, '(^.*)[:](.*$)', '\\1'))) %>% 
-    distinct(value)
-  ps
-  
+
   f <- function(x, rgx = 'Overturns[:] ', f = as.integer, default = 0L) {
     res_init <- x %>% keep(~str_detect(.x, rgx))
     if(length(res_init) == 0L) {
