@@ -63,6 +63,10 @@ pbp_data <- nflfastR::load_pbp(2019:2020) %>%
     defteam_timeouts_remaining
   )
 
+pbp_data %>% 
+  dplyr::filter(season == 2020) %>% 
+  count(game_id, posteam)
+
 test_data <- pbp_data %>%
   dplyr::filter(season >= 2020)
 
