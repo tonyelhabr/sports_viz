@@ -1,6 +1,36 @@
 
 library(tidyverse)
 library(rvest)
+
+extrafont::loadfonts(device = 'win', quiet = TRUE)
+theme_set(theme_minimal())
+theme_update(
+  text = element_text(family = 'Karla'),
+  title = element_text('Karla', size = 14, color = 'gray20'),
+  plot.title = ggtext::element_markdown('Karla', face = 'bold', size = 24, color = 'gray20'),
+  plot.title.position = 'plot',
+  plot.subtitle = ggtext::element_markdown('Karla', face = 'bold', size = 18, color = 'gray50'),
+  axis.text = element_text('Karla', size = 14),
+  axis.title = element_text(size = 14, face = 'bold', hjust = 0.99),
+  axis.line = element_blank(),
+  panel.grid.major = element_line(color = 'gray80'),
+  panel.grid.minor = element_line(color = 'gray80'),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  plot.margin = margin(10, 10, 10, 10),
+  plot.background = element_rect(fill = '#ffffff', color = NA),
+  # plot.caption = ggtext::element_markdown('Karla', size = 16, color = 'gray20', hjust = 1),
+  plot.caption = element_text('Karla', size = 12, color = 'gray20', hjust = 1),
+  plot.caption.position = 'plot',
+  plot.tag = ggtext::element_markdown('Karla', size = 12, color = 'gray20', hjust = 0), 
+  plot.tag.position = c(.01, 0.01),
+  # legend.text = element_text(color = 'gray20', size = 14),
+  # strip.text = element_text(color = 'gray20', size = 14),
+  # strip.background = element_blank(),
+  panel.background = element_rect(fill = '#ffffff', color = NA)
+)
+update_geom_defaults('text', list(family = 'Karla', size = 4))
+
 url <- 'https://www.skysports.com/football/news/19692/12309182/euro-2020-squads-confirmed-squad-lists-and-premier-league-players-at-tournament'
 page <- url %>% xml2::read_html()
 
@@ -81,15 +111,104 @@ team_mapping <-
 
 players_filt <-
   players %>% 
-  inner_join(team_mapping)
+  inner_join(team_mapping) %>% 
+  mutate(across(team, ~str_replace_all(.x, c('Utd' = 'United', 'Man ' = 'Manchester '))))
 players_filt
 
 teams_n <-
   players_filt %>% 
-  count(team, sort = TRUE)
-teams_n
+  count(team, sort = TRUE) %>% 
+  mutate(rnk = row_number(desc(n)))
+teams_n %>% pull(team) %>% levels()
 
 countrys_n <-
   players_filt %>% 
-  count(country, sort = TRUE)
+  count(country, sort = TRUE) %>% 
+  mutate(rnk = row_number(desc(n)))
 countrys_n
+
+# https://github.com/gkaramanis/flags/blob/main/flags.R
+img <-
+  stack(jsonlite::fromJSON('https://raw.githubusercontent.com/hampusborgos/country-flags/main/countries.json')) %>% 
+  as_tibble() %>% 
+  select(code = ind, country = values) %>% 
+  mutate(
+    code = tolower(code),
+    # flag = paste0('https://raw.githubusercontent.com/hampusborgos/country-flags/main/png1000px/', code, '.png'),
+    across(
+      country, ~case_when(str_detect(.x, 'Macedonia') ~ 'North Macedonia', TRUE ~ .x)
+    )
+  )
+img
+# img %>% filter(country %>% str_detect('Mace'))
+# ?countrycode::countrycode
+# countrycode::codelist %>% filter(country.name.en %>% str_detect('Great'))
+
+df <-
+  players_filt %>% 
+  left_join(img %>% mutate(across(code, ~str_replace_all(.x, '(gb[-])(.*)', 'gb')))) %>% 
+  # left_join(img) %>% 
+  # mutate(iso2 = countrycode::countrycode(country, origin = 'country.name', destination = 'iso2c')) %>% 
+  left_join(teams_n %>% rename(n_team = n, rnk_team = rnk))%>% 
+  mutate(across(team, ~fct_reorder(.x, n_team))) %>% 
+  arrange(team, country) %>% 
+  group_by(team, country) %>% 
+  mutate(idx1 = row_number(), n = n()) %>% 
+  ungroup() %>%
+  arrange(team, n, country) %>% 
+  group_by(team) %>% 
+  mutate(
+    idx2 = row_number()
+  ) %>% 
+  ungroup() %>%
+  arrange(team, idx2)
+df
+
+lab_tag <- '**Viz**: Tony ElHabr'
+library(ggflags) # have to load in for .flaglist
+p1 <-
+  df %>% 
+  # head(5) %>% 
+  ggplot() +
+  aes(x = idx2, y = team) +
+  ggflags::geom_flag(aes(country = code), show.legend = FALSE) +
+  ggflags::scale_country() +
+  scale_size(range = c(20, 20)) +
+  scale_x_continuous(position = 'top') +
+  theme(
+    plot.caption = ggtext::element_markdown(face = 'italic'),
+    plot.title = ggtext::element_markdown(size = 14),
+    # panel.grid.major.x = element_blank(),
+    # axis.text.x = element_blank(),
+    # axis.text.x.bottom = element_text(),
+    panel.grid.major.y = element_blank()
+  ) +
+  labs(
+    title = 'Which 2020/21 Premier League Teams Have the Most Players in the 2020 Euros?',
+    x = NULL, # '# of Players',
+    caption = 'England, Wales, and Scotland all shown as Great Britain.',
+    tag = lab_tag,
+    y = NULL
+  )
+# p1
+
+dir_proj <- '32-2020_euros'
+path_p1 <- file.path(dir_proj, 'viz_countries_by_team.png')
+h <- 8
+ggsave(
+  plot = p1,
+  file = path_p1,
+  height = 6,
+  width = 9,
+  type = 'cairo'
+)
+
+add_logo(
+  path_viz = path_p1,
+  path_logo = file.path(dir_proj, 'logo.png'),
+  logo_scale = 0.251,
+  delete = FALSE,
+  idx_x = 0.04,
+  adjust_y = FALSE,
+  idx_y = 0.31
+)
