@@ -127,28 +127,37 @@ countrys_n <-
   mutate(rnk = row_number(desc(n)))
 countrys_n
 
-# https://github.com/gkaramanis/flags/blob/main/flags.R
-img <-
-  stack(jsonlite::fromJSON('https://raw.githubusercontent.com/hampusborgos/country-flags/main/countries.json')) %>% 
-  as_tibble() %>% 
-  select(code = ind, country = values) %>% 
-  mutate(
-    code = tolower(code),
-    # flag = paste0('https://raw.githubusercontent.com/hampusborgos/country-flags/main/png1000px/', code, '.png'),
-    across(
-      country, ~case_when(str_detect(.x, 'Macedonia') ~ 'North Macedonia', TRUE ~ .x)
-    )
-  )
+# # https://github.com/gkaramanis/flags/blob/main/flags.R
+# img <-
+#   stack(jsonlite::fromJSON('https://raw.githubusercontent.com/hampusborgos/country-flags/main/countries.json')) %>% 
+#   as_tibble() %>% 
+#   select(code = ind, country = values) %>% 
+#   mutate(
+#     code = tolower(code),
+#     # flag = paste0('https://raw.githubusercontent.com/hampusborgos/country-flags/main/png1000px/', code, '.png'),
+#     across(
+#       country, ~case_when(str_detect(.x, 'Macedonia') ~ 'North Macedonia', TRUE ~ .x)
+#     )
+#   )
+# img
+# # img %>% filter(country %>% str_detect('Mace'))
+# # ?countrycode::countrycode
+# # countrycode::codelist %>% filter(country.name.en %>% str_detect('Great'))
+dir_proj <- '32-2020_euros'
+# flags from here: https://github.com/lbenz730/euro_cup_2021
+img <- 
+  fs::dir_ls(file.path(dir_proj, 'flags')) %>% 
+  tibble(path = .) %>% 
+  mutate(country = path %>% basename() %>% tools::file_path_sans_ext())
 img
-# img %>% filter(country %>% str_detect('Mace'))
-# ?countrycode::countrycode
-# countrycode::codelist %>% filter(country.name.en %>% str_detect('Great'))
+players_filt %>% distinct(country) %>% anti_join(img)
 
 df <-
   players_filt %>% 
-  left_join(img %>% mutate(across(code, ~str_replace_all(.x, '(gb[-])(.*)', 'gb')))) %>% 
+  # left_join(img %>% mutate(across(code, ~str_replace_all(.x, '(gb[-])(.*)', 'gb')))) %>% 
   # left_join(img) %>% 
   # mutate(iso2 = countrycode::countrycode(country, origin = 'country.name', destination = 'iso2c')) %>% 
+  left_join(img) %>% 
   left_join(teams_n %>% rename(n_team = n, rnk_team = rnk))%>% 
   mutate(across(team, ~fct_reorder(.x, n_team))) %>% 
   arrange(team, country) %>% 
@@ -165,15 +174,19 @@ df <-
 df
 
 lab_tag <- '**Viz**: Tony ElHabr'
-library(ggflags) # have to load in for .flaglist
+# library(ggflags) # have to load in for .flaglist
 p1 <-
   df %>% 
   # head(5) %>% 
   ggplot() +
   aes(x = idx2, y = team) +
-  ggflags::geom_flag(aes(country = code), show.legend = FALSE) +
-  ggflags::scale_country() +
-  scale_size(range = c(20, 20)) +
+  # ggflags::geom_flag(aes(country = code), show.legend = FALSE) +
+  # ggflags::scale_country() +
+  # scale_size(range = c(20, 20)) +
+  ggimage::geom_image(
+    size = 0.04,
+    aes(image = path)
+  ) +
   scale_x_continuous(position = 'top') +
   theme(
     plot.caption = ggtext::element_markdown(face = 'italic'),
@@ -192,13 +205,12 @@ p1 <-
   )
 # p1
 
-dir_proj <- '32-2020_euros'
 path_p1 <- file.path(dir_proj, 'viz_countries_by_team.png')
 h <- 8
 ggsave(
   plot = p1,
   file = path_p1,
-  height = 6,
+  height = 9,
   width = 9,
   type = 'cairo'
 )
@@ -210,5 +222,5 @@ add_logo(
   delete = FALSE,
   idx_x = 0.04,
   adjust_y = FALSE,
-  idx_y = 0.31
+  idx_y = 0.21
 )
