@@ -84,8 +84,14 @@ f_separate <- function(pos) {
     str_replace(x, '(^.*)\\s\\((.*)\\)$', sprintf('\\%s', i))
   }
   agg %>% 
+    mutate(
+      across(
+        !!pos_sym,
+        ~str_replace(.x, '\\(Tottenham Hotspur\\) Connor Roberts', '(Tottenham Hotspur), Connor Roberts')
+      )
+    ) %>% 
     select(country, !!pos_sym) %>% 
-    separate_rows(!!pos_sym, sep = '\\,\\s+') %>% 
+    separate_rows(!!pos_sym, sep = '[;,]\\s+') %>% 
     set_names(c('country', 'player')) %>% 
     mutate(
       across(
@@ -105,16 +111,22 @@ players <- c('g', 'm', 'd', 'f') %>% map_dfr(f_separate)
 
 team_mapping <-
   tibble(
-    team_sky = c('Arsenal', 'Aston Villa', 'Brighton', 'Burnley', 'Chelsea', 'Crystal Palace', 'Everton', 'Fulham', 'Leeds', 'Leicester', 'Liverpool', 'Man City', 'Manchester City', 'Manchester United', 'Newcastle', 'Newcastle United', 'Sheffield United', 'Southampton', 'Tottenham', 'West Brom', 'West Ham', 'Wolves'),
-    team = c('Arsenal', 'Aston Villa', 'Brighton', 'Burnley', 'Chelsea', 'Crystal Palace', 'Everton', 'Fulham', 'Leeds', 'Leicester', 'Liverpool', 'Man City', 'Man City', 'Man United', 'Newcastle Utd', 'Newcastle Utd', 'Sheffield Utd', 'Southampton', 'Tottenham', 'West Brom', 'West Ham', 'Wolves')
+    team_sky = c('Arsenal', 'Aston Villa', 'Brighton', 'Burnley', 'Chelsea', 'Crystal Palace', 'Everton', 'Fulham', 'Leeds', 'Leicester', 'Liverpool', 'Man City', 'Manchester City', 'Manchester United', 'Newcastle', 'Newcastle United', 'Sheffield United', 'Southampton', 'Tottenham', 'Tottenham Hotspur', 'West Brom', 'West Ham', 'West Ham United', 'Wolves'),
+    team = c('Arsenal', 'Aston Villa', 'Brighton', 'Burnley', 'Chelsea', 'Crystal Palace', 'Everton', 'Fulham', 'Leeds', 'Leicester', 'Liverpool', 'Man City', 'Man City', 'Man United', 'Newcastle Utd', 'Newcastle Utd', 'Sheffield Utd', 'Southampton', 'Tottenham', 'Tottenham', 'West Brom', 'West Ham', 'West Ham', 'Wolves')
   )
 
 players_filt <-
   players %>% 
+  mutate(
+    across(
+      team_sky, 
+      ~case_when(name == 'Gareth Bale' ~ 'Tottenham', TRUE ~ .x)
+    )
+  ) %>% 
   inner_join(team_mapping) %>% 
   mutate(across(team, ~str_replace_all(.x, c('Utd' = 'United', 'Man ' = 'Manchester '))))
 players_filt
-
+players_filt %>% filter(team == 'Tottenham')
 teams_n <-
   players_filt %>% 
   count(team, sort = TRUE) %>% 
@@ -127,22 +139,10 @@ countrys_n <-
   mutate(rnk = row_number(desc(n)))
 countrys_n
 
-# # https://github.com/gkaramanis/flags/blob/main/flags.R
-# img <-
-#   stack(jsonlite::fromJSON('https://raw.githubusercontent.com/hampusborgos/country-flags/main/countries.json')) %>% 
-#   as_tibble() %>% 
-#   select(code = ind, country = values) %>% 
-#   mutate(
-#     code = tolower(code),
-#     # flag = paste0('https://raw.githubusercontent.com/hampusborgos/country-flags/main/png1000px/', code, '.png'),
-#     across(
-#       country, ~case_when(str_detect(.x, 'Macedonia') ~ 'North Macedonia', TRUE ~ .x)
-#     )
-#   )
-# img
-# # img %>% filter(country %>% str_detect('Mace'))
-# # ?countrycode::countrycode
-# # countrycode::codelist %>% filter(country.name.en %>% str_detect('Great'))
+countrys %>% 
+  tibble(country = .) %>% 
+  anti_join(countrys_n)
+
 dir_proj <- '32-2020_euros'
 # flags from here: https://github.com/lbenz730/euro_cup_2021
 img <- 
@@ -154,9 +154,6 @@ players_filt %>% distinct(country) %>% anti_join(img)
 
 df <-
   players_filt %>% 
-  # left_join(img %>% mutate(across(code, ~str_replace_all(.x, '(gb[-])(.*)', 'gb')))) %>% 
-  # left_join(img) %>% 
-  # mutate(iso2 = countrycode::countrycode(country, origin = 'country.name', destination = 'iso2c')) %>% 
   left_join(img) %>% 
   left_join(teams_n %>% rename(n_team = n, rnk_team = rnk))%>% 
   mutate(across(team, ~fct_reorder(.x, n_team))) %>% 
@@ -199,7 +196,7 @@ p1 <-
   labs(
     title = 'Which 2020/21 Premier League Teams Have the Most Players in the 2020 Euros?',
     x = NULL, # '# of Players',
-    caption = 'England, Wales, and Scotland all shown as Great Britain.',
+    caption = ' ',
     tag = lab_tag,
     y = NULL
   )
