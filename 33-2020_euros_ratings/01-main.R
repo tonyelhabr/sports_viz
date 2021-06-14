@@ -304,69 +304,228 @@ if(!path_posterior_exists) {
   fit_stan <- path_fit_stan %>% read_rds()
   posterior <- path_posterior %>% read_rds()
 }
-pars <- fit_stan@sim$pars_oi
-s <- summary(fit_stan, pars, probs = c(0.05, 0.95))
-s_tbl <- 
-  s$summary %>% 
-  # tibble(rownames = 'alpha') %>%
-  as_tibble() %>% 
-  set_names(c('mean', 'se', 'sd', 'p_05', 'p_95', 'n_eff', 'r_hat')) %>% 
-  bind_cols(tibble(term = s$summary %>% rownames()), .) %>% 
-  mutate(across(c(mean:p_95), ~-.x)) %>% 
-  # mutate(across(term, ~str_remove_all(.x, c('\\[' = '_', '\\]$' = '')))) %>% 
-  filter(term %>% str_detect('alpha')) %>% 
-  select(-term) %>% 
-  bind_cols()
-s_tbl
+# pars <- fit_stan@sim$pars_oi
+# s <- summary(fit_stan, pars, probs = c(0.05, 0.95))
+# s_tbl <- 
+#   s$summary %>% 
+#   # tibble(rownames = 'alpha') %>%
+#   as_tibble() %>% 
+#   set_names(c('mean', 'se', 'sd', 'p_05', 'p_95', 'n_eff', 'r_hat')) %>% 
+#   bind_cols(tibble(term = s$summary %>% rownames()), .) %>% 
+#   # mutate(across(c(mean:p_95), ~-.x)) %>% 
+#   # mutate(across(term, ~str_remove_all(.x, c('\\[' = '_', '\\]$' = '')))) %>% 
+#   filter(term %>% str_detect('alpha')) %>% 
+#   select(-term) %>% 
+#   bind_cols()
+# s_tbl
+
+rnks <- 
+  tibble(
+    'estimate' = apply(posterior$alpha, 2, mean)
+  ) %>% 
+  bind_cols(league_ids %>% select(-n)) %>% 
+  mutate(rnk = row_number(desc(estimate)))
+rnks
+
+pars_mapping <-
+  rnks %>% 
+  mutate(across(league, ~fct_reorder(.x, estimate))) %>% 
+  select(parameter = player, league) %>% 
+  mutate(across(parameter, ~sprintf('alpha[%d]', .x)))
+pars_mapping
 
 library(bayesplot)
 posterior_v <- as.array(fit_stan)
 nms <- dimnames(posterior_v)
 nms_alpha <- nms$parameters %>% str_subset('alpha')
-bayesplot::mcmc_intervals(
-  posterior_v, 
-  pars = nms_alpha
-)
+# bayesplot::mcmc_intervals(
+#   posterior_v, 
+#   pars = nms_alpha
+# )
 bayesplot::mcmc_areas(
   posterior_v, 
   par = nms_alpha,
   prob = 0.8,
   prob_outer = 0.99,
   point_est = 'mean'
-)
-bayesplot::mcmc_areas_ridges(
-  posterior_v, 
-  par = nms_alpha,
-  prob = 0.8,
-  prob_outer = 0.99
-)
-
-bayesplot::mcmc_hist(
-  posterior_v, 
-  par = nms_alpha
-)
-bayesplot::mcmc_hist(
-  posterior_v, 
-  par = nms_alpha
-)
-
+) +
+  tonythemes::theme_tony()
+# bayesplot::mcmc_areas_ridges(
+#   posterior_v, 
+#   par = nms_alpha,
+#   prob = 0.8,
+#   prob_outer = 0.99
+# )
+# 
+# bayesplot::mcmc_hist(
+#   posterior_v, 
+#   par = nms_alpha
+# )
+# bayesplot::mcmc_hist(
+#   posterior_v, 
+#   par = nms_alpha
+# )
 # mcmc_areas(posterior, 'alpha')
 
-s_tbl
+x = posterior_v
+pars = nms_alpha
+regex_pars = character()
+transformations = list()
+area_method = c('equal area') # , 'equal height', 'scaled height')
+prob = 0.5
+prob_outer = 1
+point_est = c('median', 'mean', 'none')
+rhat = numeric()
+bw = NULL
+adjust = NULL
+kernel = NULL
+n_dens = NULL
+# area_method <- match.arg(area_method)
 
-rnks <- 
-  tibble(
-    'estimate' = -apply(posterior$alpha, 2, mean)
-  ) %>% 
-  bind_cols(league_ids %>% select(-n)) %>% 
-  mutate(rnk = row_number(desc(estimate)))
-rnks
+data <- bayesplot::mcmc_areas_data(
+  x, pars, regex_pars, transformations,
+  prob = prob, prob_outer = prob_outer,
+  point_est = point_est, rhat = rhat,
+  bw = bw, adjust = adjust, kernel = kernel, n_dens = n_dens
+)
+data <-
+  data %>% 
+  left_join(pars_mapping) %>%
+  select(-parameter) %>% 
+  rename(parameter = league) %>% 
+  mutate(across())
+data
+datas <- split(data, data$interval)
+datas
+no_point_est <- !rlang::has_name(datas, "point")
+datas$point <- if (no_point_est) {
+  dplyr::filter(datas$inner, FALSE)
+} else {
+  datas$point
+}
+color_by_rhat <- rlang::has_name(data, "rhat_rating")
 
-posterior %>%
-  as_tibble() %>% 
-  select(-c(`lp__`)) %>% 
-  set_names(sprintf('alpha_%02d', 1:k))
+# faint vertical line at zero if zero is within x_lim
+x_lim <- range(datas$outer$x)
+x_range <- diff(x_lim)
+x_lim[1] <- x_lim[1] - 0.05 * x_range
+x_lim[2] <- x_lim[2] + 0.05 * x_range
 
+layer_vertical_line <- if (0 > x_lim[1] && 0 < x_lim[2]) {
+  vline_0(color = "gray90", size = 0.5)
+} else {
+  geom_ignore()
+}
+groups <- if (color_by_rhat) {
+  rlang::syms(c("parameter", "rhat_rating"))
+} else {
+  rlang::syms(c("parameter"))
+}
+
+if (area_method == "equal height") {
+  dens_col = ~ scaled_density
+} else if (area_method == "scaled height") {
+  dens_col = ~ scaled_density * sqrt(scaled_density)
+} else {
+  dens_col = ~ plotting_density
+}
+
+datas$bottom <- datas$outer %>%
+  group_by(!!! groups) %>%
+  summarise(
+    ll = min(.data$x),
+    hh = max(.data$x),
+    .groups = "drop_last"
+  ) %>%
+  ungroup()
+
+args_bottom <- list(
+  mapping = aes_(x = ~ ll, xend = ~ hh, yend = ~ parameter),
+  data = datas$bottom
+)
+args_inner <- list(
+  mapping = aes_(height = dens_col, scale = ~ .9),
+  data = datas$inner
+)
+args_point <- list(
+  mapping = aes_(height = dens_col, scale = ~ .9),
+  data = datas$point,
+  color = NA
+)
+args_outer <- list(
+  mapping = aes_(height = dens_col, scale = ~ .9),
+  fill = NA
+)
+
+if (color_by_rhat) {
+  args_bottom$mapping <- args_bottom$mapping %>%
+    modify_aes_(color = ~ rhat_rating)
+  args_inner$mapping <- args_inner$mapping %>%
+    modify_aes_(color = ~ rhat_rating,
+                fill = ~ rhat_rating)
+  args_outer$mapping <- args_outer$mapping %>%
+    modify_aes_(color = ~ rhat_rating)
+  # rhat fill color scale uses light/mid/dark colors. The point estimate needs
+  # to be drawn with highlighted color scale, so we manually set the color for
+  # the rhat fills.
+  dc <- diagnostic_colors("rhat", "color")[["values"]]
+  args_point$fill <- dc[datas$point$rhat_rating]
+} else {
+  args_bottom$color <- 'grey20'# bayesplot:::get_color("dark")
+  args_inner$color <- 'grey20' # bayesplot:::get_color("dark")
+  args_inner$fill <- 'grey80' # bayesplot:::get_color("light")
+  args_point$fill <- 'grey50' # bayesplot:::get_color("mid_highlight")
+  args_outer$color <- 'grey20' #  bayesplot:::get_color("dark")
+}
+# An invisible layer that is 2.5% taller than the plotted one
+args_outer2 <- args_outer
+args_outer2$mapping <- args_outer2$mapping %>%
+  bayesplot:::modify_aes_(scale = .925)
+args_outer2$color <- NA
+
+layer_bottom <- do.call(geom_segment, args_bottom)
+layer_inner <- do.call(ggridges::geom_ridgeline, args_inner)
+layer_outer <- do.call(ggridges::geom_ridgeline, args_outer)
+layer_outer2 <- do.call(ggridges::geom_ridgeline, args_outer2)
+
+point_geom <- if (no_point_est) {
+  geom_ignore
+} else {
+  ggridges::geom_ridgeline
+}
+layer_point <- do.call(point_geom, args_point)
+
+# Do something or add an invisible layer
+if (color_by_rhat) {
+  scale_color <- bayesplot:::scale_color_diagnostic("rhat")
+  scale_fill <- bayesplot:::scale_fill_diagnostic("rhat")
+} else {
+  scale_color <- bayesplot:::geom_ignore()
+  scale_fill <- bayesplot:::geom_ignore()
+}
+
+p <-
+  ggplot(datas$outer) +
+  aes_(x = ~ x, y = ~ parameter) +
+  layer_vertical_line +
+  layer_inner +
+  layer_point +
+  layer_outer +
+  layer_outer2 +
+  layer_bottom +
+  scale_color +
+  scale_fill +
+  # scale_y_discrete(
+  #   limits = unique(rev(data$parameter)),
+  #   expand = expansion(
+  #     add = c(0, .5 + 1/(2 * nlevels(data$parameter))),
+  #     mult = c(.1, .1)
+  #   )
+  # ) +
+  xlim(x_lim)
+p
+
+# rnks ---
 f_plot_coefs_overall(rnks, suffix = 'trans_bt')
 
 f_select <- function(suffix, op = 1) {
