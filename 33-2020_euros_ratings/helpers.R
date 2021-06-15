@@ -1,4 +1,5 @@
 
+library(tidyverse)
 library(zeallot)
 library(lubridate)
 
@@ -7,7 +8,7 @@ theme_set(theme_minimal())
 theme_update(
   text = element_text(family = 'Karla'),
   title = element_text('Karla', size = 14, color = 'gray20'),
-  plot.title = ggtext::element_markdown('Karla', face = 'bold', size = 24, color = 'gray20'),
+  plot.title = ggtext::element_markdown('Karla', face = 'bold', size = 18, color = 'gray20'),
   plot.title.position = 'plot',
   plot.subtitle = ggtext::element_markdown('Karla', face = 'bold', size = 18, color = 'gray50'),
   axis.text = element_text('Karla', size = 14),
@@ -31,15 +32,178 @@ theme_update(
 )
 update_geom_defaults('text', list(family = 'Karla', size = 4))
 
-import_csv <- function(x) {
-  file.path(dir_proj, sprintf('%s.csv', x)) %>% 
+get_dir_proj <- memoise::memoise({
+  function() '33-2020_euros_ratings'
+})
+
+import_csv <- function(x, dir = get_dir_proj()) {
+  file.path(dir, sprintf('%s.csv', x)) %>% 
     read_csv()
 }
+
+# made this
+import_league_mapping <- function(dir = get_dir_proj()) {
+  import_csv('league_mapping', dir = dir)
+}
+
+do_import <- memoise::memoise({
+  function(dir = get_dir_proj(), league_mapping = import_league_mapping()) {
+
+  leagues_init <-
+    import_csv('leagues', dir = dir) %>% 
+    rename(league_name = name) %>% 
+    mutate(
+      # Some manual adjustments prior to using some "auto" name correction (by descending season)
+      across(
+        league_name,
+        ~case_when(
+          country == 'USA' & league_name %>% str_detect('Major League Soccer') ~ 'Major League Soccer',
+          country == 'China' & league_name %>% str_detect('Super League') ~ 'Super League',
+          country == 'Spain' & league_name == 'Primera Division' ~ 'LaLiga',
+          TRUE ~ .x
+        )
+      )
+    )
+  # leagues_init
+  # leagues_init %>% count(league_id, sort = TRUE)
+  league_names <-
+    leagues_init %>%
+    mutate(
+      across(league_name, ~str_remove_all(.x, '\\s+[Gg]rp.*'))
+    ) %>% 
+    mutate(n_char = nchar(league_name)) %>% 
+    arrange(league_id, n_char, desc(season)) %>% 
+    group_by(league_id) %>% 
+    filter(row_number() == 1L) %>% 
+    ungroup() %>% 
+    select(-season)
+  league_names
+
+  leagues <- leagues_init %>% select(-league_name) %>% inner_join(league_names)
+  leagues
+  
+  teams <- import_csv('teams', dir = dir)
+  players <- 
+    import_csv('players', dir = dir) %>% 
+    mutate(across(dob, lubridate::date)) %>% 
+    rename(player_id = id, player_name = name)
+  
+  player_ratings <-
+    import_csv('player_ratings', dir = dir) %>% 
+    mutate(
+      value = offensive_value + defensive_value
+    )
+  player_ratings
+  
+  # These have multiple "sub-leagues" (e.g. playoffs, group stages).
+  # This is corrected later with a summarize.
+  # leagues %>% count(country, league_name, season, sort = TRUE)
+  
+  leagues_n <- 
+    leagues %>% 
+    # filter(!(country %in% c('International', 'Europe'))) %>% 
+    count(country, league_id, league_name, sort = TRUE) %>% 
+    filter(n > 1L)
+  leagues_n
+  
+  leagues_n <-
+    leagues %>% 
+    filter(season >= 2012) %>% 
+    distinct(country, league_id, league_name, season) %>% 
+    # arrange(country, league_id, league_name, season) %>% 
+    count(country, league_id, league_name, sort = TRUE) %>% 
+    filter(n >= 5L)
+  leagues_n
+  
+  age_grps <-
+    tibble(
+      from = c(18L, 24L, 27L, 30L),
+      to = c(24L, 27L, 30L, 36L)
+    )
+  age_grps
+
+  position_mapping <-
+    tibble(
+      position_old = c('AM', 'FW', 'M', 'DM', 'D'),
+      position = c('A', 'A', 'M', 'M', 'D')
+    )
+  position_mapping
+  
+  df_init <-
+    list(
+      leagues_n %>% select(-n),
+      teams %>% distinct(),
+      player_ratings,
+      players %>%
+        drop_na(position, dob) %>%
+        select(player_id, player_name, position, dob) %>%
+        mutate(across(position, ~str_remove_all(.x, '\\(.*\\)') %>% str_remove_all('\\,.*$'))) %>%
+        filter(position != 'GK') %>%
+        rename(position_old = position) %>%
+        inner_join(position_mapping) # %>%
+      # select(-position_old)
+    ) %>% 
+    reduce(inner_join) %>%
+    ungroup() %>% 
+    mutate(
+      value_pm = value / minutes,
+      v = 90 * value_pm
+    ) %>% 
+    filter(minutes > (5 * 90)) %>% 
+    mutate(age = lubridate::time_length(lubridate::ymd(sprintf('%s-08-01', season)) - dob, 'year') %>% floor() %>% as.integer()) %>% 
+    filter(age >= 18 & age <= 35) %>% 
+    distinct()
+  df_init
+  
+  df_init <-
+    data.table::as.data.table(df_init %>% mutate(age2 = age, age3 = age))[
+      data.table::as.data.table(age_grps), 
+      on=.(age2 >= from, age3 < to)
+    ] %>% 
+    as_tibble() %>% 
+    unite('age_grp', age2, age3, sep = '<=x<')
+  df_init
+  
+  # df_init %>% count(age_grp, sort = TRUE)
+  # df %>% filter(is.na(v))
+  
+  df_filt <- df_init %>% filter(minutes >= (20 * 90))
+  df_filt
+  
+  estimate_beta <- function(x) {
+    mu <- mean(x)
+    var <- var(x)
+    alpha <- ((1 - mu) / var - 1 / mu) * mu ^ 2
+    beta <- alpha * (1 / mu - 1)
+    list(alpha = alpha, beta = beta)
+  }
+  
+  # estimate_beta(df_filt$value_pm)
+  # estimate_beta(df_filt$v)
+  lst <- estimate_beta(df_filt$value_pm)
+  lst
+  
+  df <-
+    df_init %>% 
+    rename(v_orig = v) %>% 
+    mutate(
+      idx = row_number(), 
+      v = 90 * (value + lst$alpha) / (minutes + lst$alpha + lst$beta)
+    ) %>% 
+    relocate(idx, v)
+  df
+}})
 
 # # Commenting this shit out to try direct vaep comparison
 do_modify_v_col <- function(data, direct = FALSE) {
   if(direct) {
-    return(data %>% mutate(z = v))
+    return(
+      list(
+        data = data %>% mutate(z = v) %>% relocate(idx, z, v),
+        agg = NULL,
+        v_min = NULL
+      )
+    )
   }
   v_min <-
     data %>%
@@ -48,7 +212,9 @@ do_modify_v_col <- function(data, direct = FALSE) {
     summarize(`_` = min(v)) %>%
     pull(`_`)
   v_min
+  
   data <- data %>% mutate(across(v, ~log(.x + abs(!!v_min) + 0.001)))
+  
   agg <-
     data %>%
     group_by(league_id, league_name, country, season, position, age_grp) %>%
@@ -63,9 +229,12 @@ do_modify_v_col <- function(data, direct = FALSE) {
     filter(n > 1L)
   agg
   
-  data %>%
+  res <-
+    data %>%
     inner_join(agg) %>%
-    mutate(z = (v - mean) / sd)
+    mutate(z = (v - mean) / sd) %>% 
+    relocate(idx, v_orig, v, z, mean, sd)
+  list(data = res, agg = agg, v_min = v_min)
 }
 
 do_plots <- function(data, direct = FALSE) {
@@ -107,7 +276,7 @@ do_filter_tst <- function(data) {
     filter(player_name == 'Timo Werner', league_name == 'Premier League', season == 2021)
 }
 
-do_get_data <- function(data) {
+do_get_data <- function(data, normalize = FALSE) {
   ids <-
     data %>% 
     distinct(player_id, league_id)
@@ -125,7 +294,7 @@ do_get_data <- function(data) {
     ids_gt1 %>% 
     left_join(
       data %>% 
-        select(player_id, league_id, country, league_name, season, z) %>% 
+        select(player_id, player_name, idx, team_name, league_id, country, league_name, season, z) %>% 
         unite('league', country, league_name, sep = '_') %>% 
         mutate(across(league, ~str_replace_all(.x, '\\s|[.]', '_') %>% str_replace_all('[_]+', '_'))) %>% 
         left_join(league_mapping) %>% 
@@ -137,17 +306,44 @@ do_get_data <- function(data) {
   f_rename <- function(suffix) {
     ids_gt1_meta %>% 
       mutate(dummy = 0) %>% 
-      select(player_id, dummy, league, matches('^(season|z)')) %>% 
-      rename_with(~sprintf('%s_%s', .x, suffix), c(league, matches('^(season|z)')))
+      select(player_id, player_name, league, idx, team_name, matches('^(season|z)'), dummy) %>% 
+      rename_with(~sprintf('%s_%s', .x, suffix), c(league, idx, team_name, matches('^(season|z)')))
   }
   
-  full_join(
-    f_rename(1),
-    f_rename(2)
-  ) %>% 
+  res <-
+    full_join(
+      f_rename(1),
+      f_rename(2)
+    ) %>% 
     select(-dummy) %>% 
     filter(league_1 != league_2) %>% 
     mutate(z_diff = z_1 - z_2)
+
+  if(!normalize) {
+    return(list(data = res, agg = NULL))
+  }
+  agg <-
+    res %>%
+    # group_by(league_id, league_name, country, season, position, age_grp) %>%
+    summarize(
+      n = n(),
+      across(
+        z_diff,
+        list(mean = mean, sd = sd), na.rm = TRUE, .names = 'z_diff_{.fn}'
+      )
+    ) %>%
+    ungroup()
+  agg
+  
+  list(
+    data = 
+      res %>%
+      rename(z_diff_orig = z_diff) %>% 
+      # inner_join(agg) %>%
+      mutate(z_diff = (z_diff_orig - agg$z_diff_mean) / agg$z_diff_sd) %>% 
+      relocate(z_diff_orig, z_diff), # , z_diff_mean, z_diff_sd),
+    agg = agg
+  )
 }
 
 
@@ -171,22 +367,25 @@ do_fit_dummy <- function(data, strict = TRUE) {
   # strict <- FALSE
   data_filt <- .do_filter_season(data, strict = strict)
   
-  df <-
+  rgx <- 'idx|season|player|team'
+  res <-
     data_filt %>% 
-    select(season = season_1, matches('league'), z_diff) %>% 
-    mutate(idx = row_number()) %>% 
-    pivot_longer(-c(idx, season, z_diff)) %>% 
+    select(player_name, matches('idx'), matches('season'), matches('team'), matches('league'), z_diff) %>% 
+    # mutate(idx = row_number()) %>% 
+    pivot_longer(-c(matches('idx|season|player|team'), z_diff)) %>% 
     mutate(across(name, ~str_remove(.x, 'league_') %>% as.integer())) %>% 
     mutate(across(name, ~if_else(.x == 1L, -1L, 1L))) %>% 
     pivot_wider(names_from = value, values_from = name, values_fill = 0L) %>% 
-    select(-idx) %>% 
+    # select(-idx) %>% 
     # Make this the NA coefficient
-    relocate(matches('`Eredivisie (Netherlands)`'), .after = last_col())
+    relocate(matches('Eredivisie'), .after = last_col())
+    # relocate(matches('season'), .after = last_col())
   
-  fit <- lm(formula(z_diff ~ . - season), data = df)
+  fit <- lm(formula(z_diff ~ .), data = res %>% select(-matches('idx|season|player|team')))
   
   coefs <- fit %>% extract_coefs()
-  list(data = df, fit = fit, coefs = coefs)
+  coefs
+  list(data = res, fit = fit, coefs = coefs)
 }
 
 do_compare_coefs <- function(x, y, suffix = c('x', 'y'), sep = '_') {
@@ -326,7 +525,7 @@ do_plot_coefs_by_season <- function(data, dir, suffix = NULL, sep = '_', seed = 
       data = 
         coefs_by_season_filt %>% 
         filter(season == max(season)), #  %>% 
-        # mutate(across(season, ~.x %m+% months(1),
+      # mutate(across(season, ~.x %m+% months(1),
       hjust = 'left',
       seed = seed,
       family = 'Karla',
@@ -375,7 +574,7 @@ logit2prob <- function(logit){
 
 do_fit_bt <- function(data, strict = TRUE) {
   df <- .do_filter_season(data, strict = strict)
-
+  
   fit <-
     BradleyTerry2::BTm(
       outcome = result, 
@@ -420,16 +619,173 @@ do_fit_bt <- function(data, strict = TRUE) {
   
   probs <-
     full_join(
-    f_select(1),
-    f_select(2)
-  ) %>% 
+      f_select(1),
+      f_select(2)
+    ) %>% 
     select(-dummy) %>% 
     filter(league_1 != league_2) %>% 
     mutate(
       p = logit2prob(estimate_1 - estimate_2)
     )
-
+  
   list(data = df, fit = fit, coefs = coefs, probs = probs)
 }
 
-
+# https://github.com/stan-dev/bayesplot/blob/master/R/mcmc-intervals.R#L284
+# library(bayesplot)
+do_mcmc_areas <- function(x,
+                          pars = character(),
+                          regex_pars = character(),
+                          transformations = list(),
+                          pars_mapping,
+                          ...,
+                          area_method = c("equal area", "equal height", "scaled height"),
+                          prob = 0.5,
+                          prob_outer = 1,
+                          point_est = c("median", "mean", "none"),
+                          rhat = numeric(),
+                          bw = NULL,
+                          adjust = NULL,
+                          kernel = NULL,
+                          n_dens = NULL) {
+  
+  area_method <- match.arg(area_method)
+  
+  data <- bayesplot::mcmc_areas_data(
+    x, pars, regex_pars, transformations,
+    prob = prob, prob_outer = prob_outer,
+    point_est = point_est, rhat = rhat,
+    bw = bw, adjust = adjust, kernel = kernel, n_dens = n_dens
+  )
+  # added this
+  data <-
+    data %>% 
+    left_join(pars_mapping) %>%
+    select(-parameter) %>% 
+    rename(parameter = league) %>% 
+    relocate(parameter)
+  data
+  datas <- split(data, data$interval)
+  datas
+  no_point_est <- !rlang::has_name(datas, "point")
+  datas$point <- if (no_point_est) {
+    dplyr::filter(datas$inner, FALSE)
+  } else {
+    datas$point
+  }
+  color_by_rhat <- rlang::has_name(data, "rhat_rating")
+  
+  # faint vertical line at zero if zero is within x_lim
+  x_lim <- range(datas$outer$x)
+  x_range <- diff(x_lim)
+  x_lim[1] <- x_lim[1] - 0.05 * x_range
+  x_lim[2] <- x_lim[2] + 0.05 * x_range
+  
+  layer_vertical_line <- if (0 > x_lim[1] && 0 < x_lim[2]) {
+    vline_0(color = "gray90", size = 0.5)
+  } else {
+    geom_ignore()
+  }
+  groups <- if (color_by_rhat) {
+    rlang::syms(c("parameter", "rhat_rating"))
+  } else {
+    rlang::syms(c("parameter"))
+  }
+  
+  if (area_method == "equal height") {
+    dens_col = ~ scaled_density
+  } else if (area_method == "scaled height") {
+    dens_col = ~ scaled_density * sqrt(scaled_density)
+  } else {
+    dens_col = ~ plotting_density
+  }
+  
+  datas$bottom <- datas$outer %>%
+    group_by(!!! groups) %>%
+    summarise(
+      ll = min(.data$x),
+      hh = max(.data$x),
+      .groups = "drop_last"
+    ) %>%
+    ungroup()
+  
+  args_bottom <- list(
+    mapping = aes_(x = ~ ll, xend = ~ hh, yend = ~ parameter),
+    data = datas$bottom
+  )
+  args_inner <- list(
+    mapping = aes_(height = dens_col, scale = ~ .9),
+    data = datas$inner
+  )
+  args_point <- list(
+    mapping = aes_(height = dens_col, scale = ~ .9),
+    data = datas$point,
+    color = NA
+  )
+  args_outer <- list(
+    mapping = aes_(height = dens_col, scale = ~ .9),
+    fill = NA
+  )
+  
+  if (color_by_rhat) {
+    args_bottom$mapping <- args_bottom$mapping %>%
+      modify_aes_(color = ~ rhat_rating)
+    args_inner$mapping <- args_inner$mapping %>%
+      modify_aes_(color = ~ rhat_rating,
+                  fill = ~ rhat_rating)
+    args_outer$mapping <- args_outer$mapping %>%
+      modify_aes_(color = ~ rhat_rating)
+    # rhat fill color scale uses light/mid/dark colors. The point estimate needs
+    # to be drawn with highlighted color scale, so we manually set the color for
+    # the rhat fills.
+    dc <- diagnostic_colors("rhat", "color")[["values"]]
+    args_point$fill <- dc[datas$point$rhat_rating]
+  } else {
+    args_bottom$color <- 'grey20'# bayesplot:::get_color("dark")
+    args_inner$color <- 'grey20' # bayesplot:::get_color("dark")
+    args_inner$fill <- 'grey80' # bayesplot:::get_color("light")
+    args_point$fill <- 'grey50' # bayesplot:::get_color("mid_highlight")
+    args_outer$color <- 'grey20' #  bayesplot:::get_color("dark")
+  }
+  # An invisible layer that is 2.5% taller than the plotted one
+  args_outer2 <- args_outer
+  args_outer2$mapping <- args_outer2$mapping %>%
+    bayesplot:::modify_aes_(scale = .925)
+  args_outer2$color <- NA
+  
+  layer_bottom <- do.call(geom_segment, args_bottom)
+  layer_inner <- do.call(ggridges::geom_ridgeline, args_inner)
+  layer_outer <- do.call(ggridges::geom_ridgeline, args_outer)
+  layer_outer2 <- do.call(ggridges::geom_ridgeline, args_outer2)
+  
+  point_geom <- if (no_point_est) {
+    geom_ignore
+  } else {
+    ggridges::geom_ridgeline
+  }
+  layer_point <- do.call(point_geom, args_point)
+  
+  # Do something or add an invisible layer
+  if (color_by_rhat) {
+    scale_color <- bayesplot:::scale_color_diagnostic("rhat")
+    scale_fill <- bayesplot:::scale_fill_diagnostic("rhat")
+  } else {
+    scale_color <- bayesplot:::geom_ignore()
+    scale_fill <- bayesplot:::geom_ignore()
+  }
+  
+  p <-
+    ggplot(datas$outer) +
+    aes_(x = ~ x, y = ~ parameter) +
+    layer_vertical_line +
+    layer_inner +
+    layer_point +
+    layer_outer +
+    layer_outer2 +
+    layer_bottom +
+    scale_color +
+    scale_fill +
+    xlim(x_lim) +
+    labs(x = NULL, y = NULL)
+  p
+}
