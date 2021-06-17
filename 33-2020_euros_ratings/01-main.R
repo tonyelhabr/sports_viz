@@ -6,6 +6,12 @@ dir_proj <- '33-2020_euros_ratings'
 source(file.path(dir_proj, 'helpers.R'))
 
 df <- do_import()
+df %>% 
+  relocate(league_id) %>% 
+  distinct(league_id, country, league_name) %>% 
+  left_join(league_mapping %>% mutate(idx = row_number())) %>% 
+  arrange(idx)
+
 set.seed(42)
 df %>% 
   sample_frac(0.1) %>% 
@@ -24,12 +30,6 @@ df %>%
   )
 
 df %>% 
-  filter(v_orig > 1.5) %>% 
-  relocate(v_orig) %>% 
-  arrange(-minutes)
-  skimr::skim(minutes)
-  relocate(player_name, season) %>% 
-  count(team_name, season)
   skimr::skim(minutes)
 
 # function time ----
@@ -149,11 +149,32 @@ preds %>%
 vps_by_season <-
   dummies %>% 
   do_plot_vps_by_season(
-  .mean = agg_direct2z_paired$z_diff_mean,
-  .sd = agg_direct2z_paired$z_diff_sd,
-  suffix = 'trans_full'
-)
+    # agg,
+    .mean = agg_direct2z_paired$mean,
+    .sd = agg_direct2z_paired$sd,
+    suffix = 'trans_full'
+  )
 vps_by_season
+
+league_mapping
+
+vps_export <-
+  vps %>% 
+  filter(league_1 != '(Intercept)') %>% 
+  filter(league_2 != '(Intercept)') %>% 
+  select(-c(diff, p)) %>% 
+  left_join(league_mapping %>% select(league_id_1 = league_id, league_1 = league_lab)) %>% 
+  left_join(league_mapping %>% select(league_id_2 = league_id, league_2 = league_lab)) %>% 
+  drop_na() %>% 
+  relocate(league_id_1) %>% 
+  relocate(league_id_2, .before = 'league_2') %>% 
+  bind_cols(agg_direct2z_paired %>% select(mean, sd)) %>% 
+  relocate(vp, .after = last_col()) %>% 
+  arrange(-vp)
+vps_export
+vps_export %>% count(league_1)
+(0.910 - .140) * 0.135 + 0
+write_csv(vps_export, file.path(dir_proj, 'vps.csv'))
 
 # stan ----
 # go to stan script
@@ -169,6 +190,8 @@ viz_diff_v <-
   vps_filt %>% 
   plot_heatmap('vp')
 viz_diff_v
+
+
 
 viz_diff_rel <-
   vps_filt %>% 
@@ -210,6 +233,9 @@ viz_vps_filt1 <-
     y = NULL
   )
 viz_vps_filt1
+league_mapping <- import_league_mapping()
+league_mapping
+
 
 ggsave(
   plot = viz_vps_filt1,
@@ -218,3 +244,13 @@ ggsave(
   height = 7.5,
   type = 'cairo'
 )
+
+# maybe #EURO2020 will tell us soemething about national soccer strength
+# With nations clashing in #EURO2020, i collabed with @canzhiye to try to quantify relative league/tourney strength. we came up with sensible top 7 (big 5 + UCL + Europa) 
+# no team identifiers or match results were used in the making of these rankings
+# how much can PV metrics tell us about league... well, it seems to come up with a sensible notion of relative league strength, even if we
+# what if i told you we that we can leverage in-game event data to quantify relative league/tourney strength, without any knowledge of match results?
+# these are based on before-and-after difference in VAEP/90 (adjusting for low minute totals) for players transitioning between leagues/tourneys
+# the outputs are relative VAEP/90 per leauge/tourney
+# heatmap uses a baseline VAEP/90 = 0.33 (roughly the median) and the VAEP/90 coefficient for the Champions League to determine relative league strength
+

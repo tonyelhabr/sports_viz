@@ -43,13 +43,15 @@ import_csv <- function(x) {
 
 # made this
 import_league_mapping <- function() {
-  import_csv('league_mapping')
+  import_csv('league_mapping') %>% 
+    mutate(path = ifelse(!is.na(file_png), file.path('25-202021_soccer_refs', sprintf('%s.png', file_png)), NA_character_)) %>% 
+    select(-file_png)
 }
 league_mapping <- import_league_mapping()
 
 do_import <- memoise::memoise({
-  function() {
-    
+  function(col = 'value') {
+    col_sym <- sym(sprintf('%s_p90', col))
     leagues_init <-
       import_csv('leagues') %>% 
       rename(league_name = name) %>% 
@@ -88,20 +90,27 @@ do_import <- memoise::memoise({
       mutate(across(dob, lubridate::date)) %>% 
       rename(player_id = id, player_name = name)
     
+    player_xg <- import_csv('player_xg_by_season') %>% rename(xg = xg_value)
     player_ratings <-
-      import_csv('player_ratings') %>% 
+      import_csv('player_ratings_by_season') %>% 
       mutate(
-        value = offensive_value + defensive_value,
-        across(
-          minutes,
-          ~case_when(
-            .x > 4820 ~ games_played * 80,
-            TRUE ~ .x
-          )
-        )
+        # across(
+        #   minutes,
+        #   ~case_when(
+        #     .x > 4820 ~ games_played * 80,
+        #     TRUE ~ .x
+        #   )
+        # )
+        value = offensive_value + defensive_value
       )
-    player_ratings
-
+    # player_ratings %>% 
+    #   select(player_id, team_id, league_id, season, gp1 = games_played, mp1 = minutes) %>%
+    #   full_join(
+    #     player_xg %>% select(player_id, team_id, league_id, season, gp2 = games_played, mp2 = minutes)
+    #   ) -> z
+    # z %>% 
+    #   filter(gp1 < gp2)
+    
     leagues_n <- 
       leagues %>% 
       # filter(!(country %in% c('International', 'Europe'))) %>% 
@@ -137,6 +146,7 @@ do_import <- memoise::memoise({
         leagues_n %>% select(-n),
         teams %>% distinct(),
         player_ratings,
+        player_xg %>% rename(games_played_xg = games_played, minutes_xg = minutes),
         players %>%
           drop_na(position, dob) %>%
           select(player_id, player_name, position, dob) %>%
@@ -149,9 +159,12 @@ do_import <- memoise::memoise({
       reduce(inner_join) %>%
       ungroup() %>% 
       mutate(
+        xg_pm = xg / minutes,
+        xg_p90 = xg * xg_pm,
         value_pm = value / minutes,
-        v = 90 * value_pm
+        value_p90 = 90 * value_pm
       ) %>% 
+      rename(v = !!col_sym) %>% 
       filter(minutes > (5 * 90)) %>% 
       mutate(age = lubridate::time_length(lubridate::ymd(sprintf('%s-08-01', season)) - dob, 'year') %>% floor() %>% as.integer()) %>% 
       filter(age >= 18 & age <= 35) %>% 
@@ -181,7 +194,7 @@ do_import <- memoise::memoise({
       list(alpha = alpha, beta = beta)
     }
     
-    # estimate_beta(df_filt$value_pm)
+    # estimate_beta(df_filt$xg_p90)
     # estimate_beta(df_filt$v)
     lst <- estimate_beta(df_filt$value_pm)
     lst
@@ -296,7 +309,7 @@ do_get_data <- function(data, normalize = FALSE) {
         select(player_id, player_name, idx, team_name, league_id, country, league_name, season, z) %>% 
         unite('league', country, league_name, sep = '_') %>% 
         mutate(across(league, ~str_replace_all(.x, '\\s|[.]', '_') %>% str_replace_all('[_]+', '_'))) %>% 
-        left_join(league_mapping) %>% 
+        left_join(league_mapping %>% select(-path)) %>% 
         select(-league) %>% 
         rename(league = league_lab)
     )
