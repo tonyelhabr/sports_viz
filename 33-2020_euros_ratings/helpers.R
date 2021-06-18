@@ -105,15 +105,9 @@ do_import <- memoise::memoise({
     # z %>% 
     #   filter(gp1 < gp2)
     
-    leagues_n <- 
-      leagues %>% 
-      # filter(!(country %in% c('International', 'Europe'))) %>% 
-      count(country, league_id, league_name, sort = TRUE) %>% 
-      filter(n > 1L)
-    leagues_n
-    
     leagues_n <-
       leagues %>% 
+      filter(!(country %in% c('International', 'Europe'))) %>% 
       filter(season >= 2012) %>% 
       distinct(country, league_id, league_name, season) %>% 
       # arrange(country, league_id, league_name, season) %>% 
@@ -178,12 +172,26 @@ do_import <- memoise::memoise({
       unite('age_grp', age2, age3, sep = '<=x<')
     df_init
     
+    baseline <-
+      df_init %>% 
+      summarize(
+        across(c(v), list(baseline = median), .names = '{fn}')
+      )
+    
+    baseline_by_pos <-
+      df_init %>% 
+      group_by(position, age_grp) %>% 
+      summarize(
+        across(c(v), list(baseline = median), .names = '{fn}')
+      ) %>% 
+      ungroup()
+    
     if(!adjust) {
       df <-
         df_init %>% 
         mutate(idx = row_number(), v_orig = v) %>% 
         relocate(idx)
-      return(list(data = df, adjust = NULL))
+      return(list(data = df, adjust = NULL, baseline = baseline, baseline_by_pos = baseline_by_pos))
     }
     
     minute_cutoffs <- 
@@ -226,7 +234,7 @@ do_import <- memoise::memoise({
       ) %>%
       relocate(idx, v)
     df
-    list(data = df, adjust = lst)
+    list(data = df, adjust = lst, baseline = baseline, baseline_by_pos = baseline_by_pos)
   }})
 
 do_modify_v_col <- function(data, direct = FALSE) {
@@ -272,8 +280,7 @@ do_modify_v_col <- function(data, direct = FALSE) {
 }
 
 do_plots <- function(data, col = 'vaep', direct = FALSE) {
-  # data %>% count(age_grp, sort = TRUE)
-  # data %>% count(position, sort = TRUE)
+  
   if(col == 'vaep' & direct) {
     lims <- c(0, 1.2)
     binwidth <- 0.01
@@ -309,7 +316,7 @@ do_plots <- function(data, col = 'vaep', direct = FALSE) {
   list(p1 = p1, p2 = p2, p3 = p3)
 }
 
-do_get_data <- function(data, normalize = FALSE) {
+do_get_data <- function(data, normalize = FALSE, strict = TRUE) {
   ids <-
     data %>% 
     distinct(player_id, league_id)
@@ -323,24 +330,40 @@ do_get_data <- function(data, normalize = FALSE) {
     inner_join(ids)
   ids_gt1
   
+  rgx_rename <- '^(season|idx|team_name|league|z)'
   ids_gt1_meta <-
     ids_gt1 %>% 
     left_join(
       data %>% 
-        select(player_id, player_name, idx, team_name, league_id, country, league_name, season, z) %>% 
+        select(player_id, player_name, matches('position'), age_grp, country, matches(rgx_rename)) %>% 
         unite('league', country, league_name, sep = '_') %>% 
         mutate(across(league, ~str_replace_all(.x, '\\s|[.]', '_') %>% str_replace_all('[_]+', '_'))) %>% 
         left_join(league_mapping %>% select(-path)) %>% 
         select(-league) %>% 
         rename(league = league_lab)
     )
-  # ids_gt1_meta %>% count(league, sort = TRUE)
   
+  # Position is always the same, so can join on it
+  # df_xg %>% distinct(player_id, player_name, position) %>% count(player_id, player_name, sort = TRUE)
+  # df_xg %>% distinct(player_id, player_name, season, age_grp) %>% count(player_id, player_name, season, sort = TRUE)
+  # df_xg %>% distinct(player_id, player_name, season, age_grp) %>% filter(player_name == 'Sergio Ramos')
   f_rename <- function(suffix) {
+    
     ids_gt1_meta %>% 
-      mutate(dummy = 0) %>% 
-      select(player_id, player_name, league, idx, team_name, matches('^(season|z)'), dummy) %>% 
-      rename_with(~sprintf('%s_%s', .x, suffix), c(league, idx, team_name, matches('^(season|z)')))
+      mutate(dummy = 0) %>%
+      select(
+        player_id,
+        player_name,
+        position,
+        position_grp,
+        age_grp,
+        matches(rgx_rename),
+        dummy
+      ) %>%
+      rename_with(
+        ~ sprintf('%s_%s', .x, suffix),
+        c(matches(rgx_rename))
+      )
   }
   
   res <-
@@ -355,26 +378,30 @@ do_get_data <- function(data, normalize = FALSE) {
   if(!normalize) {
     return(list(data = res, agg = NULL))
   }
+  
   agg <-
     res %>%
-    # group_by(league_id, league_name, country, season, position, age_grp) %>%
+    group_by(position, age_grp) %>%
     summarize(
       n = n(),
       across(
         z_diff,
-        list(mean = mean, sd = sd), na.rm = TRUE, .names = '{.fn}'
+        list(mean = mean, sd = sd, median = median), na.rm = TRUE, .names = '{.fn}'
       )
     ) %>%
     ungroup()
   agg
   
+  df <-
+    res %>%
+    rename(z_diff_orig = z_diff) %>% 
+    inner_join(agg) %>%
+    mutate(z_diff = (z_diff_orig - mean) / sd) %>% 
+    relocate(z_diff_orig, z_diff)
+  
+  df_filt <- .do_filter_season(df, strict = strict)
   list(
-    data = 
-      res %>%
-      rename(z_diff_orig = z_diff) %>% 
-      # inner_join(agg) %>%
-      mutate(z_diff = (z_diff_orig - agg$mean) / agg$sd) %>% 
-      relocate(z_diff_orig, z_diff),
+    data = df_filt,
     agg = agg
   )
 }
@@ -387,9 +414,6 @@ extract_coefs <- function(fit) {
     mutate(across(league, ~str_remove_all(.x, '`'))) %>% 
     arrange(desc(estimate))
 }
-
-# emperical choice based on df_direct %>% skimr::skim(z)
-baseline <- 0.33
 
 .do_filter_season <- function(data, strict = TRUE) {
   if(!strict) {
@@ -409,29 +433,27 @@ baseline <- 0.33
 
 do_fit_dummy <-
   function(data,
-           agg = NULL,
+           agg,
+           baseline,
+           baseline_by_pos,
            col = 'vaep',
-           strict = TRUE,
-           suffix = str_remove(deparse(substitute(data)), '^df_'),
-           .mean = agg$mean %||% 0,
-           .sd = agg$sd %||% 1) {
-    data_filt <- .do_filter_season(data, strict = strict)
-    
+           suffix = str_remove(deparse(substitute(data)), '^df_')) {
+
     rgx <- 'idx|season|player|team'
     res <-
-      data_filt %>% 
-      select(player_name, matches('idx'), matches('season'), matches('team'), matches('league'), z_diff) %>% 
-      pivot_longer(-c(matches('idx|season|player|team'), z_diff)) %>% 
+      data %>% 
+      # select(player_name, matches('idx'), matches('season'), matches('team'), matches('league'), z_diff) %>% 
+      select(player_name, matches(rgx), matches('league_[12]$'), z_diff) %>% 
+      pivot_longer(-c(matches(rgx), z_diff)) %>% 
       mutate(across(name, ~str_remove(.x, 'league_') %>% as.integer())) %>% 
       mutate(across(name, ~if_else(.x == 1L, -1L, 1L))) %>% 
       pivot_wider(names_from = value, values_from = name, values_fill = 0L) %>% 
       # Make this the NA coefficient
       relocate(matches('Eredivisie'), .after = last_col())
     
-    fit <- lm(formula(z_diff ~ .), data = res %>% select(-matches('idx|season|player|team')))
+    fit <- lm(formula(z_diff ~ .), data = res %>% select(z_diff, matches('\\(')))
     
     coefs <- fit %>% extract_coefs()
-    coefs
     
     rnks <- 
       coefs %>% 
@@ -446,244 +468,146 @@ do_fit_dummy <-
         mutate(dummy = 0L)
     }
     
-    vps <-
+    agg_agg <-
+      agg %>% 
+      mutate(total = sum(n), frac = n / total) %>%
+      summarize(sd = sum(sd * frac), mean = sum(mean * frac), median = sum(median * frac))
+    
+    vps_init <-
       full_join(
         f_select(1, -1),
         f_select(2, -1)
       ) %>%
-      select(-dummy) %>% 
+      select(-dummy)
+    vps_init
+    
+    vps <-
+      vps_init %>% 
       mutate(
-        diff = estimate_1 - estimate_2,
-        vp = .sd * (diff + .mean),
-        p = vp / !!baseline
+        vp = agg_agg$sd * ((estimate_1 - estimate_2) + agg_agg$mean),
+        p = vp / baseline$baseline
       )
     vps
     
-    vps_filt <-
-      vps %>% 
-      filter(rnk_1 <= rnk_2) %>% 
-      filter(league_2 != '(Intercept)')
+    vps_by_grp <-
+      vps_init %>%
+      mutate(dummy = 0) %>% 
+      left_join(agg %>% mutate(dummy = 0)) %>% 
+      select(-dummy) %>% 
+      left_join(baseline_by_pos) %>% 
+      mutate(
+        vp = sd * ((estimate_1 - estimate_2) + mean),
+        p = vp / baseline
+      )
+    vps_by_grp
+    
+    .filter <- function(data) {
+      data %>% 
+        filter(rnk_1 <= rnk_2) %>% 
+        filter(league_2 != '(Intercept)')
+    }
+    
+    vps_filt <- vps %>% .filter()
     vps_filt
     
+    vps_by_grp_filt <- vps_by_grp %>% .filter()
+    vps_by_grp_filt
+    
+    subtitle <- 'All Field Positions, Age 18-35'
     viz_diff_v <- 
       vps_filt %>% 
-      plot_heatmap('vp', suffix = suffix)
+      plot_heatmap(
+        which = 'vp',
+        suffix = suffix,
+        col = col,
+        subtitle = subtitle
+      )
     viz_diff_v
     
     viz_diff_rel <-
       vps_filt %>% 
-      plot_heatmap('p', suffix = suffix)
+      plot_heatmap(
+        which = 'p', 
+        suffix = suffix, 
+        col = col,
+        subtitle = subtitle,
+        baseline = baseline$baseline
+      )
     viz_diff_rel
     
+    .filter_f <- function(data) {
+      data %>% 
+        filter(position == 'FW', age_grp == '18<=x<24') 
+    }
+    baseline_f <- baseline_by_pos %>% .filter_f() %>% pull(baseline)
+    subtitle_f <- 'Forwards, Age 18-24'
+    vps_filt_f <- vps_by_grp_filt %>% .filter_f()
+    viz_diff_v_f <- 
+      vps_filt_f %>%
+      plot_heatmap(
+        which = 'vp',
+        suffix = sprintf('%s_fw_young', suffix),
+        col = col,
+        subtitle = subtitle_f
+      )
+    viz_diff_v_f
     
-    list(data = res, fit = fit, coefs = coefs, vps = vps, viz_diff_v = viz_diff_v, viz_diff_rel = viz_diff_rel)
+    viz_diff_rel_f <- 
+      vps_filt_f %>%
+      plot_heatmap(
+        which = 'p',
+        suffix = sprintf('%s_fw_young', suffix),
+        col = col,
+        subtitle = subtitle_f,
+        baseline = baseline_f
+      )
+    viz_diff_rel_f
+    
+    list(
+      data = res,
+      fit = fit,
+      coefs = coefs,
+      vps = vps,
+      vps_by_grp = vps_by_grp,
+      viz_diff_v = viz_diff_v,
+      viz_diff_rel = viz_diff_rel,
+      viz_diff_v_f = viz_diff_v_f,
+      viz_diff_rel_f = viz_diff_rel_f
+    )
   }
-
-do_compare_coefs <- function(x, y, suffix = c('x', 'y'), sep = '_') {
-  suffix_x <- suffix[1]
-  suffix_y <- suffix[2]
-  col_rnk_x <- sprintf('rnk%s%s', sep, suffix_x)
-  col_rnk_y <- sprintf('rnk%s%s', sep, suffix_y)
-  col_rnk_x_sym <- sym(col_rnk_x)
-  col_rnk_y_sym <- sym(col_rnk_y)
-  f <- function(data, col_rnk_sym, sep, suffix) {
-    data %>% 
-      mutate(!!col_rnk_sym := row_number(desc(estimate))) %>% 
-      rename(!!sym(sprintf('estimate%s%s', sep, suffix)) := estimate)
-  }
-  
-  full_join(
-    x %>% f(col_rnk_x_sym, sep, suffix_x),
-    y %>% f(col_rnk_y_sym, sep, suffix_y)
-  ) %>% 
-    mutate(rnk_diff = !!col_rnk_x_sym - !!col_rnk_y_sym) %>% 
-    arrange(!!col_rnk_x_sym + !!col_rnk_y_sym)
-}
-
-get_leagues_filt <- memoise::memoise({function() {
-  c('Champions League (Europe)', 'Europa League (Europe)', 'Premier League (England)', 'Serie A (Italy)', 'Bundesliga 1 (Germany)', 'Ligue 1 (France)', 'La Liga (Spain)')
-}})
-
-# gplots::col2hex('grey50') %>% scales::show_col()
-get_leagues_pal <- memoise::memoise({function() {
-  leagues_filt <- get_leagues_filt()
-  c('#000000', '#7f7f7f', '#003f5c', '#58508d', '#bc5090', '#ff6361', '#ffa600') %>% setNames(leagues_filt)
-}})
-
 
 pts <- function(x) {
   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
 }
 
 lab_tag <- '**Viz** + **Model**: Tony ElHabr | **Data**: @canzhiye'
-# do_plot_vps_by_season <-
-#   function(data,
-#            agg,
-#            dir = get_dir_proj(),
-#            suffix = NULL,
-#            sep = '_',
-#            seed = 42,
-#            .mean = agg$mean %||% 0,
-#            .sd = agg$sd %||% 1,
-#            ...) {
-#     if (!is.null(suffix)) {
-#       suffix <- sprintf('%s%s', sep, suffix)
-#     }
-#     
-#     fits_by_season <-
-#       data %>% 
-#       select(season = season_1, z_diff, `Champions League (Europe)`:last_col()) %>% 
-#       filter(season <= 2020) %>% 
-#       group_nest(season) %>% 
-#       mutate(
-#         fit = map(data, ~lm(formula(z_diff ~ .), data = .x)),
-#         coefs = map(fit, extract_coefs)
-#       )
-#     fits_by_season
-#     
-#     leagues_filt <- get_leagues_filt()
-#     coefs_by_season <-
-#       fits_by_season %>% 
-#       select(season, coefs) %>% 
-#       unnest(coefs) %>% 
-#       # mutate(across(season, factor))
-#       mutate(across(season, ~sprintf('%04d-07-01', .x) %>% lubridate::ymd()))
-#     coefs_by_season
-#     
-#     f_select <- function(suffix) {
-#       coefs_by_season %>% 
-#         rename_with(~sprintf('%s_%s', .x, suffix), -c(season)) %>% 
-#         mutate(dummy = 0L)
-#     }
-#     
-#     vps <-
-#       full_join(
-#         f_select(1),
-#         f_select(2)
-#       ) %>%
-#       select(-dummy) %>% 
-#       mutate(
-#         diff = estimate_1 - estimate_2,
-#         vp = .sd * (diff + .mean),
-#         p = vp / !!baseline
-#       )
-#     vps
-#     
-#     vps1 <-
-#       vps %>% 
-#       filter(league_1 == 'Champions League (Europe)') %>% 
-#       mutate(p_inv = 1 - p) %>% 
-#       select(season, league = league_2, p_inv)
-#     vps1
-#     
-#     vps1_filt <-
-#       vps1 %>% 
-#       filter(league %in% leagues_filt)
-#     vps1_filt %>% filter(season == max(season)) # make sure colors follow this order
-#     
-#     vps1_nofilt <-
-#       vps1 %>% 
-#       filter(!(league %in% leagues_filt))
-#     
-#     seq_date_first <- seq.Date(lubridate::ymd('2010-01-01'), lubridate::ymd('2022-01-01'), by = 'year')
-#     seq_date_mid <- seq.Date(lubridate::ymd('2010-07-01'), lubridate::ymd('2021-07-01'), by = 'year')
-#     seq_date <- sort(c(seq_date_first, seq_date_mid))
-#     labs_date <- c(rep(2010:2021, each = 2), 2022)
-#     idx <- (seq_along(labs_date) %% 2) == 1L
-#     idx[length(idx) - 1] <- TRUE
-#     labs_date[idx] <- ''
-#     
-#     pal <- get_leagues_pal()
-#     date_min <- lubridate::ymd('2012-01-01')
-#     # browser()
-#     v_max <- max(vps1_nofilt$p_inv, na.rm = TRUE) + 0.1
-#     p <-
-#       vps1_nofilt %>% 
-#       drop_na() %>% 
-#       filter(season >= !!date_min) %>% 
-#       ggplot() +
-#       aes(x = season, y = p_inv, group = league) +
-#       geom_point(color = 'grey80') +
-#       geom_line(color = 'grey80') +
-#       geom_point(
-#         data = vps1_filt,
-#         size = 3,
-#         aes(color = league)
-#       ) +
-#       geom_line(
-#         data = vps1_filt,
-#         size = 1.25,
-#         aes(color = league)
-#       ) +
-#       ggrepel::geom_label_repel(
-#         data = 
-#           vps1_filt %>% 
-#           filter(season == max(season)),
-#         hjust = 'left',
-#         seed = seed,
-#         family = 'Karla',
-#         fontface = 'bold',
-#         direction = 'y',
-#         nudge_x = 10,
-#         size = pts(10),
-#         label.size = NA,
-#         aes(label = league, color = league) # ,
-#         # ...
-#       ) +
-#       scale_color_manual(values = pal) +
-#       scale_x_date(labels = labs_date, breaks = seq_date, limits = range(date_min, lubridate::ymd('2022-01-01'))) +
-#       scale_y_continuous(labels = scales::percent, limits = c(0.5, 1)) +
-#       guides(color = FALSE) +
-#       theme(
-#         panel.grid.major.y = element_blank(),
-#         axis.ticks.x = element_line(color = c('grey80', rep(c(NA, 'grey80'), t = length(seq_date)))),
-#         panel.grid.major.x = element_line(color = c('grey80', rep(c(NA, 'grey80'), t = length(seq_date))))
-#       ) +
-#       labs(
-#         title = 'How has the competition level changed?',
-#         tag = lab_tag,
-#         caption = 'Note that y-axis starts at 50%.',
-#         subtitle = 'Competition level relative to Champions League',
-#         y = NULL,
-#         x = NULL
-#       )
-#     p
-#     
-#     ggsave(
-#       plot = p,
-#       filename = file.path(dir, sprintf('vps1%s.png', suffix)),
-#       width = 12,
-#       height = 8,
-#       type = 'cairo'
-#     )
-#     p
-#   }
 
-plot_heatmap <- function(vps_filt, which, col = 'vaep', suffix = NULL, sep = '_') {
-  file <- sprintf('%s_p90')
+plot_heatmap <- function(vps_filt, which = 'vp', col = 'vaep', baseline = 0.3, suffix = NULL, subtitle = NULL, sep = '_') {
+  # file <- sprintf('%s_p90', col)
   lab <- sprintf('%s/90', ifelse(col == 'vaep', 'VAEP', 'xG'))
-  baseline <- ifelse(col == 'vaep', 0.33, 0.4)
+
   if(which == 'vp') {
     f_scale <- scales::number
     .option <- 'D'
-    file <- sprintf('%s_vp', file)
+    file <- 'vp' # sprintf('%s_vp', file)
     .acc <- 0.01
     title <- sprintf('Expected change in %s when transitioning from league A to B', lab)
-    subtitle <- NULL
   } else if(which == 'p') {
     f_scale <- scales::percent
     .option <- 'H'
-    file <- sprintf('%s_p', file)
+    file <- 'p' # sprintf('%s_p', file)
     .acc <- 1
     title <- 'Relative increase in competition in league A compared to league B'
-    subtitle <- sprintf('Using %s baseline of %0.2f', lab, baseline)
+    subtitle <- sprintf('Using %s baseline of %0.2f%s', lab, baseline, ifelse(is.null(suffix), '', sprintf(', %s', subtitle)))
   }
   
   if(!is.null(suffix)) {
     suffix <- sprintf('%s%s', sep, suffix)
+  } else {
+    suffix <- ''
   }
   
-  col_sym <- sym(col)
+  col_sym <- sym(which)
   p <-
     vps_filt %>% 
     ggplot() +
@@ -707,6 +631,7 @@ plot_heatmap <- function(vps_filt, which, col = 'vaep', suffix = NULL, sep = '_'
       y = 'League A',
       x = 'League B'
     )
+  
   ggsave(
     plot = p,
     filename = file.path(dir_proj, sprintf('viz_relative_%s%s.png', file, suffix)),

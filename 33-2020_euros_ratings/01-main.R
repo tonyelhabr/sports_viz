@@ -5,129 +5,152 @@ library(tidyverse)
 dir_proj <- '33-2020_euros_ratings'
 source(file.path(dir_proj, 'helpers.R'))
 
-c(df_vaep, .) %<-% do_import(col = 'vaep')
-c(df_xg, lst_xg) %<-% do_import(col = 'xg')
-df_xg %>% arrange(desc(xg_p90)) %>% relocate(xg_p90, v, v_orig)
-df_xg %>% arrange(desc(v))
+res_vaep <- do_import(col = 'vaep')
+c(df_vaep, ., baseline_vaep, baseline_vaep_by_grp) %<-% res_vaep
+res_xg <- do_import(col = 'xg')
+c(df_xg, ., baseline_xg, baseline_xg_by_grp) %<-% res_xg
 
-df_vaep %>% 
-  group_by(position) %>% 
+agg_by_grp <-
+  df_vaep %>%
+  group_by(position, age_grp) %>%
   summarize(
     across(c(vaep_p90, xg_p90), list(mean = mean, median = median))
-  ) %>% 
+  ) %>%
+  ungroup() %>%
   pivot_longer(
-    -position,
+    -c(position, age_grp),
     names_to = c('col', 'stat'),
     names_pattern = '(^.*_p90)_(.*$)'
-  ) %>% 
+  ) %>%
   pivot_wider(names_from = 'position', values_from = 'value')
-  glimpse()
-
-# set.seed(42)
-# df_vaep_vaep %>% 
-#   sample_frac(0.1) %>% 
-#   ggplot() +
-#   aes(x = v_orig, y = v) +
-#   geom_point(aes(size = minutes), alpha = 0.1, show.legend = FALSE) +
-#   scale_size_area(c(0.1, 2)) +
-#   theme(
-#     plot.caption = ggtext::element_markdown(size = 9)
-#   ) +
-#   labs(
-#     title = 'How the Empirical Bayes "normalizes" some of the lower minutes rates',
-#     caption = 'Adjustement: Infer alpha and beta parameters for beta distribution for player having played 20 * 90 minutes in a season.<br/>Apply parameters to any players having played 5 * 90 minutes in a season (minimum criteria for inclusion).',
-#     x = 'Original VAEP/90',
-#     y = 'Adjusted VAEP/90'
+agg_by_grp
+# 
+# agg <-
+#   df_vaep %>% 
+#   summarize(
+#     across(c(vaep_p90, xg_p90), list(mean = mean, median = median))
+#   ) %>% 
+#   pivot_longer(
+#     matches('.*'),
+#     names_to = c('col', 'stat'),
+#     names_pattern = '(^.*_p90)_(.*$)'
 #   )
-# df %>% skimr::skim(minutes)
+# agg
 
 # stuff ----
-res_vaep_trans <- df_vaep %>% do_modify_v_col(direct = FALSE) # this is more along the lines of the hockey graphs article
 res_vaep_direct <- df_vaep %>% do_modify_v_col(direct = TRUE) # i end up using this
 res_xg_direct <- df_xg %>% do_modify_v_col(direct = TRUE) 
-c(df_vaep_trans, agg_vaep_trans, v_min_vaep_trans) %<-% res_vaep_trans
+
 c(df_vaep_direct, ., .) %<-% res_vaep_direct
 c(df_xg_direct, ., .) %<-% res_xg_direct
-df_xg_direct %>% arrange(desc(xg_p90)) %>% relocate(xg_p90)
-df_vaep_trans %>% do_plots(col = 'vaep', direct = FALSE)
-df_vaep_direct %>% do_plots(col = 'vaep', direct = TRUE)
-df_xg_direct %>% do_plots(col = 'xg', direct = TRUE)
-# arrow::write_parquet(df_vaep_direct, file.path(dir_proj, 'df.parquet'))
 
-res_vaep_trans_paired <- df_vaep_trans %>% do_get_data()
+# df_vaep_direct %>% do_plots(col = 'vaep', direct = TRUE)
+# df_xg_direct %>% do_plots(col = 'xg', direct = TRUE)
+
 res_vaep_direct2z_paired <- df_vaep_direct %>% do_get_data(normalize = TRUE)
-res_vaep_direct_paired <- df_vaep_direct %>% do_get_data(normalize = FALSE)
-c(df_vaep_trans_paired, agg_vaep_trans_paired) %<-% res_vaep_trans_paired
 c(df_vaep_direct2z_paired, agg_vaep_direct2z_paired) %<-% res_vaep_direct2z_paired
-c(df_vaep_direct_paired, agg_vaep_direct_paired) %<-% res_vaep_direct_paired
 
 res_xg_direct2z_paired <- df_xg_direct %>% do_get_data(normalize = TRUE)
-res_xg_direct_paired <- df_xg_direct %>% do_get_data(normalize = FALSE)
 c(df_xg_direct2z_paired, agg_xg_direct2z_paired) %<-% res_xg_direct2z_paired
-c(df_xg_direct_paired, agg_xg_direct_paired) %<-% res_xg_direct_paired
 
-df_vaep %>% 
-  select(season, player_name, vaep, xg, minutes, minutes_xg, games_played, games_played_xg, xg_p90, vaep_p90) %>% 
-  arrange(desc(xg_p90))
+bund2epl <-
+  df_xg_direct2z_paired %>% 
+  # filter(player_name == 'Timo Werner')
+  # filter(position == 'FW') %>% 
+  filter(position %in% c('FW', 'AM')) %>% 
+  # filter(age_grp == '18<=x<24') %>% 
+  filter(league_2 == 'Premier League (England)') %>%  # %>% count(league_1)
+  filter(league_1 == 'Bundesliga 1 (Germany)') %>% 
+  relocate(z_1, z_2, z_diff_orig) %>% 
+  arrange(-season_1)
 
-df_vaep_direct_paired %>% 
+bund2epl %>% 
+  summarize(z_diff_orig = mean(z_diff_orig))
+
+l2l_xg <-
+  df_xg_direct2z_paired %>% 
+  group_by(league_1, league_2) %>% 
+  summarize(z_1 = mean(z_1), z_2 = mean(z_2), z_diff_orig = mean(z_diff_orig), n = n()) %>% 
+  ungroup() %>% 
+  arrange(-z_diff_orig)
+l2l_xg
+
+viz_xg_emperical <-
+  l2l_xg %>% 
+  group_by(league_1) %>% 
+  mutate(z_diff_orig_mean_1 = mean(z_diff_orig)) %>% 
+  ungroup() %>% 
+  mutate(rnk_1 = dense_rank(z_diff_orig_mean_1)) %>% 
+  mutate(
+    across(league_1, ~fct_reorder(.x, rnk_1)),
+    across(league_2, ~fct_reorder(.x, -rnk_1))
+  ) %>% 
   ggplot() +
-  aes(x = z_diff) +
-  geom_histogram(binwidth = 0.01) +
-  coord_cartesian(xlim = c(-0.5, 0.5))
-df_vaep_direct_paired %>% arrange(desc(abs(z_diff)))
+  aes(x = rnk_1, y = -rnk_1) +
+  geom_tile(aes(fill = z_diff_orig), alpha = 0.7,  height = 0.95, width = 0.95, show.legend = FALSE) +
+  geom_text(aes(label = scales::number(z_diff_orig, accuracy = 0.01)), size = pts(14), fontface = 'bold') +
+  scale_fill_viridis_c(option = 'B', begin = 0.1, end = 1) +
+  scale_x_discrete(labels = function(x) str_wrap(x, width = 12)) +
+  theme(
+    plot.title = ggtext::element_markdown(size = 18),
+    plot.subtitle = ggtext::element_markdown(size = 16),
+    panel.grid.major.x = element_blank(),
+    panel.grid.major.y = element_blank(),
+    axis.text.x = element_text(size = 9),
+    axis.title.y = element_text(size = 16),
+  ) +
+  labs(
+    # title = title,
+    subtitle = 'Emperical xG/90 change when moving from league A to league B',
+    tag = lab_tag,
+    y = 'League A',
+    x = 'League B'
+  )
+viz_xg_emperical
 
-df_xg_direct_paired %>% 
-  ggplot() +
-  aes(x = z_diff) +
-  geom_histogram(binwidth = 0.01) +
-  coord_cartesian(xlim = c(-1, 1))
+l2l %>% filter(position_grp == 'A', league_2 == 'Premier League (England)')
+l2l %>% 
+  filter(n > 5) -> x
 
+
+# Z-normalized difference in adjusted VAEP/90 for players transitioning between leagues/tourneys
+# df_vaep_direct_paired %>% 
+# df_vaep_direct2z_paired %>% 
 df_xg_direct2z_paired %>% 
   ggplot() +
   aes(x = z_diff) +
   geom_histogram(binwidth = 0.01) +
   coord_cartesian(xlim = c(-1, 1))
 
-# Z-normalized difference in adjusted VAEP/90 for players transitioning between leagues/tourneys
-df_vaep_direct2z_paired %>% 
-  ggplot() +
-  aes(x = z_diff) +
-  geom_histogram(binwidth = 0.1) +
-  coord_cartesian(xlim = c(-3, 3))
-
-df_vaep_direct2z_paired %>% filter(idx_1 == 26509)
-
-res_vaep_direct2z_paired <-
+res_vaep_direct2z_paired <- 
   do_fit_dummy(
     df_vaep_direct2z_paired,
     agg_vaep_direct2z_paired,
-    strict = TRUE
+    baseline_vaep,
+    baseline_vaep_by_grp,
+    col = 'vaep',
+    suffix = 'vaep_direct2z'
   )
 res_vaep_direct2z_paired$coefs
-
-res_vaep_direct_paired <-
-  do_fit_dummy(
-    df_vaep_direct_paired,
-    agg_vaep_direct_paired,
-    strict = TRUE
-  )
-res_vaep_direct_paired$coefs %>% filter(league != '(Intercept)')
 c(dummies_vaep, fit_vaep, coefs_vaep, vps_vaep, ...extra) %<-% res_vaep_direct2z_paired
-df_vaep_direct_paired %>% filter(league_1 == 'Premier League (England)') %>% filter(season_1 == 2020)
+df_xg_direct2z_paired %>% filter(league_1 == 'Premier League (England)') %>% filter(season_1 == 2020)
 
 res_xg_direct2z_paired <-
   do_fit_dummy(
     df_xg_direct2z_paired,
     agg_xg_direct2z_paired,
-    strict = TRUE
+    baseline_xg,
+    baseline_xg_by_grp,
+    col = 'xg',
+    suffix = 'xg_direct2z'
   )
 res_xg_direct2z_paired$coefs
-res_xg_direct2z_paired$vps
+c(dummies_xg, fit_xg, coefs_xg, vps_xg, ...extra) %<-% res_xg_direct2z_paired
+
 # random pred stuff ----
 dummies_vaep_filt <-
-  dummies_vaep %>% 
-  filter(`Champions League (Europe)` == 0L & `Europa League (Europe)` == 0L)
+  dummies_vaep # %>% 
+  # filter(`Champions League (Europe)` == 0L & `Europa League (Europe)` == 0L)
 dummies_vaep_filt %>% arrange(desc(abs(z_diff)))
 
 dummies_vaep_tst <-
@@ -143,13 +166,13 @@ preds_vaep <-
   fit_vaep %>% 
   broom::augment(dummies_vaep) %>% 
   select(.fitted, idx_1, idx_2) %>%  
-  left_join(df_vaep_direct_paired) %>% 
+  left_join(df_vaep_direct2z_paired) %>% 
   left_join(df_vaep_direct %>% rename(idx_1 = idx)) %>% 
   relocate(v)
-preds
+preds_vaep
 
 set.seed(42)
-preds %>% 
+preds_vaep %>% 
   # slice_sample(n = 1000) %>% 
   ggplot() +
   aes(x = z_diff, y = .fitted, group = league_name) +
