@@ -175,9 +175,19 @@ After week 7
 
 ![EPL Subjective VAR calls by Team since 2019-20](30-var/viz_var_subjective_w_logo.png "EPL Subjective VAR calls by Team since 2019-20")
 
-# Future Ideas
+# 32. 2020 EURO
 
--   Stability of goal-scoring rate and/or xG over-performance
+![Which 2020/21 Premier League Teams Have the Most Players in the 2020 Euros?](32-2020_euros/viz_countries_by_team_w_logo.png "Which 2020/21 Premier League Teams Have the Most Players in the 2020 Euros?")
+
+# 33. Relative League Power Rankings
+
+![Relative increase in competition level when moving from league A to B](33-2020_euros_ratings/viz_relative_p_vaep_direct2z.png "Relative increase in competition level when moving from league A to B")
+
+![Expected change in xG/90 when moving from league A to B](33-2020_euros_ratings/viz_relative_vp_xg_direct2z_fw_young.png "Expected change in xG/90 when moving from league A to B")
+
+![Un-adjusted xG/90 change when moving from league A to B](33-2020_euros_ratings/viz_xg_unadjusted.png "Un-adjusted xG/90 change when moving from league A to B")
+
+# Future Ideas
 
 -   UMAP + GMM clustering (for optimal \# of UMAP groups).
 

@@ -24,7 +24,7 @@ theme_update(
   # plot.caption = element_text('Karla', size = 12, color = 'gray20', hjust = 1),
   plot.caption.position = 'plot',
   plot.tag = ggtext::element_markdown('Karla', size = 12, color = 'gray20', hjust = 0), 
-  plot.tag.position = c(.01, 0.015),
+  plot.tag.position = c(.01, 0.01),
   legend.text = element_text(color = 'gray20', size = 12),
   # strip.text = element_text(color = 'gray20', size = 14),
   # strip.background = element_blank(),
@@ -158,6 +158,7 @@ do_import <- memoise::memoise({
       ) %>% 
       filter(minutes >= minutes_cutoff) %>% 
       # filter(position == 'A') %>% 
+      # filter(season >= 2017) %>% 
       mutate(age = lubridate::time_length(lubridate::ymd(sprintf('%s-08-01', season)) - dob, 'year') %>% floor() %>% as.integer()) %>% 
       filter(age >= 18 & age <= 35) %>% 
       distinct()
@@ -178,7 +179,7 @@ do_import <- memoise::memoise({
         across(c(v), list(baseline = median), .names = '{fn}')
       )
     
-    baseline_by_pos <-
+    baseline_by_grp <-
       df_init %>% 
       group_by(position, age_grp) %>% 
       summarize(
@@ -191,7 +192,7 @@ do_import <- memoise::memoise({
         df_init %>% 
         mutate(idx = row_number(), v_orig = v) %>% 
         relocate(idx)
-      return(list(data = df, adjust = NULL, baseline = baseline, baseline_by_pos = baseline_by_pos))
+      return(list(data = df, adjust = NULL, baseline = baseline, baseline_by_grp = baseline_by_grp))
     }
     
     minute_cutoffs <- 
@@ -234,7 +235,7 @@ do_import <- memoise::memoise({
       ) %>%
       relocate(idx, v)
     df
-    list(data = df, adjust = lst, baseline = baseline, baseline_by_pos = baseline_by_pos)
+    list(data = df, adjust = lst, baseline = baseline, baseline_by_grp = baseline_by_grp)
   }})
 
 do_modify_v_col <- function(data, direct = FALSE) {
@@ -435,7 +436,7 @@ do_fit_dummy <-
   function(data,
            agg,
            baseline,
-           baseline_by_pos,
+           baseline_by_grp,
            col = 'vaep',
            suffix = str_remove(deparse(substitute(data)), '^df_')) {
 
@@ -476,7 +477,7 @@ do_fit_dummy <-
     vps_init <-
       full_join(
         f_select(1, -1),
-        f_select(2, -1)
+        f_select(2, 1)
       ) %>%
       select(-dummy)
     vps_init
@@ -494,16 +495,18 @@ do_fit_dummy <-
       mutate(dummy = 0) %>% 
       left_join(agg %>% mutate(dummy = 0)) %>% 
       select(-dummy) %>% 
-      left_join(baseline_by_pos) %>% 
+      left_join(baseline_by_grp) %>% 
       mutate(
         vp = sd * ((estimate_1 - estimate_2) + mean),
         p = vp / baseline
-      )
+      ) # %>% 
+      # mutate(across(c(vp, p), ~ifelse(league_1 == league_2,  NA_real_, .x)))
     vps_by_grp
-    
+
     .filter <- function(data) {
       data %>% 
-        filter(rnk_1 <= rnk_2) %>% 
+        filter(rnk_1 >= rnk_2) %>% 
+        filter(league_1 != '(Intercept)') %>% 
         filter(league_2 != '(Intercept)')
     }
     
@@ -513,14 +516,15 @@ do_fit_dummy <-
     vps_by_grp_filt <- vps_by_grp %>% .filter()
     vps_by_grp_filt
     
-    subtitle <- 'All Field Positions, Age 18-35'
+    subtitle <- 'All Field Positions, Ages 18-35, 2012-2020'
     viz_diff_v <- 
       vps_filt %>% 
       plot_heatmap(
         which = 'vp',
         suffix = suffix,
         col = col,
-        subtitle = subtitle
+        subtitle = subtitle,
+        baseline = baseline$baseline
       )
     viz_diff_v
     
@@ -539,8 +543,8 @@ do_fit_dummy <-
       data %>% 
         filter(position == 'FW', age_grp == '18<=x<24') 
     }
-    baseline_f <- baseline_by_pos %>% .filter_f() %>% pull(baseline)
-    subtitle_f <- 'Forwards, Age 18-24'
+    baseline_f <- baseline_by_grp %>% .filter_f() %>% pull(baseline)
+    subtitle_f <- 'Forwards, Ages 18-23, 2012-2020'
     vps_filt_f <- vps_by_grp_filt %>% .filter_f()
     viz_diff_v_f <- 
       vps_filt_f %>%
@@ -548,7 +552,8 @@ do_fit_dummy <-
         which = 'vp',
         suffix = sprintf('%s_fw_young', suffix),
         col = col,
-        subtitle = subtitle_f
+        subtitle = subtitle_f,
+        baseline = baseline_f
       )
     viz_diff_v_f
     
@@ -582,23 +587,32 @@ pts <- function(x) {
 
 lab_tag <- '**Viz** + **Model**: Tony ElHabr | **Data**: @canzhiye'
 
-plot_heatmap <- function(vps_filt, which = 'vp', col = 'vaep', baseline = 0.3, suffix = NULL, subtitle = NULL, sep = '_') {
+plot_heatmap <- function(vps_filt, which = 'vp', col = 'vaep', baseline = 0.3, option = 'G', suffix = NULL, subtitle = NULL, sep = '_') {
   # file <- sprintf('%s_p90', col)
-  lab <- sprintf('%s/90', ifelse(col == 'vaep', 'VAEP', 'xG'))
+  lab <- sprintf('%s/90', ifelse(col == 'vaep', 'atomic VAEP', 'xG'))
 
   if(which == 'vp') {
     f_scale <- scales::number
-    .option <- 'D'
+    .option <- ifelse(col == 'vaep', 'A', 'E')
     file <- 'vp' # sprintf('%s_vp', file)
+    # .fmt <- '%+.2f'
     .acc <- 0.01
-    title <- sprintf('Expected change in %s when transitioning from league A to B', lab)
+    title <- sprintf('Expected change in %s when moving from league A to B', lab)
+    .begin <- 0.9
+    .end <- 0.1
+    subtitle <- sprintf('%s (median %s across all leagues is %0.2f)', subtitle, lab, baseline)
   } else if(which == 'p') {
     f_scale <- scales::percent
-    .option <- 'H'
+    .option <- ifelse(col == 'vaep', 'G', 'F')
     file <- 'p' # sprintf('%s_p', file)
+    # .fmt <- '%+.0f%%'
     .acc <- 1
-    title <- 'Relative increase in competition in league A compared to league B'
-    subtitle <- sprintf('Using %s baseline of %0.2f%s', lab, baseline, ifelse(is.null(suffix), '', sprintf(', %s', subtitle)))
+    title <- 'Relative increase in competition level when moving from league A to B'
+    # vps_filt <- vps_filt %>% mutate(across(all_of(which), ~.x * -1 * 100))
+    .begin <- 0.1
+    .end <- 0.9
+    vps_filt <- vps_filt %>% mutate(across(all_of(which), ~.x * -1))
+    subtitle <- sprintf('Based on %s, using %s baseline of %0.2f (median across all leagues)%s', lab, lab, baseline, ifelse(is.null(suffix), '', sprintf(', %s', subtitle)))
   }
   
   if(!is.null(suffix)) {
@@ -607,14 +621,46 @@ plot_heatmap <- function(vps_filt, which = 'vp', col = 'vaep', baseline = 0.3, s
     suffix <- ''
   }
   
+  vps_filt_tax <-
+    vps_filt %>% 
+    filter(league_1 == 'Bundesliga 1 (Germany)', league_2 == 'Premier League (England)')
+  
   col_sym <- sym(which)
+  arw_annotate <- arrow(length = unit(3, 'pt'), type = 'closed')
   p <-
     vps_filt %>% 
     ggplot() +
     aes(x = league_2, y = league_1) +
     geom_tile(aes(fill = !!col_sym), alpha = 0.7,  height = 0.95, width = 0.95, show.legend = FALSE) +
+    geom_tile(
+      data = vps_filt_tax,
+      fill = NA_character_,
+      color = 'black',
+      size = 2
+    ) +
+    geom_text(
+      data = tibble(),
+      aes(x = 5, y = 12, label = 'Bundesliga (to Premier League) tax?'),
+      # fontface = 'italic',
+      family = 'Karla',
+      vjust = -1,
+      hjust = 0,
+      size = pts(16)
+    ) +
+    annotate(
+      geom = 'curve',
+      x = 5,
+      y = 12,
+      # xend = 'Premier League (England)',
+      xend = 1.3,
+      yend = 'Bundesliga 1 (Germany)',
+      size = 1,
+      curvature = -0.25,
+      arrow = arw_annotate
+    ) +
+    # geom_text(aes(label = sprintf(.fmt, !!col_sym)), size = pts(14), fontface = 'bold') +
     geom_text(aes(label = f_scale(!!col_sym, accuracy = .acc)), size = pts(14), fontface = 'bold') +
-    scale_fill_viridis_c(option = .option, begin = 0.1, end = 1) +
+    scale_fill_viridis_c(option = .option, begin = .begin, end = .end) +
     scale_x_discrete(labels = function(x) str_wrap(x, width = 12)) +
     theme(
       plot.title = ggtext::element_markdown(size = 18),
@@ -631,6 +677,23 @@ plot_heatmap <- function(vps_filt, which = 'vp', col = 'vaep', baseline = 0.3, s
       y = 'League A',
       x = 'League B'
     )
+  p
+
+  if(col == 'vaep') {
+    p <-
+      p +
+      ggtext::geom_richtext(
+        data = tibble(),
+      aes(x = 7, y = 8, label = 'Atomic VAEP encompasses all on-ball offensive and defensive actions.<br/>A 10% difference could be decomposed in many ways, e.g. 6% change in value from shots,<br/>-2% change in value from dribbles, etc.'),
+      fill = NA, 
+      label.color = NA,
+      # fontface = 'italic',
+      family = 'Karla',
+      vjust = -1,
+      hjust = 0,
+      size = pts(12)
+    )
+  }
   
   ggsave(
     plot = p,
