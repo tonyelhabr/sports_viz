@@ -35,7 +35,7 @@ update_geom_defaults('text', list(family = 'Karla', size = 4))
 get_dir_proj <- memoise::memoise({
   function() '33-2020_euros_ratings'
 })
-
+dir_proj <- get_dir_proj()
 import_csv <- function(x) {
   file.path(dir_proj, sprintf('%s.csv', x)) %>% 
     read_csv()
@@ -50,8 +50,8 @@ import_league_mapping <- function() {
 league_mapping <- import_league_mapping()
 
 do_import <- memoise::memoise({
-  function(col = 'vaep', adjust = FALSE) {
-    col_sym <- sym(sprintf('%s_p90', col))
+  function() {
+
     leagues_init <-
       import_csv('leagues') %>% 
       rename(league_name = name) %>% 
@@ -97,20 +97,12 @@ do_import <- memoise::memoise({
       mutate(
         vaep = ovaep + dvaep
       )
-    # player_ratings %>% 
-    #   select(player_id, team_id, league_id, season, gp1 = games_played, mp1 = minutes) %>%
-    #   full_join(
-    #     player_xg %>% select(player_id, team_id, league_id, season, gp2 = games_played, mp2 = minutes)
-    #   ) -> z
-    # z %>% 
-    #   filter(gp1 < gp2)
-    
+
     leagues_n <-
       leagues %>% 
       filter(!(country %in% c('International', 'Europe'))) %>% 
       filter(season >= 2012) %>% 
       distinct(country, league_id, league_name, season) %>% 
-      # arrange(country, league_id, league_name, season) %>% 
       count(country, league_id, league_name, sort = TRUE) %>% 
       filter(n >= 5L)
     leagues_n
@@ -134,7 +126,7 @@ do_import <- memoise::memoise({
         leagues_n %>% select(-n),
         teams %>% distinct(),
         player_ratings,
-        player_xg %>% rename(games_played_xg = games_played, minutes_xg = minutes),
+        player_xg %>% rename(games_played_xg = games_played, minutes_xg = minutes) %>% select(-minutes_xg),
         players %>%
           drop_na(position, dob) %>%
           select(player_id, player_name, position, dob) %>%
@@ -145,11 +137,6 @@ do_import <- memoise::memoise({
       reduce(inner_join) %>%
       ungroup() %>% 
       mutate(
-        xg_pm = xg / minutes,
-        xg_p90 = 90 * xg_pm,
-        vaep_pm = vaep / minutes,
-        vaep_p90 = 90 * vaep_pm,
-        v = !!col_sym,
         minutes_cutoff = 
           case_when(
             country %in% c('Europe', 'International') ~ 2 * 90,
@@ -157,8 +144,7 @@ do_import <- memoise::memoise({
           )
       ) %>% 
       filter(minutes >= minutes_cutoff) %>% 
-      # filter(position == 'A') %>% 
-      # filter(season >= 2017) %>% 
+      select(-minutes_cutoff) %>% 
       mutate(age = lubridate::time_length(lubridate::ymd(sprintf('%s-08-01', season)) - dob, 'year') %>% floor() %>% as.integer()) %>% 
       filter(age >= 18 & age <= 35) %>% 
       distinct()
@@ -172,152 +158,10 @@ do_import <- memoise::memoise({
       as_tibble() %>% 
       unite('age_grp', age2, age3, sep = '<=x<')
     df_init
-    
-    baseline <-
-      df_init %>% 
-      summarize(
-        across(c(v), list(baseline = median), .names = '{fn}')
-      )
-    
-    baseline_by_grp <-
-      df_init %>% 
-      group_by(position, age_grp) %>% 
-      summarize(
-        across(c(v), list(baseline = median), .names = '{fn}')
-      ) %>% 
-      ungroup()
-    
-    if(!adjust) {
-      df <-
-        df_init %>% 
-        mutate(idx = row_number(), v_orig = v) %>% 
-        relocate(idx)
-      return(list(data = df, adjust = NULL, baseline = baseline, baseline_by_grp = baseline_by_grp))
-    }
-    
-    minute_cutoffs <- 
-      df_init %>% 
-      group_by(season, league_id) %>% 
-      summarize(across(minutes, list(cutoff = ~quantile(.x, 0.25)))) %>% 
-      ungroup()
-    minute_cutoffs
-    
-    df_filt <- 
-      df_init %>% 
-      # mutate(
-      #   minutes_cutoff = 
-      #     case_when(
-      #       country %in% c('Europe', 'International') ~ 6 * 90,
-      #       TRUE ~ 20 * 90
-      #     )
-      # ) %>% 
-      # filter(minutes >= (20 * 90))
-      left_join(minute_cutoffs) %>% 
-      filter(minutes >= minutes_cutoff)
-    
-    estimate_beta <- function(x) {
-      mu <- mean(x)
-      var <- var(x)
-      alpha <- ((1 - mu) / var - 1 / mu) * mu ^ 2
-      beta <- alpha * (1 / mu - 1)
-      list(alpha = alpha, beta = beta)
-    }
-    
-    lst <- estimate_beta(df_filt[[sprintf('%s_pm', col)]])
-    lst
-    
-    df <-
-      df_init %>%
-      rename(v_orig = v) %>%
-      mutate(
-        idx = row_number(),
-        v = 90 * (v_orig + lst$alpha) / (minutes + lst$alpha + lst$beta)
-      ) %>%
-      relocate(idx, v)
-    df
-    list(data = df, adjust = lst, baseline = baseline, baseline_by_grp = baseline_by_grp)
+
   }})
 
-do_modify_v_col <- function(data, direct = FALSE) {
-  if(direct) {
-    return(
-      list(
-        data = data %>% mutate(z = v) %>% relocate(idx, z, v),
-        agg = NULL,
-        v_min = NULL
-      )
-    )
-  }
-  v_min <-
-    data %>%
-    drop_na(v) %>%
-    filter(!is.infinite(v)) %>%
-    summarize(`_` = min(v)) %>%
-    pull(`_`)
-  v_min
-  
-  data <- data %>% mutate(across(v, ~log(.x + abs(!!v_min) + 0.001)))
-  
-  agg <-
-    data %>%
-    group_by(league_id, league_name, country, season, position_grp, age_grp) %>%
-    summarize(
-      n = n(),
-      across(
-        v,
-        list(mean = mean, sd = sd), na.rm = TRUE, .names = '{.fn}'
-      )
-    ) %>%
-    ungroup() %>%
-    filter(n > 1L)
-  agg
-  
-  res <-
-    data %>%
-    inner_join(agg) %>%
-    mutate(z = (v - mean) / sd) %>% 
-    relocate(idx, v_orig, v, z, mean, sd)
-  list(data = res, agg = agg, v_min = v_min)
-}
-
-do_plots <- function(data, col = 'vaep', direct = FALSE) {
-  
-  if(col == 'vaep' & direct) {
-    lims <- c(0, 1.2)
-    binwidth <- 0.01
-  } else if (col == 'vaep' & !direct) {
-    lims <- c(-3, 3)
-    binwidth <- 0.1
-  } else if (col == 'xg' & direct) {
-    lims <- c(0, 1)
-    binwidth <- 0.01
-  }
-  p1 <-
-    data %>% 
-    mutate(across(age_grp, factor)) %>% 
-    ggplot() +
-    aes(x = z, color = age_grp) +
-    geom_density() +
-    coord_cartesian(xlim = lims)
-  
-  p2 <-
-    data %>% 
-    mutate(across(position_grp, factor)) %>% 
-    ggplot() +
-    aes(x = z, color = position_grp) +
-    geom_density() +
-    coord_cartesian(xlim = lims)
-  
-  p3 <-
-    data %>% 
-    ggplot() +
-    aes(x = z) +
-    geom_histogram(binwidth = binwidth) +
-    coord_cartesian(xlim = lims)
-  list(p1 = p1, p2 = p2, p3 = p3)
-}
-
-do_get_data <- function(data, normalize = FALSE, strict = TRUE) {
+do_get_data <- function(data, strict = TRUE) {
   ids <-
     data %>% 
     distinct(player_id, league_id)
@@ -331,7 +175,7 @@ do_get_data <- function(data, normalize = FALSE, strict = TRUE) {
     inner_join(ids)
   ids_gt1
   
-  rgx_rename <- '^(season|idx|team_name|league|z)'
+  rgx_rename <- '^(season|idx|team_name|league|minutes|z)'
   ids_gt1_meta <-
     ids_gt1 %>% 
     left_join(
@@ -344,10 +188,17 @@ do_get_data <- function(data, normalize = FALSE, strict = TRUE) {
         rename(league = league_lab)
     )
   
+  
+  ids_gt1_meta %>% 
+    group_by(player_id, player_name) %>% 
+    arrange(season, .by_group = TRUE) %>% 
+    mutate(
+      across(c(league, season, minutes, z), list(lead1 = lead))
+    ) %>% 
+    ungroup() %>% 
+    filter(league != league_lead1)
+  
   # Position is always the same, so can join on it
-  # df_xg %>% distinct(player_id, player_name, position) %>% count(player_id, player_name, sort = TRUE)
-  # df_xg %>% distinct(player_id, player_name, season, age_grp) %>% count(player_id, player_name, season, sort = TRUE)
-  # df_xg %>% distinct(player_id, player_name, season, age_grp) %>% filter(player_name == 'Sergio Ramos')
   f_rename <- function(suffix) {
     
     ids_gt1_meta %>% 
@@ -376,35 +227,8 @@ do_get_data <- function(data, normalize = FALSE, strict = TRUE) {
     filter(league_1 != league_2) %>% 
     mutate(z_diff = z_1 - z_2)
   
-  if(!normalize) {
-    return(list(data = res, agg = NULL))
-  }
-  
-  agg <-
-    res %>%
-    group_by(position, age_grp) %>%
-    summarize(
-      n = n(),
-      across(
-        z_diff,
-        list(mean = mean, sd = sd, median = median), na.rm = TRUE, .names = '{.fn}'
-      )
-    ) %>%
-    ungroup()
-  agg
-  
-  df <-
-    res %>%
-    rename(z_diff_orig = z_diff) %>% 
-    inner_join(agg) %>%
-    mutate(z_diff = (z_diff_orig - mean) / sd) %>% 
-    relocate(z_diff_orig, z_diff)
-  
-  df_filt <- .do_filter_season(df, strict = strict)
-  list(
-    data = df_filt,
-    agg = agg
-  )
+  res_filt <- .do_filter_season(res, strict = strict)
+  list(data = res, agg = NULL)
 }
 
 
@@ -439,7 +263,7 @@ do_fit_dummy <-
            baseline_by_grp,
            col = 'vaep',
            suffix = str_remove(deparse(substitute(data)), '^df_')) {
-    
+
     rgx <- 'idx|season|player|team'
     res <-
       data %>% 
@@ -500,9 +324,9 @@ do_fit_dummy <-
         vp = sd * ((estimate_1 - estimate_2) + mean),
         p = vp / baseline
       ) # %>% 
-    # mutate(across(c(vp, p), ~ifelse(league_1 == league_2,  NA_real_, .x)))
+      # mutate(across(c(vp, p), ~ifelse(league_1 == league_2,  NA_real_, .x)))
     vps_by_grp
-    
+
     .filter <- function(data) {
       data %>% 
         filter(rnk_1 >= rnk_2) %>% 
@@ -590,7 +414,7 @@ lab_tag <- '**Viz** + **Model**: Tony ElHabr | **Data**: @canzhiye'
 plot_heatmap <- function(vps_filt, which = 'vp', col = 'vaep', baseline = 0.3, option = 'G', suffix = NULL, subtitle = NULL, sep = '_') {
   # file <- sprintf('%s_p90', col)
   lab <- sprintf('%s/90', ifelse(col == 'vaep', 'atomic VAEP', 'xG'))
-  
+
   if(which == 'vp') {
     f_scale <- scales::number
     .option <- ifelse(col == 'vaep', 'A', 'E')
@@ -678,21 +502,21 @@ plot_heatmap <- function(vps_filt, which = 'vp', col = 'vaep', baseline = 0.3, o
       x = 'League B'
     )
   p
-  
+
   if(col == 'vaep') {
     p <-
       p +
       ggtext::geom_richtext(
         data = tibble(),
-        aes(x = 7, y = 8, label = 'Atomic VAEP encompasses all on-ball offensive and defensive actions.<br/>A 10% difference could be decomposed in many ways, e.g. 6% change in value from shots,<br/>-2% change in value from dribbles, etc.'),
-        fill = NA, 
-        label.color = NA,
-        # fontface = 'italic',
-        family = 'Karla',
-        vjust = -1,
-        hjust = 0,
-        size = pts(12)
-      )
+      aes(x = 7, y = 8, label = 'Atomic VAEP encompasses all on-ball offensive and defensive actions.<br/>A 10% difference could be decomposed in many ways, e.g. 6% change in value from shots,<br/>-2% change in value from dribbles, etc.'),
+      fill = NA, 
+      label.color = NA,
+      # fontface = 'italic',
+      family = 'Karla',
+      vjust = -1,
+      hjust = 0,
+      size = pts(12)
+    )
   }
   
   ggsave(
@@ -704,3 +528,4 @@ plot_heatmap <- function(vps_filt, which = 'vp', col = 'vaep', baseline = 0.3, o
   )
   p
 }
+
