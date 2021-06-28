@@ -77,8 +77,8 @@ df_filt %>%
 
 rec_init <-
   recipes::recipe(formula(~.), data = df_filt) %>% 
-  update_role(all_nominal_predictors(), new_role = 'id') %>% 
-  step_normalize(all_numeric_predictors())
+  recipes::update_role(recipes::all_nominal_predictors(), new_role = 'id') %>% 
+  recipes::step_normalize(recipes::all_numeric_predictors())
 rec_init
 
 require(mclust)
@@ -95,7 +95,7 @@ do_clust <- function(.n, .k, .f, .g, return = c('metrics', 'data', 'summary', 'c
     return(read_rds(path))
   }
   f <- if(.f == 'pca') {
-    step_pca
+    recipes::step_pca
   } else if (.f == 'umap') {
     embed::step_umap
   }
@@ -107,9 +107,9 @@ do_clust <- function(.n, .k, .f, .g, return = c('metrics', 'data', 'summary', 'c
   cat(glue::glue('{Sys.time()}: Processing {suffix}'), sep = '\n')
   rec <-
     rec_init %>% 
-    f(all_numeric_predictors(), num_comp = .n)
+    f(recipes::all_numeric_predictors(), num_comp = .n)
   
-  jui <- rec %>% prep() %>% juice()
+  jui <- rec %>% recipes::prep() %>% recipes::juice()
   jui_num <- jui %>% select(where(is.numeric))
   if(return == 'data') {
     res <- jui_num
@@ -234,4 +234,4 @@ pts <- function(x) {
 
 lab_tag <- '**Viz**: Tony ElHabr'
 pal <- c('pca + kmeans'  = '#ef426f', 'pca + mclust' = '#00b2a9', 'umap + kmeans' = '#ff8200', 'umap + mclust' = '#7a5195')
-pal_clusts <-c('D' = '#003f5c', 'DM' = '#58508d', 'M' = '#bc5090', 'AM' = '#ff6361', 'AM' = '#ffa600', 'G' = 'grey50')
+pal_clusts <-c('D' = '#003f5c', 'DM' = '#58508d', 'M' = '#bc5090', 'AM' = '#ff6361', 'F' = '#ffa600', 'G' = 'grey50')
