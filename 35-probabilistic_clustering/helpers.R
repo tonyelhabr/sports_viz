@@ -66,9 +66,12 @@ df <-
     )
   )
 df
+options(width = 90)
+df_filt %>% dim()
 
 # df %>% skimr::skim(min)
 df_filt <- df %>% filter(min > 10 * 90)
+df_filt
 df_filt %>% count(pos, sort = TRUE)
 df_filt %>% 
   filter(pos == 'W') %>% 
@@ -94,16 +97,18 @@ do_clust <- function(.n, .k, .f, .g, return = c('metrics', 'data', 'summary', 'c
     cat(glue::glue('{Sys.time()}: Returning early {suffix}'), sep = '\n')
     return(read_rds(path))
   }
-  f <- if(.f == 'pca') {
-    recipes::step_pca
-  } else if (.f == 'umap') {
-    embed::step_umap
-  }
-  g <- if(.g == 'kmeans') {
-    kmeans
-  } else if (.g == 'mclust') {
-    mclust::Mclust
-  }
+  f <- ifelse(.f == 'pca', recipes::step_pca, embed::step_umap)
+  g <- ifelse(.g == 'kmeans', kmeans, mclust::Mclust)
+  # f <- if(.f == 'pca') {
+  #   recipes::step_pca
+  # } else if (.f == 'umap') {
+  #   embed::step_umap
+  # }
+  # g <- if(.g == 'kmeans') {
+  #   kmeans
+  # } else if (.g == 'mclust') {
+  #   mclust::Mclust
+  # }
   cat(glue::glue('{Sys.time()}: Processing {suffix}'), sep = '\n')
   rec <-
     rec_init %>% 
@@ -235,3 +240,57 @@ pts <- function(x) {
 lab_tag <- '**Viz**: Tony ElHabr'
 pal <- c('pca + kmeans'  = '#ef426f', 'pca + mclust' = '#00b2a9', 'umap + kmeans' = '#ff8200', 'umap + mclust' = '#7a5195')
 pal_clusts <-c('D' = '#003f5c', 'DM' = '#58508d', 'M' = '#bc5090', 'AM' = '#ff6361', 'F' = '#ffa600', 'G' = 'grey50')
+
+do_uncertainty <- function(.n, .k, ...) {
+  fit <- do_clust(.n = .n, .k = .k, return = 'fit', ...)
+
+  nms_comp <- sprintf('comp_%d', 1:.n)
+  as <-
+    fit %>% 
+    broom::augment() %>% 
+    mutate(
+      across(.class, as.integer)
+    ) %>% 
+    set_names(c(nms_comp, '.class', 'uncertainty')) %>% 
+    bind_cols(df_filt %>% select(pos))
+  
+  cors <-
+    as %>% 
+    select(-matches('^comp_')) %>% 
+    fastDummies::dummy_cols(c('.class', 'pos'), remove_selected_columns = TRUE) %>% 
+    corrr::correlate(method = 'spearman', quiet = TRUE) %>% 
+    filter(term %>% str_detect('pos')) %>% 
+    select(term, matches('^[.]class'))
+  
+  cols_idx <- 2:(.k+1)
+  cors_mat <- as.matrix(cors[,cols_idx]) + 1
+  rownames(cors_mat) <- cors$term
+  cols <- names(cors)[cols_idx]
+  colnames(cors_mat) <- cols
+  cols_idx_min <- clue::solve_LSAP(cors_mat, maximum = TRUE)
+  cols_min <- cols[cols_idx_min]
+  pairs <-
+    tibble::tibble(
+      .class = cols_min %>% str_remove('^[.]class_') %>% as.integer(),
+      pos = cors$term %>% str_remove('pos_')
+    )
+  pairs
+  
+  uncertainty <- 
+    as %>% 
+    left_join(pairs %>% rename(pos_pred = pos)) %>% 
+    bind_cols(df_filt %>% select(where(is.character), -pos))
+  
+  cl <- broom::tidy(fit)
+  centers <-
+    cl %>% 
+    select(component, matches('^mean[.]')) %>% 
+    set_names(c('.class', nms_comp))
+  centers
+  
+  centers_clean <-
+    centers %>% 
+    left_join(pairs)
+  centers_clean
+  list(uncertainty = uncertainty, centers = centers_clean)
+}
