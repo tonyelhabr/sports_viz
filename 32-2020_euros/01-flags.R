@@ -2,6 +2,8 @@
 library(tidyverse)
 library(rvest)
 
+dir_proj <- '32-2020_euros'
+
 extrafont::loadfonts(device = 'win', quiet = TRUE)
 theme_set(theme_minimal())
 theme_update(
@@ -81,13 +83,13 @@ agg
 f_separate <- function(pos) {
   pos_sym <- sym(pos)
   f_replace <- function(x, i) {
-    str_replace(x, '(^.*)\\s\\((.*)\\)$', sprintf('\\%s', i))
+    str_replace(x, '(^.*)\\s\\((.*)\\)[.]?$', sprintf('\\%s', i))
   }
   agg %>% 
     mutate(
       across(
         !!pos_sym,
-        ~str_replace(.x, '\\(Tottenham Hotspur\\) Connor Roberts', '(Tottenham Hotspur), Connor Roberts')
+        ~str_replace_all(.x, c('\\(Tottenham Hotspur\\) Connor Roberts' = '(Tottenham Hotspur), Connor Roberts', '\\(Wolves\\) Thorgan Hazard' = '(Wolves), Thorgan Hazard'))
       )
     ) %>% 
     select(country, !!pos_sym) %>% 
@@ -107,12 +109,18 @@ f_separate <- function(pos) {
     select(country, team_sky = team, name, pos)
 }
 
-players <- c('g', 'm', 'd', 'f') %>% map_dfr(f_separate)
+players <- 
+  c('g', 'm', 'd', 'f') %>% 
+  map_dfr(f_separate)
+
+players %>% 
+  filter(name %>% str_detect('Dendoncker')) %>% 
+  separate_rows()
 
 team_mapping <-
   tibble(
-    team_sky = c('Arsenal', 'Aston Villa', 'Brighton', 'Burnley', 'Chelsea', 'Crystal Palace', 'Everton', 'Fulham', 'Leeds', 'Leicester', 'Liverpool', 'Man City', 'Manchester City', 'Manchester United', 'Newcastle', 'Newcastle United', 'Sheffield United', 'Southampton', 'Tottenham', 'Tottenham Hotspur', 'West Brom', 'West Ham', 'West Ham United', 'Wolves'),
-    team = c('Arsenal', 'Aston Villa', 'Brighton', 'Burnley', 'Chelsea', 'Crystal Palace', 'Everton', 'Fulham', 'Leeds', 'Leicester', 'Liverpool', 'Man City', 'Man City', 'Man United', 'Newcastle Utd', 'Newcastle Utd', 'Sheffield Utd', 'Southampton', 'Tottenham', 'Tottenham', 'West Brom', 'West Ham', 'West Ham', 'Wolves')
+    team_sky = c('Arsenal', 'Aston Villa', 'Brighton', 'Brighton & Hove Albion', 'Burnley', 'Chelsea', 'Crystal Palace', 'Everton', 'Fulham', 'Leeds', 'Leeds United', 'Leicester', 'Leicester City', 'Liverpool', 'Man City', 'Manchester City', 'Manchester United', 'Newcastle', 'Newcastle United', 'Sheffield United', 'Southampton', 'Tottenham', 'Tottenham Hotspur', 'West Brom', 'West Ham', 'West Ham United', 'Wolves'),
+    team = c('Arsenal', 'Aston Villa', 'Brighton', 'Brighton', 'Burnley', 'Chelsea', 'Crystal Palace', 'Everton', 'Fulham', 'Leeds', 'Leeds', 'Leicester', 'Leicester', 'Liverpool', 'Man City', 'Man City', 'Man United', 'Newcastle Utd', 'Newcastle Utd', 'Sheffield Utd', 'Southampton', 'Tottenham', 'Tottenham', 'West Brom', 'West Ham', 'West Ham', 'Wolves')
   )
 
 players_filt <-
@@ -126,7 +134,13 @@ players_filt <-
   inner_join(team_mapping) %>% 
   mutate(across(team, ~str_replace_all(.x, c('Utd' = 'United', 'Man ' = 'Manchester '))))
 players_filt
-players_filt %>% filter(team == 'Tottenham')
+
+players_filt %>% filter(team == 'Wolves') %>% arrange(name)
+# players_filt %>% filter(team == 'Arsenal')
+players_filt %>% count(team)
+
+write_csv(players_filt, file.path(dir_proj, 'players.csv'), na = '')
+
 teams_n <-
   players_filt %>% 
   count(team, sort = TRUE) %>% 
@@ -143,7 +157,6 @@ countrys %>%
   tibble(country = .) %>% 
   anti_join(countrys_n)
 
-dir_proj <- '32-2020_euros'
 # flags from here: https://github.com/lbenz730/euro_cup_2021
 img <- 
   fs::dir_ls(file.path(dir_proj, 'flags')) %>% 
@@ -155,7 +168,7 @@ players_filt %>% distinct(country) %>% anti_join(img)
 df <-
   players_filt %>% 
   left_join(img) %>% 
-  left_join(teams_n %>% rename(n_team = n, rnk_team = rnk))%>% 
+  left_join(teams_n %>% rename(n_team = n, rnk_team = rnk)) %>% 
   mutate(across(team, ~fct_reorder(.x, n_team))) %>% 
   arrange(team, country) %>% 
   group_by(team, country) %>% 
@@ -216,7 +229,7 @@ add_logo(
   path_viz = path_p1,
   path_logo = file.path(dir_proj, 'logo.png'),
   logo_scale = 0.251,
-  delete = FALSE,
+  # delete = FALSE,
   idx_x = 0.04,
   adjust_y = FALSE,
   idx_y = 0.21

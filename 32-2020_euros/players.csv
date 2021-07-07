@@ -1,0 +1,121 @@
+country,team_sky,name,pos,team
+Wales,Crystal Palace,Wayne Hennessey,g,Crystal Palace
+Wales,Leicester City,Daniel Ward,g,Leicester
+Denmark,Leicester,Kasper Schmeichel,g,Leicester
+England,West Brom,Sam Johnstone,g,West Brom
+England,Everton,Jordan Pickford,g,Everton
+England,Sheffield United,Aaron Ramsdale,g,Sheffield United
+Poland,West Ham,Lukasz Fabianski,g,West Ham
+Slovakia,Newcastle,Martin Dúbravka,g,Newcastle United
+Slovakia,Fulham,Marek Rodák,g,Fulham
+Spain,Manchester United,David de Gea,g,Manchester United
+Spain,Brighton,Robert Sanchez,g,Brighton
+Sweden,Everton,Robin Olsen,g,Everton
+France,Tottenham,Hugo Lloris,g,Tottenham
+Germany,Arsenal,Bernd Leno,g,Arsenal
+Portugal,Wolves,Rui Patrício,g,Wolves
+Italy,Chelsea,Jorginho,m,Chelsea
+Switzerland,Liverpool,Xherdan Shaqiri,m,Liverpool
+Switzerland,Arsenal,Granit Xhaka,m,Arsenal
+Turkey,West Brom,Okay Yokuşlu,m,West Brom
+Wales,Liverpool,Harry Wilson,m,Liverpool
+Wales,Manchester United,Daniel James,m,Manchester United
+Wales,Manchester City,Matthew Smith,m,Manchester City
+Wales,Manchester United,Dylan Levitt,m,Manchester United
+Belgium,Leicester,Timothy Castagne,m,Leicester
+Belgium,Manchester City,Kevin De Bruyne,m,Manchester City
+Belgium,Wolves,Leander Dendoncker,m,Wolves
+Belgium,Leicester,Dennis Praet,m,Leicester
+Belgium,Leicester,Youri Tielemans,m,Leicester
+Denmark,Tottenham,Pierre-Emile Højbjerg,m,Tottenham
+Netherlands,Liverpool,Georginio Wijnaldum,m,Liverpool
+Ukraine,Manchester City,Oleksandr Zinchenko,m,Manchester City
+Ukraine,West Ham,Andriy Yarmolenko,m,West Ham
+Croatia,Chelsea,Mateo Kovačić,m,Chelsea
+Czech Republic,West Ham United,Tomáš Souček,m,West Ham
+England,Liverpool,Jordan Henderson,m,Liverpool
+England,Chelsea,Mason Mount,m,Chelsea
+England,Leeds,Kalvin Phillips,m,Leeds
+England,West Ham,Declan Rice,m,West Ham
+Scotland,Southampton,Stuart Armstrong,m,Southampton
+Scotland,Sheffield United,John Fleck,m,Sheffield United
+Scotland,Chelsea,Billy Gilmour,m,Chelsea
+Scotland,Aston Villa,John McGinn,m,Aston Villa
+Scotland,Manchester United,Scott McTominay,m,Manchester United
+Poland,Leeds,Mateusz Klich,m,Leeds
+Poland,Brighton,Jakub Moder,m,Brighton
+Spain,Manchester City,Rodri,m,Manchester City
+Spain,Liverpool,Thiago,m,Liverpool
+France,Chelsea,Ngolo Kante,m,Chelsea
+France,Manchester United,Paul Pogba,m,Manchester United
+France,Tottenham,Moussa Sissoko,m,Tottenham
+Germany,Manchester City,İlkay Gündoğan,m,Manchester City
+Germany,Chelsea,Kai Havertz,m,Chelsea
+Portugal,Wolves,Rúben Neves,m,Wolves
+Portugal,Manchester United,Bruno Fernandes,m,Manchester United
+Portugal,Wolves,João Moutinho,m,Wolves
+Italy,Chelsea,Emerson Palmieri,d,Chelsea
+Switzerland,Newcastle United,﻿Fabian Schär,d,Newcastle United
+Turkey,Leicester,Çağlar Söyüncü,d,Leicester
+Turkey,Liverpool,﻿Ozan Kabak,d,Liverpool
+Wales,Tottenham Hotspur,Ben Davies,d,Tottenham
+Wales,Chelsea,Ethan Ampadu,d,Chelsea
+Wales,Tottenham Hotspur,Joe Rodon,d,Tottenham
+Wales,Liverpool,Neco Williams,d,Liverpool
+Wales,Sheffield United,Rhys Norrington-Davies,d,Sheffield United
+Belgium,Tottenham,Toby Alderweireld,d,Tottenham
+Denmark,Chelsea,Andreas Christensen,d,Chelsea
+Denmark,Southampton,Jannik Vestergaard,d,Southampton
+Netherlands,Manchester City,Nathan Ake,d,Manchester City
+Netherlands,Crystal Palace,Patrick van Aanholt,d,Crystal Palace
+Netherlands,Brighton & Hove Albion,Joel Veltman,d,Brighton
+North Macedonia,Leeds,Ezdzan Alioski,d,Leeds
+Czech Republic,West Ham United,Vladimír Coufal,d,West Ham
+England,Chelsea,Ben Chilwell,d,Chelsea
+England,Wolves,Conor Coady,d,Wolves
+England,Chelsea,Reece James,d,Chelsea
+England,Manchester United,Harry Maguire,d,Manchester United
+England,Aston Villa,Tyrone Mings,d,Aston Villa
+England,Manchester United,Luke Shaw,d,Manchester United
+England,Manchester City,John Stones,d,Manchester City
+England,Manchester City,Kyle Walker,d,Manchester City
+England,Brighton,Ben White,d,Brighton
+Scotland,Leeds,Liam Cooper,d,Leeds
+Scotland,Liverpool,Andy Robertson,d,Liverpool
+Scotland,Arsenal,Kieran Tierney,d,Arsenal
+Poland,Southampton,Jan Bednarek,d,Southampton
+Spain,Manchester City,Aymeric Laporte,d,Manchester City
+Spain,Manchester City,Eric Garcia,d,Manchester City
+Spain,Leeds,Diego Llorente,d,Leeds
+Spain,Chelsea,Cesar Azpilicueta,d,Chelsea
+Sweden,Newcastle United,Emil Krafth,d,Newcastle United
+Sweden,Manchester United,Victor Lindelöf,d,Manchester United
+France,Everton,Lucas Digne,d,Everton
+France,Chelsea,Kurt Zouma,d,Chelsea
+Germany,Chelsea,Antonio Rüdiger,d,Chelsea
+Germany,Leeds,Robin Koch,d,Leeds
+Portugal,Manchester City,João Cancelo,d,Manchester City
+Portugal,Wolves,Nélson Semedo,d,Wolves
+Portugal,Manchester City,Rúben Dias,d,Manchester City
+Turkey,Leicester,Cengiz Ünder,f,Leicester
+Wales,Tottenham,Gareth Bale,f,Tottenham
+Wales,Leeds United,Tyler Roberts,f,Leeds
+Belgium,Crystal Palace,Michy Batshuayi,f,Crystal Palace
+Belgium,Crystal Palace,Christian Benteke,f,Crystal Palace
+Belgium,Brighton,Leandro Trossard,f,Brighton
+Czech Republic,Burnley,Matěj Vydra,f,Burnley
+England,Everton,Dominic Calvert-Lewin,f,Everton
+England,Man City,Phil Foden,f,Manchester City
+England,Aston Villa,Jack Grealish,f,Aston Villa
+England,Tottenham,Harry Kane,f,Tottenham
+England,Manchester United,Marcus Rashford,f,Manchester United
+England,Arsenal,Bukayo Saka,f,Arsenal
+England,Man City,Raheem Sterling,f,Manchester City
+Scotland,Southampton,Ché Adams,f,Southampton
+Scotland,Newcastle United,Ryan Fraser,f,Newcastle United
+Spain,Manchester City,Ferran Torres,f,Manchester City
+Spain,Wolves,Adama Traore,f,Wolves
+France,Chelsea,Olivier Giroud,f,Chelsea
+Germany,Chelsea,Timo Werner,f,Chelsea
+Portugal,Manchester City,Bernardo Silva,f,Manchester City
+Portugal,Liverpool,Diogo Jota,f,Liverpool
