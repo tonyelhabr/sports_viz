@@ -3,15 +3,15 @@ library(tidyverse)
 dir_proj <- '35-probabilistic_clustering'
 source(file.path(dir_proj, 'helpers.R'))
 path_metrics_unsup <- file.path(dir_proj, 'metrics_unsup.rds')
-k_max <- 12
+k_max <- 8
 k_min <- 2
-k_buff <- 2
+k_buff <- 1
 
-mets_unsup <- read_rds(path_metrics_sup)
+mets_unsup <- read_rds(path_metrics_unsup)
 if(FALSE) {
   mets_unsup <-
     crossing(
-      n = seq.int(2, 15, by = 1),
+      n = seq.int(2, 8),
       k = seq.int(k_min, k_max),
       f = fs,
       g = gs
@@ -37,10 +37,10 @@ mets_unsup_clean <-
       mutate(metric = 'wss') %>% 
       hoist(
         metrics,
-        'value' = 'totss', # 'tot.withinss'
+        'value' = 'tot.withinss'
       ),
     mets_unsup %>% 
-      filter(g == 'mclust') %>% 
+      filter(g == 'gmm') %>% 
       mutate(metric = 'bic') %>% 
       hoist(
         metrics,
@@ -49,13 +49,13 @@ mets_unsup_clean <-
   ) %>% 
   select(-metrics) %>% 
   mutate(
-    grp = sprintf('%s + %s', f, g),
+    grp = sprintf('%s + %s', toupper(f), ifelse(g == 'gmm', 'GMM', g)),
     across(c(k), ordered)
   )
 mets_unsup_clean
 
 # mets_unsup %>% 
-#   filter(g == 'mclust') %>% 
+#   filter(g == 'gmm') %>% 
 #   hoist(
 #     metrics,
 #     'bic' = 'BIC',
@@ -67,26 +67,29 @@ mets_unsup_clean
 
 plot_metric_unsup <- function(.g) {
   # .g <- 'kmeans'
-  .g <- 'mclust'
+  # .g <- 'gmm'
   metric <- switch(
     .g,
     kmeans = 'wss',
-    mclust = 'bic'
+    gmm = 'bic'
   )
   path <- file.path(dir_proj, sprintf('viz_%s_%s.png', .g, metric))
   if(.g == 'kmeans') {
-    .lab_y <- 'Within Sum-of-Squares (WSS)'
+    .lab_y <- 'Within Sum of Squares (WSS)'
+    .lab_infix <- 'WSS'
     .lab_caption <- 'Lower is "better".'
-  } else if(.g == 'mclust') {
+  } else if(.g == 'gmm') {
     .lab_y <- 'BIC'
+    .lab_infix <- 'BIC'
     .lab_caption <- 'Higher is "better".'
   }
   mets_unsup_clean_filt <-
     mets_unsup_clean %>%
-    filter(g == .g) 
+    filter(g == .g)
 
   viz <-
     mets_unsup_clean_filt %>% 
+    # filter(f == 'pca') %>% 
     ggplot() +
     aes(x = k, y = value, color = grp, alpha = n, group = sprintf('%s, %s', grp, n)) +
     geom_line(size = 1.2) +
@@ -106,7 +109,7 @@ plot_metric_unsup <- function(.g) {
       aes(label = sprintf('%s%s', n, ifelse(n == max(n), '  components', '')))
     ) +
     # scale_y_log10() +
-    scale_alpha(range = c(0.25, 1)) +
+    scale_alpha(range = c(0.5, 1)) +
     guides(
       alpha = FALSE,
       color = guide_legend(
@@ -124,16 +127,16 @@ plot_metric_unsup <- function(.g) {
     theme(
       legend.position = 'top',
       legend.text = element_text(size = 14),
-      # axis.text.y = element_blank(),
-      # axis.ticks.y = element_blank(),
-      # panel.grid.major.y = element_blank(),
+      axis.text.y = element_blank(),
+      axis.ticks.y = element_blank(),
+      panel.grid.major.y = element_blank(),
       plot.title = ggtext::element_markdown(size = 16),
       plot.subtitle = ggtext::element_markdown(size = 12)
     ) +
-    facet_wrap(~grp, scales = 'free_y') +
+    # facet_wrap(~grp, scales = 'free_y') +
     labs(
       title = 'Unsupervised dimensionality reduction + clustering performance',
-      subtitle = 'Loss (within sum of squares) as a function of components (line, transparency) and clusters (x-axis).',
+      subtitle = sprintf('Evaluation metric (%s) as a function of # of components (transparency) and clusters (x-axis)', .lab_infix),
       tag = lab_tag,
       caption = sprintf('%s<br/>Y-axis units are not nessarily meaningful, so they are not shown.', .lab_caption),
       y = .lab_y,
@@ -152,6 +155,5 @@ plot_metric_unsup <- function(.g) {
 
 viz_kmeans_wss <- plot_metric_unsup('kmeans')
 viz_kmeans_wss
-viz_mclust_bic <- plot_metric_unsup('mclust')
-viz_mclust_bic
-
+viz_gmm_bic <- plot_metric_unsup('gmm')
+viz_gmm_bic

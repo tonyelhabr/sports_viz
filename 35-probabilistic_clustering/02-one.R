@@ -9,7 +9,7 @@ dist <- function (x1, x2, y1, y2, power = 2) {
 }
 
 do_one <- function(f) {
-  f <- 'umap'
+  # f <- 'umap'
   if(f == 'pca') {
     .nudge_x <- 0
     .nudge_y <- -10
@@ -21,11 +21,43 @@ do_one <- function(f) {
   lab_f <- toupper(f)
   k <- 6
   n <- 2
-  res <- do_uncertainty(.n = n, .k = k, .f = f, .g = 'mclust')
+  lab_caption <- sprintf('Components (%s): %d, Clusters (GMM): %d', lab_f, n, k)
+  
+  res <- do_uncertainty(.n = n, .k = k, .f = f, .g = 'gmm')
   centers <- res$centers
-
+  
+  require(yardstick) # for autoplot
+  cm <-
+    uncertainty %>% 
+    mutate(across(matches('pos'), factor)) %>% 
+    yardstick::conf_mat(pos, pos_pred)
+  viz_cm_init <- autoplot(cm, type = 'heatmap')
+  
+  do_theme_set()
+  viz_cm <-
+    viz_cm_init +
+    theme_tony() + # still need to do this for caption
+    guides(fill = FALSE) +
+    theme(
+      panel.grid.major = element_blank()
+    ) +
+    labs(
+      title = 'Confusion Matrix',
+      tag = lab_tag,
+      caption = lab_caption
+    )
+  viz_cm
+  
+  ggsave(
+    plot = viz_cm,
+    filename = file.path(dir_proj, sprintf('viz_cm_%s.png', f)),
+    width = 6,
+    height = 6,
+    type = 'cairo'
+  )
+  
   uncertainty <-
-    res$uncertainty%>% 
+    res$uncertainty %>% 
     mutate(wrong = pos != pos_pred)
 
   .pos_drop <- c('G', 'D')
@@ -33,6 +65,7 @@ do_one <- function(f) {
     uncertainty %>% 
     filter(!(pos_pred %in% .pos_drop))
   
+  nms_comp <- sprintf('comp_%d', 1:n)
   lims <-
     uncertainty_filt %>% 
     summarize(
@@ -51,7 +84,7 @@ do_one <- function(f) {
         (pos == 'M' & pos_pred == 'AM')
     ) %>% 
     group_by(pos, pos_pred) %>% 
-    slice_max(uncertainty, with_ties = FALSE) %>% 
+    slice_max(.uncertainty, with_ties = FALSE) %>% 
     ungroup()
   most_wrong
   
@@ -69,10 +102,9 @@ do_one <- function(f) {
       labs(
         title = sprintf('GMM clusters after 2-component %s', lab_f),
         tag = lab_tag,
-        caption = ' ',
-        # caption = 'Keepers (G) excluded.', #  because they are fairly distant and distort the plot.',
-        y = 'UMAP Component 2',
-        x = 'UMAP Component 1'
+        caption = lab_caption,
+        y = sprintf('%s Component 2', lab_f),
+        x = sprintf('%s Component 1', lab_f)
       )
     )
   }
@@ -106,7 +138,7 @@ do_one <- function(f) {
         ellipse.level = 0.9
       ) +
       geom_point(
-        aes(size = uncertainty, color = pos_pred)
+        aes(size = .uncertainty, color = pos_pred)
       ) + 
       scale_size(range = c(0.5, 2.5)) + 
       scale_color_manual(values = pal_clusts) +
@@ -118,6 +150,7 @@ do_one <- function(f) {
   viz_uncertainty_full <- uncertainty %>% plot_uncertainty()
   viz_uncertainty_full
   
+  lab_ellipse <- 'Larger point size = more uncertainty.<br/>(Ellipsoids illustrate cluster covariance).'
   if(f == 'umap') {
     
     .pos_attack <- c('F', 'AM')
@@ -126,12 +159,12 @@ do_one <- function(f) {
       f_label(
         nudge_x = 1.5,
         nudge_y = 1,
-        data = centers_clean %>% filter(!(pos %in% .pos_attack))
+        data = centers %>% filter(!(pos %in% .pos_attack))
       ) +
       f_label(
         nudge_x = -1,
         nudge_y = -3,
-        data = centers_clean %>% filter((pos %in% .pos_attack))
+        data = centers %>% filter((pos %in% .pos_attack))
       ) +
       ggtext::geom_richtext(
         data = tibble(),
@@ -139,17 +172,9 @@ do_one <- function(f) {
         hjust = 0,
         family = 'Karla',
         size = pts(14),
-        aes(x = -6, y = -15, label = 'Larger point size = more uncertainty.<br/>(Ellipsoids illustrate cluster covariance).')
+        aes(x = -6, y = -15, label = lab_ellipse)
       )
     viz_uncertainty_full
-    
-    ggsave(
-      plot = viz_uncertainty_full,
-      filename = file.path(dir_proj, sprintf('viz_uncertainty_%s_full.png', f)),
-      width = 10,
-      height = 10,
-      type = 'cairo'
-    )
 
     viz_uncertainty_filt_init <-
       uncertainty_filt %>% 
@@ -159,7 +184,7 @@ do_one <- function(f) {
         ylim = c(lims$value[3] * 1.1, lims$value[4] * 1.1)
       ) +
       labs(
-        caption = 'Keepers (G) excluded.'
+        caption = sprintf('%s<br/>Keepers (G) and defenders (D) excluded.', lab_caption)
       )
     
     f_text <-
@@ -192,8 +217,8 @@ do_one <- function(f) {
       # ) +
       f_text(
         data = most_wrong %>% filter(pos == 'F'),
-        nudge_y = 3,
-        nudge_x = 0
+        nudge_y = 1.5,
+        nudge_x = 3
       ) +
       f_text(
         data = most_wrong %>% filter(pos == 'M'),
@@ -205,14 +230,45 @@ do_one <- function(f) {
     ggsave(
       plot = viz_uncertainty_filt,
       filename = file.path(dir_proj, sprintf('viz_uncertainty_%s_filt.png', f)),
-      width = 10,
-      height = 10,
+      width = 8,
+      height = 8,
       type = 'cairo'
     )
+  } else if (f == 'pca') {
+      
+    viz_uncertainty_full <-
+      viz_uncertainty_full +
+      f_label(
+        nudge_x = 8,
+        nudge_y = 10,
+        data = centers %>% filter(!(pos %in% 'G'))
+      ) +
+      f_label(
+        nudge_x = 1,
+        nudge_y = 2,
+        data = centers %>% filter((pos %in% 'G'))
+      ) +
+      ggtext::geom_richtext(
+        data = tibble(),
+        label.color = NA,
+        hjust = 1,
+        family = 'Karla',
+        size = pts(14),
+        aes(x = 25, y = -15, label = lab_ellipse)
+      )
+    viz_uncertainty_full
   }
-
+  
+  ggsave(
+    plot = viz_uncertainty_full,
+    filename = file.path(dir_proj, sprintf('viz_uncertainty_%s_full.png', f)),
+    width = 8,
+    height = 8,
+    type = 'cairo'
+  )
+  
   viz_wrong <-
-    uncertainty %>% 
+    uncertainty_filt %>% 
     ggplot() +
     aes(x = comp_1, y = comp_2) +
     geom_point(
@@ -228,21 +284,21 @@ do_one <- function(f) {
     scale_color_manual(values = c(`TRUE` = 'red', `FALSE` = 'grey20')) +
     add_clust_constants() +
     labs(
-      caption = ' ',
-      subtitle = 'Mis-classified positions'
+      caption = sprintf('%s<br/>Keepers (G) and defenders (D) excluded.', lab_caption),
+      subtitle = '<span style="color:red">Red</span>: mis-classified points'
     )
   viz_wrong
   
   ggsave(
     plot = viz_wrong,
     filename = file.path(dir_proj, sprintf('viz_misclassified_%s.png', f)),
-    width = 10,
-    height = 10,
+    width = 8,
+    height = 8,
     type = 'cairo'
   )
 }
 
-res_umap <- do_one('umap')
-res_pca <- do_one('pca')
+# do_one('umap')
+do_one('pca')
 
 

@@ -23,7 +23,7 @@ viz_cors <-
     x = NULL,
     y = NULL,
     title = 'Correlation plot for 100+ variables',
-    subtitle = 'This is not all that helpful.',
+    subtitle = '(This is not all that helpful.)',
     # tag = lab_tag,
     caption = ' '
   )
@@ -31,5 +31,22 @@ viz_cors
 
 ggsave(
   plot = viz_cors,
-  filename = file.path(dir_proj, 'viz_cors.png')
+  filename = file.path(dir_proj, 'viz_cors.png'),
+  width = 8,
+  height = 8,
+  type = 'cairo'
 )
+
+y <- df_filt %>% select(pos)
+preds <-
+  y %>% 
+  mutate(D = 1L, M = 0, AM = 0, `F` = 0, G = 0, DM = 0) %>% 
+  select(-pos) %>% 
+  as.matrix()
+mll_dummy <-
+  MLmetrics::MultiLogLoss(
+    y_pred = preds,
+    y_true = y$pos
+  )
+mll_dummy
+

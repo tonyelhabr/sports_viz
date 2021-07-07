@@ -3,12 +3,15 @@ library(tidyverse)
 dir_proj <- '35-probabilistic_clustering'
 source(file.path(dir_proj, 'helpers.R'))
 path_metrics_sup <- file.path(dir_proj, 'metrics_sup.rds')
+n_min <- 2
+n_max <- 8
+n_buff <- 1
 
 mets_sup <- read_rds(path_metrics_sup)
 if(FALSE) {
   mets_sup <-
     crossing(
-      n = seq.int(2, 15, by = 1),
+      n = seq.int(n_min, n_max),
       f = fs,
       g = gs
     ) %>%
@@ -35,7 +38,7 @@ mets_sup_clean <-
   ) %>% 
   select(-metrics) %>% 
   mutate(
-    grp = sprintf('%s + %s', f, g),
+    grp = sprintf('%s + %s', toupper(f), ifelse(g == 'gmm', 'GMM', g)),
     across(c(n), ordered)
   )
 mets_sup_clean
@@ -46,13 +49,17 @@ plot_metric_sup <- function(metric = c('acc', 'll')) {
   col_sym <- sym(metric)
   path <- file.path(dir_proj, sprintf('viz_%s.png', metric))
   if(metric == 'acc') {
-    .ylim = c(0, 1)
+    # .ylim = c(0, 1)
+    .ylim <- c(-NA, NA)
     .lab_y <- 'Multi-class Accuracy'
+    .lab_caption <- 'Higher is "better".'
   } else if(metric == 'll') {
     .ylim <- c(-NA, NA)
-    .lab_y <- 'Log Loss'
+    .lab_y <- 'Mean Log Loss'
+    .lab_caption <- 'Lower is "better".'
   }
   # browser()
+  lim_x <- seq.int(n_min - n_buff, n_max + n_buff)
   viz <-
     mets_sup_clean %>% 
     ggplot() +
@@ -75,19 +82,20 @@ plot_metric_sup <- function(metric = c('acc', 'll')) {
     guides(color = FALSE) +
     scale_color_manual(values = pal) +
     scale_x_discrete(
-      breaks = seq.int(1, 17),
-      labels = c('', as.character(seq.int(2, 15)), rep('', 2))
+      breaks = lim_x,
+      labels = c('', as.character(seq.int(n_min, n_max)), rep('', 1))
     ) +
-    coord_cartesian(ylim = .ylim, xlim = c(1, 17)) +
+    coord_cartesian(ylim = .ylim, xlim = range(lim_x)) +
     theme_tony() +
     theme(
       plot.title = ggtext::element_markdown(size = 16),
       plot.subtitle = ggtext::element_markdown(size = 14)
     ) +
     labs(
-      title = 'Which dimensionality reduction + clustering combo is best?',
-      subtitle = 'Prediction for 6 classes (soccer positions)',
-      caption = 'Positions: G, D, DM, M, AM, F',
+      title = 'Supervised dimensionality reduction + clustering performance',
+      subtitle = 'Prediction for 6 clusters',
+      # caption = 'Positions: G, D, DM, M, AM, F',
+      caption = sprintf('%s', .lab_caption),
       tag = lab_tag,
       y = .lab_y,
       x = '# of Components'
@@ -105,7 +113,6 @@ plot_metric_sup <- function(metric = c('acc', 'll')) {
   )
   viz
 }
-
 
 viz_acc <- plot_metric_sup('acc')
 viz_acc
