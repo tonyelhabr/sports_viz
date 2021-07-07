@@ -230,10 +230,13 @@ Players](29-202021_u2x/viz_ux.gif "Animated bar plot GIF showing how the younges
 ![EPL Subjective VAR calls by Team since
 2019-20](30-var/viz_var_subjective_w_logo.png "EPL Subjective VAR calls by Team since 2019-20")
 
-# 32. 2020 EURO
+# 32. 2020 EUROs
 
 ![Which 2020/21 Premier League Teams Have the Most Players in the 2020
 Euros?](32-2020_euros/viz_countries_by_team_w_logo.png "Which 2020/21 Premier League Teams Have the Most Players in the 2020 Euros?")
+
+![Match Goals Per 90 for the 2020
+EUROs](32-2020_euros/cities_w_logo.png "Match Goals Per 90 for the 2020 EUROs")
 
 # 33. Relative League Power Rankings
 
@@ -246,9 +249,18 @@ B](33-2020_euros_ratings/viz_relative_vp_xg_direct2z_fw_young.png "Expected chan
 ![Un-adjusted xG/90 change when moving from league A to
 B](33-2020_euros_ratings/viz_xg_unadjusted.png "Un-adjusted xG/90 change when moving from league A to B")
 
-# Future Ideas
+35. [Tired: PCA + kmeans, Wired: UMAP +
+    GMM](https://tonyelhabr.rbind.io/post/dimensionality-reduction-and-clustering/)
 
--   UMAP + GMM clustering (for optimal \# of UMAP groups).
+![Scatter plot example of visualizing UMAP and GMM, using 2 components
+and 6
+clusters](35-probabilistic_clustering/viz_uncertainty_umap_filt.png "Scatter plot example of visualizing of UMAP and GMM, using 2 components and 6 clusters")
+
+![Table comparing 2-component PCA and UMAP rankings of player similarity
+for Jadon
+Sancho](35-probabilistic_clustering/gt_similarity_jadon_sancho.png "Table comparing 2-component PCA and UMAP rankings of player similarity for Jadon Sancho")
+
+# Future Ideas
 
 -   In which sport is the leading team most likely to further their lead
     near the end of the game due to an opposition error,
