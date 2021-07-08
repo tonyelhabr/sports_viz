@@ -112,7 +112,8 @@ f_separate <- function(pos) {
 players <- 
   c('g', 'm', 'd', 'f') %>% 
   map_dfr(f_separate)
-
+players
+players %>% distinct(team_sky) %>% arrange(team_sky) %>% clipr::write_clip()
 players %>% 
   filter(name %>% str_detect('Dendoncker')) %>% 
   separate_rows()
