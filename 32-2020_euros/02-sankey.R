@@ -40,45 +40,45 @@ results <-
   mutate(across(where(is.numeric), as.integer))
 results
 
+teams_n <-
+  players_filt %>% 
+  count(team, sort = TRUE) %>% 
+  mutate(rnk = row_number(desc(n)))
+teams_n %>% pull(team)
+
 results_long <-
   results %>% 
   mutate(
-    across(matches('^r'), ~ifelse(.x == 1L, country, NA_character_))
+    across(-c(country), ~ifelse(.x == 1L, country, NA_character_))
   ) %>% 
   select(-country) %>% 
-  pivot_longer(matches('^r'), names_to = 'round', values_to = 'country') %>%
-  # mutate(
-  #   across(round, ~str_remove(.x, '^r'))
-  # ) %>% 
+  pivot_longer(matches('.*'), names_to = 'round', values_to = 'country') %>%
   drop_na(country)
 results_long
 
-lvls_round <- sprintf('r%d', c(24, 16, 8, 4, 2, 1))
+order_rounds_at <- function(data, ...) {
+  data %>% 
+    mutate(
+      across(!!!enquos(...), ~ordered(.x, levels = c('Start', 'Group', 'R16', 'Quarters', 'Semis', 'Title')))
+    )
+}
+
 net <-
   results_long %>% 
   inner_join(players_filt) %>% 
   rename(node = team, x = round) %>% 
-  mutate(across(x, ~ordered(.x, levels = lvls_round))) %>%
+  order_rounds_at(x) %>%
   arrange(name, x) %>% 
   group_by(country, name, pos) %>% 
   mutate(
     next_x = lead(x)
   ) %>% 
   ungroup() %>% 
+  order_rounds_at(next_x) %>% 
   mutate(
-    across(next_x, ~ordered(.x, levels = lvls_round)),
     next_node = ifelse(is.na(next_x), NA_character_, node)
   )
 net
-net %>% filter(x == 'r1')
-
-labs <-
-  net %>% 
-  filter(x == 'r24') %>% 
-  group_by(node) %>% 
-  filter(name == first(name)) %>% 
-  ungroup()
-labs
 
 pts <- function(x) {
   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
@@ -90,43 +90,36 @@ z <-
   group_by(node) %>% 
   mutate(
     lab = case_when(
-      name == first(name) & x == 'r24' ~ team,
+      name == first(name) & x == 'Start' ~ team,
       TRUE ~ NA_character_
     )
   ) %>% 
   ungroup()
 z %>% filter(!is.na(lab))
 
-p <-
+net_labs <-
   net %>% 
+  group_by(x, node) %>% 
+  mutate(idx = row_number()) %>% 
+  mutate(med = floor(median(idx)), max = max(idx)) %>% 
+  ungroup() %>% 
+  # filter(idx == med) %>% 
+  mutate(lab = case_when(x == 'Start' & idx == med ~ node, TRUE ~ NA_character_)) %>% 
+  left_join(net)
+net_labs
+net_labs %>% drop_na(lab)
+p <-
+  net_labs %>% 
   ggplot() +
   aes(x = x, next_x = next_x, node = node, next_node = next_node, fill = node) +
-  geom_alluvial() +
-  # scale_y_reverse() +
+  geom_alluvial(alpha = 0.5) +
   geom_alluvial_text(
-    hjust = 1,
-    aes(label = ifelse(x %in% c('r24'), node, NA_character_))
-  )
-p
-geom_sankey_text(
-    # data = labs,
-    data = 
-      net %>% 
-      mutate(team = node) %>% 
-      group_by(node) %>% 
-      mutate(
-        lab = case_when(
-          name == first(name) & x == 'r24' ~ team,
-          TRUE ~ NA_character_
-        )
-      ) %>% 
-      ungroup(),
     aes(label = lab),
-    hjust = 1,
+    hjust = 0,
     family = 'Karla',
-    size = pts(10)
+    size = pts(12)
   ) +
-  guides(color = 'none') +
+  guides(fill = 'none') +
   coord_cartesian(expand = TRUE, clip = 'off') +
   theme(
     panel.grid.major = element_blank(),
