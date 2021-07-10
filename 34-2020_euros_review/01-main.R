@@ -1,10 +1,312 @@
 
-
 library(tidyverse)
-library(rvest)
+dir_proj <- '34-2020_euros_review'
 
-url <- 'https://theanalyst.com/na/2021/06/euro-2020-predictions/'
-page <- url %>% xml2::read_html()
-node <- page %>% html_element(xpath = '/html/body/div[1]/div[2]/theanalyst-widget/div/div/div/table') # %>% html_element('data-table')
-node
-xpath <- '/html/body/div[1]/div[2]/theanalyst-widget/div/div/div/table'
+results <-
+  file.path('32-2020_euros', 'results.csv') %>% 
+  read_csv(
+    col_types = cols(
+      .default = col_integer(),
+      country = col_character()
+    )
+  ) %>%
+  set_names(c('country', 'start', 'group', 'r16', 'qf', 'sf', 'finals')) %>% 
+  select(-c(start, group)) %>% 
+  mutate(
+    champ = ifelse(country == 'England', 1L, NA_integer_)
+  ) %>% 
+  pivot_longer(
+    -country,
+    names_to = 'round',
+    values_to = 'result',
+  ) %>% 
+  mutate(across(result, ~replace_na(.x, 0L))) %>% 
+  group_by(round) %>% 
+  mutate(n_pos = sum(result)) %>% 
+  ungroup() %>% 
+  mutate(p = n_pos / 24)
+results
+
+f_read <- function(x, ...) {
+  file.path(dir_proj, sprintf('%s.csv', x)) %>% 
+    read_csv(...) %>% 
+    janitor::clean_names()
+}
+df_analyst <- f_read('the-analyst')
+df_analyst
+
+df_benz <- 
+  f_read('sim_results') %>% 
+  select(country = team, r16:last_col()) %>% 
+  pivot_longer(
+    -country,
+    names_to = 'round'
+  )
+df_benz
+
+df_ku <- 
+  f_read('kuleuven') %>% 
+  select(country = team, r16:champ) %>% 
+  rename(finals = final) %>% 
+  mutate(
+    across(country, str_trim),
+    across(country, ~case_when(.x == 'Czechia' ~ 'Czech Republic', TRUE ~ .x)),
+    across(-c(country), ~parse_number(.x) / 100)
+  ) %>% 
+  pivot_longer(
+    -country,
+    names_to = 'round'
+  )
+df_analyst %>% count(round)
+
+df_ze <-
+  f_read('zeileis') %>% 
+  pivot_longer(
+    -country,
+    names_to = 'round'
+  ) %>% 
+  mutate(across(value, ~.x / 100))
+df_ze
+
+f_rename <- function(df, suffix = str_remove(deparse(substitute(df)), '^df_')) {
+  df %>% rename(!!sym(sprintf('value_%s', suffix)) := value)
+}
+df_analyst %>% distinct(country) %>% anti_join(df_ze %>% distinct(country), .)
+
+df_wide <-
+  list(
+    f_rename(df_analyst),
+    f_rename(df_benz),
+    f_rename(df_ku),
+    f_rename(df_ze)
+  ) %>% 
+  reduce(inner_join)
+
+df_wide %>% 
+  skimr::skim()
+df_wide %>% 
+  mutate(diff = value_analyst - value_benz) %>% 
+  arrange(desc(abs(diff)))
+
+df <-
+  df_wide %>% 
+  pivot_longer(
+    matches('value'),
+  ) %>% 
+  mutate(across(name, ~str_remove(.x, 'value_')))
+df
+
+agg_baseline <-
+  results %>% 
+  group_by(round) %>% 
+  summarize(
+    baseline = mean((result - p)^2)
+  ) %>% 
+  ungroup() 
+agg_baseline
+
+agg <-
+  df %>% 
+  inner_join(results) %>% 
+  group_by(name, round) %>% 
+  summarize(
+    score = mean((result - value)^2)
+  ) %>% 
+  ungroup() %>% 
+  group_by(round) %>% 
+  left_join(agg_baseline) %>% 
+  mutate(score = 1 - (score / baseline)) %>% 
+  mutate(rnk = row_number(score)) %>% 
+  ungroup() %>% 
+  mutate(across(round, ~ordered(.x, levels = lvls))) %>% 
+  arrange(round)
+agg
+
+lvl_labs <-
+  tibble(
+    round = lvls,
+    lab = c('R16', 'Quarters', 'Semis', 'Title', 'Champ') %>% ordered()
+  )
+lvl_labs
+
+name_labs <-
+  tibble(
+    name = c('ze', 'benz', 'analyst', 'ku'),
+    lab = c('Zeileis', 'Luke Benz', 'The Analyst', 'KU Leuven')
+  ) %>% 
+  mutate(
+    rnk = row_number(),
+    path_img = file.path(dir_proj, sprintf('%s.png', name))
+  )
+name_labs
+
+agg_wide <-
+  agg %>% 
+  select(-baseline) %>% 
+  pivot_wider(
+    names_from = round,
+    values_from = c(score, rnk)
+  ) %>% 
+  select(name, matches('_r16$'), matches('_qf$'), matches('_sf$'), matches('_finals$'), matches('_champ$')) %>% 
+  left_join(name_labs) %>% 
+  arrange(rnk) %>% 
+  relocate(rnk, path_img, lab)
+agg_wide
+
+.gt_theme_538 <- function(data,...) {
+  data %>%
+    gt::opt_all_caps()  %>%
+    gt::opt_table_font(
+      font = list(
+        gt::google_font('Karla'),
+        gt::default_fonts()
+      )
+    ) %>%
+    gt::tab_style(
+      style = gt::cell_borders(
+        sides = 'bottom', color = 'transparent', weight = gt::px(2)
+      ),
+      locations = gt::cells_body(
+        columns = TRUE,
+        # This is a relatively sneaky way of changing the bottom border
+        # Regardless of data size
+        rows = nrow(data$`_data`)
+      )
+    )  %>% 
+    gt::tab_options(
+      column_labels.background.color = 'white',
+      footnotes.padding = gt::px(0),
+      table.border.top.width = gt::px(3),
+      table.border.top.color = 'transparent',
+      table.border.bottom.color = 'transparent',
+      table.border.bottom.width = gt::px(3),
+      column_labels.border.top.width = gt::px(3),
+      column_labels.border.top.color = 'transparent',
+      column_labels.border.bottom.width = gt::px(3),
+      column_labels.border.bottom.color = 'black',
+      data_row.padding = gt::px(3),
+      footnotes.font.size = 10,
+      source_notes.font.size = 10,
+      table.font.size = 16,
+      heading.align = 'left',
+      ...
+    ) 
+}
+
+add_color_at <- function(table, r, pal) {
+  col <- sprintf('score_%s', r)
+  table %>% 
+    data_color(
+      columns = all_of(col),
+      colors = scales::col_numeric(palette = ggsci::rgb_material(pal, n = 100), domain = range(agg_wide[[col]]), reverse = FALSE)
+    )
+}
+
+tb <-
+  agg_wide %>% 
+  mutate(across(matches('^rnk_'), ~sprintf('(%d)', .x))) %>% 
+  select(-name) %>% 
+  gt::gt() %>% 
+  gt::cols_label(
+    .list = 
+      list(
+        rnk = ' ',
+        path_img = ' ',
+        lab = ' ',
+        score_r16 = 'R16',
+        rnk_r16 = ' ',
+        score_qf = 'Quarters',
+        rnk_qf = ' ',
+        score_sf = 'Semis',
+        rnk_sf = ' ',
+        score_finals = 'Finals',
+        rnk_finals = ' ',
+        score_champ = 'Champ',
+        rnk_champ = ' '
+      )
+  ) %>% 
+  # https://github.com/rstudio/gt/issues/510
+  gt::text_transform(
+    locations = gt::cells_body(columns = path_img),
+    fn = function(x) map_chr(x, ~{gt::local_image(filename =  as.character(.x))})
+  ) %>% 
+  gt::cols_align(
+    align = 'right',
+    columns = matches('^score|(^rnk)')
+  ) %>%
+  gt::cols_align(
+    align = 'left',
+    columns = matches('^rnk_|lab')
+  ) %>%
+  gt::cols_align(
+    align = 'center',
+    columns = matches('path_img')
+  ) %>%
+  gt::fmt_percent(
+    columns = matches('^score'),
+    decimals = 1
+  ) %>% 
+  gt::tab_style(
+    style = gt::cell_text(size = gt::px(12)),
+    locations = gt::cells_body(
+      columns = matches('^rnk_')
+    )
+  ) %>% 
+  gt::tab_style(
+    style = list(
+      gt::cell_borders(
+        sides = 'right',
+        color = 'black',
+        weight = px(3)
+      )
+    ),
+    locations = list(
+      gt::cells_body(
+        columns = all_of('lab')
+      )
+    )
+  ) %>% 
+  add_color_at('r16', 'light-green') %>%
+  add_color_at('qf', 'purple') %>% 
+  add_color_at('sf', 'cyan') %>% 
+  add_color_at('finals', 'pink') %>% 
+  add_color_at('champ', 'yellow') %>% 
+  .gt_theme_538() %>% 
+  gt::tab_header(
+    title = gt::md('**Analyzing the Analysts**'),
+    subtitle = 'Mean Brier Skill Score for Pre-Tournament 2020 EURO Predictions'
+  ) %>% 
+  # gt::tab_source_note(gt::md('Brier Score: **Lower** is better.')) %>% 
+  gt::tab_footnote(
+    gt::md('Brier skill score is a measure of accuracy for probabilistic predictions.<br/>Max score is 100%. **Higher** brier score is better.'),
+    locations = cells_title(groups = 'subtitle')
+  ) %>% 
+  gt::tab_footnote('https://www.zeileis.org/news/euro2020paper/', locations = cells_body(columns = 'lab', rows = 1)) %>% # https://twitter.com/AchimZeileis
+  gt::tab_footnote('https://github.com/lbenz730/euro_cup_2021', locations = cells_body(columns = 'lab', rows = 2)) %>% # https://twitter.com/recspecs730
+  gt::tab_footnote('https://theanalyst.com/eu/2021/06/euro-2020-predictions/', locations = cells_body(columns = 'lab', rows = 3)) %>% # https://twitter.com/OptaAnalyst
+  gt::tab_footnote('https://dtai.cs.kuleuven.be/sports/blog', locations = cells_body(columns = 'lab', rows = 4)) # https://twitter.com/KU_Leuven
+tb
+
+gt::gtsave(tb, file.path(dir_proj, 'tb_compare.png'))
+
+options(tibble.print_min = 24)
+df_ex <-
+  df_ku %>% 
+  filter(round == 'qf') %>% 
+  left_join(results) %>% 
+  mutate(
+    diff = result - value,
+    diff2 = diff^2
+  )
+df_ex
+
+agg_ex <-
+  df_ex %>% 
+  summarize(
+    diff = mean((result - value)^2)
+  )
+agg_ex
+
+# Who had the best forecast for #EURO2020 prior to the tournament? @AchimZeileis barely beat out @recspecs730 in a round-by-round breakdown. @OptaAnalyst and @KU_Leuven's sports analytics lab were a notch below.
+# Disclaimer: Forecasts are hard. https://nograssintheclouds.substack.com/p/why-attempting-to-predict-the-winner
+
