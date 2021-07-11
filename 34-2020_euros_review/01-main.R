@@ -104,8 +104,9 @@ agg_baseline <-
   ) %>% 
   ungroup() 
 agg_baseline
+results %>% filter(round == 'champ')
 
-agg <-
+agg_init <-
   df %>% 
   inner_join(results) %>% 
   group_by(name, round) %>% 
@@ -113,10 +114,14 @@ agg <-
     score = mean((result - value)^2)
   ) %>% 
   ungroup() %>% 
-  group_by(round) %>% 
-  left_join(agg_baseline) %>% 
+  left_join(agg_baseline)
+agg_init
+
+agg <-
+  agg_init %>% 
   mutate(score = 1 - (score / baseline)) %>% 
-  mutate(rnk = row_number(score)) %>% 
+  group_by(round) %>% 
+  mutate(rnk = row_number(desc(score))) %>% 
   ungroup() %>% 
   mutate(across(round, ~ordered(.x, levels = lvls))) %>% 
   arrange(round)
@@ -132,7 +137,7 @@ lvl_labs
 name_labs <-
   tibble(
     name = c('ze', 'benz', 'analyst', 'ku'),
-    lab = c('Zeileis', 'Luke Benz', 'The Analyst', 'KU Leuven')
+    lab = c('Achim Zeileis', 'Luke Benz', 'The Analyst', 'KU Leuven')
   ) %>% 
   mutate(
     rnk = row_number(),
@@ -147,7 +152,20 @@ agg_wide <-
     names_from = round,
     values_from = c(score, rnk)
   ) %>% 
-  select(name, matches('_r16$'), matches('_qf$'), matches('_sf$'), matches('_finals$'), matches('_champ$')) %>% 
+  # select(name, matches('_r16$'), matches('_qf$'), matches('_sf$'), matches('_finals$'), matches('_champ$')) %>% 
+  select(
+    name,
+    rnk_r16,
+    score_r16,
+    rnk_qf,
+    score_qf,
+    rnk_sf,
+    score_sf,
+    rnk_finals,
+    score_finals,
+    rnk_champ,
+    score_champ
+  ) %>% 
   left_join(name_labs) %>% 
   arrange(rnk) %>% 
   relocate(rnk, path_img, lab)
@@ -178,7 +196,7 @@ agg_wide
       footnotes.padding = gt::px(0),
       table.border.top.width = gt::px(3),
       table.border.top.color = 'transparent',
-      table.border.bottom.color = 'transparent',
+      table.border.bottom.color = 'black',
       table.border.bottom.width = gt::px(3),
       column_labels.border.top.width = gt::px(3),
       column_labels.border.top.color = 'transparent',
@@ -194,17 +212,26 @@ agg_wide
 }
 
 add_color_at <- function(table, r, pal) {
-  col <- sprintf('score_%s', r)
+  col <- sprintf('rnk_%s', r)
   table %>% 
     data_color(
       columns = all_of(col),
-      colors = scales::col_numeric(palette = ggsci::rgb_material(pal, n = 100), domain = range(agg_wide[[col]]), reverse = FALSE)
+      colors = scales::col_numeric(palette = ggsci::rgb_material(pal, n = 100), domain = range(agg_wide[[col]]), reverse = TRUE)
+    )
+}
+add_spanner_at <- function(table, r, lab) {
+  col <- sprintf('rnk_%s', r)
+  table %>% 
+    tab_spanner(
+      label = lab,
+      columns = one_of(sprintf('%s_%s', c('rnk', 'score'), r))
     )
 }
 
 tb <-
   agg_wide %>% 
-  mutate(across(matches('^rnk_'), ~sprintf('(%d)', .x))) %>% 
+  # mutate(across(matches('^score_'), ~sprintf('(%+.1f%%)', 100 * .x))) %>% 
+  mutate(across(matches('^score_'), ~sprintf('%+.1f%%', 100 * .x))) %>% 
   select(-name) %>% 
   gt::gt() %>% 
   gt::cols_label(
@@ -213,18 +240,23 @@ tb <-
         rnk = ' ',
         path_img = ' ',
         lab = ' ',
-        score_r16 = 'R16',
         rnk_r16 = ' ',
-        score_qf = 'Quarters',
+        score_r16 = ' ',
         rnk_qf = ' ',
-        score_sf = 'Semis',
+        score_qf = ' ',
         rnk_sf = ' ',
-        score_finals = 'Finals',
+        score_sf = ' ',
         rnk_finals = ' ',
-        score_champ = 'Champ',
-        rnk_champ = ' '
+        score_finals = ' ',
+        rnk_champ = ' ',
+        score_champ = ' '
       )
   ) %>% 
+  add_spanner_at('r16', 'R16') %>% 
+  add_spanner_at('qf', 'Quarters') %>% 
+  add_spanner_at('sf', 'Semis') %>% 
+  add_spanner_at('finals', 'Finals') %>% 
+  add_spanner_at('champ', 'Champ') %>% 
   # https://github.com/rstudio/gt/issues/510
   gt::text_transform(
     locations = gt::cells_body(columns = path_img),
@@ -232,37 +264,39 @@ tb <-
   ) %>% 
   gt::cols_align(
     align = 'right',
-    columns = matches('^score|(^rnk)')
+    # columns = matches('^rnk')
+    columns = matches('^(rnk|score)')
   ) %>%
   gt::cols_align(
     align = 'left',
-    columns = matches('^rnk_|lab')
+    # columns = matches('^score_|lab')
+    columns = all_of('lab')
   ) %>%
   gt::cols_align(
     align = 'center',
     columns = matches('path_img')
   ) %>%
-  gt::fmt_percent(
-    columns = matches('^score'),
-    decimals = 1
-  ) %>% 
   gt::tab_style(
-    style = gt::cell_text(size = gt::px(12)),
+    style = gt::cell_text(size = gt::px(11)),
     locations = gt::cells_body(
-      columns = matches('^rnk_')
+      columns = matches('^score_')
     )
-  ) %>% 
+  ) %>%
+  # gt::cols_merge(
+  #   columns = c(rnk_r16, score_r16),
+  #   pattern = '{1} <span style="size:10pt">{2}</span>'
+  # ) %>% 
   gt::tab_style(
     style = list(
       gt::cell_borders(
-        sides = 'right',
+        sides = 'left',
         color = 'black',
         weight = px(3)
       )
     ),
     locations = list(
       gt::cells_body(
-        columns = all_of('lab')
+        columns = matches('^rnk_')
       )
     )
   ) %>% 
@@ -276,37 +310,31 @@ tb <-
     title = gt::md('**Analyzing the Analysts**'),
     subtitle = 'Mean Brier Skill Score for Pre-Tournament 2020 EURO Predictions'
   ) %>% 
-  # gt::tab_source_note(gt::md('Brier Score: **Lower** is better.')) %>% 
   gt::tab_footnote(
-    gt::md('Brier skill score is a measure of accuracy for probabilistic predictions.<br/>Max score is 100%. **Higher** brier score is better.'),
+    gt::md('Brier skill score is a measure of accuracy for probabilistic predictions. **Higher** brier score is better.<br/>Max score is 100%. A skill score <0% means that the predictions are worse than picking at random.'),
     locations = cells_title(groups = 'subtitle')
   ) %>% 
-  gt::tab_footnote('https://www.zeileis.org/news/euro2020paper/', locations = cells_body(columns = 'lab', rows = 1)) %>% # https://twitter.com/AchimZeileis
+  gt::tab_footnote('https://arxiv.org/abs/2106.05799', locations = cells_body(columns = 'lab', rows = 1)) %>% # https://twitter.com/AchimZeileis
   gt::tab_footnote('https://github.com/lbenz730/euro_cup_2021', locations = cells_body(columns = 'lab', rows = 2)) %>% # https://twitter.com/recspecs730
   gt::tab_footnote('https://theanalyst.com/eu/2021/06/euro-2020-predictions/', locations = cells_body(columns = 'lab', rows = 3)) %>% # https://twitter.com/OptaAnalyst
-  gt::tab_footnote('https://dtai.cs.kuleuven.be/sports/blog', locations = cells_body(columns = 'lab', rows = 4)) # https://twitter.com/KU_Leuven
+  gt::tab_footnote('https://dtai.cs.kuleuven.be/sports/blog', locations = cells_body(columns = 'lab', rows = 4)) %>% # https://twitter.com/KU_Leuven
+  # This no work! https://github.com/rstudio/gt/issues/648
+  gt::tab_style(
+    locations = gt::cells_column_spanners(),
+    style = gt::cell_borders(sides = 'all', color = '#fff', weight = gt::px(0))
+  ) %>%
+  gt::cols_width(
+    matches('^rnk_|^score') ~ gt::px(50)
+  ) %>%
+  gt::tab_style(
+    locations = gt::cells_column_labels(),
+    style = list(
+      'padding-bottom: 0px; padding-top: 0px; padding-left: 0px; padding-right: 0px'
+    )
+  )
 tb
-
 gt::gtsave(tb, file.path(dir_proj, 'tb_compare.png'))
 
-options(tibble.print_min = 24)
-df_ex <-
-  df_ku %>% 
-  filter(round == 'qf') %>% 
-  left_join(results) %>% 
-  mutate(
-    diff = result - value,
-    diff2 = diff^2
-  )
-df_ex
+# Who had the best forecast for #EURO2020 prior to the tournament? @AchimZeileis barely beat out @recspecs730 in a round-by-round breakdown. @OptaAnalyst and KU Leuven's sports analytics lab were also competitive. Disclaimer: Forecasts are hard. (See https://bit.ly/2UHO6Rh.)
 
-agg_ex <-
-  df_ex %>% 
-  summarize(
-    diff = mean((result - value)^2)
-  )
-agg_ex
-
-# Who had the best forecast for #EURO2020 prior to the tournament? @AchimZeileis barely beat out @recspecs730 in a round-by-round breakdown. @OptaAnalyst and @KU_Leuven's sports analytics lab were a notch below.
-# Disclaimer: Forecasts are hard. https://nograssintheclouds.substack.com/p/why-attempting-to-predict-the-winner
-
+# Brier skill score example: The baseline Brier score for predicting the champ is 0.0399 (not to be confused with a "naive" accuracy of 1 / 24 = 0.42). Zeileis, who had England with the highest champ odds, had a Brier score of 0.0344. 1 - 0.0344 / 0.0399 ~ 13.7%. Quick maths.
