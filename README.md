@@ -249,8 +249,15 @@ B](33-2020_euros_ratings/viz_relative_vp_xg_direct2z_fw_young.png "Expected chan
 ![Un-adjusted xG/90 change when moving from league A to
 B](33-2020_euros_ratings/viz_xg_unadjusted.png "Un-adjusted xG/90 change when moving from league A to B")
 
-35. [Tired: PCA + kmeans, Wired: UMAP +
-    GMM](https://tonyelhabr.rbind.io/post/dimensionality-reduction-and-clustering/)
+# 34. 2020 EUROs Forecast Review
+
+![Table of mean Brier skill score for pre-tournament 2020 EUROs
+forecasts](34-2020_euros_review/tb_compare.png "Table of mean Brier skill score for pre-tournament 2020 EUROs forecasts")
+
+![Table of pre-tournament 2020 EUROs forecasts for
+champion](34-2020_euros_review/tb_champ.png "Table of pre-tournament 2020 EUROs forecasts for champion")
+
+# 35. [Tired: PCA + kmeans, Wired: UMAP + GMM](https://tonyelhabr.rbind.io/post/dimensionality-reduction-and-clustering/)
 
 ![Scatter plot example of visualizing UMAP and GMM, using 2 components
 and 6

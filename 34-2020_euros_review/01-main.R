@@ -13,7 +13,7 @@ results <-
   set_names(c('country', 'start', 'group', 'r16', 'qf', 'sf', 'finals')) %>% 
   select(-c(start, group)) %>% 
   mutate(
-    champ = ifelse(country == 'England', 1L, NA_integer_)
+    champ = ifelse(country == 'Italy', 1L, NA_integer_)
   ) %>% 
   pivot_longer(
     -country,
@@ -82,12 +82,6 @@ df_wide <-
   ) %>% 
   reduce(inner_join)
 
-df_wide %>% 
-  skimr::skim()
-df_wide %>% 
-  mutate(diff = value_analyst - value_benz) %>% 
-  arrange(desc(abs(diff)))
-
 df <-
   df_wide %>% 
   pivot_longer(
@@ -95,6 +89,11 @@ df <-
   ) %>% 
   mutate(across(name, ~str_remove(.x, 'value_')))
 df
+
+df %>% 
+  inner_join(results) %>% 
+  select(-c(n_pos, p)) %>% 
+  write_csv(file.path(dir_proj, 'preds.csv'), na = '')
 
 agg_baseline <-
   results %>% 
@@ -104,7 +103,6 @@ agg_baseline <-
   ) %>% 
   ungroup() 
 agg_baseline
-results %>% filter(round == 'champ')
 
 agg_init <-
   df %>% 
@@ -117,6 +115,7 @@ agg_init <-
   left_join(agg_baseline)
 agg_init
 
+lvls <- c('r16', 'qf', 'sf', 'finals', 'champ')
 agg <-
   agg_init %>% 
   mutate(score = 1 - (score / baseline)) %>% 
@@ -134,10 +133,11 @@ lvl_labs <-
   )
 lvl_labs
 
+nms <- c('Luke Benz', 'Achim Zeileis', 'KU Leuven', 'The Analyst')
 name_labs <-
   tibble(
-    name = c('ze', 'benz', 'analyst', 'ku'),
-    lab = c('Achim Zeileis', 'Luke Benz', 'The Analyst', 'KU Leuven')
+    name = c('benz', 'ze', 'ku', 'analyst'),
+    lab = nms
   ) %>% 
   mutate(
     rnk = row_number(),
@@ -214,19 +214,94 @@ agg_wide
 add_color_at <- function(table, r, pal) {
   col <- sprintf('rnk_%s', r)
   table %>% 
-    data_color(
+    gt::data_color(
       columns = all_of(col),
       colors = scales::col_numeric(palette = ggsci::rgb_material(pal, n = 100), domain = range(agg_wide[[col]]), reverse = TRUE)
     )
 }
+
 add_spanner_at <- function(table, r, lab) {
   col <- sprintf('rnk_%s', r)
   table %>% 
-    tab_spanner(
+    gt::tab_spanner(
       label = lab,
       columns = one_of(sprintf('%s_%s', c('rnk', 'score'), r))
     )
 }
+
+img <- 
+  fs::dir_ls(file.path('32-2020_euros', 'flags')) %>% 
+  tibble(path_img = .) %>% 
+  mutate(country = path_img %>% basename() %>% tools::file_path_sans_ext())
+img
+
+df_champ_wide <-
+  df %>% 
+  filter(round == 'champ') %>% 
+  select(-round) %>% 
+  pivot_wider(names_from = name, values_from = value) %>% 
+  arrange(desc(analyst + benz + ku + ze)) %>% 
+  # mutate(across(-country, ~sprintf('%.1f%%', 100 * .x))) %>% 
+  left_join(img) %>% 
+  select(country, path_img, benz, ze, ku, analyst)
+df_champ_wide
+
+tb_champ <-
+  df_champ_wide %>% 
+  head(10) %>% 
+  gt::gt() %>% 
+  gt::cols_label(
+    .list = 
+      list(
+        country = ' ',
+        path_img = ' ',
+        benz = nms[1],
+        ze = nms[2],
+        ku = nms[3],
+        analyst = nms[4]
+      )
+  ) %>% 
+  gt::text_transform(
+    locations = gt::cells_body(columns = path_img),
+    fn = function(x) map_chr(x, ~{gt::local_image(filename =  as.character(.x))})
+  ) %>%
+  .gt_theme_538() %>% 
+  gt::tab_header(
+    title = gt::md('**Who Ya Got?**'),
+    subtitle = 'Pre-Tournament 2020 EURO Title Chances'
+  ) %>% 
+  gt::cols_align(
+    align = 'right',
+    columns = 3:6
+  ) %>% 
+  gt::fmt_percent(
+    columns = 3:6,
+    decimals = 1
+  ) %>% 
+  gt::cols_width(
+    matches('benz|ze|ku|analyst') ~ gt::px(50)
+  ) %>% 
+  gt::data_color(
+    columns = 3:6,
+    colors = scales::col_numeric(palette = c("white", "#3fc1c9"), domain = NULL)
+  ) %>% 
+  gt::tab_style(
+    style = list(
+      gt::cell_borders(
+        sides = c('t', 'b'),
+        color = 'black',
+        weight = gt::px(1)
+      )
+    ),
+    locations = list(
+      gt::cells_body(
+        # columns = everything(),
+        rows = 4
+      )
+    )
+  )
+tb_champ
+gt::gtsave(tb_champ, file.path(dir_proj, 'tb_champ.png'))
 
 tb <-
   agg_wide %>% 
@@ -291,7 +366,7 @@ tb <-
       gt::cell_borders(
         sides = 'left',
         color = 'black',
-        weight = px(3)
+        weight = gt::px(3)
       )
     ),
     locations = list(
@@ -312,12 +387,12 @@ tb <-
   ) %>% 
   gt::tab_footnote(
     gt::md('Brier skill score is a measure of accuracy for probabilistic predictions. **Higher** brier score is better.<br/>Max score is 100%. A skill score <0% means that the predictions are worse than picking at random.'),
-    locations = cells_title(groups = 'subtitle')
+    locations = gt::cells_title(groups = 'subtitle')
   ) %>% 
-  gt::tab_footnote('https://arxiv.org/abs/2106.05799', locations = cells_body(columns = 'lab', rows = 1)) %>% # https://twitter.com/AchimZeileis
-  gt::tab_footnote('https://github.com/lbenz730/euro_cup_2021', locations = cells_body(columns = 'lab', rows = 2)) %>% # https://twitter.com/recspecs730
-  gt::tab_footnote('https://theanalyst.com/eu/2021/06/euro-2020-predictions/', locations = cells_body(columns = 'lab', rows = 3)) %>% # https://twitter.com/OptaAnalyst
-  gt::tab_footnote('https://dtai.cs.kuleuven.be/sports/blog', locations = cells_body(columns = 'lab', rows = 4)) %>% # https://twitter.com/KU_Leuven
+  gt::tab_footnote('https://arxiv.org/abs/2106.05799', locations = gt::cells_body(columns = 'lab', rows = 1)) %>% # https://twitter.com/AchimZeileis
+  gt::tab_footnote('https://github.com/lbenz730/euro_cup_2021', locations = gt::cells_body(columns = 'lab', rows = 2)) %>% # https://twitter.com/recspecs730
+  gt::tab_footnote('https://theanalyst.com/eu/2021/06/euro-2020-predictions/', locations = gt::cells_body(columns = 'lab', rows = 3)) %>% # https://twitter.com/OptaAnalyst
+  gt::tab_footnote('https://dtai.cs.kuleuven.be/sports/blog', locations = gt::cells_body(columns = 'lab', rows = 4)) %>% # https://twitter.com/KU_Leuven
   # This no work! https://github.com/rstudio/gt/issues/648
   gt::tab_style(
     locations = gt::cells_column_spanners(),
@@ -335,6 +410,8 @@ tb <-
 tb
 gt::gtsave(tb, file.path(dir_proj, 'tb_compare.png'))
 
-# Who had the best forecast for #EURO2020 prior to the tournament? @AchimZeileis barely beat out @recspecs730 in a round-by-round breakdown. @OptaAnalyst and KU Leuven's sports analytics lab were also competitive. Disclaimer: Forecasts are hard. (See https://bit.ly/2UHO6Rh.)
+results %>% filter(round == 'champ')
+df %>% 
+  filter(round == 'champ') %>% 
+  filter(country == 'Italy')
 
-# Brier skill score example: The baseline Brier score for predicting the champ is 0.0399 (not to be confused with a "naive" accuracy of 1 / 24 = 0.42). Zeileis, who had England with the highest champ odds, had a Brier score of 0.0344. 1 - 0.0344 / 0.0399 ~ 13.7%. Quick maths.
