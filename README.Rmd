@@ -201,6 +201,11 @@ After week 7
 
 ![Table comparing 2-component PCA and UMAP rankings of player similarity for Jadon Sancho](35-probabilistic_clustering/gt_similarity_jadon_sancho.png "Table comparing 2-component PCA and UMAP rankings of player similarity for Jadon Sancho")
 
+
+# 36. [2020-21 EPL Team Subreddit Activity]
+
+![Chatter plot of most controversial posts on eac 2020-21 EPL Team's Subreddit](36-202021_epl_reddit/viz_reddit_controversial_w_logo.png "Chatter plot of most controversial posts on eac 2020-21 EPL Team's Subreddit")
+
 # Future Ideas
 
 -   In which sport is the leading team most likely to further their lead near the end of the game due to an opposition error, overly-aggressive tactics by the opposition, etc.? (End of game depends on the sport. Ideally, we could use a win probability model to help identify end-of-game context, although it would still need some adjustment.) Extension: In which sport are gamblers most likely to lose/win due to a back-door cover?
