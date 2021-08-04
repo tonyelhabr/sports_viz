@@ -267,7 +267,10 @@ clusters](35-probabilistic_clustering/viz_uncertainty_umap_filt.png "Scatter plo
 for Jadon
 Sancho](35-probabilistic_clustering/gt_similarity_jadon_sancho.png "Table comparing 2-component PCA and UMAP rankings of player similarity for Jadon Sancho")
 
-# 36. \[2020-21 EPL Team Subreddit Activity\]
+<span
+style="max-width:80%; height:auto"><img src="35-probabilistic_clustering/gt_similarity_jadon_sancho.png"></span>
+
+# 36. 2020-21 EPL Team Subreddit Activity
 
 ![Chatter plot of most controversial posts on eac 2020-21 EPL Team’s
 Subreddit](36-202021_epl_reddit/viz_reddit_controversial_w_logo.png "Chatter plot of most controversial posts on eac 2020-21 EPL Team's Subreddit")
