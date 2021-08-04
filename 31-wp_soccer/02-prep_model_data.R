@@ -34,6 +34,41 @@ team_mapping <-
   select(team, team_538, team_understat, team_opta = team_whoscored)
 team_mapping
 
+# ws spadl ----
+ds <-
+  arrow::open_dataset(
+    fs::dir_ls('c:/users/aelhabr/downloads/actions')
+  )
+ds
+
+time_end_1h <-
+  ds %>% 
+  collect() %>% 
+  filter(period_id == 1L) %>% 
+  group_by(game_id) %>% 
+  summarize(
+    across(time_seconds, list(`1h` = max))
+  ) %>% 
+  ungroup()
+time_end_1h
+
+actions <-
+  ds %>% 
+  collect() %>% 
+  left_join(time_end_1h) %>% 
+  mutate(
+    across(
+      time_seconds,
+      ~case_when(
+        period_id > 1L ~ time_seconds_1h + .x,
+        TRUE ~ .x
+      )
+    )
+  ) %>% 
+  select(-time_seconds_1h) %>% 
+  mutate(foul = type_id == 8L)
+actions
+
 # understat ----
 fix_understat_meta <- function(data) {
   data %>% 
@@ -186,7 +221,7 @@ if(FALSE) {
     )
   xg_cumu_h
   
-  xg_cumu_redux <-
+  xg_cumu_redux2 <-
     bind_rows(
       xg_cumu_h %>% mutate(team = team_h, side = 'h'),
       xg_cumu_h %>% 
@@ -196,7 +231,7 @@ if(FALSE) {
         rename_with(~str_replace(.x, '_z', '_opp'), c(matches(sprintf('%s.*_z$', rgx_xg_cumu))))
     ) %>% 
     arrange(league, season, date, match_id, minute, team)
-  xg_cumu_redux
+  xg_cumu_redux2
 }
 # ws ----
 fix_opta_meta <- function(data) {
@@ -223,6 +258,7 @@ meta <-
   mutate(has_attendance = attendance > 0L) %>% 
   select(match_id, date = start_date, has_attendance, max_minute)
 meta
+
 # meta %>% filter(!has_attendance)
 # meta %>% filter(match_id == 1284763L)
 # events_init %>% filter(date == '2018-08-25', team_h == 'Fulham')
@@ -266,7 +302,7 @@ events <-
   mutate(team_opp = ifelse(team == team_h, team_a, team_h)) %>% 
   arrange(league, season, match_id, date, time, team) %>% 
   mutate(idx = row_number()) %>% 
-  relocate(idx, league, season, match_id, date, time)
+  relocate(idx, league, season, match_id, date, time) %>% 
 events
 
 f_filter_rename_opta <- function(.side) {
@@ -312,6 +348,7 @@ events
 
 # Avoid the name conflict with understat shots.
 # shots_opta <- events %>% filter(type %>% str_detect('Shot|Goal'))
+fouls <- events %>% filter(type == 'Foul' & outcome_type == 'Unsuccessful') %>% mutate(foul = 1L)
 subs_off <- events %>% filter(type == 'SubstitutionOff') %>% mutate(sub = 1L)
 cards <- events %>% filter(type == 'Card')
 cards_y <- cards %>% filter(card_type == 'Yellow') %>% mutate(cards_y = 1L) 
@@ -346,9 +383,10 @@ send_offs_agg
 
 events_opta <-
   bind_rows(
+    fouls,
     subs_off,
     cards_y,
-    cards_r
+    cards_r,
   ) %>% 
   arrange(idx) %>%
   select(
@@ -366,28 +404,74 @@ events_opta <-
     team_a,
     side,
     minute,
+    foul,
     sub,
     cards_y,
     cards_r
   ) %>% 
   left_join(send_offs_agg %>% select(match_id, team, minute, send_off)) %>% 
-  mutate(across(send_off, ~case_when(!is.na(sub) ~ NA_integer_, TRUE ~ send_off)))
+  # left_join(fouls)
+  mutate(across(send_off, ~case_when(!is.na(sub) ~ NA_integer_, TRUE ~ .x)))
 events_opta
 
 # This is hard basically because we have to generate the unique match_id-minute combinations ourselves.
 # Will join back league, season, etc. at the end of this data processing.
-rgx_opta_cumu <- '^(sub|cards|send)'
+rgx_opta_cumu <- '^(foul|sub|cards|send)'
 events_opta_cumu_init <-
   events_opta %>% 
-  group_by(match_id, date, has_attendance, max_minute, team, team_opp, team_h, team_a, side, minute) %>% 
+  mutate(
+    foul_h = 
+      case_when(
+        team == team_h ~ foul, 
+        TRUE ~ 0L
+      ),
+    foul_a = 
+      case_when(
+        team == team_a ~ foul, 
+        TRUE ~ 0L
+      ),
+    sub_h = 
+      case_when(
+        team == team_h ~ sub, 
+        TRUE ~ 0L
+      ),
+    sub_a = 
+      case_when(
+        team == team_a ~ sub, 
+        TRUE ~ 0L
+      ),
+    cards_y_h = 
+      case_when(
+        team == team_h ~ cards_y, 
+        TRUE ~ 0L
+      ),
+    cards_y_a = 
+      case_when(
+        team == team_a ~ cards_y, 
+        TRUE ~ 0L
+      ),
+    cards_r_h = 
+      case_when(
+        team == team_h ~ cards_r, 
+        TRUE ~ 0L
+      ),
+    cards_r_a = 
+      case_when(
+        team == team_a ~ cards_r, 
+        TRUE ~ 0L
+      )
+  ) %>% 
+  select(-c(foul, sub, cards_y, cards_r, send_off)) %>% 
+  group_by(league, season, match_id, date, has_attendance, max_minute, team, team_opp, team_h, team_a, side, minute) %>% 
   summarize(across(matches(rgx_opta_cumu), sum, na.rm = TRUE)) %>% 
   ungroup() %>% 
-  arrange(match_id, date, team, minute) %>% 
-  group_by( match_id, date, has_attendance, max_minute, team, team_opp, team_h, team_a, side) %>% 
+  arrange(match_id, minute) %>% 
+  # group_by(match_id, date, has_attendance, max_minute, team, team_opp, team_h, team_a, side) %>% 
+  group_by(league, season, match_id) %>% 
   mutate(across(matches(rgx_opta_cumu), cumsum)) %>% 
-  ungroup()
-events_opta_cumu_init
-
+  ungroup() %>% 
+  arrange(league, season, match_id, date, minute)
+events_opta_cumu_init %>% arrange(match_id, minute)
 
 f_filter_rename_opta_cumu <- function(.side) {
   suffix <- sprintf('_%s$', .side)
@@ -402,11 +486,73 @@ f_filter_rename_opta_cumu <- function(.side) {
 }
 
 events_opta_cumu_redux <-
-  bind_rows(f_filter_rename_opta_cumu('h'), f_filter_rename_opta_cumu('h')) %>% 
+  bind_rows(f_filter_rename_opta_cumu('h'), f_filter_rename_opta_cumu('a')) %>% 
   # arrange(season, date, match_id, minute, team)
   left_join(events_opta %>% distinct(league, season, date, match_id, has_attendance, max_minute)) %>% 
   arrange(league, season, date, match_id, minute, team)
 events_opta_cumu_redux
+
+actions_by_minute <- 
+  actions %>% 
+  mutate(minute = floor(time_seconds / 60)) %>% 
+  group_by(match_id = game_id, minute) %>%
+  summarize(across(action_id, list(max = max))) %>%
+  ungroup()
+actions_by_minute
+
+x <-
+  events_opta_cumu_redux %>% 
+  filter(season == 2020L) %>% 
+  filter(match_id == first(match_id))
+x
+x %>% 
+  full_join(actions_by_minute) %>% 
+  filter(side == 'h') %>% 
+  mutate(
+    foul_pa = 100 * foul / action_id_max,
+    foul_opp_pa = 100 * foul_opp / action_id_max
+  ) %>% 
+  select(-foul, -foul_opp) %>% 
+  pivot_longer(
+    matches('foul.*pa$')
+  ) %>% 
+  ggplot() +
+  aes(x = minute, y = value, color = name, group = name) +
+  geom_step()
+
+x %>% 
+  left_join(actions_by_minute) %>% 
+  filter(side == 'h') %>% 
+  select(match_id, minute, action_id_max, foul, foul_opp) %>% 
+  pivot_longer(
+    c(action_id_max:foul_opp)
+  ) %>% 
+  group_by(name) %>% 
+  mutate(
+    across(value, list(norm = ~{ (.x - 0) / (max(.x, na.rm = TRUE) - 0) }))
+  ) %>% 
+  ggplot() +
+  aes(x = minute, y = value_norm, color = name, group = name) +
+  geom_step()
+
+y <-
+  actions %>% 
+  filter(game_id == 1485186L) %>% 
+  mutate(minute = floor(time_seconds / 60)) %>% 
+  filter(foul) %>% 
+  # summarize(
+  #   across(foul, sum)
+  # ) %>% 
+  select(match_id = game_id, minute, time_seconds, action_id)
+y
+x
+actions
+actions %>% 
+  filter()
+events_init %>% 
+  filter(id == 1941484006L) %>% 
+  glimpse()
+
 
 if(FALSE) {
   f_filter_rename_opta_cumu <- function(.side) {
@@ -419,6 +565,7 @@ if(FALSE) {
   events_opta_cumu <-
     events_opta_cumu_init %>% 
     select(match_id, team_h, team_a, minute) %>% 
+    # left_join(f_filter_rename_opta_cumu('a')) %>% 
     left_join(f_filter_rename_opta_cumu('h')) %>% 
     left_join(f_filter_rename_opta_cumu('a')) %>% 
     arrange(match_id, minute, team_h) %>% 
@@ -453,6 +600,7 @@ if(FALSE) {
     left_join(events_opta %>% distinct(league, season, date, match_id, has_attendance, max_minute)) %>% 
     arrange(league, season, date, match_id, minute, team)
   events_opta_cumu_redux
+  
   df_intra_game <-
     bind_rows(
       xg_cumu_redux %>% select(-match_id),

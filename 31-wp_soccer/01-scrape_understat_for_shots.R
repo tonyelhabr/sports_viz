@@ -13,8 +13,8 @@ path_spi <- file.path(dir_proj, 'spi_538.csv')
 
 params <-
   crossing(
-    league = c('EPL'), # , 'La_liga', 'Bundesliga', 'Serie_A', 'Ligue_1'),
-    season = c(2017L:2020L)
+    league = c('La_liga'), #  'EPL', 'Bundesliga', 'Serie_A', 'Ligue_1'),
+    season = c(2011L:2020L)
   )
 params
 options(readr.num_columns = 0)
@@ -92,7 +92,7 @@ matches <-
   unnest(data)
 matches
 write_rds(matches, path_matches)
-matches %>% filter(league == 'EPL') %>% count(season)
+# matches %>% filter(league == 'EPL') %>% count(season)
 
 get_shots <- function(match_id, overwrite = FALSE) {
   path <- file.path(dir_data, sprintf('%s.rds', match_id))
@@ -137,6 +137,7 @@ shots_nested
 match_ids_vec <-
   match_ids %>% 
   pull(match_id) 
+
 shots <-
   # get_paths_match() %>% 
   file.path(dir_proj, 'data', sprintf('%s.rds', match_ids_vec)) %>% 
