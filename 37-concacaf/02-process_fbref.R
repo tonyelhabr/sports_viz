@@ -123,14 +123,14 @@ stats_slim <-
   mutate(across(c(n_card_y, n_card_r), ~.x + coalesce(n_card_y2, 0))) %>%
   select(-n_card_y2)
 
-stats_slim %>% 
-  filter(league == 'CONCACAF Gold Cup') %>% 
-  filter(season == 2021) %>% 
-  filter(n_pk_att > 0)
-stats_slim %>%
-  filter(date == '2021-08-01') %>% 
-  filter(n_pk > 0)
-  filter(player == 'Kellyn Acosta')
+# stats_slim %>% 
+#   filter(league == 'CONCACAF Gold Cup') %>% 
+#   filter(season == 2021) %>% 
+#   filter(n_pk_att > 0)
+# stats_slim %>%
+#   filter(date == '2021-08-01') %>% 
+#   filter(n_pk > 0)
+#   filter(player == 'Kellyn Acosta')
 stats_slim %>% filter(n_card_y > 0) %>% count(league)
 
 misc_w_refs <-
@@ -166,7 +166,7 @@ agg <-
     n_foul = .sum(n_foul),
     n_offside = .sum(n_offside),
     n_tackle_won = .sum(n_tackle_won),
-    n_pk = .sum(n_pk),
+    # n_pk = .sum(n_pk),
     n_pk_att = .sum(n_pk_att)
   ) %>% 
   ungroup() %>% 
@@ -178,17 +178,23 @@ agg <-
   arrange(desc(n_game)) %>% 
   select(-c(mp, n_foul, n_offside, n_tackle_won))
 agg
-misc_w_refs %>% filter(n_card_y > 0) %>% count(league)
-
-
-misc_w_refs %>% count(season, is.na(wk))
-misc_w_refs %>% arrange(desc(n_card_y))
+misc_w_refs %>% count(league, year = lubridate::year(date))
 misc_w_refs %>% 
-  select(idx_stats, league, n_card_y:n_pk) %>% 
-  pivot_longer(-c(idx_stats, league)) %>% 
-  drop_na() %>% 
-  ggplot() +
-  aes(x = value, group = league) +
-  geom_density(aes(fill = league), alpha = 0.7) +
-  facet_wrap(~name)
-  
+  filter(n_pk_att > 0) %>% 
+  arrange(desc(date))
+misc_w_refs %>% ggplot() + aes(x = date, y = n_pk_att) + geom_point()
+write_rds(agg, file.path(dir_proj, 'misc_w_refs_agg.rds'))
+# misc_w_refs %>% filter(n_card_y > 0) %>% count(league)
+# 
+# 
+# misc_w_refs %>% count(season, is.na(wk))
+# misc_w_refs %>% arrange(desc(n_card_y))
+# misc_w_refs %>% 
+#   select(idx_stats, league, n_card_y:n_pk) %>% 
+#   pivot_longer(-c(idx_stats, league)) %>% 
+#   drop_na() %>% 
+#   ggplot() +
+#   aes(x = value, group = league) +
+#   geom_density(aes(fill = league), alpha = 0.7) +
+#   facet_wrap(~name)
+#   
