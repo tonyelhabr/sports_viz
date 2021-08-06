@@ -72,42 +72,86 @@ stats_summ %>% count(league)
 
 stats_misc <- import_stats('misc')
 stats_misc %>% count(league)
+stats_summ %>% 
+  filter(
+    !(league == 'European Championship' & season == '2021') & !(league == 'Copa America' & season == '2021')
+  )
+
+# stats_slim %>% count(league, team_home, team_away, season, date, sort = TRUE) %>% count(league, season, n) %>% arrange(desc(n))
+# stats_misc$p_kcon
+# bind_rows(
+#   stats_summ %>% 
+#     filter(
+#       (league == 'European Championship' & season == '2021') |
+#         (league == 'Copa America' & season == '2021')
+#     ),
+#   stats_misc %>% rename(p_katt = p_kwon)
+# ) %>% 
+#   mutate(
+#     date = strptime(match_date, '%A %B %d, %Y', tz = 'UTC') %>% lubridate::date()
+#   ) %>% 
+#   select(
+#     league,
+#     gender,
+#     season,
+#     team_home = home_team,
+#     team_away = away_team,
+#     date,
+#     team,
+#     # player,
+#     mp = min,
+#     n_card_y = crd_y,
+#     n_card_y2 = x2crd_y,
+#     n_card_r = crd_r,
+#     n_foul_committed = fls,
+#     n_foul_drawn = fld,
+#     n_offside = off,
+#     n_tackle_won = tkl_w,
+#     # n_pk = pk,
+#     n_pk_att = p_katt
+#   ) %>% 
+#   visdat::vis_dat()
 
 stats <-
   bind_rows(
+    # Drop these since we have misc data for them
     stats_summ %>% 
       filter(
-        !(league == 'European Championship' & season == '2021') |
+        !(league == 'European Championship' & season == '2021') &
           !(league == 'Copa America' & season == '2021')
       ),
-    stats_misc
+    stats_misc %>% rename(p_katt = p_kwon)
   )
 stats
 stats %>% count(league)
-
-.add_ratio_foul_tackle_col <- function(data) {
-  data %>% mutate(ratio_foul_tackle = n_foul / n_tackle_won)
-}
 
 stats_slim <-
   stats %>% 
   mutate(
     idx_stats = row_number(),
-    date = strptime(match_date, '%A %B %d, %Y', tz = 'UTC') %>% lubridate::date()
+    date = strptime(match_date, '%A %B %d, %Y', tz = 'UTC') %>% lubridate::date(),
+    mutate(
+      across(
+        league,
+        list(comp = ~case_when(
+          .x == 'CONCACAF Gold Cup' ~ 'North America',
+          .x == 'Copa America' ~ 'South America',
+          TRUE ~ 'Europe'
+        )
+        ),
+        .names = '{fn}'
+      )
+    )
   ) %>% 
-  select(-matches('_goals$')) %>% 
-  rename(team_home = home_team, team_away = away_team) %>% 
   select(
     idx_stats,
     src,
-    league,
-    gender,
+    comp,
     season,
-    team_home,
-    team_away,
+    team_home = home_team,
+    team_away = away_team,
     date,
     team,
-    # player,
     mp = min,
     n_card_y = crd_y,
     n_card_y2 = x2crd_y,
@@ -116,22 +160,13 @@ stats_slim <-
     n_foul_drawn = fld,
     n_offside = off,
     n_tackle_won = tkl_w,
-    n_pk = pk,
+    # n_pk = pk,
     n_pk_att = p_katt
   ) %>% 
   # 2nd yellow card counts as both a yellow and a red.
   mutate(across(c(n_card_y, n_card_r), ~.x + coalesce(n_card_y2, 0))) %>%
   select(-n_card_y2)
-
-# stats_slim %>% 
-#   filter(league == 'CONCACAF Gold Cup') %>% 
-#   filter(season == 2021) %>% 
-#   filter(n_pk_att > 0)
-# stats_slim %>%
-#   filter(date == '2021-08-01') %>% 
-#   filter(n_pk > 0)
-#   filter(player == 'Kellyn Acosta')
-stats_slim %>% filter(n_card_y > 0) %>% count(league)
+stats_slim
 
 misc_w_refs <-
   stats_slim %>% 
@@ -143,7 +178,7 @@ misc_w_refs <-
     idx_stats,
     idx_results,
     src,
-    league,
+    comp,
     season,
     date,
     team_home,
@@ -152,12 +187,12 @@ misc_w_refs <-
     team,
     everything()
   )
-misc_w_refs
+misc_w_refs %>% visdat::vis_miss()
 
 .sum <- partial(sum, na.rm = TRUE, ... =)
 agg <-
   misc_w_refs %>% 
-  group_by(league) %>% 
+  group_by(comp) %>% 
   summarize(
     n_game = n() / 2,
     mp = .sum(mp),
@@ -170,31 +205,12 @@ agg <-
     n_pk_att = .sum(n_pk_att)
   ) %>% 
   ungroup() %>% 
-  # .add_ratio_foul_tackle_col() %>% 
   mutate(
     # across(c(n_card_y:n_pk_att), ~11 * 90 * .x / mp)
     across(c(n_card_y:n_pk_att), ~.x / n_game)
   ) %>% 
   arrange(desc(n_game)) %>% 
-  select(-c(mp, n_foul, n_offside, n_tackle_won))
+  select(-c(mp, n_offside, n_tackle_won))
 agg
-misc_w_refs %>% count(league, year = lubridate::year(date))
-misc_w_refs %>% 
-  filter(n_pk_att > 0) %>% 
-  arrange(desc(date))
-misc_w_refs %>% ggplot() + aes(x = date, y = n_pk_att) + geom_point()
+
 write_rds(agg, file.path(dir_proj, 'misc_w_refs_agg.rds'))
-# misc_w_refs %>% filter(n_card_y > 0) %>% count(league)
-# 
-# 
-# misc_w_refs %>% count(season, is.na(wk))
-# misc_w_refs %>% arrange(desc(n_card_y))
-# misc_w_refs %>% 
-#   select(idx_stats, league, n_card_y:n_pk) %>% 
-#   pivot_longer(-c(idx_stats, league)) %>% 
-#   drop_na() %>% 
-#   ggplot() +
-#   aes(x = value, group = league) +
-#   geom_density(aes(fill = league), alpha = 0.7) +
-#   facet_wrap(~name)
-#   

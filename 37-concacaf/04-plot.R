@@ -30,7 +30,10 @@ theme_update(
 )
 update_geom_defaults('text', list(family = 'Karla', size = 4))
 
+dir_proj <- '37-concacaf'
 comm <- file.path(dir_proj, 'comm.rds') %>% read_rds()
+misc_w_refs_agg <- file.path(dir_proj, 'misc_w_refs_agg.rds') %>% read_rds()
+
 rename_side <- function(.side) {
   # col_side <- switch(.side, 'h' = 'home', 'a' = 'away')
   .side_opp <-  switch(.side, 'h' = 'a', 'a' = 'h')
@@ -50,16 +53,20 @@ rename_side <- function(.side) {
     rename_with(~str_replace(.x, sprintf('_%s', .side_opp), '_opp'), matches(sprintf('_%s$', .side_opp))) %>% 
     select(comp, date, half, side, team, team_opp, code, code_opp, g, g_opp, stoppage_time)
 }
+
 comm_long <-
   bind_rows(rename_side('h'), rename_side('a')) %>% 
   mutate(
     g_diff = g - g_opp,
-    across(g_diff, list(g_state = ~case_when(.x > 1L ~ 'ahead', .x < -1L ~ 'behind', TRUE ~ 'neutral')), .teams = '{fn}')
+    across(g_diff, list(g_state = ~case_when(.x > 1L ~ '>1', .x < -1L ~ '<1', TRUE ~ '0 or 1')), .names = '{fn}')
   )
 comm_long
+comm_long %>% 
+  count(half, g_state)
 
 by_team <-
   comm_long %>% 
+  filter(half == '2') %>% 
   group_by(comp, team, code, g_state) %>% 
   summarize(
     n = n(),
@@ -69,6 +76,144 @@ by_team <-
   arrange(desc(stoppage_time_mean))
 by_team
 
+by_comp <-
+  by_team %>% 
+  group_by(comp) %>% 
+  summarize(
+    total = sum(n),
+    stoppage_time_mean = sum(n * stoppage_time_mean) / total
+  ) %>% 
+  ungroup()
+by_comp
+
+by_comp_state <-
+  by_team %>% 
+  group_by(comp, g_state) %>% 
+  summarize(
+    total = sum(n),
+    stoppage_time_mean = sum(n * stoppage_time_mean) / total
+  ) %>% 
+  ungroup()
+by_comp_state %>% arrange(desc(stoppage_time_mean))
+by_comp_state_filt <- by_comp_state %>% filter(g_state == '0 or 1')
+by_comp_state_filt
+
+# Reference: https://themockup.blog/posts/2020-09-26-functions-and-themes-for-gt-tables/?panelset4=theme-code3
+.gt_theme_538 <- function(data,...) {
+  data %>%
+    # gt::opt_all_caps()  %>%
+    gt::opt_table_font(
+      font = list(
+        gt::google_font('Karla'),
+        gt::default_fonts()
+      )
+    ) %>%
+    gt::tab_style(
+      style = gt::cell_borders(
+        sides = 'bottom', color = 'transparent', weight = gt::px(2)
+      ),
+      locations = gt::cells_body(
+        columns = TRUE,
+        # This is a relatively sneaky way of changing the bottom border
+        # Regardless of data size
+        rows = nrow(data$`_data`)
+      )
+    )  %>%
+    gt::tab_options(
+      column_labels.background.color = 'white',
+      table.border.top.width = gt::px(3),
+      table.border.top.color = 'transparent',
+      table.border.bottom.color = 'transparent',
+      table.border.bottom.width = gt::px(3),
+      column_labels.border.top.width = gt::px(3),
+      column_labels.border.top.color = 'transparent',
+      column_labels.border.bottom.width = gt::px(3),
+      column_labels.border.bottom.color = 'black',
+      data_row.padding = gt::px(1),
+      footnotes.font.size = 10,
+      footnotes.padding = gt::px(0),
+      source_notes.font.size = 10,
+      table.font.size = 16,
+      heading.align = 'left',
+      ...
+    )
+}
+
+assocs <- tibble(
+  comp = c('South America', 'North America', 'Europe'),
+  assoc = c('CONMEBOL', 'CONCACAF', 'UEFA'),
+  path_img = file.path(dir_proj, sprintf('%s.png', c('sa', 'na', 'eu')))
+)
+
+lab_data <- gt::md("<i>Data: CONMEBOL: '15, '16, '19, '21 Copa America | CONCACAF: '15, '17, '19, '21 Gold Cup | UEFA: '16, '21 European Championship.</i>")
+lab_data_long <- gt::md("<i>South America (CONMEBOL): '15, '16, '19, '21 Copa America<br/>North America (CONCACAF): '15, '17, '19, '21 Gold Cup<br/>Europe (UEFA): '16, '21 European Championship<br/><br/>Invitees (e.g. Qatar for '21 Gold Cup) not included.<br/>Minimum: 3 matches.</i>")
+  
+tab <-
+  left_join(
+    misc_w_refs_agg %>% select(-n_game),
+    by_comp_state_filt %>% select(comp, stoppage_time_mean)
+  ) %>% 
+  arrange(desc(comp)) %>% 
+  left_join(assocs) %>% 
+  relocate(assoc, path_img) %>% 
+  select(-comp) %>% 
+  gt::gt() %>%
+  gt::cols_label(
+    .list =
+      list(
+        # comp = 'Continent',
+        assoc = 'Association',
+        path_img = ' ',
+        # n_game = gt::html('# of<br/>Matches'),
+        n_card_y = 'Yellows',
+        n_card_r = 'Reds',
+        n_foul = 'Fouls',
+        n_pk_att = 'PKs',
+        stoppage_time_mean = gt::html('2nd Half<br/>Stoppage')
+      )
+  ) %>%
+  # https://github.com/rstudio/gt/issues/510
+  gt::text_transform(
+    locations = gt::cells_body(columns = path_img),
+    fn = function(x) map_chr(x, ~{gt::local_image(filename =  as.character(.x))})
+  ) %>% 
+  gt::fmt_number(
+    decimals = 1,
+    columns = c(n_foul, stoppage_time_mean)
+  ) %>%
+  gt::fmt_number(
+    decimals = 2,
+    columns = c(n_card_y, n_card_r, n_pk_att)
+  ) %>%
+  gt::cols_align(
+    align = 'right',
+    columns = 3:7
+  ) %>%
+  gt::tab_header(
+    title = 'CONMEBOL is more CONCACAF-y than CONCACAF',
+    subtitle = 'Measures of aggressive behavior and gamesmanship'
+  ) %>%
+  gt::tab_footnote(
+    gt::md("<i>Numbers are per match.</i>"),
+    locations = gt::cells_title(groups = 'subtitle')
+  ) %>% 
+  gt::tab_footnote(
+    lab_data,
+    locations = gt::cells_title(groups = 'subtitle')
+  ) %>% 
+  gt::tab_footnote(
+    gt::md("<i>Criteria: 0- or 1-goal matches.</i>"),
+    locations = gt::cells_column_labels(columns = c(stoppage_time_mean))
+  ) %>% 
+  gt::tab_source_note(
+    gt::md('**Table**: Tony ElHabr')
+  ) %>% 
+  .gt_theme_538()
+tab
+path_tab <- file.path(dir_proj, 'concacaf_tab.png')
+gt::gtsave(tab, filename = path_tab)
+
+# geo ----
 iso <- worldtilegrid::wtg
 
 team_fixes <-
@@ -101,29 +246,18 @@ geo <-
   select(row, col, code = code_alpha3, team = name) %>% 
   as_tibble() %>% 
   bind_rows(team_fixes)
-# geo %>% filter(team == 'United States')
-# by_team %>% filter(team == 'United States')
-
-# by_team %>% 
-#   filter(!(team %in% c('Japan', 'Qatar'))) %>% 
-#   filter(g_state == 'ahead') %>% 
-#   anti_join(
-#     teams_drop %>% 
-#       select(team) %>% 
-#       mutate(comp = 'copa america')
-#   ) %>% 
-#   filter(n > 5) 
+sum(by_team$n)
 
 by_team_geo_init <-
   by_team %>% 
   filter(!(team %in% c('Japan', 'Qatar'))) %>% 
-  filter(g_state == 'neutral') %>% 
+  filter(g_state == '0 or 1') %>% 
   anti_join(
     teams_drop %>% 
       select(team) %>% 
       mutate(comp = 'South America')
   ) %>% 
-  filter(n > 5) %>% 
+  filter(n >= 3) %>% 
   rename(code_espn = code) %>% 
   mutate(rnk = row_number(desc(stoppage_time_mean))) %>% 
   inner_join(geo) %>% 
@@ -137,110 +271,18 @@ by_team_geo_init <-
   select(-rn) %>% 
   arrange(desc(stoppage_time_mean))
 by_team_geo_init
-by_team_geo_init %>% filter(team == 'United States')
-by_team_geo_init %>% filter(is_extra)
-
-# wt <-
-#   by_team_geo_init %>% 
-#   summarize(across(stoppage_time_mean, list(min = min, max = max), na.rm = TRUE, .teams = '{fn}'))
-# by_team_geo <-
-#   by_team_geo_init %>% 
-#   mutate(
-#     s = scales::rescale(stoppage_time_mean, from = c(wt$min, wt$max), to = c(11, 18)),
-#     lab = case_when(
-#       is.na(stoppage_time_mean) ~ sprintf('<b><span style="font-size:9pt">%s</span></b>', code),
-#       TRUE ~ sprintf('<b><span style="font-size:%.1fpt">%s</span></b><br/><span style="font-size:11pt">(%1.1f)</span>', s, code, stoppage_time_mean)
-#     ) 
-#   )
-# by_team_geo
+# by_team_geo_init %>% filter(team == 'United States')
+# by_team_geo_init %>% filter(is_extra)
 
 by_team_geo <-
   by_team_geo_init %>%
   mutate(
     lab = case_when(
       is.na(stoppage_time_mean) ~ sprintf('<b><span style="font-size:9pt">%s</span></b>', code),
-      TRUE ~ sprintf('<b><span style="font-size:13pt">%s</span></b><br/><span style="font-size:9pt"><b>#%d</b>: %1.1f</span>', code, rnk, stoppage_time_mean)
+      TRUE ~ sprintf('<b><span style="font-size:12pt">%s</span></b><br/><span style="font-size:9pt; font:Lato"><b>#%d</b>: %1.1f</span>', code, rnk, stoppage_time_mean)
     )
   )
 by_team_geo
-
-# # Reference: https://themockup.blog/posts/2020-09-26-functions-and-themes-for-gt-tables/?panelset4=theme-code3
-# .gt_theme_538 <- function(data,...) {
-#   data %>%
-#     gt::opt_all_caps()  %>%
-#     gt::opt_table_font(
-#       font = list(
-#         gt::google_font('Karla'),
-#         gt::default_fonts()
-#       )
-#     ) %>%
-#     gt::tab_style(
-#       style = gt::cell_borders(
-#         sides = 'bottom', color = 'transparent', weight = gt::px(2)
-#       ),
-#       locations = gt::cells_body(
-#         columns = TRUE,
-#         # This is a relatively sneaky way of changing the bottom border
-#         # Regardless of data size
-#         rows = nrow(data$`_data`)
-#       )
-#     )  %>% 
-#     gt::tab_options(
-#       column_labels.background.color = 'white',
-#       table.border.top.width = gt::px(3),
-#       table.border.top.color = 'transparent',
-#       table.border.bottom.color = 'transparent',
-#       table.border.bottom.width = gt::px(3),
-#       column_labels.border.top.width = gt::px(3),
-#       column_labels.border.top.color = 'transparent',
-#       column_labels.border.bottom.width = gt::px(3),
-#       column_labels.border.bottom.color = 'black',
-#       data_row.padding = gt::px(3),
-#       footnotes.font.size = 10,
-#       source_notes.font.size = 10,
-#       table.font.size = 16,
-#       heading.align = 'left',
-#       ...
-#     ) 
-# }
-# 
-# tab <-
-#   by_team_geo %>% 
-#   arrange(desc(stoppage_time_mean)) %>% 
-#   head(10) %>% 
-#   mutate(rnk = row_number(desc(stoppage_time_mean))) %>% 
-#   select(rnk, comp, team, n, stoppage_time_mean) %>% 
-#   gt::gt() %>% 
-#   gt::cols_label(
-#     .list = 
-#       list(
-#         rnk = 'Rank',
-#         comp = 'Competition',
-#         team = 'Nation',
-#         n = gt::html('# of<br/>Matches'),
-#         stoppage_time_mean = gt::html('Avg.')
-#       )
-#   ) %>%
-#   gt::fmt_number(
-#     decimals = 1,
-#     columns = c(stoppage_time_mean)
-#   ) %>%
-#   # gt::tab_spanner(
-#   #   label = 'Stoppage Time',
-#   #   columns = c(stoppage_time_mean, stoppage_time_max)
-#   # ) %>% 
-#   gt::cols_align(
-#     align = 'right',
-#     columns = vars(rnk)
-#   ) %>%
-#   # gt::tab_header(
-#   #   title = 'Avergage 2nd half stoppage time',
-#   #   subtitle = 'for matches ending in neutral state'
-#   # ) %>% 
-#   .gt_theme_538()
-# tab
-# path_tab <- file.path(dir_proj, 'stoppage_time_tab.png')
-# gt::gtsave(tab, filename = path_tab)
 
 pts <- function(x) {
   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
@@ -273,6 +315,7 @@ p <-
   ggtext::geom_richtext(
     label.color = NA,
     fill = NA,
+    # family = 'Lato',
     family = 'Karla',
     # size = pts(14),
     aes(label = lab)
@@ -289,23 +332,23 @@ p <-
     inherit.aes = FALSE,
     aes(x = x, y = y, group = grp)
   ) +
+  # f_text(
+  #   aes(
+  #     x = 9.5,
+  #     y = -8.8,
+  #     label = 'Using longer stoppage times in tied or 1-goal matches as a<br/>heuristic for aggressiveness and gamesmanship, it\'s evident<br/>that South American teams are the most aggressive in their<br/>intra-continental tournament games. There is<br/>evidence that some North American teams playing aggressivly,<br/>living up to their CONCACAF reputation.'
+  #   ),
+  #   hjust = 0,
+  #   vjust = 1,
+  #   # lineheight = 0.95,
+  #   size = pts(11),
+  #   color = 'grey20'
+  # ) +
   f_text(
     aes(
       x = 9.5,
       y = -8.8,
-      label = 'Using longer stoppage times in tied or 1-goal matches as a<br/>heuristic for aggressiveness and gamesmanship, it\'s evident<br/>that South American teams are the most aggressive in their<br/>intra-continental tournament games. There is<br/>evidence that some North American teams playing aggressivly,<br/>living up to their CONCACAF reputation.'
-    ),
-    hjust = 0,
-    vjust = 1,
-    # lineheight = 0.95,
-    size = pts(11),
-    color = 'grey20'
-  ) +
-  f_text(
-    aes(
-      x = 9.5,
-      y = -12,
-      label = "<i>**Data**:<br/>North America: '15, '17, '19, '21 CONCACAF Gold Cup<br/>South America: '15, '16, '19, '21 CONMEBOL Copa America<br/>Europe: '16, '21 UEFA European Championship<br/><br/>Invitees (e.g. Qatar for '21 Gold Cup) not included.<br/>Mininum: 6 matches.</i>",
+      label = lab_data_long,
     ),
     hjust = 0,
     vjust = 1,
@@ -319,35 +362,51 @@ p <-
   ) +
   theme(
     plot.title = ggtext::element_markdown(size = 16),
+    plot.subtitle = ggtext::element_markdown(size = 13),
     legend.position = 'none',
     axis.text = element_blank(),
     panel.grid.major = element_blank()
   ) +
   labs(
     title = 'Average 2nd half stoppage time when matches end in a draw or with a 1-goal difference',
+    subtitle = 'More aggressive play-style and gamesmanship = longer stoppage times',
     y = NULL,
     x = NULL
-  ) +
+  )
+
+assocs_geo <- 
+  tibble(
+    comp = c('North America', 'South America', 'Europe'),
+    x = c(5, 0.5, 16),
+    y = c(-2, -12, -2.5),
+    hjust = c(0, 0, -1)
+  ) %>% 
+  left_join(assocs)
+assocs_geo
+
+p2 <-
+  p +
   ggtext::geom_richtext(
-    data = tibble(
-      comp = c('North America', 'South America', 'Europe'),
-      x = c(5.5, 0.5, 14),
-      y = c(-2, -12, -2.5),
-      hjust = c(0.5, 0, -1)
-    ),
+    data = assocs_geo,
     label.color = NA,
     fill = NA,
     family = 'Karla',
     fontface = 'bold',
     inherit.aes = FALSE,
     size = pts(16),
-    aes(label = comp, x = x, y = y, hjust = hjust)
+    aes(label = assoc, x = x, y = y, hjust = hjust)
+  ) +
+  ggimage::geom_image(
+    data = assocs_geo %>% mutate(across(x, ~ifelse(hjust == 0, .x + 2.9, .x + 0.8))),
+    inherit.aes = FALSE,
+    size = 0.05,
+    aes(x = x, y = y, image = path_img)
   )
-
+p2
 path_map <- file.path(dir_proj, 'stoppage_time_map.png')
 h <- 7
 ggsave(
-  p,
+  p2,
   filename = path_map,
   width = h * 1.5,
   height = h,
@@ -356,32 +415,29 @@ ggsave(
 
 add_logo(
   path_viz = path_map,
-  path_logo = file.path(dir_proj, 'gabriel-jesus.png'), # choke-cropped.png'),
+  path_logo = file.path(dir_proj, 'gabriel-jesus-transparent.png'),
   delete = FALSE,
-  logo_scale = 0.12,
+  logo_scale = 0.29,
   path_suffix = '_w_img',
   # idx_x = 0.54,
   # idx_y = 0.72
-  idx_x = 0.01,
-  idx_y = 0.01
+  idx_x = -0.04,
+  idx_y = -0.05
 )
 
-# path_map_w_logo <- path_map %>% str_replace('[.]png', '_w_logo.png')
-# add_logo(
-#   path_viz = path_map_w_logo,
-#   path_logo = path_tab,
-#   path_suffix = '_w_tab',
-#   delete = FALSE,
-#   logo_scale = 0.3,
-#   idx_x = -3,
-#   idx_y = 0.05
-# )
+add_logo(
+  path_viz = path_map %>% str_replace('[.]png', '_w_img.png'),
+  path_logo = file.path(dir_proj, 'neymar-transparent.png'),
+  delete = FALSE,
+  logo_scale = 0.4,
+  path_suffix = '',
+  # idx_x = 0.54,
+  # idx_y = 0.72
+  idx_x = 0.15,
+  idx_y = -0.25
+)
 
-by_comp <-
-  by_team %>% 
-  group_by(comp) %>% 
-  summarize(
-    stoppage_time_mean = sum(n * stoppage_time_mean) / sum(n)
-  ) %>% 
-  ungroup()
-by_comp
+# CONCACAF has developed such a reputation for aggressive play-style and gamesmanship that it's become a verb. ("The USMNT got CONCACAF'd and still won.") But CONMEBOL  is so extreme that you can only describe it as pure chaos.
+# Cards and fouls per game, in addition to 2nd half stoppage time, are good measures of CONCACAF-y behavior,
+# If you're still not sure about what it means to be CONCACAF'd, the CONCACAF Nations League final in June provided a great example.
+# https://twitter.com/si_soccer/status/1422024155688579076
