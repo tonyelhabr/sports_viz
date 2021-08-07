@@ -247,6 +247,7 @@ geo <-
   as_tibble() %>% 
   bind_rows(team_fixes)
 sum(by_team$n)
+# teams_drop %>% anti_join(geo)
 
 by_team_geo_init <-
   by_team %>% 
@@ -269,7 +270,8 @@ by_team_geo_init <-
   filter(rn == 1) %>% 
   ungroup() %>% 
   select(-rn) %>% 
-  arrange(desc(stoppage_time_mean))
+  arrange(desc(stoppage_time_mean)) %>% 
+  mutate(prnk = percent_rank(stoppage_time_mean))
 by_team_geo_init
 # by_team_geo_init %>% filter(team == 'United States')
 # by_team_geo_init %>% filter(is_extra)
@@ -279,7 +281,7 @@ by_team_geo <-
   mutate(
     lab = case_when(
       is.na(stoppage_time_mean) ~ sprintf('<b><span style="font-size:9pt">%s</span></b>', code),
-      TRUE ~ sprintf('<b><span style="font-size:12pt">%s</span></b><br/><span style="font-size:9pt; font:Lato"><b>#%d</b>: %1.1f</span>', code, rnk, stoppage_time_mean)
+      TRUE ~ sprintf('<b><span style="font-size:12pt">%s</span></b><br/><span style="font-size:9pt"><b>#%d</b>: %1.1f</span>', code, rnk, stoppage_time_mean)
     )
   )
 by_team_geo
@@ -307,7 +309,8 @@ p <-
     aes(
       x = col,
       y = row,
-      fill = (stoppage_time_mean)^2
+      alpha = prnk^2, #  (stoppage_time_mean)^5,
+      fill = prnk^2, # (stoppage_time_mean)^5
     ),
     color = 'white', 
     alpha = 0.6
@@ -322,7 +325,7 @@ p <-
   ) +
   # scale_fill_viridis_c(na.value = 'grey80', direction = 1, begin = 0.9, end = 0.1, option = 'B', alpha = 0.6) +
   # paletteer::scale_fill_paletteer_c('RColorBrewer::Reds') +
-  scale_fill_distiller(palette = 'Purples', direction = 1, na.value = 'grey80') +
+  scale_fill_distiller(palette = 'Reds', direction = 1, na.value = 'grey80') +
   geom_path(
     data = tibble(
       x = c(0, 3.5, 9, 9, 9, 9, 19),
@@ -373,6 +376,7 @@ p <-
     y = NULL,
     x = NULL
   )
+p
 
 assocs_geo <- 
   tibble(
@@ -436,8 +440,3 @@ add_logo(
   idx_x = 0.15,
   idx_y = -0.25
 )
-
-# CONCACAF has developed such a reputation for aggressive play-style and gamesmanship that it's become a verb. ("The USMNT got CONCACAF'd and still won.") But CONMEBOL  is so extreme that you can only describe it as pure chaos.
-# Cards and fouls per game, in addition to 2nd half stoppage time, are good measures of CONCACAF-y behavior,
-# If you're still not sure about what it means to be CONCACAF'd, the CONCACAF Nations League final in June provided a great example.
-# https://twitter.com/si_soccer/status/1422024155688579076
