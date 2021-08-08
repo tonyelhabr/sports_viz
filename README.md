@@ -216,9 +216,7 @@ Goalkeeper).](28-202021_vaep/viz_vaep_mkt_by_pos_w_logo.png "VAEP vs. transfer m
 ![VAEP vs. DAVIES for the 2020/21 Premier League
 season.](28-202021_vaep/viz_vaep_davies_compare_w_logo.png "VAEP vs. DAVIES, by position")
 
-![Table showing year-over-year correlations for VAEP and DAVIES. Both
-average around
-0.45.](28-202021_vaep/metric_yoy_stability.png "Year-over-year correlations for VAEP and DAVIES")
+<img src="28-202021_vaep/metric_yoy_stability.png" title="Year-over-year correlations for VAEP and DAVIES" alt="Table showing year-over-year correlations for VAEP and DAVIES. Both average around 0.45." width="60%"/>
 
 # 29. 2020-21 EPL Games Started by Young Players
 
@@ -263,17 +261,31 @@ champion](34-2020_euros_review/tb_champ.png "Table of pre-tournament 2020 EUROs 
 and 6
 clusters](35-probabilistic_clustering/viz_uncertainty_umap_filt.png "Scatter plot example of visualizing of UMAP and GMM, using 2 components and 6 clusters")
 
-![Table comparing 2-component PCA and UMAP rankings of player similarity
-for Jadon
-Sancho](35-probabilistic_clustering/gt_similarity_jadon_sancho.png "Table comparing 2-component PCA and UMAP rankings of player similarity for Jadon Sancho")
-
-<span
-style="max-width:80%; height:auto"><img src="35-probabilistic_clustering/gt_similarity_jadon_sancho.png"></span>
+<img src="35-probabilistic_clustering/gt_similarity_jadon_sancho.png" title="Table comparing 2-component PCA and UMAP rankings of player similarity for Jadon Sancho" alt="Table comparing 2-component PCA and UMAP rankings of player similarity for Jadon Sancho" width="40%"/>
 
 # 36. 2020-21 EPL Team Subreddit Activity
 
 ![Chatter plot of most controversial posts on eac 2020-21 EPL Team’s
 Subreddit](36-202021_epl_reddit/viz_reddit_controversial_w_logo.png "Chatter plot of most controversial posts on eac 2020-21 EPL Team's Subreddit")
+
+# 37. CONCACAF’d
+
+![geo-tile map showing average 2nd half stoppage time when matches end
+in a draw or with a 1 goal difference for CONCACAF, CONMEBOL, and UEFA
+teams in the Gold Cup, Copa America, and Euros since 2015. Brazil and
+South American teams (CONMEBOL) have the highest
+averages](37-concacaf/stoppage_time_map_w_img.png "CONCACAF geo-tile map")
+
+![table showing average yellows, reds, fouls, and PKs per match for
+CONCACAF, CONMEBOL, and UEFA teams in the Gold Cup, Copa America, and
+Euros since 2015. CONMEBOL teams have a notably higher number of yellows
+and reds](37-concacaf/concacaf_tab.png "CONCACAF vs CONMBEBOL table")
+
+# 38. Football \#viz Twitter
+
+![venn diagram showing about 50 twiter accounts who post soccer viz,
+grouped by following, frequency of tweets, and frequency of
+images](38-soccer_twitter/venn/Slide1.JPG "Football viz twitter accounts venn diagram")
 
 # Future Ideas
 
