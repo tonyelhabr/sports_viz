@@ -10,7 +10,7 @@ library(tidyr)
 # https://bitbucket.org/nicholasehamilton/ggtern/issues/13/ggtern-breaks-ggplots-plot
 # https://stackoverflow.com/questions/68344592/ggtern-error-error-geom-point-requires-the-following-missing-aesthetics-x-and/68478744#68478744
 library(ggplot2) # should be less than 3.3
-library(ggtern)
+# library(ggtern)
 packageVersion('ggplot2')
 
 packageVersion('ggtern')
@@ -23,7 +23,7 @@ token <- xengagement::get_twitter_token()
 token
 
 users <-
-  c('pwawrzynow', 'slothfulwave612', 'Advt_played', 'lambertsmarc', 'luistscosta', 'AKaragjyzi', 'DomC0801', 'MishraAbhiA', 'HemmenKees', 'Eoin_OBrien_', 'trevillion_', 'DyslexicDdue', 'ExpectedChelsea', 'ArabAnalytics', 'Peter__OL', '__ElJdP', 'TonyElHabr', 'mckayjohns', 'Soumyaj15209314', 'markrstats', 'victorrenaud5', 'DanielKatona17', 'DSamangy', 'utdarena', 'SanchoQuinn', 'GoalAnalysis', 'biscuitchaser', 'watmanAFC', 'VenkyReddevil', 'jonollington', 'johnspacemuller', 'placeholder1966', 'maramperninety', 'abhisheksh_98', 'arielle_dror', 'FC_rstats', 'FC_Python', 'R_by_Ryo', 'Blades_analytic', 'NinadB_06', 'Ben8t', 'SimplyWink', 'joedgallagher', 'Worville', 'experimental361', 'AurelNz', 'wiscostretford', 'petermckeever', 'CallmeAlfredo', 'thecomeonman', 'amonizfootball')
+  c('pwawrzynow', 'slothfulwave612', 'Advt_played', 'lambertsmarc', 'luistscosta', 'AKaragjyzi', 'DomC0801', 'MishraAbhiA', 'HemmenKees', 'Eoin_OBrien_', 'trevillion_', 'DyslexicDdue', 'ExpectedChelsea', 'ArabAnalytics', 'Peter__OL', '__ElJdP', 'TonyElHabr', 'mckayjohns', 'Soumyaj15209314', 'markrstats', 'victorrenaud5', 'DanielKatona17', 'DSamangy', 'utdarena', 'SanchoQuinn', 'GoalAnalysis', 'biscuitchaser', 'watmanAFC', 'venkyReddevil', 'jonollington', 'johnspacemuller', 'placeholder1966', 'maramperninety', 'abhisheksh_98', 'arielle_dror', 'FC_rstats', 'FC_Python', 'R_by_Ryo', 'Blades_analytic', 'NinadB_06', 'Ben8t', 'SimplyWink', 'joedgallagher', 'Worville', 'experimental361', 'AurelNz', 'wiscostretford', 'petermckeever', 'CallmeAlfredo', 'thecomeonman', 'amonizfootball', 'etmckinley')
 # xengagement::retrieve_tweets()
 
 f_get <- function(user, overwrite = FALSE, n = 3200, ...) {
@@ -106,25 +106,15 @@ fracs <-
 fracs
 
 # fracs %>% filter(dur < 24) %>% ggplot() + aes(x = dur) + geom_density()
-fracs_filt <- fracs %>% filter(n > 100) %>% filter(dur < 24)
+fracs_filt <- fracs # %>% filter(n > 100) %>% filter(dur < 24)
 fracs_filt
 
-
 # fracs_filt %>% ggplot() + aes(frac_media) + geom_histogram()
-
 # GGally::ggpairs(fracs_filt %>% select(-user))
-fracs_filt %>% arrange(desc(fav_follow_ratio))
+# fracs_filt %>% arrange(desc(fav_follow_ratio))
 
-
-# plot ----
-
-
-fracs_filt %>% 
-  ggplot() +
-  aes(x = dur, y = char_per_tweet) +
-  geom_point(aes(size = frac_media))
-
-ven <-
+# venn ----
+venn <-
   fracs_filt %>% 
   # filter(user %>% str_detect('Dyslex', negate = TRUE)) %>% 
   mutate(across(where(is.numeric), percent_rank)) %>% 
@@ -170,21 +160,26 @@ ven <-
       TRUE ~ 'other'
     )
   )
+
 f_dl <- function(user, pic, overwrite = FALSE) {
   path <- file.path(dir_proj, 'img', sprintf('%s.jpg', user))
   if(file.exists(path) & !overwrite) {
-    return(read_rds(path))
+    return((path))
   }
-  download.file(pic, destfile = path)
+  download.file(pic, destfile = path, quiet = TRUE, mode = 'wb')
 }
-
-# followers: mi foll + lo freq + lo viz
-
-# ven %>% mutate(res = map2(user, pic, f_dl))
-ven %>% select(-pic) %>% arrange(user)
+venn %>% mutate(res = map2(user, pic, f_dl))
+venn %>% select(-pic) %>% arrange(user) %>% slice(11:25)
 options(tibble.print_max = 30)
-ven %>% count(grp, sort = TRUE)
+venn %>% count(grp, sort = TRUE)
 
+# plot ----
+fracs_filt %>% 
+  ggplot() +
+  aes(x = dur, y = char_per_tweet) +
+  geom_point(aes(size = frac_media))
+
+fracs_filt %>% 
   ggtern::ggtern(
     aes(x = char_per_tweet, y = dur, z = followers_count)
   ) + 
@@ -208,17 +203,3 @@ g$plot + ggimage::geom_image(
   data = df2,
   aes(image = pic)
 )
-
-# extra ----
-fracs_filt_long <-
-  fracs_filt %>% 
-  pivot_longer(
-    -user
-  )
-
-
-fracs_filt_long %>% 
-  ggplot() +
-  aes(x = dur, y = char_per_media) +
-  geom_point(aes(size = n))
-
