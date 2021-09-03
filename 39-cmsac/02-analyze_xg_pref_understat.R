@@ -35,6 +35,43 @@ stats_mini <-
   )
 stats_mini
 
+stats_mini %>% filter(player_name %>% str_detect('^Son'))
+shots <- understatr::get_player_shots(453)
+shots
+
+w <- 20
+# t test: (x - mu) / s / sqrt(n)
+# where mu is theoretical mean (null mean), s is sd of x, and n is sample size
+shots_w <-
+  shots %>% 
+  janitor::clean_names() %>% 
+  mutate(idx = row_number(), g = ifelse(result == 'Goal', 1L, 0L)) %>% 
+  select(idx, year, minute, g, xg = x_g) %>% 
+  mutate(shots = 1L) %>% 
+  mutate(
+    across(c(g, shots), list(w = ~slider::slide_int(.x, sum, .before = !!w))),
+    across(xg, list(w = ~slider::slide_dbl(.x, sum, .before = !!w)))
+  ) %>% 
+  mutate(
+    g_ps_w = g_w / shots,
+    xg_ps_w = xg_w / shots,
+    g_ps_w_sd = slider::slide_dbl(xg_ps_w, sd, .before = !!w)
+  ) %>% 
+  mutate(
+    # g_ps_w = g_w / shots,
+    # xg_ps_w = xg_w / shots,
+    xgd_w = g_w - xg_w,
+    # z = (g_ps_w - xg_ps_w) / sqrt((xg_ps_w * (1 - xg_ps_w)) / shots_w),
+    z = (g_ps_w - xg_ps_w) / g_ps_w_sd / sqrt(shots_w),
+    p = pnorm(z),
+    is_signif = p > 0.95
+  )
+shots_w
+shots_w %>% head(20)
+shots_w %>% count(is_signif)
+
+shots2 <- worldfootballR::understat_player_shots('https://understat.com/player/453') %>% as_tibble()
+shots2
 # Quick check
 stats_mini %>% count(league_name)
 stats_mini %>% count(position)
@@ -43,7 +80,7 @@ stats_mini %>% count(position)
 stats_mini %>% count(player_id, player_name, position) %>% count(player_id, player_name, sort = TRUE) %>% filter(n == 2L)
 
 # Save as variable since we'll use it again
-stats_agg_init <-
+stats_init <-
   stats_mini %>% 
   group_by(player_name, player_id, season, position) %>% 
   summarize(
@@ -51,11 +88,11 @@ stats_agg_init <-
     across(c(gp:last_col()), sum, na.rm = TRUE)
   ) %>% 
   ungroup()
-stats_agg_init %>% filter(player_name == 'Lionel Messi')
+stats_init %>% filter(player_name == 'Lionel Messi')
 
 # Assign a player a position based on where they've played the most minutes.
 pos <-
-  stats_agg_init %>% 
+  stats_init %>% 
   group_by(player_name, player_id, position) %>% 
   summarize(
     # n = n(),
@@ -69,9 +106,9 @@ pos <-
 pos
 
 pos %>% filter(player_name == 'Lionel Messi')
-stats_agg_init %>% select(matches('a$'))
-stats_agg <-
-  stats_agg_init %>%
+stats_init %>% select(matches('a$'))
+stats <-
+  stats_init %>%
   select(-position) %>% 
   left_join(pos) %>% 
   filter(g > 0, mp > 500) %>% 
@@ -91,7 +128,7 @@ stats_agg <-
     across(g_gt_xg, list(lag1 = ~dplyr::lag(.x)))
   ) %>% 
   ungroup()
-stats_agg
+stats
 
 # # https://twitter.com/tutulismyname/status/1432416939662585861
 # # piatti
@@ -102,8 +139,8 @@ stats_agg
 # pnorm(z)
 
 # naive counting ----
-stats_agg_lag <-
-  stats_agg %>% 
+stats_lag <-
+  stats %>% 
   group_by(player_name) %>% 
   mutate(
     across(
@@ -122,20 +159,20 @@ stats_agg_lag <-
   mutate(
     xgd_frac = xgd / xg
   )
-stats_agg_lag %>% select(player_name, season, g, xg, g_gt_xg, matches('^lag')) %>% filter(player_name == 'Lionel Messi')
+stats_lag %>% select(player_name, season, g, xg, g_gt_xg, matches('^lag')) %>% filter(player_name == 'Lionel Messi')
 
-stats_agg %>% 
+stats %>% 
   filter(is_signif) %>% 
   arrange(desc(season), desc(xg))
-stats_agg %>% 
+stats %>% 
   filter(is_signif) %>% 
   count(player_name, sort = TRUE)
-stats_agg %>% 
+stats %>% 
   filter(is_signif) %>% 
   filter(player_name == 'Lionel Messi')
 
-stats_agg_agg_signitf <-
-  stats_agg %>% 
+stats_agg_signitf <-
+  stats %>% 
   group_by(player_name) %>% 
   summarize(
     across((c(g, xg, shots)),
@@ -155,35 +192,35 @@ stats_agg_agg_signitf <-
   arrange(desc(g))
 filter(player_name == 'Lionel Messi')
 
-stats_agg_agg <-
-  stats_agg_lag %>% 
+stats_agg <-
+  stats_lag %>% 
   select(-c(z, p)) %>% 
   group_by(player_id, player_name, position) %>% 
   summarize(
     across(c(gp:g_gt_xg), sum)
   ) %>% 
   ungroup()
-stats_agg_agg
+stats_agg
 
-stats_agg_lag_filt <-
-  stats_agg_lag %>% 
+stats_lag_filt <-
+  stats_lag %>% 
   filter(season == '2020-21') %>% 
   select(-season)
-stats_agg_lag_filt
+stats_lag_filt
 
-stats_agg_lag_filt %>% 
+stats_lag_filt %>% 
   count(lag1, lag2, lag3, lag4, lag5)
 
 # the best of the best
-stats_agg_lag_filt_top <-
-  stats_agg_lag_filt %>% 
+stats_lag_filt_top <-
+  stats_lag_filt %>% 
   filter(g_gt_xg == 1L, lag1 == 1L, lag2 == 1L, lag3 == 1L, lag4 == 1L, lag5 == 1L) %>% 
   select(-matches('^lag'))
-stats_agg_lag_filt_top
+stats_lag_filt_top
 
 # show stats aggregated over all years where we have player data
-stats_agg_agg %>% 
-  semi_join(stats_agg_lag_filt_top %>% select(player_id, player_name)) %>% 
+stats_agg %>% 
+  semi_join(stats_lag_filt_top %>% select(player_id, player_name)) %>% 
   left_join(
     # show league where player played the most seasons (by minute would be better, like we did for position)
     stats_mini %>% 
@@ -195,21 +232,21 @@ stats_agg_agg %>%
   arrange(xgd) %>% 
   select(league_name, player_name, g, matches('xg'), -xg_chain)
 
-stats_agg_lag %>% filter(player_name %>% str_detect('Son Heung')) %>% select(season, g, xg, g_gt_xg)
-stats_agg_lag %>% filter(player_name == 'Lionel Messi') %>% select(season, g, xg, g_gt_xg)
+stats_lag %>% filter(player_name %>% str_detect('Son Heung')) %>% select(season, g, xg, g_gt_xg)
+stats_lag %>% filter(player_name == 'Lionel Messi') %>% select(season, g, xg, g_gt_xg)
 
 # model ----
-stats_agg_filt <- stats_agg %>% drop_na(g_gt_xg_lag1)
+stats_filt <- stats %>% drop_na(g_gt_xg_lag1)
 
 metset <- metric_set(accuracy, roc_auc)
 ctrl <- control_grid(verbose = TRUE)
 set.seed(42)
-ids <- stats_agg_filt %>% count(player_id, sort = TRUE)
+ids <- stats_filt %>% count(player_id, sort = TRUE)
 ids_trn <- ids %>% slice_sample(weight_by = n, prop = 0.8)
 ids_tst <- ids %>% anti_join(ids_trn)
 
 .split <- function(ids) {
-  stats_agg_filt %>% mutate(across(g_gt_xg, factor)) %>% semi_join(ids %>% select(player_id))
+  stats_filt %>% mutate(across(g_gt_xg, factor)) %>% semi_join(ids %>% select(player_id))
 }
 df_trn <- .split(ids_trn)
 df_tst <- .split(ids_tst)
@@ -269,8 +306,8 @@ rec_log %>%
   ungroup()
 
 # linear ----
-stats_agg_filt2 <- 
-  stats_agg %>% 
+stats_filt2 <- 
+  stats %>% 
   group_by(player_id, player_name) %>% 
   mutate(
     across(xg, list(lag1 = ~dplyr::lag(.x)))
@@ -278,15 +315,15 @@ stats_agg_filt2 <-
   ungroup() %>% 
   # select(-xgd_frac, -matches('g_gt')) %>% 
   drop_na(xg_lag1)
-stats_agg_filt2
+stats_filt2
 
 set.seed(42)
-ids <- stats_agg_filt2 %>% count(player_id, sort = TRUE)
+ids <- stats_filt2 %>% count(player_id, sort = TRUE)
 ids_trn <- ids %>% slice_sample(weight_by = n, prop = 0.8)
 ids_tst <- ids %>% anti_join(ids_trn)
 
 .split <- function(ids) {
-  stats_agg_filt2 %>% semi_join(ids %>% select(player_id))
+  stats_filt2 %>% semi_join(ids %>% select(player_id))
 }
 df_trn <- .split(ids_trn)
 df_tst <- .split(ids_tst)
