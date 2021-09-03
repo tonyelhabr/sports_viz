@@ -11,10 +11,12 @@ path_teams_players_stats <- file.path(dir_proj, 'teams_players_stats.rds')
 overwrite <- FALSE
 path_spi <- file.path(dir_proj, 'spi_538.csv')
 
+# fs::dir_ls(dir_data, regexp = '2020') %>% fs::file_delete()
+
 params <-
   crossing(
-    league = c('La_liga'), #  'EPL', 'Bundesliga', 'Serie_A', 'Ligue_1'),
-    season = c(2011L:2020L)
+    league = c('La_liga', 'EPL', 'Bundesliga', 'Serie_A', 'Ligue_1'),
+    season = c(2014L:2020L)
   )
 params
 options(readr.num_columns = 0)
@@ -147,6 +149,7 @@ shots <-
 # beepr::beep(3)
 write_rds(shots, path_shots)
 
+# Issue filed: https://github.com/ewenme/understatr/issues/14
 get_leagues_meta <- function(overwrite = FALSE) {
   path <- file.path(dir_data, 'leagues_meta.rds')
   suffix <- ''
@@ -161,6 +164,53 @@ get_leagues_meta <- function(overwrite = FALSE) {
 }
 leagues_meta <- get_leagues_meta()
 
+.get_league_teams_stats <- function(league_name, year) {
+  
+  stopifnot(is.character(league_name))
+  
+  home_url <- "https://understat.com"
+  # construct league url
+  league_url <- URLencode(str_glue("{home_url}/league/{league_name}/{year}"))
+  
+  # read league page
+  league_page <- rvest::read_html(league_url)
+  
+  # locate script tags
+  teams_data <- understatr:::get_script(league_page)
+  
+  # isolate player data
+  teams_data <- understatr:::get_data_element(teams_data, "teamsData")
+  
+  # pick out JSON string
+  teams_data <- sub(".*?\\'(.*)\\'.*", "\\1", teams_data)
+  
+  # parse JSON
+  teams_data <- jsonlite::fromJSON(teams_data, simplifyDataFrame = TRUE,
+                         flatten = TRUE)
+  
+  # get teams data
+  teams_data <- lapply(
+    teams_data, function(x) {
+      df <- x$history
+      df$team_id <- x$id
+      df$team_name <- x$title
+      df
+    })
+  
+  # convert to df
+  teams_df <- do.call("rbind", teams_data)
+  
+  # add reference fields
+  teams_df$league_name <- league_name
+  teams_df$year <- as.numeric(year)
+  
+  # fix col classes
+  teams_df$date <- as.Date(teams_df$date, "%Y-%m-%d")
+  
+  as_tibble(teams_df)
+  
+}
+
 get_league_teams_stats <- function(league_name, year, overwrite = FALSE) {
   path <- file.path(dir_data, sprintf('league_teams_stats-%s-%s.rds', league_name, year))
   suffix <- glue::glue(' for league_name = "{league_name}"`, `year = {year}`')
@@ -168,18 +218,21 @@ get_league_teams_stats <- function(league_name, year, overwrite = FALSE) {
     .display_info_early('{suffix}')
     return(read_rds(path))
   }
-  res <- understatr::get_league_teams_stats(league_name, year)
+  res <- .get_league_teams_stats(league_name, year)
   .display_info_after('{suffix}')
   write_rds(res, path)
   res
 }
 
+get_league_teams_stats_safely <- possibly(get_league_teams_stats, otherwise = tibble(), quiet = FALSE)
+
 league_teams_stats <-
   leagues_meta %>% 
-  mutate(data = map2(league_name, year, get_league_teams_stats)) %>% 
+  mutate(data = map2(league_name, year, get_league_teams_stats_safely)) %>% 
   select(data) %>% 
   unnest(data)
 league_teams_stats
+fs::dir_ls(dir_data, regexp = '[-]2020[.]rds')
 write_rds(league_teams_stats, path_league_teams_stats)
 
 teams <- league_teams_stats %>% distinct(league_name, year, team_name)
