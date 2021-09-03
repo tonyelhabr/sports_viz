@@ -42,7 +42,7 @@ update_geom_defaults('text', list(family = 'Karla', size = 4))
 
 # funcs ----
 import_bands <- memoise::memoise({
-  function(path_export = here::here('data-raw', '06', 'tx-hs-band.rds')) {
+  function(path_export = here::here('data-raw', '06-tx-hs-band.rds')) {
     if(fs::file_exists(path_export)) {
       return(read_rds(path_export))
     }
@@ -84,7 +84,7 @@ import_bands <- memoise::memoise({
 # 3. Show formulas on the Data sheet for column A.
 # 4. Copy-paste formulas to a text file.
 .get_fb_score_links_df <- memoise::memoise({function() {
-  path_links <- here::here('data-raw', '06', 'tx-hs-fb-links.txt')
+  path_links <- here::here('06-tx_hs', 'data-raw', 'tx-hs-fb-links.txt')
   lines <- path_links %>% read_lines()
   df <- lines %>% tibble(line = .)
   df
@@ -102,7 +102,7 @@ import_bands <- memoise::memoise({
 
 .download_fb_scores <-
   function(link,
-           dir = here::here('data-raw', '06', 'schools'),
+           dir = here::here('06-tx_hs', 'data-raw', 'schools'),
            file = '',
            path = fs::path(dir, sprintf('%s.xlsx', file))) {
     if (fs::file_exists(path)) {
@@ -147,7 +147,7 @@ import_bands <- memoise::memoise({
   res
 }
 
-retrieve_fb_scores <- function(links = NULL, path = here::here('data-raw', '06', 'fb_scores.rds')) {
+retrieve_fb_scores <- function(links = NULL, path = here::here('06-tx_hs', 'fb_scores.rds')) {
   
   if(fs::file_exists(path)) {
     res <- path %>% read_rds()
