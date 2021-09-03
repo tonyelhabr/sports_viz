@@ -1,6 +1,6 @@
 
 library(tidyverse)
-dir_proj <- '29-mls_salaries'
+dir_proj <- '29-202021_u2x'
 dir_data <- file.path(dir_proj, 'data')
 path_urls <- file.path(dir_data, 'urls.rds')
 fs::dir_create(dir_data)
