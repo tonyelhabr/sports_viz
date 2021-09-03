@@ -4,14 +4,6 @@ library(tidymodels)
 library(tonythemes)
 tonythemes::theme_set_tony()
 
-file.path('31-wp_soccer', 'teams_players_stats.rds') %>%
-  read_rds() %>% 
-  janitor::clean_names() %>% 
-  filter(position == 'S') %>% 
-  arrange(-time) %>% 
-  count(year)
-  count(position, sort = TRUE)
-
 stats_mini <-
   file.path('31-wp_soccer', 'teams_players_stats.rds') %>%
   read_rds() %>% 
@@ -48,7 +40,7 @@ stats_mini %>% count(league_name)
 stats_mini %>% count(position)
 
 # Individual players have multiple positions... need to fix so that there's a 1-to-1 mapping
-stats_mini %>% count(player_id, player_name, position) %>% count(player_id, player_name, sort = TRUE) %>% filter(n == 2L) -> Z
+stats_mini %>% count(player_id, player_name, position) %>% count(player_id, player_name, sort = TRUE) %>% filter(n == 2L)
 
 # Save as variable since we'll use it again
 stats_agg_init <-
@@ -75,6 +67,7 @@ pos <-
   ungroup() %>% 
   select(player_id, player_name, position)
 pos
+
 pos %>% filter(player_name == 'Lionel Messi')
 stats_agg_init %>% select(matches('a$'))
 stats_agg <-
@@ -83,9 +76,13 @@ stats_agg <-
   left_join(pos) %>% 
   filter(g > 0, mp > 500) %>% 
   mutate(
+    g_ps = g / shots,
     xg_ps = xg / shots,
     xgd = xg - g,
     xgd_frac = xgd / xg,
+    z = (g_ps - xg_ps) / sqrt((xg_ps * (1 - xg_ps)) / shots),
+    p = pnorm(z),
+    is_signif = p > 0.95,
     g_gt_xg = ifelse(xgd < 0, 1L, 0L)
   ) %>% 
   arrange(player_name, player_id, season) %>% 
@@ -95,6 +92,14 @@ stats_agg <-
   ) %>% 
   ungroup()
 stats_agg
+
+# # https://twitter.com/tutulismyname/status/1432416939662585861
+# # piatti
+# gps <- 0.1483
+# xgps <- 0.1058
+# shots <- 344
+# z <- (gps - xgps) / sqrt( (xgps * (1 - xgps)) / shots)
+# pnorm(z)
 
 # naive counting ----
 stats_agg_lag <-
@@ -119,8 +124,40 @@ stats_agg_lag <-
   )
 stats_agg_lag %>% select(player_name, season, g, xg, g_gt_xg, matches('^lag')) %>% filter(player_name == 'Lionel Messi')
 
+stats_agg %>% 
+  filter(is_signif) %>% 
+  arrange(desc(season), desc(xg))
+stats_agg %>% 
+  filter(is_signif) %>% 
+  count(player_name, sort = TRUE)
+stats_agg %>% 
+  filter(is_signif) %>% 
+  filter(player_name == 'Lionel Messi')
+
+stats_agg_agg_signitf <-
+  stats_agg %>% 
+  group_by(player_name) %>% 
+  summarize(
+    across((c(g, xg, shots)),
+    ~sum(.x))
+  ) %>% 
+  ungroup() %>% 
+  mutate(
+    g_ps = g / shots,
+    xg_ps = xg / shots,
+    xgd = xg - g,
+    xgd_frac = xgd / xg,
+    z = (g_ps - xg_ps) / sqrt((xg_ps * (1 - xg_ps)) / shots),
+    p = pnorm(z),
+    is_signif = p > 0.95
+  ) %>% 
+  filter(is_signif) %>% 
+  arrange(desc(g))
+filter(player_name == 'Lionel Messi')
+
 stats_agg_agg <-
   stats_agg_lag %>% 
+  select(-c(z, p)) %>% 
   group_by(player_id, player_name, position) %>% 
   summarize(
     across(c(gp:g_gt_xg), sum)
@@ -253,12 +290,12 @@ ids_tst <- ids %>% anti_join(ids_trn)
 }
 df_trn <- .split(ids_trn)
 df_tst <- .split(ids_tst)
-  
+
 rec_lin <-
   df_trn %>%
   recipe(
     formula(
-       xg ~ player_name + player_id + season + g_gt_xg + position + gp + mp + a + xa + shots + key_passes
+      xg ~ player_name + player_id + season + g_gt_xg + position + gp + mp + a + xa + shots + key_passes
     ),
     data = .
   ) %>%
