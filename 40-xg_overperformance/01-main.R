@@ -36,41 +36,28 @@ theme_update(
 )
 update_geom_defaults('text', list(family = 'Karla', size = 4))
 
-# mtcars %>% ggplot() + aes(x = mpg, y = carb) + geom_point(aes(color = cyl)) + labs(title = 'a title', subtitle = 'a subtitle extra long') + theme(plot.title = element_text('Jet Brains Mono'))
-
 dir_proj <- '40-xg_overperformance'
-df <- file.path(dir_proj, '2010-2022_xg.parquet') %>% arrow::read_parquet()
-mp <- file.path(dir_proj, '2010-2022_mp.parquet') %>% arrow::read_parquet()
+import <- function(x) {
+  file.path(dir_proj, sprintf('2010-2022_%s.parquet', x)) %>% 
+    arrow::read_parquet()
+}
+df <- import('xg')
+mp <- import('mp')
+
 players <-
   df %>%
   count(player_id, player_name, position, sort = TRUE, name = 'total_shots') %>%
   mutate(rnk_player = row_number(desc(total_shots)))
 players
-players %>% filter(player_name %>% str_detect('Papu Gómez'))
-
-position_mapping <-
-  tibble(
-    position = c('AM', 'FW', 'M', 'DM', 'D'),
-    position_grp = c('A', 'A', 'M', 'M', 'D')
-  )
-position_mapping
-
-players_filt <-
-  players %>%
-  drop_na(position) %>%
-  mutate(across(position, ~str_remove_all(.x, '\\(.*\\)') %>% str_replace_all('(^.*\\,)([A-Z]+$)', '\\2'))) %>%
-  inner_join(position_mapping) %>%
-  left_join(mp %>% group_by(player_id) %>% summarize(total_mp = sum(minutes_played, na.rm = TRUE)))
-players_filt
-
 
 shots <-
   df %>%
   # drop own goals
   filter(g != 3L) %>%
   inner_join(
-    players_filt %>%
-      select(rnk_player, player_id, position_grp, total_shots, total_mp)
+    players %>%
+      left_join(mp %>% group_by(player_id) %>% summarize(total_mp = sum(minutes_played, na.rm = TRUE))) %>% 
+      select(rnk_player, player_id, total_shots, total_mp)
   ) %>%
   left_join(
     mp
@@ -143,7 +130,7 @@ shots_by_game_w
 
 player_ids_filt <-
   players_filt %>%
-  filter(player_name %in% c('Harry Kane', 'Romelu Lukaku', 'Timo Werner', 'Son Heung-Min')) %>%
+  filter(player_name %in% c('Harry Kane', 'Romelu Lukaku', 'Timo Werner')) %>% #, 'Son Heung-Min')) %>%
   distinct(player_id, player_name)
 player_ids_filt
 
@@ -156,87 +143,96 @@ shots_by_game_w_filt <-
   group_by(player_name) %>%
   mutate(idx_gp = row_number(start_time_utc)) %>%
   ungroup() %>% 
-  left_join(shots %>% distinct(game_id, player_id, league_name)) %>% 
-  mutate(is_epl = league_name == 'Premier League')
+  left_join(shots %>% distinct(game_id, player_id, league_name))
 shots_by_game_w_filt
-
 
 color_g <- hcl(h = 180, c = 150, l = 80)
 color_xg <- hcl(h = 360, c = 150, l = 80)
-# color_signif_u <- hcl(h = 90, c = 150, l = 80)
 # scales::show_col(color_signif_o)
-
-color_signif_o <- '#f8de7f' # '#00e8ff' 
+color_signif_o <- '#f8de7f'
 color_signif_u <- '#abadff'
 
 pts <- function(x) {
   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
 }
-shots_by_game_w %>% filter(player_name == 'Harry Kane') %>% select(start_time_utc) %>% arrange(desc(start_time_utc))
+arw_annotate <- arrow(length = unit(5, 'pt'), type = 'closed')
 
-shots_by_game_w_filt1 %>% filter(player_name == 'Harry Kane') %>% select(start_time_utc, idx_gp, league_name, shots, g, xg, shots_w, g_w, xg_w) %>% head(20)
-shots_by_game_w_filt1 %>% filter(player_name == 'Harry Kane') %>% select(start_time_utc) %>% arrange(desc(start_time_utc)) %>% head(20)
-shots_by_game_w_filt1 <- shots_by_game_w_filt %>% filter(player_name %in% c('Harry Kane', 'Romelu Lukaku'))
-p <-
-  shots_by_game_w_filt1 %>%
-  ggplot() +
-  aes(x = idx_gp) +
+lab_caption <- 'Statistically significant: p-value < 0.1 where the null hypothesis is G/shot = xG/shot over a 10-game window.<br/>Non-EPL matches included.'
+plot_base <- function(df) {
+  df %>%
+    ggplot() +
+    aes(x = idx_gp) +
+    geom_segment(
+      data = df %>% filter(xgd_w > 0 & !is_signif_o),
+      aes(xend = idx_gp, y = xg_p90_w, yend = g_p90_w),
+      linetype = '11',
+      alpha = 1,
+      size = 1,
+      color = color_g
+    ) +
+    geom_segment(
+      data = df %>% filter(xgd_w < 0 & !is_signif_o),
+      aes(xend = idx_gp, y = xg_p90_w, yend = g_p90_w),
+      linetype = '11',
+      alpha = 1,
+      size = 1,
+      color = color_xg
+    ) +
+    geom_segment(
+      data = df %>% filter(is_signif_o),
+      aes(xend = idx_gp, y = xg_p90_w, yend = g_p90_w),
+      size = 2,
+      color = color_signif_o
+    ) +
+    geom_segment(
+      data = df %>% filter(is_signif_u),
+      aes(xend = idx_gp, y = xg_p90_w, yend = g_p90_w),
+      size = 2,,
+      color = color_signif_u
+    ) +
+    geom_point(
+      data = df,
+      aes(y = g_p90_w),
+      size = 1.5,
+      color = color_g
+    ) +
+    geom_point(
+      data = df,
+      aes(y = xg_p90_w),
+      size = 1.5,
+      color = color_xg
+    ) +
+    scale_x_continuous(
+      labels = c('50', '25', 'Last'),
+      breaks = c(1, 25, 50),
+      limits = c(1, 50)
+    ) +
+    coord_cartesian(clip = 'off') +
+    theme(
+      plot.title = ggtext::element_markdown(size = 18),
+      plot.subtitle = ggtext::element_markdown(size = 16),
+      panel.grid.major.y = element_blank()
+    ) +
+    labs(
+      tag = '**Viz**: Tony ElHabr',
+      caption = lab_caption,
+      x = 'Games Ago',
+      y = 'Goals/90'
+    )
+}
+
+kane_luk <- shots_by_game_w_filt %>% filter(player_name %in% c('Harry Kane', 'Romelu Lukaku'))
+kane_luk_lab <- kane_luk %>% slice_max(xgd_p90_w)
+
+p_kane_luk <-
+  kane_luk %>%
+  plot_base() +
   facet_wrap(~player_name, ncol = 1) +
-  geom_segment(
-    data = shots_by_game_w_filt1 %>% filter(xgd_w > 0 & !is_signif_o),
-    aes(xend = idx_gp, y = xg_p90_w, yend = g_p90_w),
-    linetype = '11',
-    alpha = 1,
-    size = 1,
-    # arrow = arw,
-    color = color_g
-  ) +
-  geom_segment(
-    data = shots_by_game_w_filt1 %>% filter(xgd_w < 0 & !is_signif_o),
-    aes(xend = idx_gp, y = xg_p90_w, yend = g_p90_w),
-    linetype = '11',
-    alpha = 1,
-    size = 1,
-    # arrow = arw,
-    color = color_xg
-  ) +
-  geom_segment(
-    data = shots_by_game_w_filt1 %>% filter(is_signif_o),
-    aes(xend = idx_gp, y = xg_p90_w, yend = g_p90_w),
-    size = 2,
-    # arrow = arw,
-    color = color_signif_o
-  ) +
-  geom_segment(
-    data = shots_by_game_w_filt1 %>% filter(is_signif_u),
-    aes(xend = idx_gp, y = xg_p90_w, yend = g_p90_w),
-    size = 2,
-    # arrow = arw,
-    color = color_signif_u
-  ) +
-  geom_point(
-    data = shots_by_game_w_filt1,
-    aes(y = g_p90_w),
-    size = 1.5,
-    color = color_g
-  ) +
-  geom_point(
-    data = shots_by_game_w_filt1,
-    aes(y = xg_p90_w),
-    size = 1.5,
-    color = color_xg
-  ) +
   theme(
     plot.title = ggtext::element_markdown(size = 18),
     plot.subtitle = ggtext::element_markdown(size = 16),
     # axis.text = element_blank(),
     panel.grid.major.y = element_blank()
-  ) +
-  scale_x_continuous(
-    labels = c('50', '25', 'Last'),
-    # expand = c(0.1, 0.1)
-    breaks = c(1, 25, 50),
-    limits = c(1, 50)
   ) +
   # ylim(0, 1.15) +
   ggtext::geom_richtext(
@@ -252,22 +248,9 @@ p <-
   scale_y_continuous(breaks = c(0, 0.5, 1), limits = c(0, 1.3), expand = c(0, 0.05), oob = function(x, ...) x) +
   coord_cartesian(clip = 'off') +
   labs(
-    title = glue::glue('When do elite scorers like Kane and Lukaku <span style="color:{color_signif_o}">significantly</span> overperform their xG?'),
-    tag = '**Viz**: Tony ElHabr',
-    caption = 'Statistically significant: p-value < 0.1 where the null hypothesis is G/shot = xG/shot over a 10-game window.<br/>Non-EPL matches included.',
-    x = 'Games Ago',
-    y = 'Goals/90'
-  )
-p
-
-# x1 <- shots_by_game_w_filt1 %>% slice_max(g_p90_w)
-# x2 <- shots_by_game_w_filt1 %>% slice_min(xg_p90_w)
-x3 <- shots_by_game_w_filt1 %>% slice_max(xgd_p90_w)
-# x4 <- shots_by_game_w_filt1 %>% slice_min(xgd_p90_w)
-arw_annotate <- arrow(length = unit(5, 'pt'), type = 'closed')
-
-p2 <-
-  p + 
+    title = glue::glue('When do elite scorers like Kane and Lukaku <span style="color:{color_signif_o}">significantly</span> overperform their xG?')
+  ) + 
+  # bottom left arrow for x-axis
   geom_segment(
     data = tibble(player_name = 'Romelu Lukaku'),
     aes(x = 2, xend = 10, y = 0.01, yend = 0.01),
@@ -276,6 +259,7 @@ p2 <-
     color = gray_grid_wv,
     arrow = arw_annotate
   ) +
+  # the arrow for x-axis
   geom_text(
     data = tibble(player_name = 'Romelu Lukaku', lab = 'Longer ago to more recent'),
     aes(x = 2, y = 0.06, label = lab),
@@ -283,6 +267,7 @@ p2 <-
     size = pts(12),
     color = 'white'
   ) +
+  # arrows for kane and lukaku at the end
   geom_curve(
     data = tibble(player_name = 'Harry Kane'),
     aes(x = 49, xend = 50, y = 0, yend = 0.3),
@@ -299,6 +284,7 @@ p2 <-
     color = 'white',
     arrow = arw_annotate
   ) +
+  # label pointing out recent performance
   ggtext::geom_richtext(
     data = 
       tibble(player_name = 'Romelu Lukaku', lab = glue::glue('<span style="color:white">Both are currently <b><span style="color:{color_signif_o}">significantly</span></b> over-performing.</span>')),
@@ -308,25 +294,24 @@ p2 <-
     hjust = 1,
     family = 'Karla'
   ) +
-  geom_segment(
-    data = x3,
-    aes(
-      x = idx_gp,
-      y = xg_p90_w - 0.18,
-      xend = idx_gp,
-      yend = xg_p90_w - 0.02
-    ),
-    color = 'white',
-    arrow = arw_annotate
-  ) +
+  # g/90 value
   geom_text(
-    data = x3,
+    data = kane_luk_lab,
     aes(y = g_p90_w + 0.05, label = sprintf('%0.02f', g_p90_w)),
     size = pts(12),
     color = color_g
   ) +
+  # g/90 value
+  geom_text(
+    data = kane_luk_lab,
+    aes(x = idx_gp - 3.5, y = xg_p90_w - 0.2, label = 'G/90'),
+    size = pts(12),
+    nudge_x = -0.5,
+    color = color_xg
+  ) +
+  # g/90 arrow
   geom_curve(
-    data = x3,
+    data = kane_luk_lab,
     aes(
       x = idx_gp + 2.5,
       y = g_p90_w + 0.05,
@@ -337,21 +322,24 @@ p2 <-
     curvature = 0.2,
     arrow = arw_annotate
   ) +
+  # xg/90 label
   geom_text(
-    data = x3,
+    data = kane_luk_lab,
     aes(x = idx_gp + 3.5, y = g_p90_w + 0.05, label = 'xG/90'),
     nudge_x = 0.7,
     size = pts(12),
     color = color_g
   ) +
+  # xg/90 value
   geom_text(
-    data = x3,
+    data = kane_luk_lab,
     aes(y = xg_p90_w - 0.2, label = sprintf('%0.02f', xg_p90_w)),
     size = pts(12),
     color = color_xg
   ) +
+  # xg/90 arrow
   geom_curve(
-    data = x3,
+    data = kane_luk_lab,
     aes(
       x = idx_gp - 2.5,
       y = xg_p90_w - 0.2,
@@ -362,28 +350,34 @@ p2 <-
     curvature = 0.2,
     arrow = arw_annotate
   ) +
-  geom_text(
-    data = x3,
-    aes(x = idx_gp - 3.5, y = xg_p90_w - 0.2, label = 'G/90'),
-    size = pts(12),
-    nudge_x = -0.5,
-    color = color_xg
+  # arrow pointing up from below xg/90 for specified interval
+  geom_segment(
+    data = kane_luk_lab,
+    aes(
+      x = idx_gp,
+      y = xg_p90_w - 0.18,
+      xend = idx_gp,
+      yend = xg_p90_w - 0.02
+    ),
+    color = 'white',
+    arrow = arw_annotate
   ) +
+  # arrow pointing to desciption of labeled interval
   geom_curve(
-    data = x3,
+    data = kane_luk_lab,
     aes(
       x = idx_gp - 5,
       y = g_p90_w + 0.2,
       xend = idx_gp - 0.5,
       yend = g_p90_w + -0.05
     ),
-    color = 'white',
-    # curvature = 0.1,
+    color = 'white',,
     arrow = arw_annotate
   ) +
+  # label for specified interval
   ggtext::geom_richtext(
     data = 
-      x3 %>% 
+      kane_luk_lab %>% 
       mutate(lab = glue::glue('<span style="color:white">10-game G/90 - xG/90 = <b>{scales::number(xgd_p90_w, accuracy = 0.01)}</b></span>')),
     aes(x = idx_gp - 5, y = g_p90_w + 0.2, label = lab),
     fill = NA_character_,
@@ -391,70 +385,45 @@ p2 <-
     hjust = 1,
     family = 'Karla'
   )
-p2
-path1 <- file.path(dir_proj, 'overperformance.png')
+path1_kane_luk <- file.path(dir_proj, 'overperformance.png')
 
 ggsave(
-  filename = path1,
-  p2,
+  filename = path1_kane_luk,
+  plot = p_kane_luk,
   width = 10,
   height = 10
 )
-path2 <- add_logo(path1, path_logo = file.path(dir_proj, 'harry-kane.png'), idx_x = 0.78, idx_y = 0.80, delete = FALSE, path_suffix = '_w_kane')
-path3 <- add_logo(path2, path_logo = file.path(dir_proj, 'romelu-lukaku.png'), idx_x = 0.78, idx_y = 0.37, delete = FALSE, path_suffix = '_lukaku')
 
+generate_logo_path <- function(x) {
+  file.path(dir_proj, sprintf('%s.png', x))
+}
+
+path2_kane_luk <- 
+  add_logo(
+    path1_kane_luk, 
+    path_logo = generate_logo_path('harry-kane'), 
+    idx_x = 0.78, 
+    idx_y = 0.80, 
+    # delete = FALSE, 
+    path_suffix = '_w_kane'
+  )
+
+path3_kane_luk <- 
+  add_logo(
+    path2_kane_luk, 
+    path_logo = file.path(dir_proj, 'romelu-lukaku.png'), 
+    idx_x = 0.78, 
+    idx_y = 0.37, 
+    # delete = FALSE,
+    path_suffix = '_lukaku'
+  )
 
 # werner ----
-shots_by_game_w_filt2 <- shots_by_game_w_filt %>% filter(player_name == 'Timo Werner')
-p <-
-  shots_by_game_w_filt2 %>%
-  ggplot() +
-  aes(x = idx_gp) +
-  # facet_wrap(~player_name, ncol = 1) +
-  geom_segment(
-    data = shots_by_game_w_filt2 %>% filter(xgd_w > 0 & !is_signif_o),
-    aes(xend = idx_gp, y = xg_p90_w, yend = g_p90_w),
-    linetype = '11',
-    alpha = 1,
-    size = 1,
-    # arrow = arw,
-    color = color_g
-  ) +
-  geom_segment(
-    data = shots_by_game_w_filt2 %>% filter(xgd_w < 0 & !is_signif_o),
-    aes(xend = idx_gp, y = xg_p90_w, yend = g_p90_w),
-    linetype = '11',
-    alpha = 1,
-    size = 1,
-    # arrow = arw,
-    color = color_xg
-  ) +
-  geom_segment(
-    data = shots_by_game_w_filt2 %>% filter(is_signif_o),
-    aes(xend = idx_gp, y = xg_p90_w, yend = g_p90_w),
-    size = 2,
-    # arrow = arw,
-    color = color_signif_o
-  ) +
-  geom_segment(
-    data = shots_by_game_w_filt2 %>% filter(is_signif_u),
-    aes(xend = idx_gp, y = xg_p90_w, yend = g_p90_w),
-    size = 2,
-    # arrow = arw,
-    color = color_signif_u
-  ) +
-  geom_point(
-    data = shots_by_game_w_filt2,
-    aes(y = g_p90_w),
-    size = 1.5,
-    color = color_g
-  ) +
-  geom_point(
-    data = shots_by_game_w_filt2,
-    aes(y = xg_p90_w),
-    size = 1.5,
-    color = color_xg
-  ) +
+werner <- shots_by_game_w_filt %>% filter(player_name == 'Timo Werner')
+werner_lab <- werner %>% filter(idx_gp == 20L)
+p_werner <-
+  werner %>%
+  plot_base() +
   geom_segment(
     data = tibble(),
     aes(x = 2, xend = 10, y = 0.01, yend = 0.01),
@@ -470,33 +439,23 @@ p <-
     size = pts(10),
     color = 'white'
   ) +
-  theme(
-    plot.title = ggtext::element_markdown(size = 18),
-    plot.subtitle = ggtext::element_markdown(size = 16),
-    # axis.text = element_blank(),
-    panel.grid.major.y = element_blank()
-  ) +
-  scale_x_continuous(
-    labels = c('50', '25', 'Last'),
-    # expand = c(0.1, 0.1)
-    breaks = c(1, 25, 50),
-    limits = c(1, 50)
-  ) +
+  # description arrow
   geom_curve(
-    data = tibble(idx_gp = 20, xg_p90_w = 0.3),
+    data = werner_lab,
     aes(
       x = idx_gp + 6,
       y = xg_p90_w + 0.2,
       xend = idx_gp + 1,
-      yend = xg_p90_w + 0.02
+      yend = xg_p90_w + 0.04
     ),
     color = 'white',
-    curvature = 0.1,
+    curvature = -0.1,
     arrow = arw_annotate
   ) +
+  # description
   ggtext::geom_richtext(
     data = tibble(),
-    aes(x = 26.5, y = 0.51, label = glue::glue('<b><span style="color:{color_signif_u}">y i k e s</span></b>')),
+    aes(x = 26.5, y = 0.55, label = glue::glue('<b><span style="color:{color_signif_u}">y i k e s</span></b>')),
     size = pts(14),
     fill = NA_character_,
     label.color = NA_character_,
@@ -504,26 +463,88 @@ p <-
     family = 'Karla'
   ) +
   scale_y_continuous(breaks = c(0, 0.4, 0.8), limits = c(0, 0.8), expand = c(0, 0.05), oob = function(x, ...) x) +
-  coord_cartesian(clip = 'off') +
   theme(
     plot.caption = ggtext::element_markdown(size = 8),
     plot.tag = ggtext::element_markdown(size = 10)
   ) +
   labs(
     title = glue::glue('What does <span style="color:{color_signif_u}">significant</span> xG under-performance look like?'),
-    tag = '**Viz**: Tony ElHabr',
-    caption = 'Statistically significant: p-value < 0.1 where the null hypothesis<br/>is G/shot = xG/shot over a 10-game window.',
-    x = 'Games Ago',
-    y = 'Goals/90'
+    caption = lab_caption %>% str_replace('hypothesis', 'hypothesis<br/>')
+  ) +
+  # xg/90 arrow
+  geom_curve(
+    data = werner_lab,
+    aes(
+      x = idx_gp + 4,
+      y = xg_p90_w + 0.02,
+      xend = idx_gp + 2,
+      yend = xg_p90_w + 0.02
+    ),
+    color = 'white',
+    curvature = -0.2,
+    arrow = arw_annotate
+  ) +
+  # xg/90 value
+  geom_text(
+    data = werner_lab,
+    aes(x = idx_gp + 0.5, y = xg_p90_w + 0.02, label = sprintf('%0.02f', xg_p90_w)),
+    size = pts(10),
+    color = color_xg
+  ) +
+  # xg/90 label
+  geom_text(
+    data = werner_lab,
+    aes(x = idx_gp + 5.5, y = xg_p90_w + 0.02, label = 'xG/90'),
+    nudge_x = 0.7,
+    size = pts(10),
+    color = color_xg
+  ) +
+  # g/90 arrow
+  geom_curve(
+    data = werner_lab,
+    aes(
+      x = idx_gp - 5,
+      y = g_p90_w - 0.0,
+      xend = idx_gp - 3.5,
+      yend = g_p90_w - 0.0
+    ),
+    color = 'white',
+    curvature = 0.2,
+    arrow = arw_annotate
+  ) +
+  # g/90 value
+  geom_text(
+    data = werner_lab,
+    aes(x = idx_gp - 1, y = g_p90_w, label = sprintf('%0.02f', g_p90_w)),
+    size = pts(10),
+    hjust = 1,
+    color = color_g
+  ) +
+  # g/90 label
+  geom_text(
+    data = werner_lab,
+    aes(x = idx_gp - 6, y = g_p90_w + 0.0, label = 'G/90'),
+    nudge_x = -0.7,
+    size = pts(10),
+    color = color_g
   )
-p
-path1 <- file.path(dir_proj, 'underperformance.png')
+p_werner
+path1_werner <- file.path(dir_proj, 'underperformance.png')
 
 ggsave(
-  filename = path1,
-  p,
+  filename = path1_werner,
+  p_werner,
   width = 7,
   height = 7
 )
-path2 <- add_logo(path1, path_logo = file.path(dir_proj, 'timo-werner.png'), idx_x = 0.06, idx_y = 0.72, delete = FALSE, path_suffix = '_w_werner', logo_scale = 0.2)
+
+add_logo(
+  path1_werner, 
+  path_logo = generate_logo_path('timo-werner'), 
+  idx_x = 0.06,
+  idx_y = 0.72, 
+  # delete = FALSE,
+  path_suffix = '_w_werner',
+  logo_scale = 0.2
+)
 
