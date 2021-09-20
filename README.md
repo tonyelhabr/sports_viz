@@ -281,11 +281,21 @@ CONCACAF, CONMEBOL, and UEFA teams in the Gold Cup, Copa America, and
 Euros since 2015. CONMEBOL teams have a notably higher number of yellows
 and reds](37-concacaf/concacaf_tab.png "CONCACAF vs CONMBEBOL table")
 
-# 38. Football \#viz Twitter
+# 38. Football #viz Twitter
 
 ![venn diagram showing about 50 twiter accounts who post soccer viz,
 grouped by following, frequency of tweets, and frequency of
 images](38-soccer_twitter/venn/Slide1.JPG "Football viz twitter accounts venn diagram")
+
+# 40. Significant xG Overperformance
+
+![dumbell plot of 10-game rolling xg/shot and g/shot for harry kane and
+romelu lukaku over their past 50
+matches](40-xg_overperformance/overperformance_w_kane_lukaku.png "When do elite scorers like Kane and Lukaku significantly overperform their xG?")
+
+![dumbell plot of 10-game rolling xg/shot and g/shot for timo werner
+over their past 50
+matches](40-xg_overperformance/underperformance_w_werner.png "What does significant xG under-performance look like?")
 
 # Future Ideas
 
@@ -300,3 +310,14 @@ images](38-soccer_twitter/venn/Slide1.JPG "Football viz twitter accounts venn di
 -   Decision tree to filter down players in a sport to just one player
     who has achieved a very specific set of career totals/averages
     (i.e. <https://twitter.com/JacobEGoldstein/status/1296570734047686658>)
+
+-   Minutes played by new players
+    ([inspiration](https://twitter.com/reinhurdler/status/1438172361790996490?s=20)
+
+-   Which positions is it ok to have a weak spot at?
+    ([inspiration](https://theathletic.com/2832130/2021/09/19/in-which-positions-can-a-team-have-a-glaring-weakness-but-still-win-the-premier-league-title/))
+
+-   Do coaches sub-off players with yellow cards at a higher rate than
+    they would otherwise?
+
+-   watke vs. lasso impact on USMNT fandom
