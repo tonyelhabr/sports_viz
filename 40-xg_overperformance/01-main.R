@@ -86,11 +86,9 @@ shots <-
   relocate(idx, idx_shot)
 shots
 
-shots_top100 <- shots %>% inner_join(players_filt %>% filter(rnk_player <= 100L))
-
 shots_by_game <-
-  shots_top100 %>%
-  group_by(rnk_player, player_id, player_name, position, game_id, start_time_utc, total_shots, mp) %>%
+  shots %>%
+  group_by(rnk_player, player_id, player_name, game_id, start_time_utc, total_shots, mp) %>%
   summarize(
     shots = n(),
     across(c(g, xg), sum)
@@ -128,15 +126,8 @@ shots_by_game_w <-
   )
 shots_by_game_w
 
-player_ids_filt <-
-  players_filt %>%
-  filter(player_name %in% c('Harry Kane', 'Romelu Lukaku', 'Timo Werner')) %>% #, 'Son Heung-Min')) %>%
-  distinct(player_id, player_name)
-player_ids_filt
-
 shots_by_game_w_filt <-
   shots_by_game_w %>%
-  semi_join(player_ids_filt) %>%
   group_by(player_name) %>%
   slice_max(start_time_utc, n = 50) %>%
   ungroup() %>%
@@ -148,7 +139,6 @@ shots_by_game_w_filt
 
 color_g <- hcl(h = 180, c = 150, l = 80)
 color_xg <- hcl(h = 360, c = 150, l = 80)
-# scales::show_col(color_signif_o)
 color_signif_o <- '#f8de7f'
 color_signif_u <- '#abadff'
 
@@ -221,11 +211,11 @@ plot_base <- function(df) {
     )
 }
 
-kane_luk <- shots_by_game_w_filt %>% filter(player_name %in% c('Harry Kane', 'Romelu Lukaku'))
-kane_luk_lab <- kane_luk %>% slice_max(xgd_p90_w)
+kane_luka <- shots_by_game_w_filt %>% filter(player_name %in% c('Harry Kane', 'Romelu Lukaku'))
+kane_luka_lab <- kane_luka %>% slice_max(xgd_p90_w)
 
-p_kane_luk <-
-  kane_luk %>%
+p_kane_luka <-
+  kane_luka %>%
   plot_base() +
   facet_wrap(~player_name, ncol = 1) +
   theme(
@@ -296,14 +286,14 @@ p_kane_luk <-
   ) +
   # g/90 value
   geom_text(
-    data = kane_luk_lab,
+    data = kane_luka_lab,
     aes(y = g_p90_w + 0.05, label = sprintf('%0.02f', g_p90_w)),
     size = pts(12),
     color = color_g
   ) +
   # g/90 value
   geom_text(
-    data = kane_luk_lab,
+    data = kane_luka_lab,
     aes(x = idx_gp - 3.5, y = xg_p90_w - 0.2, label = 'G/90'),
     size = pts(12),
     nudge_x = -0.5,
@@ -311,7 +301,7 @@ p_kane_luk <-
   ) +
   # g/90 arrow
   geom_curve(
-    data = kane_luk_lab,
+    data = kane_luka_lab,
     aes(
       x = idx_gp + 2.5,
       y = g_p90_w + 0.05,
@@ -324,7 +314,7 @@ p_kane_luk <-
   ) +
   # xg/90 label
   geom_text(
-    data = kane_luk_lab,
+    data = kane_luka_lab,
     aes(x = idx_gp + 3.5, y = g_p90_w + 0.05, label = 'xG/90'),
     nudge_x = 0.7,
     size = pts(12),
@@ -332,14 +322,14 @@ p_kane_luk <-
   ) +
   # xg/90 value
   geom_text(
-    data = kane_luk_lab,
+    data = kane_luka_lab,
     aes(y = xg_p90_w - 0.2, label = sprintf('%0.02f', xg_p90_w)),
     size = pts(12),
     color = color_xg
   ) +
   # xg/90 arrow
   geom_curve(
-    data = kane_luk_lab,
+    data = kane_luka_lab,
     aes(
       x = idx_gp - 2.5,
       y = xg_p90_w - 0.2,
@@ -352,7 +342,7 @@ p_kane_luk <-
   ) +
   # arrow pointing up from below xg/90 for specified interval
   geom_segment(
-    data = kane_luk_lab,
+    data = kane_luka_lab,
     aes(
       x = idx_gp,
       y = xg_p90_w - 0.18,
@@ -364,7 +354,7 @@ p_kane_luk <-
   ) +
   # arrow pointing to desciption of labeled interval
   geom_curve(
-    data = kane_luk_lab,
+    data = kane_luka_lab,
     aes(
       x = idx_gp - 5,
       y = g_p90_w + 0.2,
@@ -377,7 +367,7 @@ p_kane_luk <-
   # label for specified interval
   ggtext::geom_richtext(
     data = 
-      kane_luk_lab %>% 
+      kane_luka_lab %>% 
       mutate(lab = glue::glue('<span style="color:white">10-game G/90 - xG/90 = <b>{scales::number(xgd_p90_w, accuracy = 0.01)}</b></span>')),
     aes(x = idx_gp - 5, y = g_p90_w + 0.2, label = lab),
     fill = NA_character_,
@@ -385,11 +375,11 @@ p_kane_luk <-
     hjust = 1,
     family = 'Karla'
   )
-path1_kane_luk <- file.path(dir_proj, 'overperformance.png')
+path1_kane_luka <- file.path(dir_proj, 'overperformance.png')
 
 ggsave(
-  filename = path1_kane_luk,
-  plot = p_kane_luk,
+  filename = path1_kane_luka,
+  plot = p_kane_luka,
   width = 10,
   height = 10
 )
@@ -398,9 +388,9 @@ generate_logo_path <- function(x) {
   file.path(dir_proj, sprintf('%s.png', x))
 }
 
-path2_kane_luk <- 
+path2_kane_luka <- 
   add_logo(
-    path1_kane_luk, 
+    path1_kane_luka, 
     path_logo = generate_logo_path('harry-kane'), 
     idx_x = 0.78, 
     idx_y = 0.80, 
@@ -408,19 +398,19 @@ path2_kane_luk <-
     path_suffix = '_w_kane'
   )
 
-path3_kane_luk <- 
+path3_kane_luka <- 
   add_logo(
-    path2_kane_luk, 
+    path2_kane_luka, 
     path_logo = file.path(dir_proj, 'romelu-lukaku.png'), 
     idx_x = 0.78, 
     idx_y = 0.37, 
     # delete = FALSE,
-    path_suffix = '_lukaku'
+    path_suffix = '_lukaaku'
   )
 
 # werner ----
 werner <- shots_by_game_w_filt %>% filter(player_name == 'Timo Werner')
-werner_lab <- werner %>% filter(idx_gp == 20L)
+werner_lab <- werner %>% filter(idx_gp == 20L) # just anywhere in the ykes zone
 p_werner <-
   werner %>%
   plot_base() +
@@ -547,4 +537,3 @@ add_logo(
   path_suffix = '_w_werner',
   logo_scale = 0.2
 )
-
