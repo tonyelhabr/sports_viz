@@ -1,17 +1,15 @@
 
 library(tidyverse)
-# library(rtweet)
+library(rtweet)
 # library(xengagement)
 # token <- get_twitter_token()
 
 dir_proj <- '41-usmnt_followers'
-path_followers <- file.path(dir_proj, 'watke_followers.rds')
 
-watke <- 'watke_'
-watke_folowers <- get_followers(user, n = 18000)
-write_rds(folowers, path_watke_followers)
+# watke <- 'watke_'
+# watke_folowers <- get_followers(user, n = 18000)
+# write_rds(folowers, path_watke_followers)
 watke_folowers <- read_rds(path_followers)
-
 
 usmnt <- 'USMNT'
 usmnt_followers <- get_followers(usmnt, n = 2200000, retryonratelimit = TRUE)
@@ -23,20 +21,24 @@ lasso_followers <- get_followers(lasso, n = 525000, retryonratelimit = TRUE)
 path_lasso_followers <- file.path(dir_proj, 'lasso_followers.rds')
 write_rds(lasso_followers, path_lasso_followers)
 
-# bind_rows(
-#   watke_folowers %>% mutate(user = 'watke'),
-#   lasso_followers %>% mutate(user = 'lasso'),
-#   usmnt_followers %>% mutate(user = 'usmnt')
-# ) %>% 
+df <-
+  bind_rows(
+    watke_followers %>% mutate(user = 'watke'),
+    lasso_followers %>% mutate(user = 'lasso'),
+    usmnt_followers %>% mutate(user = 'usmnt')
+  ) %>%
+  distinct() %>% 
+  mutate(z = 1) %>% 
+  pivot_wider(names_from = user, values_from = z)
 #   count(user)
 
-df <-
-  list(
-    'watke' = watke_folowers$user_id,
-    'lasso' = lasso_folowers$user_id,
-    'usmnt' = usmnt_followers$user_id
-  ) %>% 
-  reduce(full_join)
+# df <-
+#   list(
+#     tibble('watke' = watke_followers$user_id),
+#     tibble('lasso' = lasso_followers$user_id),
+#     tibble('usmnt' = usmnt_followers$user_id)
+#   ) %>%
+#   reduce(full_join)
 
 df %>% 
   mutate(
@@ -49,4 +51,5 @@ df %>%
       is.na(usmnt) ~ 'watke + lasso',
       TRUE ~ 'all'
     )
-  )
+  ) %>% 
+  count(grp, sort = TRUE)
