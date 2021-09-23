@@ -1,6 +1,5 @@
 
-# https://stackoverflow.com/questions/45152331/how-to-get-all-the-twitter-followers-ids-75000-of-a-user-using-pagination-in
-library(rtweet)
+# Reference: https://stackoverflow.com/questions/45152331/how-to-get-all-the-twitter-followers-ids-75000-of-a-user-using-pagination-in
 # Global variables:
 ids <- 75000 # Max number of ids per token every 15 minutes
 res <- list() # Vector where user_ids from followers will be appended
