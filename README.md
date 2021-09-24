@@ -320,10 +320,13 @@ Chart](01-nba_seed_p/nba_seed_p.png "2020 NBA Western Conference League Restart 
 
 -   Decision tree to filter down players in a sport to just one player
     who has achieved a very specific set of career totals/averages
-    (i.e. <https://twitter.com/JacobEGoldstein/status/1296570734047686658>)
+    (i.e. [inspiration](https://twitter.com/JacobEGoldstein/status/1296570734047686658))
 
 -   Minutes played by new players
-    ([inspiration](https://twitter.com/reinhurdler/status/1438172361790996490?s=20)
+    ([inspiration](https://twitter.com/reinhurdler/status/1438172361790996490?s=20))
+
+-   Playing time in career at current team sonar
+    ([inspiration](https://twitter.com/reinhurdler/status/1432841015858188288?s=20))
 
 -   Which positions is it ok to have a weak spot at?
     ([inspiration](https://theathletic.com/2832130/2021/09/19/in-which-positions-can-a-team-have-a-glaring-weakness-but-still-win-the-premier-league-title/))
