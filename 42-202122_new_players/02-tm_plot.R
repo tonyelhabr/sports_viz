@@ -70,28 +70,19 @@ player_mapping <-
   worldfootballR::player_dictionary_mapping() %>% 
   set_names(c('player_name_fbref', 'player_url_fbref', 'player_url', 'pos'))
 
+retieve_fbref_big5 <- function(x) {
+  fb_big5_advanced_season_stats(x, 'playing_time', team_or_player = 'player')
+}
 fbref_stats <-
-  fb_big5_advanced_season_stats(2022, 'playing_time', team_or_player = 'player') %>% 
+  bind_rows(
+    retieve_fbref_big5(2021),
+    retieve_fbref_big5(2022)
+  ) %>% 
   as_tibble() %>% 
   janitor::clean_names() %>% 
-  filter(comp == 'Premier League') %>% 
-  select(player_name_fbref = player, team_fbref = squad, g = mp_playing_time, mp = min_playing_time)
+  # filter(comp == 'Premier League') %>% 
+  transmute(start_year = season_end_year - 1L, comp, player_name_fbref = player, team_fbref = squad, g = mp_playing_time, mp = min_playing_time)
 fbref_stats
-
-new_players_imputed <-
-  stats_w_urls %>% 
-  filter(start_year == 2021) %>% 
-  anti_join(player_mapping) %>% 
-  select(player_name, team_tm, appearances, minutes_played) %>% 
-  arrange(desc(minutes_played)) %>% 
-  left_join(
-    fbref_stats %>% 
-      # need to join on team_tm cuz players like Tammy Abraham have incorrect TM current_club
-      inner_join(team_mapping %>% select(team_fbref, team_tm)) %>% 
-      rename(player_name = player_name_fbref)
-  ) %>% 
-  arrange(desc(mp))
-new_players_imputed
 
 pal <- c(
   'Forward' = '#ffbe0b',
@@ -116,18 +107,68 @@ replace_pos <- function(x) {
   )
 }
 
-players <-
-  stats_filt %>% 
-  group_by(player_name, start_year) %>% 
-  slice_max(in_squad, with_ties = FALSE) %>% 
-  ungroup() %>% 
-  mutate(
-    across(player_pos, replace_pos)
+select_players <- function(df) {
+  df %>% 
+    group_by(player_name_fbref, start_year) %>% 
+    slice_max(mp, with_ties = FALSE) %>% 
+    ungroup() %>%
+    select(start_year, team_fbref, player_name_fbref, player_pos, g, mp) %>% 
+    mutate(
+      across(player_pos, replace_pos)
+    )
+}
+
+players_imputed <-
+  stats_w_urls %>% 
+  # filter(start_year == 2021) %>% 
+  anti_join(player_mapping) %>% 
+  # we don't actually know if this will join with the fbref names yet, but try
+  select(player_name_fbref = player_name, team_tm, player_pos, appearances, minutes_played) %>% 
+  arrange(desc(minutes_played)) %>% 
+  inner_join(
+    fbref_stats %>% 
+      filter(comp == 'Premier League') %>% 
+      # need to join on team_tm cuz players like Tammy Abraham have incorrect TM current_club
+      inner_join(team_mapping %>% select(team_fbref, team_tm))
   ) %>% 
-  left_join(team_mapping %>% select(team_whoscored, team_tm)) %>% 
-  select(player_name, player_pos, start_year, team = team_whoscored, mp = minutes_played, appearances) %>% 
-  pivot_wider(names_from = start_year, values_from = c(team, appearances, mp))
+  group_by(player_name_fbref, team_fbref, start_year) %>% 
+  slice_max(mp, with_ties = FALSE) %>% 
+  ungroup() %>% 
+  arrange(desc(mp)) %>% 
+  group_by(player_name_fbref, start_year) %>% 
+  slice_max(mp, with_ties = FALSE) %>% 
+  ungroup() %>% 
+  select_players()
+players_imputed %>% count(start_year)
+players_imputed %>% count(start_year, team_fbref, player_name_fbref, sort = TRUE)
+
+players <-
+  stats_w_urls %>% 
+  # filter(start_year == 2021) %>% 
+  left_join(player_mapping) %>% 
+  inner_join(fbref_stats) %>% 
+  select_players()
 players
+
+
+players_all <-
+  bind_rows(
+  players %>% mutate(src = 'joined'),
+  players_imputed %>% mutate(src = 'imputed')
+) %>% 
+  group_by(start_year, team_fbref, player_name_fbref) %>% 
+  slice_max(src) %>% 
+  ungroup() %>% 
+  group_by(start_year, player_name_fbref) %>% 
+  slice_max(mp) %>% 
+  ungroup()
+players_all
+
+players_all_wide <-
+  players_all %>% 
+  select(player_name = player_name_fbref, player_pos, start_year, team = team_fbref, mp) %>% 
+  pivot_wider(names_from = start_year, values_from = c(team, mp))
+players_all_wide
 
 stats_filt %>% 
   filter(start_year == 2020) %>% 
