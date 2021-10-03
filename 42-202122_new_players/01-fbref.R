@@ -68,7 +68,13 @@ replace_pos <- function(x) {
 }
 
 retieve_fbref_big5 <- function(x) {
-  worldfootballR::fb_big5_advanced_season_stats(x, 'playing_time', team_or_player = 'player')
+  path <- file.path(dir_proj, sprintf('big5-playing-time-player-%d.rds', x))
+  if(file.exists(path)) {
+    return(read_rds(path))
+  }
+  res <- worldfootballR::fb_big5_advanced_season_stats(x, 'playing_time', team_or_player = 'player')
+  write_rds(res, path)
+  res
 }
 
 epl_2020 <- file.path(dir_proj, '2021-efl.xlsx') %>% readxl::read_excel()
@@ -140,11 +146,16 @@ players_wide <-
   semi_join(players21)
 players_wide
 
+
+players_wide %>% filter(team_2021 == 'Brentford')
+players_wide %>% filter(team_2021 == 'Liverpool')
+
 new_players <-
   players_wide %>% 
   drop_na(mp_2021) %>% 
-  filter(team_2020 != team_2021) %>% 
-  # filter(team_2020 != team_2021 | is.na(team_2020)) %>% 
+  # filter(team_2021 == 'Brentford') %>% 
+  # filter(team_2020 != team_2021) %>% 
+  filter(team_2020 != team_2021 | is.na(team_2020)) %>% 
   arrange(desc(mp_2021)) %>% 
   # ayyyy no missing if i do anti_join here
   inner_join(player_mapping %>% select(player_name = player_name_fbref, pos = pos_tm)) %>% 
@@ -156,6 +167,8 @@ new_players <-
   distinct()
 new_players
 
+new_players %>% filter(team == 'Brentford')
+new_players %>% filter(team == 'Liverpool')
 summarize_by <- function(...) {
   new_players %>% 
     group_by(team, ...) %>% 
@@ -179,22 +192,10 @@ agg <-
     agg_by_team %>% 
       select(team, mp_p90_total = mp_p90)
   ) %>% 
-  # right_join(
-  #   crossing(
-  #     team = team_mapping$team_fbref,
-  #     pos = agg_by_pos %>% distinct(pos) %>% pull(pos)
-  #   )
-  # ) %>%
-  # mutate(across(where(is.numeric), replace_na, 0)) %>%
-  add_row(
-    team = 'Newcastle Utd', pos = 'Wanker', mp = 0, mp_p90 = 1, mp_p90_total = 1
-  ) %>% 
   mutate(
-    # across(team, ~fct_reorder(.x, -mp_p90_total)),
-    across(team, ~ordered(.x, levels = c(agg_by_team$team, 'Newcastle Utd')))
+    across(team, ~ordered(.x, levels = c(agg_by_team$team)))
   ) %>% 
   arrange(team, -mp)
-# agg$team %>% levels()
 agg
 
 p <-
@@ -205,7 +206,7 @@ p <-
   theme_enhance_waffle() +
   waffle::geom_waffle(
     aes(fill = pos),
-    n_rows = 5,
+    n_rows = 6,
     color = gray_wv
   ) +
   scale_fill_manual(values = pal, na.value = gray_wv) +
@@ -223,9 +224,9 @@ p <-
   ) +
   labs(
     title = 'Which squads have had the largest influx of new players this season?',
-    subtitle = 'Each square represents 90 minutes played, aggregated across players on a given team.<br/>A "new" player is a player who did not play on a given team in the prior season.',
+    caption = 'Each block represents 90 minutes played, aggregated across players on a given team.<br/>A "new" player is a player who did not play on a given team in the prior season.<br/>Data through October 2, 2021.',
     # caption = 'A "new" player is a player who did not play on a given team in the prior season.'
-    caption = ' ',
+    subtitle = 'Two promoted teams, Norwich and Watford, have played lots of new players. Brentford has not.',
     tag = '**Viz**: Tony ElHabr | **Data**: fbref via {worldfootballR}',
   ) +
   theme( 
@@ -233,24 +234,24 @@ p <-
     panel.grid.minor = element_blank(),
     plot.title = element_text(size = 18),
     strip.text.x = element_text(margin = margin(10, 0, 10, 0, 'pt')),
-    plot.subtitle = ggtext::element_markdown(size = 14, face = 'italic'),
-    # plot.caption = ggtext::element_markdown(size = 14, face = 'italic'),
+    plot.subtitle = ggtext::element_markdown(size = 14, face = 'plain'),
+    plot.caption = ggtext::element_markdown(size = 11, face = 'italic'),
     legend.position = 'top'
   )
 p
 
+## Reference: https://github.com/ajreinhard/data-viz/blob/master/ggplot/plot_SB.R
 p_bld <- ggplot_gtable(ggplot_build(p))
 grob_strip_index <- which(sapply(p_bld$grob, function(x) x$name)=='strip')
 facet_id <- sapply(grob_strip_index, function(grb) {
   p_bld$grobs[[grb]]$grobs[[1]]$children[[2]]$children[[1]]$label
 })
-# p_bld$layout$z[grob_strip_index] <- 0
-
+# p_bld$layout$z[grob_strip_index] <- 0 ## not sure what the point of this is...
 
 for (i in 1:length(facet_id)) {
   # i <- 1
   url <- team_mapping %>% filter(team_fbref == facet_id[i]) %>% pull(url_logo_espn)
-  img <- grid::rasterGrob(image = magick::image_read(url), vp = grid::viewport(height = 0.8, width = 0.6))
+  img <- grid::rasterGrob(image = magick::image_read(url), vp = grid::viewport(height = 0.8, width = 0.6)) ## 1 and 0.75 is also fine
   tot_tree <- grid::grobTree(img)
   
   p_bld$grobs[[grob_strip_index[i]]] <- tot_tree
@@ -275,44 +276,3 @@ tonythemes:::add_logo(
   idx_y = 0.98,
   adjust_y = FALSE
 )
-
-# logo_size <- 0.05
-# asp <- 1.5
-# 
-# ## is image taller than wider? if so, make sure the width is at least the base_size
-# if (asp < 1) {
-#   base_size_rat_wid <- (5/base_size)
-#   logo_size <- (5/base_size) * logo_size * asp
-#   base_size <- base_size / asp
-# } else {
-#   base_size_rat_wid <- (5/base_size) / asp
-#   logo_size <- (5/base_size) * logo_size
-# }
-# pts <- function(x) {
-#   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
-# }
-# font <- 'Karla'
-# caption <-
-#   gridtext::richtext_grob(
-#     # expression(bold('Viz'), ': Tony ElHabr'),
-#     '**Viz**: Tony ElHabr',
-#     x = unit(0.01 * (base_size_rat_wid), 'npc'),
-#     gp = gpar(
-#       col = 'white',
-#       fontfamily = font,
-#       fontsize = pts(24)
-#     ),
-#     hjust = 0
-#   )
-# footer_rect <- grid::grid.rect(x = unit(seq(0.5, 1.5, length=2), 'npc'), gp=gpar(col = 'transparent', fill = rep(gray_wv, 2)), draw = F)
-# footer <- grid::grobTree(footer_rect, caption)
-# 
-# plt.final <- gridExtra::grid.arrange(p, footer, heights = unit(c(1, 24), c('null', 'pt')))
-# ggsave(
-#   filename = file.path(dir_proj, 'temp2.png'), 
-#   plot = cowplot::ggdraw(plt.final), 
-#   height = base_size, 
-#   width = base_size * asp
-# )
-
-
