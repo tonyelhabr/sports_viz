@@ -1,4 +1,4 @@
-
+ 
 library(tidyverse)
 library(understatr)
 
@@ -32,3 +32,6 @@ team_players_stats
 
 write_rds(team_players_stats, path_teams_players_stats)
 
+rgb2 <- function(r, g, b) {
+  rgb(r, g, b, maxColorValue = 255)
+}
