@@ -11,6 +11,10 @@ This repo stores my code and plots for sports-related plots. Any "small" data is
 
 The projects are listed in reverse chronoligical order. A skipped number corresponds to an idea that I scrapped.
 
+# 42. 2021-22 Premier League New Players
+
+![faceted waffle plot of 2021-22 english premier league, where each block represents 90 minutes played by new players on a given team, facets are for each team, and blocks are colored by position](42-202122_new_players/202122_epl_new_players_w_logo.png "Which squads have had the largest influx of new players this season?")
+
 # 41. #USMNT popularity growth drivers
 
 ![venn diagram showing mutual follows of \@watke\_, \@TedLasso, and \@USMNT on Twitter](41-usmnt_followers/venn.png "Has @watke_ done more for the growth of #USMNT popularity than Ted Lasso?")

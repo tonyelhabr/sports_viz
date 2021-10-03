@@ -28,14 +28,11 @@ theme_update(
   panel.grid.minor.y = element_blank(),
   plot.margin = margin(10, 10, 10, 10),
   plot.background = element_rect(fill = gray_wv, color = gray_wv),
-  # plot.caption = ggtext::element_markdown('Karla', size = 16, color = 'gray20', hjust = 1),
   plot.caption = element_text('Karla', size = 10, color = 'white', hjust = 1),
   plot.caption.position = 'plot',
   plot.tag = ggtext::element_markdown('Karla', size = 12, color = 'white', hjust = 0),
   plot.tag.position = c(.01, 0.01),
-  # legend.text = element_text(color = 'gray20', size = 14),
   strip.text = element_text('Karla', color = 'white', face = 'bold', size = 12, hjust = 0),
-  # strip.background = element_blank(),
   panel.background = element_rect(fill = gray_wv, color = gray_wv)
 )
 update_geom_defaults('text', list(family = 'Karla', size = 4))
@@ -52,6 +49,7 @@ pal <- c(
   'Goalkeeper' = '#3a86ff'
 )
 # nms_pal <- pal %>% names()
+scales::show_col(pal)
 
 replace_pos <- function(x) {
   y <-
@@ -110,7 +108,7 @@ players20
 team_mapping <- 'https://raw.githubusercontent.com/tonyelhabr/xengagement/master/data-raw/team_mapping.csv' %>% 
   read_csv(show_col_types = FALSE) %>% 
   filter(league == 'epl') %>% 
-  select(league, team_fbref, url_logo_espn, color_pri) %>% 
+  select(team_fbref, url_logo_espn) %>% 
   drop_na(team_fbref) %>% 
   mutate(
     across(
@@ -119,7 +117,7 @@ team_mapping <- 'https://raw.githubusercontent.com/tonyelhabr/xengagement/master
         team = ~case_when(
           .x == 'Norwich City' ~ 'Norwich',
           .x %>% str_detect('Utd$') ~ str_replace(.x, 'Utd', 'United'),
-          TRUE ~ .x
+          TRUE ~ .x,
         )
       ),
       .names = '{fn}'
@@ -136,9 +134,9 @@ players_wide <-
   group_by(start_year, player_name) %>% 
   slice_max(mp) %>% 
   ungroup() %>% 
-  # rename(team_fbref = team) %>% 
-  # anti_join(team_mapping %>% select(team_fbref, team)) %>% 
-  # select(-team_fbref) %>% 
+  rename(team_fbref = team) %>%
+  left_join(team_mapping %>% select(team_fbref, team)) %>%
+  select(-team_fbref) %>%
   pivot_wider(
     names_from = c(start_year),
     values_from = c(team, mp)
@@ -146,17 +144,10 @@ players_wide <-
   semi_join(players21)
 players_wide
 
-
-players_wide %>% filter(team_2021 == 'Brentford')
-players_wide %>% filter(team_2021 == 'Liverpool')
-
 new_players <-
   players_wide %>% 
   drop_na(mp_2021) %>% 
-  # filter(team_2021 == 'Brentford') %>% 
-  # filter(team_2020 != team_2021) %>% 
   filter(team_2020 != team_2021 | is.na(team_2020)) %>% 
-  arrange(desc(mp_2021)) %>% 
   # ayyyy no missing if i do anti_join here
   inner_join(player_mapping %>% select(player_name = player_name_fbref, pos = pos_tm)) %>% 
   mutate(
@@ -166,16 +157,12 @@ new_players <-
   rename_all(~str_remove(.x, '_2021$')) %>% 
   distinct()
 new_players
+new_players %>% filter(team == 'Manchester City') # %>% drop_na(team_)
 
-new_players %>% filter(team == 'Brentford')
-new_players %>% filter(team == 'Liverpool')
 summarize_by <- function(...) {
   new_players %>% 
     group_by(team, ...) %>% 
     summarize(
-      # across(where(is.numeric), sum),
-      # n_player = n_distinct(player_name),
-      # n = n()
       across(mp, sum)
     ) %>% 
     ungroup() %>% 
@@ -213,7 +200,6 @@ p <-
   guides(
     fill = guide_legend(
       title = '',
-      # keywidth = 1.5, keyheight = 1.5,
       label.theme = element_text(
         family = 'Karla',
         color = 'white',
@@ -224,9 +210,8 @@ p <-
   ) +
   labs(
     title = 'Which squads have had the largest influx of new players this season?',
-    caption = 'Each block represents 90 minutes played, aggregated across players on a given team.<br/>A "new" player is a player who did not play on a given team in the prior season.<br/>Data through October 2, 2021.',
-    # caption = 'A "new" player is a player who did not play on a given team in the prior season.'
-    subtitle = 'Two promoted teams, Norwich and Watford, have played lots of new players. Brentford has not.',
+    caption = 'Each block represents 90 minutes played, aggregated across players on a given team.<br/>A "new" player is any player who did not play on a given team in the prior season.<br/>Data through October 2, 2021.',
+    subtitle = 'Two promoted teams, Norwich and Watford, have played lots of new players. Brentford is closer to average.',
     tag = '**Viz**: Tony ElHabr | **Data**: fbref via {worldfootballR}',
   ) +
   theme( 
@@ -249,15 +234,35 @@ facet_id <- sapply(grob_strip_index, function(grb) {
 # p_bld$layout$z[grob_strip_index] <- 0 ## not sure what the point of this is...
 
 for (i in 1:length(facet_id)) {
-  # i <- 1
-  url <- team_mapping %>% filter(team_fbref == facet_id[i]) %>% pull(url_logo_espn)
-  img <- grid::rasterGrob(image = magick::image_read(url), vp = grid::viewport(height = 0.8, width = 0.6)) ## 1 and 0.75 is also fine
-  tot_tree <- grid::grobTree(img)
-  
+  id <- facet_id[i]
+  url <-
+    team_mapping %>% filter(team == !!id) %>% pull(url_logo_espn)
+  lab <-
+    grid::textGrob(
+      id,
+      x = unit(0, 'npc'),
+      gp = grid::gpar(
+        col = 'white',
+        fontfamily = 'Karla',
+        fontface = 'bold',
+        fontsize = 11
+      ),
+      hjust = 0
+    )
+  img <-
+    grid::rasterGrob(
+      image = magick::image_read(url),
+      # just = 'right',
+      hjust = 1,
+      x = unit(1, 'npc'),
+      ## 1 and 0.75 is also fine
+      vp = grid::viewport(height = 0.8, width = 0.6)
+    )
+  tot_tree <- grid::grobTree(lab, img)
   p_bld$grobs[[grob_strip_index[i]]] <- tot_tree
 }
 p <- cowplot::ggdraw(p_bld)
-base_size <- 7
+base_size <- 8
 asp <- 1.5
 path_waffle <- file.path(dir_proj, '202122_epl_new_players.png')
 ggsave(
