@@ -6,6 +6,34 @@ library(sqldf)
 # tonythemes::theme_set_tony()
 dir_proj <- '43-xg_signal'
 dir_data <- file.path(dir_proj, 'data')
+gray_wv <- rgb(24, 24, 24, maxColorValue = 255)
+gray_grid_wv <- rgb(64, 64, 64, maxColorValue = 255)
+
+extrafont::loadfonts(device = 'win', quiet = TRUE)
+theme_set(theme_minimal())
+theme_update(
+  text = element_text(family = 'Karla', color = 'white'),
+  title = element_text('Karla', size = 14, color = 'white'),
+  plot.title = element_text('Karla', face = 'bold', size = 24, color = 'white'),
+  plot.title.position = 'plot',
+  plot.subtitle = element_text('Karla', face = 'bold', size = 18, color = '#f1f1f1'),
+  axis.text = element_text('Karla', color = 'white', size = 14),
+  axis.title = element_text('Karla', size = 14, color = 'white', face = 'bold', hjust = 0.99),
+  axis.line = element_blank(),
+  panel.grid.major = element_line(color = gray_grid_wv),
+  panel.grid.minor = element_line(color = gray_grid_wv),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  plot.margin = margin(10, 10, 10, 10),
+  plot.background = element_rect(fill = gray_wv, color = gray_wv),
+  plot.caption = element_text('Karla', size = 10, color = 'white', hjust = 1),
+  plot.caption.position = 'plot',
+  plot.tag = ggtext::element_markdown('Karla', size = 12, color = 'white', hjust = 0),
+  plot.tag.position = c(.01, 0.01),
+  strip.text = element_text('Karla', color = 'white', face = 'bold', size = 12, hjust = 0),
+  panel.background = element_rect(fill = gray_wv, color = gray_wv)
+)
+update_geom_defaults('text', list(family = 'Karla', size = 4))
 
 results <-
   fs::dir_ls(dir_data, regexp = 'results-') %>% 
@@ -49,7 +77,7 @@ select_side <- function(.side) {
     rename_with(~str_replace(.x, suffix_opp, '_opp'), c(matches(suffix_opp), -matches('^team_')))
 }
 
-rgx_g <- '^x?g[dr]?'
+rgx_g <- '^x?gd?'
 results_redux <-
   bind_rows(select_side('h'), select_side('a')) %>% 
   arrange(season, league, tm, date) %>% 
@@ -68,11 +96,11 @@ results_redux <-
     ),
     pts = w * 3L + d * 1L + l * 0L,
     gd = g - g_opp,
-    gr = g / g_opp,
-    across(gr, ~.x %>% na_if(Inf)), #  %>% replace_na(1)),
-    xgd = xg - xg_opp,
-    xgr = xg / xg_opp,
-    across(xgr, ~.x %>% na_if(Inf)) #  %>% replace_na(1))
+    # gr = g / g_opp,
+    # across(gr, ~.x %>% na_if(Inf)), #  %>% replace_na(1)),
+    xgd = xg - xg_opp # ,
+    # xgr = xg / xg_opp,
+    # across(xgr, ~.x %>% na_if(Inf)) #  %>% replace_na(1))
   ) %>% 
   group_by(season, league, tm) %>% 
   mutate(
@@ -115,12 +143,12 @@ results_redux <-
   arrange(season, league, tm, date) %>% 
   group_by(season, league, tm) %>% 
   mutate(
-    mw = row_number(date),
     across(c(ptsd), list(cumu = cumsum))
   ) %>% 
   ungroup()
 results_redux
 
+# # check
 # results_redux %>% 
 #   filter(league == 'GER') %>% 
 #   filter(!is.na(wk)) %>% 
@@ -129,6 +157,161 @@ results_redux
 #   count(league, season, mw) %>%
 #   count(n, name = 'nn')
 
+# my way or the highway ----
+df <-
+  sqldf::sqldf(
+    'select 
+    a.league
+    , a.season
+    , a.tm
+    , a.mw
+    , b.mw as mw_post
+    , a.g
+    , b.g as g_post
+    , a.gd
+    , b.gd as gd_post
+    , a.xg
+    , b.xg as xg_post
+    , a.xgd
+    , b.xgd as xgd_post
+    , a.ptsd
+    , b.ptsd as ptsd_post
+     from results_redux a
+     inner join results_redux b
+     on a.league = b.league and a.season = b.season and a.tm = b.tm and a.mw < b.mw
+     order by a.league, a.season, a.tm, a.mw, b.mw'
+  ) %>% 
+  as_tibble()
+df
+# df %>% count(mw, sort = TRUE)
+# df %>% 
+#   filter(tm == 'Manchester City') %>% 
+#   # count(mw, sort = TRUE)
+#   filter(mw == 1, season == 2021)
+
+agg_pre <- 
+  results_redux %>% 
+  arrange(league, season, tm, mw) %>% 
+  select(league, season, tm, mw, matches(sprintf('%s$', rgx_g)), matches('ptsd?$')) %>% 
+  rename_with(~sprintf('%s_pre', .x), -c(league, season, tm, mw)) %>% 
+  group_by(league, season, tm) %>% 
+  mutate(
+    across(matches('_pre$'), cumsum)
+  ) %>% 
+  ungroup() %>% 
+  mutate(
+    across(matches('_pre$'), ~.x / mw)
+  )
+agg_pre
+
+agg_post <-
+  df %>% 
+  mutate(
+    w = case_when(
+     mw <= (0.5 * 38) ~ TRUE,
+     38 - mw
+    )
+  )
+  select(-mw_post) %>% 
+  group_by(league, season, tm, mw) %>% 
+  summarize(
+    n = n(),
+    across(matches('_post$'), sum)
+  ) %>% 
+  ungroup() %>% 
+  mutate(
+    # across(matches('^[x]?g[d]?$'), ~.x / mw),
+    across(matches('_post$'), ~.x / n)
+  ) %>% 
+  arrange(league, season, tm, mw)
+agg_post
+
+agg <-
+  full_join(
+    agg_pre %>% filter(mw != 38L),
+    agg_post %>% select(-c(n))
+  )
+agg
+
+cors <-
+  agg %>% 
+  select(-tm) %>%  
+  group_nest(league, season, mw) %>% 
+  mutate(
+    cors = map(data, corrr::correlate, method = 'pearson', quiet = TRUE)
+  ) %>% 
+  select(-c(data))
+cors
+
+cors_long <-
+  cors %>% 
+  unnest(cors) %>% 
+  rename(col1 = term) %>% 
+  pivot_longer(
+    -c(league, season, mw, col1),
+    names_to = 'col2',
+    values_to = 'cor'
+  ) %>% 
+  filter(col1 != col2) %>% 
+  separate(
+    col1, into = c('stat1', 'state1'), sep = '_'
+  ) %>% 
+  separate(
+    col2, into = c('stat2', 'state2'), sep = '_'
+  ) %>% 
+  filter(state1 == 'pre' & state2 == 'post') %>% 
+  mutate(r2 = cor^2)
+cors_long
+
+at_half <- function(fit, b2 = 0.5, m2 = 0) {
+  b1 <- fit$coefficient[1]
+  m1 <- fit$coefficient[2]
+  (b2 - b1) / (m1 - m2)
+}
+
+gd_fits <-
+  cors_long %>% 
+  filter(stat2 == 'gd') %>% 
+  # filter(stat1 == 'xgd') %>% 
+  # filter(stat1 != stat2) %>% 
+  filter(stat1 %>% str_detect('r$', negate = TRUE)) %>% 
+  group_nest(stat1, stat2) %>% 
+  mutate(
+    fit = map(data, ~lm(formula(r2 ~ log(mw)), data = .x)),
+    int = map_dbl(fit, ~at_half(.x) %>% exp())
+  ) %>% 
+  select(-fit) %>% 
+  arrange(int)
+gd_fits$int %>% round(2)
+
+cors_long %>% 
+  filter(stat1 == 'xg') %>% 
+  filter(mw <= 30) %>% 
+  ggplot() +
+  geom_hline(aes(yintercept = 0.5)) +
+  aes(x = mw, y = r2, color = stat2, group = stat2) +
+  # geom_line() +
+  # geom_point() +
+  coord_cartesian(ylim = c(0, 1)) +
+  geom_smooth(formula = y ~ log(x), method = 'lm', se = FALSE)
+
+cors_long %>% 
+  filter(league != 'FRA') %>% 
+  filter(stat2 == 'gd') %>% 
+  filter(stat1 != stat2) %>% 
+  filter(mw <= 20) %>% 
+  ggplot() +
+  geom_hline(aes(yintercept = 0.5)) +
+  aes(x = mw, y = r2, group = stat1, color = stat1) +
+  # geom_line() +
+  # geom_point() +
+  facet_grid(season~league) +
+  geom_smooth(formula = y ~ log(x), method = 'lm', se = FALSE) +
+  scale_y_continuous(breaks = seq(0, 0.7, by = 0.1)) +
+  # scale_x_continuous(breaks = seq(1, 38, by = 1)) +
+  coord_cartesian(ylim = c(0, 0.7))
+
+# caley ----
 w <- 20
 results_slide <-
   results_redux %>% 
