@@ -47,26 +47,8 @@ scrape_results <- function(country, gender, season_end_year, tier, overwrite = F
   res
 }
 
-scrape_misc_stats <- function(url, stat_type = 'summary', team_or_player = 'team', overwrite = FALSE) {
-  
-  path <- file.path(dir_data, sprintf('stats-%s-%s-%s.rds', basename(url), stat_type, team_or_player))
-  suffix <- glue::glue('for `url = "{url}"`, `stat_type = "{stat_type}"`, `team_or_player = "{team_or_player}"`')
-  
-  if(file.exists(path) & !overwrite) {
-    .display_info_early(suffix)
-    return(read_rds(path))
-  }
-  res <- worldfootballR::get_advanced_match_stats(url, stat_type = stat_type, team_or_player = team_or_player)
-  .display_info_after(suffix)
-  write_rds(res, path)
-  res
-}
-
 f <- possibly(scrape_results, otherwise = tibble(), quiet = FALSE)
 results <- 
   params %>% 
   mutate(data = pmap(list(country, gender, season_end_year, tier), f))
 results %>% unnest(data)
-
-g <- possibly(scrape_misc_stats, otherwise = tibble(), quiet = FALSE)
-stats <- urls %>% mutate(data = map(url, g))

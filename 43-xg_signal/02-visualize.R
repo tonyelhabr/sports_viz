@@ -39,7 +39,7 @@ color_gd <- '#00FAD8' # hcl(h = 180, c = 150, l = 80)
 color_xgd <- '#FF76B3' # hcl(h = 360, c = 150, l = 80)
 color_xgd_future <- '#f8de7f'
 lab_mapping <- tibble(
-  stat1 = c('xgr', 'gr'),
+  stat1 = c('xgd', 'gd'),
   label = sprintf('%s Difference', c('xG', 'Goal')),
   color = c(color_xgd, color_gd)
 )
@@ -266,7 +266,7 @@ mw_cutoff <- 21
 cors_long_filt <-
   cors_long %>% 
   filter(stat2 == 'gr') %>% 
-  filter(stat1 %in% c('gr', 'xgr')) %>% 
+  filter(stat1 %in% c('gd', 'xgd')) %>% 
   filter(mw <= mw_cutoff) 
 
 gd_fits <-
@@ -282,8 +282,8 @@ gd_fits <-
   select(-c(data, fit)) %>% 
   arrange(x_at_y_half)
 
-x_int_xgd <- gd_fits %>% filter(stat1 == 'xgr') %>% pull(x_at_y_half)
-x_int_gd <- gd_fits %>% filter(stat1 == 'gr') %>% pull(x_at_y_half)
+x_int_xgd <- gd_fits %>% filter(stat1 == 'xgd') %>% pull(x_at_y_half)
+x_int_gd <- gd_fits %>% filter(stat1 == 'gd') %>% pull(x_at_y_half)
 arw_annotate <- arrow(length = unit(5, 'pt'), type = 'closed')
 p <-
   cors_long_filt %>% 
@@ -322,18 +322,18 @@ p <-
   ) +
   theme(
     panel.grid.major.y = element_blank(),
+    plot.subtitle = ggtext::element_markdown(),
     axis.title.y = ggtext::element_markdown(),
     plot.caption = ggtext::element_markdown(),
   ) +
   labs(
     title = 'When can we start trusting the xG table?',
+    subtitle = glue::glue('With <b>true</b> goal and xG difference (not a ratio)')
     x = '# of Prior Matches Used for Correlation',
-    y = glue::glue('R-squared with <span style="color:{color_gd_future}">Rest-of-Season Goal Difference</span>'),
+    y = glue::glue('R-squared with <span style="color:{color_gd_future}">Rest-of-Season Goal Ratio</span>'),
     tag = '**Viz**: Tony ElHabr | **Data**: fbref via {worldfootballR}',
-    caption = 'Difference is defined as a ratio, e.g. team xG / (team xG + opponent xG).<br/>Data from Big 5 leagues, 2018 - 2021.'
-  )
-
-p <- p +
+    caption = 'Data from Big 5 leagues, 2018 - 2021.'
+  ) +
   geom_curve(
     inherit.aes = FALSE,
     aes(x = x_int_xgd + 1.5, xend = x_int_xgd, y = 0.81, yend = 0.51),
@@ -345,7 +345,7 @@ p <- p +
   ggtext::geom_richtext(
     inherit.aes = FALSE,
     data = tibble(
-      lab = glue::glue('<span style="color:white">After about 11 matches, there is more<br/>signal than noise in forecasting a team\'s<br/><b><span style="color:{color_gd_future}">rest-of-season goal difference</span></b> using<br/><b><span style="color:{color_xgd}">xG difference</span></span> up to that point in the season.')
+      lab = glue::glue('<span style="color:white">After about 10 matches, there is more<br/>signal than noise in forecasting a team\'s<br/><b><span style="color:{color_gd_future}">rest-of-season goal ratio</span></b> using<br/><b><span style="color:{color_xgd}">xG difference</span></span> up to that point in the season.')
     )
     ,
     aes(
@@ -363,7 +363,7 @@ p <- p +
 
 base_size <- 7
 asp <- 1.5
-path_viz <- file.path(dir_proj, 'xg_signal.png')
+path_viz <- file.path(dir_proj, 'xg_signal_true.png')
 ggsave(
   filename = path_viz, 
   plot = p,
