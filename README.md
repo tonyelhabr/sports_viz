@@ -6,6 +6,12 @@ gitignor’ed here.
 The projects are listed in reverse chronoligical order. A skipped number
 corresponds to an idea that I scrapped.
 
+# 43. xG Signal
+
+![line plot showing log curve of average xg difference r squared with
+rest-of-season xg difference, where the curve exceeds 0.5 at around 11
+matches](43-xg_signal/xg_signal.png "When can we start trusting the xG table?")
+
 # 42. 2021-22 Premier League New Players
 
 ![faceted waffle plot of 2021-22 english premier league, where each
@@ -87,8 +93,6 @@ Euros?](32-2020_euros/viz_countries_by_team_w_logo.png "Which 2020/21 Premier Le
 
 ![Match Goals Per 90 for the 2020
 EUROs](32-2020_euros/cities_w_logo.png "Match Goals Per 90 for the 2020 EUROs")
-
-definition of young”)
 
 # 30. EPL Subjective VAR calls
 
