@@ -19,7 +19,7 @@ base_url <- 'https://www.fotmob.com/'
 
 get_matches_by_date <- function(date, overwrite = FALSE, path = file.path(dir_data, sprintf('matches-%s.qs', date)), delay = 1) {
   url <- paste0(base_url, 'matches?date=', str_remove_all(as.character(date), '-'))
-
+  
   if(file.exists(path) & !overwrite) {
     cli::cli_alert_info(sprintf('Reading in matches from %s.', date))
     return(qs::qread(path))
@@ -50,11 +50,51 @@ pluck_matches <- function(x) {
 }
 
 pluck_match_data <- function(x) {
-  content <- x$content
-  bind_cols(
-    tibble(match_id = content$matchFacts$matchId),
-    content$shotmap$shots
+  # content <- x$content
+  shots <- x$content$shotmap$shots
+  has_shots <- length(shots) > 0
+  general <- x$general
+  general_scalars <- tibble(
+    matchId = general$matchId,
+    matchRound = ifelse(is.null(general$matchRound), '', general$matchRound),
+    leagueId = general$leagueId,
+    leagueName = general$leagueName,
+    leagueRoundName = general$leagueRoundName,
+    parentLeagueId = general$parentLeagueId,
+    parentLeagueSeason = general$parentLeagueSeason,
+    matchTimeUTC = general$matchTimeUTC
   )
+  general_teams <- tibble(
+    homeTeamId = unlist(general$homeTeam$id),
+    homeTeam = unlist(general$homeTeam$name),
+    homeTeamColor = unlist(general$teamColors$home),
+    awayTeamId = unlist(general$awayTeam$id),
+    awayTeam = unlist(general$awayTeam$name),
+    awayTeamColor = unlist(general$teamColors$away)
+  )
+  
+  df <-
+    bind_cols(
+      # tibble(match_id = content$matchFacts$matchId),
+      general_scalars,
+      general_teams
+    )
+  
+  if(!has_shots) {
+    return(df)
+  }
+  
+  df %>% 
+    bind_cols(
+      shots
+    ) %>% 
+    mutate(
+      team = case_when(
+        teamId == general$homeTeam$id ~ homeTeam,
+        teamId == general$awayTeam$id ~ awayTeam,
+        TRUE ~ NA_character_
+      )
+    )
 }
 
 league_mapping <- tibble(
@@ -88,20 +128,49 @@ match_ids <- match_ids_init %>%
   select(date, league_id = primary_id, league_name, match_id) %>% 
   unnest_longer(match_id)
 
-match_data <- match_ids %>% 
-  pull(match_id) %>% 
+set.seed(42)
+y <- sample(match_ids$match_id, 100) %>% 
   map(get_match) %>% 
-  map_dfr(pluck_match_data) %>% 
+  map_dfr(pluck_match_data)
+
+match_ids %>%
+  filter(date <= lubridate::ymd('2021-10-29')) %>%
+  tail(1) %>% 
+  pull(match_id) %>%
+  map(get_match) %>%   
+  map_dfr(pluck_match_data) -> z
+
+match_data_init <- 
+  match_ids %>%
+  filter(date <= lubridate::ymd('2021-10-29')) %>%
+  pull(match_id) %>%
+  map(get_match) %>%   
+  map_dfr(pluck_match_data)
+match_data <- match_data_init %>% 
   janitor::clean_names() %>% 
+  mutate(
+    time = match_time_utc %>% strptime(format = '%a, %b %d, %Y, %H:%M UTC', tz = 'UTC') %>% lubridate::ymd_hms(),
+    date = time %>% lubridate::date(),
+  ) %>% 
   select(
     match_id,
+    season = parent_league_season,
+    time,
+    date,
+    
+    home_id = home_team_id,
+    away_id = away_team_id,
+    home_team = home_team,
+    away_team = away_team,
     id,
     team_id,
+    team,
     player_id,
-    # player_name,
+    player_name,
     period,
     min,
     min_added,
+    situation,
     event_type,
     shot_type,
     
@@ -113,21 +182,28 @@ match_data <- match_ids %>%
     z_g = goal_crossed_z,
     
     xg = expected_goals,
+    
+    zoom_ratio,
     xgot = expected_goals_on_target,
-    # on_goal_shot
+    on_goal_shot,
     is_blocked,
     is_on_target,
     is_own_goal
   )
-
+match_data
+# strptime(general_scalars$matchTimeUTC, format = '%a, %b %d, %Y, %H:%M UTC', tz = 'UTC') %>% lubridate::ymd_hms()
+# strptime(general_scalars$matchTimeUTC, format = '%a, %b %d, %Y, %H:%M UTC', tz = 'UTC') %>% lubridate::date()
 matches_aug <- match_ids %>% 
   inner_join(match_data)
-matches_aug %>% 
-  filter(date < '2019-09-01') %>% 
-  count(league_name, is_na = is.na(id))
-matches_aug %>% 
-  drop_na(id) %>% 
-  distinct(league_name, match_id) %>% 
-  count(league_name)
+
+matches_aug %>%
+  drop_na(xgot) %>% 
+  arrange(desc(on_goal_shot$x))
+matches_aug %>%
+  drop_na(xgot) %>% 
+  arrange(on_goal_shot$x)
+matches_aug %>%
+  filter(!is.na(xgot)) %>% 
+  filter(is.na(z_g))
 
 qs::qsave(matches_aug %>% drop_na(id), file.path(dir_proj, 'data.qs'))
