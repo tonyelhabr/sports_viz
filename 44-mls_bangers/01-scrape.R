@@ -45,32 +45,9 @@ get_match <- function(match_id, overwrite = FALSE, path = file.path(dir_data, sp
   resp
 }
 
-dates_v <- seq.Date(lubridate::ymd('2016-08-01'), lubridate::ymd('2021-10-31'), by = 'day')
-matches <- dates_v %>% map(get_matches_by_date)
 pluck_matches <- function(x) {
   bind_cols(tibble(date = lubridate::ymd(x$date)), x$leagues)
 }
-
-matches_flat <- matches %>% 
-  map_dfr(~pluck_matches(.x))
-
-league_mapping <- tibble(
-  league_id = c(47, 54, 87, 53, 55, 130),
-  league_name = c('EPL', 'Bundesliga', 'LaLiga', 'Ligue 1', 'Serie A', 'MLS')
-)
-
-match_ids <- matches_flat %>% 
-  semi_join(
-    league_mapping,
-    by = c('primaryId' = 'league_id')
-  ) %>% 
-  janitor::clean_names() %>% 
-  hoist(
-    matches,
-    'match_id' = 'id'
-  ) %>% 
-  select(date, ccode, id, primary_id, name, match_id) %>% 
-  unnest_longer(match_id)
 
 pluck_match_data <- function(x) {
   content <- x$content
@@ -80,9 +57,77 @@ pluck_match_data <- function(x) {
   )
 }
 
+league_mapping <- tibble(
+  league_id = c(47, 54, 87, 53, 55, 130),
+  league_name = c('EPL', 'Bundesliga', 'LaLiga', 'Ligue 1', 'Serie A', 'MLS')
+)
+dates_v <- seq.Date(
+  lubridate::ymd('2016-08-01'),
+  lubridate::ymd('2021-10-31'), 
+  by = 'day'
+)
+
+# main ----
+match_ids_init <- dates_v %>% 
+  map(get_matches_by_date) %>% 
+  map_dfr(~pluck_matches(.x)) %>% 
+  janitor::clean_names()
+
+match_ids <- match_ids_init %>% 
+  inner_join(
+    league_mapping,
+    by = c('primary_id' = 'league_id')
+  ) %>% 
+  hoist(
+    matches,
+    'match_id' = 'id'
+  ) %>% 
+  # `name` in matches is sort of like my `league_name`, but it also includes stuff like MLS tourneys
+  # these are also indicated by `id`
+  # `parent_league_id` is another possible thing to use for league id
+  select(date, league_id = primary_id, league_name, match_id) %>% 
+  unnest_longer(match_id)
+
 match_data <- match_ids %>% 
   pull(match_id) %>% 
   map(get_match) %>% 
   map_dfr(pluck_match_data) %>% 
-  janitor::clean_names()
-match_data
+  janitor::clean_names() %>% 
+  select(
+    match_id,
+    id,
+    team_id,
+    player_id,
+    # player_name,
+    period,
+    min,
+    min_added,
+    event_type,
+    shot_type,
+    
+    x,
+    y,
+    x_b = blocked_x,
+    y_b = blocked_y,
+    y_g = goal_crossed_y,
+    z_g = goal_crossed_z,
+    
+    xg = expected_goals,
+    xgot = expected_goals_on_target,
+    # on_goal_shot
+    is_blocked,
+    is_on_target,
+    is_own_goal
+  )
+
+matches_aug <- match_ids %>% 
+  inner_join(match_data)
+matches_aug %>% 
+  filter(date < '2019-09-01') %>% 
+  count(league_name, is_na = is.na(id))
+matches_aug %>% 
+  drop_na(id) %>% 
+  distinct(league_name, match_id) %>% 
+  count(league_name)
+
+qs::qsave(matches_aug %>% drop_na(id), file.path(dir_proj, 'data.qs'))

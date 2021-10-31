@@ -2,6 +2,8 @@
 library(tidyverse)
 library(qs)
 library(janitor)
+library(fs)
+library(lubridate)
 
 dir_proj <- '44-mls_bangers'
 dir_data <- file.path(dir_proj, 'data')
@@ -9,7 +11,6 @@ dir_data <- file.path(dir_proj, 'data')
 pluck_matches <- function(x) {
   bind_cols(tibble(date = lubridate::ymd(x$date)), x$leagues)
 }
-
 
 league_mapping <- tibble(
   league_id = c(47, 54, 87, 53, 55, 130),
@@ -20,7 +21,7 @@ matches_init <-
   fs::dir_ls(
     dir_data,
     regexp = 'matches.*qs$'
-  ) %>% 
+  )[1] %>% 
   map_dfr(~qs::qread(.x) %>% pluck_matches()) %>% 
   janitor::clean_names()
 
@@ -29,7 +30,6 @@ matches <-
   inner_join(
     league_mapping,
     by = c('primary_id' = 'league_id')
-    # by = c('parent_league_id' = 'league_id')
   ) %>% 
   hoist(
     matches,
@@ -50,7 +50,7 @@ pluck_match_data <- function(x) {
   )
 }
 
-match_data <-
+match_data_init <-
   fs::dir_ls(
     dir_data,
     regexp = 'match_id.*qs$'
@@ -78,54 +78,47 @@ match_data <-
     
     xg = expected_goals,
     xgot = expected_goals_on_target,
-    #  on_goal_shot
+    # on_goal_shot
     is_blocked,
     is_on_target,
     is_own_goal
   )
-matches_w_meta <- matches %>% 
-  inner_join(match_data) %>% 
-  filter(!is_own_goal) # %>% 
-  # mutate(
-  #   g = if_else(event_type == 'Goal', 1L, 0L),
-  #   is_g = if_else(g == 1L & !is_own_goal, TRUE, FALSE)
-  # )
 
-matches_w_meta %>% 
+matches_aug <- matches %>% 
+  inner_join(match_data) %>% 
+  # filter(!is_own_goal) %>% 
   mutate(
-    g = ifelse(event_type == 'Goal', TRUE, FALSE),
-    across(xg, log)
-  ) %>% 
-  ggplot() +
-  aes(x = xg) +
-  # facet_wrap(~league_name, scales = 'fixed') +
-  # geom_histogram(
-  #   binwidth = 0.05,
-  #   aes(fill = g),
-  #   alpha = 0.5
-  # )
-  geom_density(
-    # binwidth = 0.1,
-    aes(
-      linetype = league_name,
-      color = g
-    )
+    xg_tier = case_when(
+      is.na(xg) ~ NA_character_,
+      xg >= 0.33 ~ 'great',
+      xg >= 0.15 ~ 'good',
+      xg >= 0.05 ~ 'average',
+      TRUE ~ 'poor'
+    ) %>% 
+      ordered(c('great', 'good', 'average', 'poor', NA_character_))
   )
-matches_w_meta %>% 
-  group_by(league_name) %>% 
+
+matches_aug %>% 
+  count(league_name, is_na = is.na(id))
+options(tibble.print_min = 24)
+matches_aug %>% 
+  filter(!is_own_goal) %>% 
+  group_by(league_name, xg_tier) %>% 
   summarize(
-    g = sum(event_type == 'Goal'),
-    n = n(),
-    prop = g / n,
+    g = sum(event_type == 'Goal' & !is_own_goal),
+    shots = n(),
+    frac_conv = g / shots,
     across(c(xg, xgot), mean, na.rm = TRUE)
   ) %>% 
   ungroup() %>% 
+  group_by(league_name) %>% 
   mutate(
-    lo = qbeta(0.025, g + 0.5, n - g + 0.5),
-    hi = qbeta(0.975, g + 0.5, n - g + 0.5)
+    frac_shots = shots / sum(shots),
+    frac_g = g / sum(g)
+  ) %>% 
+  ungroup() %>% 
+  mutate(
+    frac_conv_lo = qbeta(0.025, g + 0.5, shots - g + 0.5),
+    frac_conv_hi = qbeta(0.975, g + 0.5, shots - g + 0.5)
   )
 
-# 3610021: 10/30 Leicester City Arsenal
-match_data %>% 
-  filter(match_id == 3610021) %>% 
-  
