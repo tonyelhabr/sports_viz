@@ -10,11 +10,11 @@ state %>% str_split("\\s+") %>% map(length)
 state %>% as_tibble() %>% janitor::row_to_names(1) %>% janitor::clean_names()
 state
 shell('docker kill a41d65842260')
-address = '192.168.99.100'
+# address = '192.168.99.100'
 # port = 4445L
-# base_url <- 'https://understat.com/'
+base_url <- 'https://understat.com/'
 base_url <- 'https://whoscored.com/'
-# address = 'localhost'
+address = 'localhost'
 port = 4445L
 
 dr <-
