@@ -25,7 +25,8 @@ df <- file.path(dir_proj, 'data.qs') %>%
       xg >= 0.05 ~ 'average',
       TRUE ~ 'poor'
     ) %>% 
-      ordered(c('great', 'good', 'average', 'poor', NA_character_))
+      ordered(c('great', 'good', 'average', 'poor', NA_character_)),
+    xg_diff = xgot - xg
   )
 
 df %>% 
@@ -47,9 +48,9 @@ df %>%
   select(xg, xgot, y_g, z_g, on_goal_shot) %>% 
   arrange(desc(on_goal_shot$x))
 
-w_crossbar <- 0 # 0.12
-w_g <- 7.3152 - w_crossbar
-h_g <- 2.4384 - w_crossbar
+w_crossbar <- 0.12
+w_g <- 7.3152 # - w_crossbar
+h_g <- 2.4384 # - w_crossbar
 max_y <- 68
 max_x <- 105
 half_y <- max_y / 2
@@ -82,7 +83,8 @@ df_outer <- df %>%
   mutate(
     is_on_frame = is_in_w(y_g) & is_in_h(z_g),
     is_in_w = is_on_frame & is_in_outer_w(y_g),
-    is_in_h = is_on_frame & is_in_outer_h(z_g)
+    is_in_h = is_on_frame & is_in_outer_h(z_g),
+    is_in_outer_frame = is_in_w | is_in_h
   )
 
 df_outer %>% 
@@ -91,7 +93,7 @@ df_outer %>%
     is_on_target & !is_on_frame
   )
 
-w_g_buffer <- 3
+w_g_buffer <- 1
 gg_base <-
   tibble(
     x = c(half_y - half_w_g, half_y - half_w_g, half_y + half_w_g, half_y + half_w_g),
@@ -102,7 +104,7 @@ gg_base <-
   geom_path() +
   coord_fixed(
     xlim = c(half_y - half_w_g - w_g_buffer, half_y + half_w_g + w_g_buffer), 
-    ylim = c(0, h_g + 2)
+    ylim = c(0, h_g + 1)
   ) +
   theme(
     panel.grid = element_blank(),
@@ -143,6 +145,25 @@ gg_base +
     aes(x = y_g, y = z_g)
   )
 
+gg_base +
+  geom_point(
+    data = df_outer %>% 
+      # filter(is_on_frame & is_in_outer_frame) %>% 
+      filter(is.na(is_penalty) | !is_penalty) %>% 
+      filter(situation == 'FreeKick'),
+    aes(x = y_g, y = z_g, color = league_name, size = xg_diff)
+  )
+
+df_outer %>% 
+  head(1) %>% 
+  ggplot() +
+  aes(x = x, y = y) +
+  geom_segment(
+    aes(xend = y_g, yend = y_g)
+  )
+
+
+
 agg_by_spot <- df_outer %>% 
   mutate(is_in_outer_frame = is_in_w | is_in_h) %>% 
   group_by(
@@ -157,7 +178,8 @@ agg_by_spot <- df_outer %>%
   ungroup() %>% 
   group_by(league_name) %>% 
   mutate(
-    prop = n / sum(n)
+    total = sum(n),
+    prop = n / total
   ) %>% 
   ungroup() %>% 
   group_by(
@@ -167,6 +189,34 @@ agg_by_spot <- df_outer %>%
     rnk = row_number(desc(prop))
   ) %>% 
   ungroup()
+agg_by_spot %>% 
+  arrange(desc(n))
+
+library(ebbr)
+
+agg_by_spot %>%
+  # filter(n > 100) %>%
+  add_ebb_estimate(n, total, method = 'mle', prior_subset = n > 100) %>%
+  filter(situation == 'FreeKick') %>% 
+  filter(
+    is_on_frame & is_in_outer_frame
+  ) %>% 
+  mutate(
+    across(league_name, ~fct_reorder(.x, -rnk))
+  ) %>% 
+  ggplot() +
+  aes(x = .fitted, y = league_name) +
+  geom_errorbarh(aes(xmin = .low, xmax = .high)) +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) +
+  expand_limits(x = 0)
+
+agg_by_spot %>%
+  filter(n > 100) %>% 
+  # arrange(desc(prop)) %>% 
+  add_ebb_estimate(n, total) %>% 
+  arrange(prop) %>% 
+  filter(situation == 'FreeKick') %>% 
+  filter(league_name == 'MLS')
 
 agg_by_spot %>% 
   filter(league_name == 'MLS') %>% 
