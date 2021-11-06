@@ -102,8 +102,8 @@ league_mapping <- tibble(
   league_name = c('EPL', 'Bundesliga', 'LaLiga', 'Ligue 1', 'Serie A', 'MLS')
 )
 dates_v <- seq.Date(
-  lubridate::ymd('2016-08-01'),
-  lubridate::ymd('2021-10-31'), 
+  lubridate::ymd('2019-02-03'),
+  lubridate::ymd('2021-11-05'), 
   by = 'day'
 )
 
@@ -128,24 +128,12 @@ match_ids <- match_ids_init %>%
   select(date, league_id = primary_id, league_name, match_id) %>% 
   unnest_longer(match_id)
 
-set.seed(42)
-y <- sample(match_ids$match_id, 100) %>% 
-  map(get_match) %>% 
-  map_dfr(pluck_match_data)
-
-match_ids %>%
-  filter(date <= lubridate::ymd('2021-10-29')) %>%
-  tail(1) %>% 
-  pull(match_id) %>%
-  map(get_match) %>%   
-  map_dfr(pluck_match_data) -> z
-
 match_data_init <- 
   match_ids %>%
-  filter(date <= lubridate::ymd('2021-10-29')) %>%
   pull(match_id) %>%
   map(get_match) %>%   
   map_dfr(pluck_match_data)
+
 match_data <- match_data_init %>% 
   janitor::clean_names() %>% 
   mutate(
@@ -183,7 +171,7 @@ match_data <- match_data_init %>%
     
     xg = expected_goals,
     
-    zoom_ratio,
+    # zoom_ratio,
     xgot = expected_goals_on_target,
     on_goal_shot,
     is_blocked,
