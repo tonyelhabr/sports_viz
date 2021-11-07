@@ -139,7 +139,8 @@ gg_base <-
   ) +
   labs(x = NULL, y = NULL)
 
-df_outer_grp <- df_outer %>% 
+df_outer_grp <- 
+  df_outer %>% 
   select(date, league_name, match_id, id, xg, xgot, is_on_frame, is_in_w, is_in_h, x, y, y_g, z_g) %>% 
   mutate(
     grp = case_when(
@@ -208,9 +209,25 @@ gg_pitch <-
     )
   }
 
-
 fs::dir_create(dir_proj, 'players')
 date_start_mls_2021 <- lubridate::ymd('2021-04-16')
+df_outer_filt %>% 
+  count(player_id, player_name)
+
+base_url <- 'https://www.fotmob.com/'
+x <- paste0(base_url, 'playerData?id=789068') %>% jsonlite::fromJSON()
+footedness <- x$playerProps %>% filter(title == 'Preferred foot') %>% pull(value)
+
+
+retreive_footedness <- function(id) {
+  base_url <- 'https://www.fotmob.com/'
+  res <- paste0(base_url, 'playerData?id=', id) %>% jsonlite::fromJSON()
+  value <- res$playerProps %>% 
+    filter(title == 'Preferred foot') %>% 
+    pull(value)
+  ifelse(length(value) == 0, 'right', value)
+}
+
 df_outer_filt <- df_outer %>% 
   drop_na(y_g, xgot) %>% 
   # filter(is.na(is_penalty) | !is_penalty) %>% 
@@ -223,16 +240,18 @@ df_outer_filt <- df_outer %>%
       date >= !!date_start_mls_2021
   ) %>% 
   mutate(
+    footedness = map_chr(player_id, retreive_footedness),
     ## exists after download is done one
     path_png = file.path(dir_proj, 'players', sprintf('%d.png', player_id)),
     dist = sqrt((max_x - x)^2 + (y_g - y)^2),
-    sign = case_when(
-      y <= (max_y / 2) & y_g <= (max_y / 2) ~ -1,
-      y <= (max_y / 2) & y_g >= (max_y / 2) ~ 1,
-      y >= (max_y / 2) & y_g <= (max_y / 2) ~ -1,
-      y >= (max_y / 2) & y_g >= (max_y / 2) ~ 1,
-      TRUE ~ NA_real_
-    ),
+    # sign = case_when(
+    #   y <= (max_y / 2) & y_g <= (max_y / 2) ~ -1,
+    #   y <= (max_y / 2) & y_g >= (max_y / 2) ~ 1,
+    #   y >= (max_y / 2) & y_g <= (max_y / 2) ~ -1,
+    #   y >= (max_y / 2) & y_g >= (max_y / 2) ~ 1,
+    #   TRUE ~ NA_real_
+    # ),
+    sign = ifelse(footedness == 'right', 1, -1),
     curvature = 0.2 * sign * dist / max(abs(dist))
   )
 
@@ -242,6 +261,7 @@ df_outer_filt <- df_outer %>%
 #   head(1) %>% 
 #   glimpse()
 
+## donwload player images once
 if(FALSE) {
   df_outer_filt$player_id %>% 
     unique() %>% 
@@ -254,7 +274,7 @@ if(FALSE) {
 lab_suffix_base <- ' direct free kicks on target and within 1 meter of the frame'
 lab_suffix_2 <- sprintf(' of%s', lab_suffix_base)
 lab_subtitle <- 'MLS 2021 season'
-p <- df_outer_filt %>% 
+p_shotmap <- df_outer_filt %>% 
   ggplot() +
   gg_pitch() +
   aes(x = x, y = y) +
@@ -286,12 +306,12 @@ p <- df_outer_filt %>%
     title = glue::glue('Goals from{lab_suffix_base}'),
     subtitle = lab_subtitle
   )
-p
+p_shotmap
 w_shotmap <- 8
 # nflplotR::ggpreview(p, width = w_shotmap, height = w_shotmap * .asp)
 ggsave(
   filename = file.path(dir_proj, 'shotmap.png'),
-  plot = p,
+  plot = p_shotmap,
   width = w_shotmap,
   height = w_shotmap * .asp
 )
@@ -390,135 +410,3 @@ ggsave(
   height = h_bars
 )
 
-agg_by_spot %>%
-  filter(n > 100) %>% 
-  # arrange(desc(prop)) %>% 
-  add_ebb_estimate(n, total) %>% 
-  arrange(prop) %>% 
-  filter(situation == 'FreeKick') %>% 
-  filter(league_name == 'MLS')
-
-agg_by_spot %>% 
-  filter(league_name == 'MLS') %>% 
-  # filter(situation == 'FreeKick')
-  filter(is_in_outer_frame)
-
-df_outer_filt %>% 
-  filter(league_name == 'EPL' & season == '2021/2022') %>% 
-  arrange(desc(date)) %>% 
-  filter(event_type == 'Post')
-
-df_outer_filt %>% 
-  count(event_type, sort = TRUE)
-df_outer_filt %>% filter(is_in_w | is_in_h) %>% count(event_type)
-
-## max on goal y (on_goal_shot$zoomRatio == 1): on_goal_shot$y: .613, z_g: 2.32
-
-df %>% 
-  drop_na(y_g) %>% 
-  # mutate(across(y_g, ~.x - 34)) %>% 
-  lm(formula(y_g ~ on_goal_shot$y + 0), data = .)
-
-df %>% 
-  drop_na(xgot, z_g)  %>% 
-  arrange(desc(on_goal_shot$y)) %>% 
-  select(xg, xgot, y_g, z_g, on_goal_shot)
-
-df %>% 
-  drop_na(z_g) %>% 
-  filter(league_name == 'EPL', season == '2021/2022') %>% 
-  slice_max(date) %>%
-  select(home_team, away_team, player_name, min, x, y, y_g, z_g, xg, xgot, on_goal_shot)
-# mutate(across(y_g, ~.x - 34)) %>% 
-lm(formula(z_g ~ on_goal_shot$x + 0), data = .)
-
-## why is there missing z_g for shots where there is non-na xgot?
-## can impute with on_goal_shot vars
-df %>%
-  filter(!is.na(xgot)) %>% 
-  filter(is.na(z_g))
-df %>% 
-  filter(!is.na(xgot)) %>% 
-  filter(is.na(on_goal_shot$x))
-
-# mutate(
-#   frac_conv_lo = qbeta(0.025, g + 0.5, shots - g + 0.5),
-#   frac_conv_hi = qbeta(0.975, g + 0.5, shots - g + 0.5)
-# )
-stats <-
-  df %>% 
-  filter(!is_own_goal) %>% 
-  filter(!is_penalty) %>% 
-  group_by(league_grp, situation, xg_tier) %>% 
-  summarize(
-    g = sum(event_type == 'Goal'),
-    shots = n(),
-    frac_conv = g / shots,
-    shots_blocked = sum(is_blocked),
-    across(c(xg, xgot), mean, na.rm = TRUE)
-  ) %>% 
-  ungroup() %>% 
-  group_by(league_grp) %>% 
-  mutate(
-    frac_blocked = shots_blocked / shots,
-    frac_shots = shots / sum(shots),
-    frac_g = g / sum(g)
-  ) %>% 
-  ungroup()
-stats
-
-df %>% 
-  mutate(
-    diff = xgot - xg
-  ) %>% 
-  filter(league_name == 'Bundesliga') %>% 
-  filter(situation == 'FreeKick')
-arrange(desc(diff))
-
-df %>% 
-  mutate(
-    mutate(across(xgot, ifelse(!is_blocked & is.na(xgot))))
-    diff = xgot - xg
-  ) %>% 
-  arrange(desc(diff)) %>% 
-  # filter(situation %in% c('FastBreak', 'FreeKick', 'FromCorner', 'RegularPlay')) %>% 
-  filter(situation %in% c('FreeKick')) %>% 
-  group_by(league_name, situation) %>% 
-  mutate(
-    prnk = percent_rank(desc(diff))
-  ) %>% 
-  ungroup() %>% 
-  # filter(prnk <= 0.5) %>% 
-  ggplot() +
-  aes(x = prnk, y = diff, group = league_name, color = league_name) +
-  geom_step() +
-  facet_wrap(~situation)
-
-stats %>% 
-  group_by(situation) %>% 
-  mutate(rnk = row_number(desc(xgot))) %>% 
-  ungroup() %>% 
-  filter(league_grp == 'MLS' & rnk == 1)
-
-df %>% 
-  filter(event_type == 'Goal' & !is_own_goal & !is_penalty) %>% 
-  mutate(
-    across(c(x, y), round, 1)
-  ) %>% 
-  count(x, y, sort = TRUE)
-
-df %>% 
-  filter(event_type == 'Goal' & !is_own_goal & !is_penalty) %>% 
-  filter(round(x, 1) == 98 & round(y, 1) == 37.7)
-
-df %>% 
-  filter(event_type == 'Goal' & !is_own_goal & !is_penalty) %>% 
-  filter(xg_tier == 'poor') %>% 
-  filter(league_grp != 'Ligue 1') %>% 
-  ggplot() +
-  aes(x = xgot, y = league_grp) +
-  ggbeeswarm::geom_quasirandom(
-    alpha = 0.3,
-    groupOnX = FALSE
-  )
-geom_point(aes(color = league_grp))
