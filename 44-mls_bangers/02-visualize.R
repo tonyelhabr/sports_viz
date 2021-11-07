@@ -19,7 +19,7 @@ theme_set(theme_minimal())
 theme_update(
   text = element_text(family = 'Karla', color = 'white'),
   title = element_text('Karla', size = 14, color = 'white'),
-  plot.title = element_text('Karla', face = 'bold', size = 24, color = 'white'),
+  plot.title = element_text('Karla', face = 'bold', size = 16, color = 'white'),
   plot.title.position = 'plot',
   plot.subtitle = element_text('Karla', size = 14, color = '#f1f1f1'),
   axis.text = element_text('Karla', color = 'white', size = 14),
@@ -39,6 +39,18 @@ theme_update(
   panel.background = element_rect(fill = gray_wv, color = gray_wv)
 )
 update_geom_defaults('text', list(family = 'Karla', size = 4))
+
+
+## max on goal y (with on_goal_shot$zoomRatio == 1):
+## 0.0317 <= on_goal_shot$x <= 1.97, or 37.7 <= y_g <= 30.3, # 7.4 / 1.94
+## 0.0519 <= on_goal_shot$x <= 1.95 or 37.6 <= y_g <= 30.4 if z_g is not NA # 7.2 / 1.9
+## max on goal y (with on_goal_shot$zoomRatio == 1):
+## 0.0102 <= on_goal_shot$y <= 0.613, 0.0385 <= z_g <= 2.32  if z_g is not NA
+## actual dims are 7.3152 m wide and 2.4384 m height
+
+convert_ogs_y_to_z_g <- function(y) {
+  y * 2.32 / 0.613
+}
 
 df <- file.path(dir_proj, 'data.qs') %>% 
   qs::qread() %>% 
@@ -64,6 +76,18 @@ df <- file.path(dir_proj, 'data.qs') %>%
     xg_diff = xgot - xg
   )
 
+df %>% 
+  select(xg, xgot, y_g, z_g, on_goal_shot) %>% 
+  mutate(
+    across(
+      z_g,
+      ~case_when(
+        !is.na(xgot) ~ coalesce(.x, convert_ogs_y_to_z_g),
+        TRUE ~ .x
+      )
+    )
+  )
+
 ## how many matches per league?
 df %>% 
   distinct(league_name, match_id, date) %>% 
@@ -73,12 +97,6 @@ df %>%
     min_date = min(date)
   )
 
-## max on goal y (with on_goal_shot$zoomRatio == 1):
-## 0.0317 <= on_goal_shot$x <= 1.97, or 37.7 <= y_g <= 30.3, # 7.4 / 1.94
-## 0.0519 <= on_goal_shot$x <= 1.95 or 37.6 <= y_g <= 30.4 if z_g is not NA # 7.2 / 1.9
-## max on goal y (with on_goal_shot$zoomRatio == 1):
-## 0.0102 <= on_goal_shot$y <= 0.613, 0.0385 <= z_g <= 2.32  if z_g is not NA
-## actual dims are 7.3152 m wide and 2.4384 m height
 
 w_crossbar <- 0.12
 w_g <- 7.3152
@@ -95,7 +113,7 @@ is_in_outer_w <- function(y, buffer = 1) {
   )
 }
 
-is_in_outer_h <- function(z, buffer = 1) {
+is_in_outer_h <- function(z, buffer = 0.5) {
   case_when(
     z <= h_g & z >= (h_g - buffer) ~ TRUE,
     TRUE ~ FALSE
@@ -119,6 +137,10 @@ df_outer <- df %>%
     is_in_outer_frame = is_in_w | is_in_h
   )
 
+z <- df_outer %>% 
+  filter(league_name == 'MLS', player_name == 'Lucas Zelarayan')
+z %>% distinct(id)
+
 w_g_buffer <- 1
 gg_base <-
   tibble(
@@ -127,46 +149,20 @@ gg_base <-
   ) %>% 
   ggplot() +
   aes(x = x, y = y) + 
-  geom_path() +
+  geom_path(
+    color = 'white',
+    size = 2
+  ) +
   coord_fixed(
     xlim = c(half_y - half_w_g - w_g_buffer, half_y + half_w_g + w_g_buffer), 
-    ylim = c(0, h_g + 1)
+    ylim = c(0, h_g + 0.1)
   ) +
   theme(
-    panel.grid = element_blank(),
+    panel.grid.major = element_blank(),
     axis.ticks = element_blank(),
     axis.text = element_blank()
   ) +
   labs(x = NULL, y = NULL)
-
-df_outer_grp <- 
-  df_outer %>% 
-  select(date, league_name, match_id, id, xg, xgot, is_on_frame, is_in_w, is_in_h, x, y, y_g, z_g) %>% 
-  mutate(
-    grp = case_when(
-      !is_on_frame ~ 'miss',
-      is_on_frame & !is_in_w & !is_in_h ~ 'easy',
-      is_in_w & !is_in_h ~ 'w only',
-      !is_in_w & is_in_h ~ 'h only',
-      is_in_w & is_in_h ~ 'w+h'
-    )
-  )
-
-gg_base +
-  geom_point(
-    data = df_outer_grp,
-    alpha = 0.5,
-    aes(x = y_g, y = z_g, color = grp)
-  )
-
-gg_base +
-  geom_point(
-    data = df_outer %>% 
-      # filter(is_on_frame & is_in_outer_frame) %>% 
-      filter(!is_penalty) %>% 
-      filter(situation == 'FreeKick'),
-    aes(x = y_g, y = z_g, color = league_name, size = xg_diff)
-  )
 
 # Reference: https://github.com/Torvaney/ggsoccer/blob/master/R/dimensions.R
 .pitch_international <- list(
@@ -211,14 +207,6 @@ gg_pitch <-
 
 fs::dir_create(dir_proj, 'players')
 date_start_mls_2021 <- lubridate::ymd('2021-04-16')
-df_outer_filt %>% 
-  count(player_id, player_name)
-
-base_url <- 'https://www.fotmob.com/'
-x <- paste0(base_url, 'playerData?id=789068') %>% jsonlite::fromJSON()
-footedness <- x$playerProps %>% filter(title == 'Preferred foot') %>% pull(value)
-
-
 retreive_footedness <- function(id) {
   base_url <- 'https://www.fotmob.com/'
   res <- paste0(base_url, 'playerData?id=', id) %>% jsonlite::fromJSON()
@@ -227,6 +215,84 @@ retreive_footedness <- function(id) {
     pull(value)
   ifelse(length(value) == 0, 'right', value)
 }
+
+df_outer_fk <- df_outer %>% 
+  drop_na(y_g, xgot) %>% 
+  # filter(is.na(is_penalty) | !is_penalty) %>% 
+  filter(
+    is_in_outer_frame & 
+      !is_penalty &
+      # league_name == 'MLS' & 
+      situation == 'FreeKick' & 
+      date >= !!date_start_mls_2021
+  )
+df_outer %>% filter(player_name == 'Lucas Zelarayan') %>% 
+  select(date, home_team, away_team, x, y, xg, xgot, y_g, z_g)
+df_outer %>% 
+  filter(player_name == 'Lucas Zelarayan') %>% 
+  filter(player)
+## code from 202021_soccer_refs
+pal <- c(scales::hue_pal()(5), 'white')
+league_logos <-
+  tibble(
+    league_name =  c('EPL', 'LaLiga', 'Ligue 1', 'Bundesliga', 'Serie A', 'MLS'),
+    path_logo = file.path('25-202021_soccer_refs', sprintf('%s.png', c('epl-150px', 'la-liga-150px', 'ligue-1', 'bundesliga', 'serie-a', 'mls'))),
+    # path_logo = file.path(dir_proj, sprintf('%s.png', c('epl-150px', 'mls'))),
+    idx_logo = c(1L, 2L, 4L, 3L, 5L, 6L),
+    color = c(pal[5], pal[2], pal[3], pal[1], pal[4], pal[6])
+  ) %>% 
+  mutate(img = glue::glue("<img src={path_logo} width='40' height='40'/>")) %>% 
+  # mutate(across(c(path_logo, img), ~fct_reorder(.x, idx_logo)))
+  arrange(idx_logo)
+league_logos
+
+lab_tag <- '**Viz**: Tony ElHabr'
+lab_suffix_base <- ' direct free kicks on target and near goal frame'
+lab_suffix_2 <- sprintf(' of%s', lab_suffix_base)
+lab_explainer <- '"Near goal frame" = within 1 meter of goal posts or 0.5 meter within goal crossbar.'
+lab_subtitle <- 'MLS 2021 season'
+lab_subtitle_2 <- sprintf('%s and 2020/21-21/22 seasons for Big 5 leagues', lab_subtitle)
+
+p_frame <-
+  gg_base +
+  geom_point(
+    data = df_outer_fk %>% filter(league_name != 'MLS'),
+    alpha = 0.25,
+    aes(x = y_g, y = z_g, color = league_name, size = xg_diff)
+  ) +
+  geom_point(
+    data = df_outer_fk %>% filter(league_name == 'MLS'),
+    aes(x = y_g, y = z_g, color = league_name, size = xg_diff)
+  ) +
+  guides(
+    size = guide_legend('xGoT - xG', override.aes = list(color = 'gray50')),
+    color = guide_legend('League', override.aes = list(size = 3))
+  ) +
+  scale_color_manual(
+    values = league_logos %>% select(league_name, color) %>% deframe()
+  ) +
+  scale_radius(range = c(1, 8)) +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.text = element_text(size = 14),
+    legend.title = element_text(size = 14, face = 'bold'),
+    legend.position = 'top'
+  ) +
+  labs(
+    title = sprintf('Shots from%s', lab_suffix_base),
+    tag = lab_tag,
+    caption = sprintf('%s\nData: %s.', lab_explainer, lab_subtitle_2)
+  )
+p_frame
+
+h_frame <- 5
+ggsave(
+  filename = file.path(dir_proj, 'frame.png'),
+  plot = p_frame,
+  height = h_frame,
+  width = h_frame * 2
+)
 
 df_outer_filt <- df_outer %>% 
   drop_na(y_g, xgot) %>% 
@@ -271,9 +337,34 @@ if(FALSE) {
     )
 }
 
-lab_suffix_base <- ' direct free kicks on target and within 1 meter of the frame'
-lab_suffix_2 <- sprintf(' of%s', lab_suffix_base)
-lab_subtitle <- 'MLS 2021 season'
+pts <- function(x) {
+  as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
+}
+
+
+df_outer_filt <- df_outer_filt %>% 
+  mutate(
+    lab = sprintf('%s<br/>xG: %.2f<br/>xGoT %.2f', strftime(date, '%b %d'), xg, xgot),
+    x_lab = case_when(
+      id == 2330391375 ~ x - 11, # sep 15
+      id == 2331772967 ~ x - 5, # sep 18
+      id == 2339100705 ~ x - 5, # oct 03
+      id == 2344576271 ~ x - 5, # oct 20
+      id == 2344592075 ~ x - 1.5
+    ),
+    y_lab = case_when(
+      id == 2330391375 ~ y - 0, # sep 15
+      id == 2331772967 ~ y + 1.5, # sep 18
+      id == 2339100705 ~ y + 1.5, # oct 03
+      id == 2344576271 ~ y + 3, # oct 20
+      id == 2344592075 ~ y - 1
+    ),
+    hjust_lab = case_when(
+      id == 2344592075 ~ 1,
+      TRUE ~ 0
+    )
+  )
+
 p_shotmap <- df_outer_filt %>% 
   ggplot() +
   gg_pitch() +
@@ -282,6 +373,17 @@ p_shotmap <- df_outer_filt %>%
     size = 0.05,
     asp = 1 / .asp,
     aes(x = x - 3, y = y, image = path_png)
+  ) +
+  ggtext::geom_richtext(
+    data = df_outer_filt,
+    family = 'Karla',
+    size = pts(10),
+    fill = NA_character_,
+    label.color = NA_character_,
+    # hjust = 1,
+    vjust = 0,
+    color = 'white',
+    aes(x = x_lab, y = y_lab, hjust = hjust_lab, label = lab)
   ) +
   map(
     df_outer_filt %>% 
@@ -299,16 +401,18 @@ p_shotmap <- df_outer_filt %>%
       }
   ) +
   theme(
-    plot.title = element_text(size = 16),
-    plot.subtitle = element_text(size = 14)
+    plot.title = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5)
   ) +
   labs(
     title = glue::glue('Goals from{lab_suffix_base}'),
-    subtitle = lab_subtitle
+    subtitle = lab_subtitle,
+    tag = lab_tag,
+    caption = lab_explainer
   )
 p_shotmap
-w_shotmap <- 8
-# nflplotR::ggpreview(p, width = w_shotmap, height = w_shotmap * .asp)
+w_shotmap <- 10
+
 ggsave(
   filename = file.path(dir_proj, 'shotmap.png'),
   plot = p_shotmap,
@@ -356,21 +460,6 @@ agg_by_spot_filt <- agg_by_spot %>%
   )
 agg_by_spot_filt
 
-## code from 202021_soccer_refs
-pal <- c(scales::hue_pal()(5), 'white')
-league_logos <-
-  tibble(
-    league_name =  c('EPL', 'LaLiga', 'Ligue 1', 'Bundesliga', 'Serie A', 'MLS'),
-    path_logo = file.path('25-202021_soccer_refs', sprintf('%s.png', c('epl-150px', 'la-liga-150px', 'ligue-1', 'bundesliga', 'serie-a', 'mls'))),
-    # path_logo = file.path(dir_proj, sprintf('%s.png', c('epl-150px', 'mls'))),
-    idx_logo = c(1L, 2L, 4L, 3L, 5L, 6L),
-    color = c(pal[5], pal[2], pal[3], pal[1], pal[4], pal[6])
-  ) %>% 
-  mutate(img = glue::glue("<img src={path_logo} width='40' height='40'/>")) %>% 
-  # mutate(across(c(path_logo, img), ~fct_reorder(.x, idx_logo)))
-  arrange(idx_logo)
-league_logos
-
 p_bars <- 
   agg_by_spot_filt %>% 
   ggplot() +
@@ -396,8 +485,9 @@ p_bars <-
   labs(
     y = NULL,
     title = glue::glue('MLS has the highest proportion{lab_suffix_2}'),
-    subtitle = glue::glue('{lab_subtitle} and 2020/21-21/22 seasons for Big 5'),
-    caption = 'Error bars indicate 95% credible interval for emperical Bayes adjusted percentage.\nOn frame shots does not have to result in a goal to qualify.',
+    subtitle = lab_subtitle_2,
+    tag = lab_tag,
+    caption = sprintf('%s\nError bars indicate 95%% credible interval for emperical Bayes adjusted percentage.\nOn frame shots does not have to result in a goal to qualify.', lab_explainer),
     x = glue::glue('%{lab_suffix_2}')
   )
 p_bars
