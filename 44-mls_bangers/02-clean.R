@@ -3,6 +3,7 @@ library(tidyverse)
 library(qs)
 library(janitor)
 library(lubridate)
+library(ebbr)
 
 dir_proj <- '44-mls_bangers'
 
@@ -43,10 +44,10 @@ df %>%
 ## max on goal y (with on_goal_shot$zoomRatio == 1):
 ## 0.0102 <= on_goal_shot$y <= 0.613, 0.0385 <= z_g <= 2.32  if z_g is not NA
 ## actual dims are 7.3152 m wide and 2.4384 m height, 
-df %>%
-  drop_na(xgot, z_g) %>%
-  select(xg, xgot, y_g, z_g, on_goal_shot) %>% 
-  arrange(desc(on_goal_shot$x))
+# df %>%
+#   drop_na(xgot, z_g) %>%
+#   select(xg, xgot, y_g, z_g, on_goal_shot) %>% 
+#   arrange(desc(on_goal_shot$x))
 
 w_crossbar <- 0.12
 w_g <- 7.3152 # - w_crossbar
@@ -85,12 +86,6 @@ df_outer <- df %>%
     is_in_w = is_on_frame & is_in_outer_w(y_g),
     is_in_h = is_on_frame & is_in_outer_h(z_g),
     is_in_outer_frame = is_in_w | is_in_h
-  )
-
-df_outer %>% 
-  count(is_on_target, is_on_frame, event_type) %>% 
-  filter(
-    is_on_target & !is_on_frame
   )
 
 w_g_buffer <- 1
@@ -149,23 +144,110 @@ gg_base +
   geom_point(
     data = df_outer %>% 
       # filter(is_on_frame & is_in_outer_frame) %>% 
-      filter(is.na(is_penalty) | !is_penalty) %>% 
+      filter(!is_penalty) %>% 
       filter(situation == 'FreeKick'),
     aes(x = y_g, y = z_g, color = league_name, size = xg_diff)
   )
 
-df_outer %>% 
-  head(1) %>% 
-  ggplot() +
-  aes(x = x, y = y) +
-  geom_segment(
-    aes(xend = y_g, yend = y_g)
+# Reference: https://github.com/Torvaney/ggsoccer/blob/master/R/dimensions.R
+.pitch_international <- list(
+  length = 105,
+  width = 68,
+  penalty_box_length = 16.5,
+  penalty_box_width = 40.32,
+  six_yard_box_length = 5.5,
+  six_yard_box_width = 18.32,
+  penalty_spot_distance = 11,
+  goal_width = 7.32,
+  origin_x = 0,
+  origin_y = 0
+)
+
+
+.xlim <- c(max_x / 2 + 25, max_x + 1)
+.ylim <- c(0 - 1, max_y + 1)
+.asp <- (.xlim[2] - .xlim[1]) / (.ylim[2] - .ylim[1])
+gg_pitch <-
+  function(pitch = .pitch_international,
+           xlim = .xlim,
+           ylim = .ylim,
+           aspect_ratio = .asp,
+           fill = 'white',
+           color = 'grey80',
+           limits = FALSE,
+           ...) {
+    list(
+      ...,
+      ggsoccer::annotate_pitch(
+        dimensions = pitch,
+        fill = fill,
+        colour = color,
+        limits = limits
+      ),
+      coord_flip(xlim = xlim, ylim = ylim),
+      ggsoccer::theme_pitch(aspect_ratio = aspect_ratio),
+      theme(legend.position = 'none')
+    )
+  }
+
+
+df_outer_filt <- df_outer %>% 
+  drop_na(y_g, xgot) %>% 
+  # filter(is.na(is_penalty) | !is_penalty) %>% 
+  filter(
+    # event_type == 'Goal' &
+      league_name == 'MLS' & 
+      situation == 'FreeKick' & 
+      !is_penalty & 
+      is_in_outer_frame & 
+      date >= lubridate::ymd('2021-04-16')
+  ) %>% 
+  mutate(
+    dist = sqrt((max_x - x)^2 + (y_g - y)^2),
+    sign = case_when(
+      y <= (max_y / 2) & y_g <= (max_y / 2) ~ -1,
+      y <= (max_y / 2) & y_g >= (max_y / 2) ~ 1,
+      y >= (max_y / 2) & y_g <= (max_y / 2) ~ -1,
+      y >= (max_y / 2) & y_g >= (max_y / 2) ~ 1,
+      TRUE ~ NA_real_
+    ),
+    curvature = 0.2 * sign * dist / max(abs(dist))
   )
 
+# https://twitter.com/NYCFC/status/1450998669252104198?s=20
+df_outer_filt %>% 
+  arrange(desc(date)) %>% 
+  head(1) %>% 
+  glimpse()
 
+p <- df_outer_filt %>% 
+  ggplot() +
+  gg_pitch() +
+  aes(x = x, y = y) +
+  map(
+    df_outer_filt %>% 
+      group_split(row_number()), ~{
+        geom_curve(
+          data = .x,
+          # color = 'grey20',
+          aes(
+            color = event_type,
+            xend = max_x,
+            yend = y_g
+          ),
+          curvature = .x$curvature
+        )
+      })
+p
+w_shotmap <- 8
+ggsave(
+  filename = file.path(dir_proj, 'shotmap.png'),
+  plot = p,
+  width = w_shotmap,
+  height = w_shotmap * .asp
+)
 
 agg_by_spot <- df_outer %>% 
-  mutate(is_in_outer_frame = is_in_w | is_in_h) %>% 
   group_by(
     league_name,
     situation,
@@ -189,13 +271,11 @@ agg_by_spot <- df_outer %>%
     rnk = row_number(desc(prop))
   ) %>% 
   ungroup()
-agg_by_spot %>% 
-  arrange(desc(n))
+agg_by_spot
 
-library(ebbr)
 
-agg_by_spot %>%
-  # filter(n > 100) %>%
+
+p_bars <- agg_by_spot %>%
   add_ebb_estimate(n, total, method = 'mle', prior_subset = n > 100) %>%
   filter(situation == 'FreeKick') %>% 
   filter(
@@ -207,8 +287,23 @@ agg_by_spot %>%
   ggplot() +
   aes(x = .fitted, y = league_name) +
   geom_errorbarh(aes(xmin = .low, xmax = .high)) +
+  geom_point() +
   scale_x_continuous(labels = scales::percent_format(accuracy = 0.1)) +
-  expand_limits(x = 0)
+  expand_limits(x = 0) +
+  labs(
+    y = NULL,
+    title = 'MLS has the highest proportion of free kicks on target and within 1m of the frame',
+    caption = 'Error bars indicate 95% credible interval for emperical Bayes adjusted proportion',
+    x = '% of free kicks on target and within 1m of the frame'
+  )
+
+w_bars <- 8
+ggsave(
+  filename = file.path(dir_proj, 'prop.png'),
+  plot = p_bars,
+  width = w_bars,
+  height = w_bars * 1
+)
 
 agg_by_spot %>%
   filter(n > 100) %>% 
@@ -223,14 +318,14 @@ agg_by_spot %>%
   # filter(situation == 'FreeKick')
   filter(is_in_outer_frame)
 
- df_outer %>% 
+df_outer_filt %>% 
   filter(league_name == 'EPL' & season == '2021/2022') %>% 
   arrange(desc(date)) %>% 
   filter(event_type == 'Post')
 
-df_outer %>% 
+df_outer_filt %>% 
   count(event_type, sort = TRUE)
-df_outer %>% filter(is_in_w | is_in_h) %>% count(event_type)
+df_outer_filt %>% filter(is_in_w | is_in_h) %>% count(event_type)
 
 ## max on goal y (on_goal_shot$zoomRatio == 1): on_goal_shot$y: .613, z_g: 2.32
 
