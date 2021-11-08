@@ -6,6 +6,20 @@ gitignor’ed here.
 The projects are listed in reverse chronoligical order. A skipped number
 corresponds to an idea that I scrapped.
 
+# 44. MLS Golazos
+
+![error bars showing percentage of shots barely on frame in the MLS and
+the Big 5 soccer leagues, with MLS as having the highest
+percentage](44-mls_bangers/prop.png "MLS has the highest proportion of direct free kicks on target and near goal frame")
+
+![shotmap of 2021 MLS goals where shot is barely within frame (about 20
+shots)](44-mls_bangers/shotmap.png "Goals from direct free kicks on target and near goal frame")
+
+![plot of goal frame of shots barely within frame from MLS and big 5
+leagues, emphasizing difference in xG on target and xG with size and
+league with
+color](44-mls_bangers/frame.png "Shots from direct free kicks on target and near goal frame")
+
 # 43. xG Signal
 
 ![line plot showing log curve of average xg difference r squared with

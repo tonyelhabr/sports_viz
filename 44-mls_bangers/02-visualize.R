@@ -3,9 +3,10 @@ library(tidyverse)
 library(qs)
 library(janitor)
 library(lubridate)
-library(ggplot2)
+library(scales)
 library(extrafont)
-library(nflplotR)
+library(ggtext)
+library(ggsoccer)
 library(ggimage)
 library(ebbr)
 
@@ -73,16 +74,11 @@ df <- file.path(dir_proj, 'data.qs') %>%
       TRUE ~ 'poor'
     ) %>% 
       ordered(c('great', 'good', 'average', 'poor', NA_character_)),
-    xg_diff = xgot - xg
-  )
-
-df %>% 
-  select(xg, xgot, y_g, z_g, on_goal_shot) %>% 
-  mutate(
+    xg_diff = xgot - xg,
     across(
       z_g,
       ~case_when(
-        !is.na(xgot) ~ coalesce(.x, convert_ogs_y_to_z_g),
+        !is.na(xgot) ~ coalesce(.x, convert_ogs_y_to_z_g(on_goal_shot$y)),
         TRUE ~ .x
       )
     )
@@ -90,13 +86,16 @@ df %>%
 
 ## how many matches per league?
 df %>% 
-  distinct(league_name, match_id, date) %>% 
-  group_by(league_name) %>% 
+  group_by(league_name, match_id, situation, date) %>% 
   summarize(
-    n = n(),
+    shots = n()
+  ) %>% 
+  ungroup() %>% 
+  group_by(league_name, situation) %>% 
+  summarize(
+    across(shots, sum),
     min_date = min(date)
   )
-
 
 w_crossbar <- 0.12
 w_g <- 7.3152
@@ -137,10 +136,6 @@ df_outer <- df %>%
     is_in_outer_frame = is_in_w | is_in_h
   )
 
-z <- df_outer %>% 
-  filter(league_name == 'MLS', player_name == 'Lucas Zelarayan')
-z %>% distinct(id)
-
 w_g_buffer <- 1
 gg_base <-
   tibble(
@@ -178,7 +173,6 @@ gg_base <-
   origin_y = 0
 )
 
-
 .xlim <- c(max_x / 2 + 20, max_x + 1)
 .ylim <- c(0 - 1, max_y + 1)
 .asp <- (.xlim[2] - .xlim[1]) / (.ylim[2] - .ylim[1])
@@ -205,20 +199,11 @@ gg_pitch <-
     )
   }
 
-fs::dir_create(dir_proj, 'players')
+
 date_start_mls_2021 <- lubridate::ymd('2021-04-16')
-retreive_footedness <- function(id) {
-  base_url <- 'https://www.fotmob.com/'
-  res <- paste0(base_url, 'playerData?id=', id) %>% jsonlite::fromJSON()
-  value <- res$playerProps %>% 
-    filter(title == 'Preferred foot') %>% 
-    pull(value)
-  ifelse(length(value) == 0, 'right', value)
-}
 
 df_outer_fk <- df_outer %>% 
   drop_na(y_g, xgot) %>% 
-  # filter(is.na(is_penalty) | !is_penalty) %>% 
   filter(
     is_in_outer_frame & 
       !is_penalty &
@@ -226,23 +211,17 @@ df_outer_fk <- df_outer %>%
       situation == 'FreeKick' & 
       date >= !!date_start_mls_2021
   )
-df_outer %>% filter(player_name == 'Lucas Zelarayan') %>% 
-  select(date, home_team, away_team, x, y, xg, xgot, y_g, z_g)
-df_outer %>% 
-  filter(player_name == 'Lucas Zelarayan') %>% 
-  filter(player)
+
 ## code from 202021_soccer_refs
 pal <- c(scales::hue_pal()(5), 'white')
 league_logos <-
   tibble(
     league_name =  c('EPL', 'LaLiga', 'Ligue 1', 'Bundesliga', 'Serie A', 'MLS'),
     path_logo = file.path('25-202021_soccer_refs', sprintf('%s.png', c('epl-150px', 'la-liga-150px', 'ligue-1', 'bundesliga', 'serie-a', 'mls'))),
-    # path_logo = file.path(dir_proj, sprintf('%s.png', c('epl-150px', 'mls'))),
     idx_logo = c(1L, 2L, 4L, 3L, 5L, 6L),
     color = c(pal[5], pal[2], pal[3], pal[1], pal[4], pal[6])
   ) %>% 
   mutate(img = glue::glue("<img src={path_logo} width='40' height='40'/>")) %>% 
-  # mutate(across(c(path_logo, img), ~fct_reorder(.x, idx_logo)))
   arrange(idx_logo)
 league_logos
 
@@ -296,7 +275,6 @@ ggsave(
 
 df_outer_filt <- df_outer %>% 
   drop_na(y_g, xgot) %>% 
-  # filter(is.na(is_penalty) | !is_penalty) %>% 
   filter(
     is_g &
       !is_penalty &
@@ -307,84 +285,20 @@ df_outer_filt <- df_outer %>%
   ) %>% 
   mutate(
     footedness = map_chr(player_id, retreive_footedness),
-    ## exists after download is done one
     path_png = file.path(dir_proj, 'players', sprintf('%d.png', player_id)),
     dist = sqrt((max_x - x)^2 + (y_g - y)^2),
-    # sign = case_when(
-    #   y <= (max_y / 2) & y_g <= (max_y / 2) ~ -1,
-    #   y <= (max_y / 2) & y_g >= (max_y / 2) ~ 1,
-    #   y >= (max_y / 2) & y_g <= (max_y / 2) ~ -1,
-    #   y >= (max_y / 2) & y_g >= (max_y / 2) ~ 1,
-    #   TRUE ~ NA_real_
-    # ),
     sign = ifelse(footedness == 'right', 1, -1),
     curvature = 0.2 * sign * dist / max(abs(dist))
   )
-
-## https://twitter.com/NYCFC/status/1450998669252104198?s=20
-# df_outer_filt %>% 
-#   arrange(desc(date)) %>% 
-#   head(1) %>% 
-#   glimpse()
-
-## donwload player images once
-if(FALSE) {
-  df_outer_filt$player_id %>% 
-    unique() %>% 
-    walk(
-      ~sprintf('https://images.fotmob.com/image_resources/playerimages/%d.png', .x) %>% 
-        download.file(destfile = file.path(dir_proj, 'players', sprintf('%d.png', .x)), mode = 'wb', quiet = TRUE)
-    )
-}
 
 pts <- function(x) {
   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
 }
 
-
-df_outer_filt <- df_outer_filt %>% 
-  mutate(
-    lab = sprintf('%s<br/>xG: %.2f<br/>xGoT %.2f', strftime(date, '%b %d'), xg, xgot),
-    x_lab = case_when(
-      id == 2330391375 ~ x - 11, # sep 15
-      id == 2331772967 ~ x - 5, # sep 18
-      id == 2339100705 ~ x - 5, # oct 03
-      id == 2344576271 ~ x - 5, # oct 20
-      id == 2344592075 ~ x - 1.5
-    ),
-    y_lab = case_when(
-      id == 2330391375 ~ y - 0, # sep 15
-      id == 2331772967 ~ y + 1.5, # sep 18
-      id == 2339100705 ~ y + 1.5, # oct 03
-      id == 2344576271 ~ y + 3, # oct 20
-      id == 2344592075 ~ y - 1
-    ),
-    hjust_lab = case_when(
-      id == 2344592075 ~ 1,
-      TRUE ~ 0
-    )
-  )
-
 p_shotmap <- df_outer_filt %>% 
   ggplot() +
   gg_pitch() +
   aes(x = x, y = y) +
-  ggimage::geom_image(
-    size = 0.05,
-    asp = 1 / .asp,
-    aes(x = x - 3, y = y, image = path_png)
-  ) +
-  ggtext::geom_richtext(
-    data = df_outer_filt,
-    family = 'Karla',
-    size = pts(10),
-    fill = NA_character_,
-    label.color = NA_character_,
-    # hjust = 1,
-    vjust = 0,
-    color = 'white',
-    aes(x = x_lab, y = y_lab, hjust = hjust_lab, label = lab)
-  ) +
   map(
     df_outer_filt %>% 
       group_split(row_number()), ~{
@@ -410,25 +324,14 @@ p_shotmap <- df_outer_filt %>%
     tag = lab_tag,
     caption = lab_explainer
   )
-p_shotmap
-w_shotmap <- 10
 
+w_shotmap <- 10
 ggsave(
   filename = file.path(dir_proj, 'shotmap.png'),
   plot = p_shotmap,
   width = w_shotmap,
   height = w_shotmap * .asp
 )
-
-## match sample sizes?
-# ns_outer <- df_outer %>% 
-#   filter(league_name == 'MLS' & date >= !!date_start_mls_2021) %>% 
-#   group_by(league_name, situation, is_on_frame, is_in_outer_frame) %>% 
-#   summarize(
-#     n = n()
-#   ) %>% 
-#   ungroup()
-# ns_outer
 
 agg_by_spot <- df_outer %>% 
   group_by(league_name, situation, is_on_frame, is_in_outer_frame) %>% 
@@ -475,7 +378,7 @@ p_bars <-
   geom_point(
     size = 4
   ) +
-  scale_x_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0, .5)) +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1), limits = c(0.2, 0.5)) +
   theme(
     plot.title = element_text(size = 16),
     axis.text.y = ggtext::element_markdown(size = 10.5),
