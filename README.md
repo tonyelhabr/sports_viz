@@ -6,6 +6,22 @@ gitignor’ed here.
 The projects are listed in reverse chronoligical order. A skipped number
 corresponds to an idea that I scrapped.
 
+# 46. EPL “Rage” Fouls
+
+![spiral chart with minutes played on x-axis and count of rage fouls on
+y-axis. strands represent one player per
+sesaon.](46-euro_fouls/rage_quit_w_inset_and_cancelo.png "Who rage fouls most frequently?")
+
+1.  2021/22 Fantasy Football Luck
+
+![table showing luckiest standing placement in my fantasy football
+league over the past 2
+seasons](45-202122_ff_luck/ff_luckiest.png "Lucky players")
+
+![table showing unluckiest standing placement in my fantasy football
+league over the past 2
+seasons](45-202122_ff_luck/ff_unluckiest.png "Destined for the Beer Mile?")
+
 # 44. MLS Golazos
 
 ![error bars showing percentage of shots barely on frame in the MLS and
