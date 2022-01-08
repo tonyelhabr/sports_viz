@@ -4,7 +4,7 @@ library(tidyverse)
 library(ggtext)
 library(patchwork)
 
-dir_proj <- '0x-soccer_formations'
+dir_proj <- '10-soccer_formations'
 path_data <- fs::path(dir_proj, 'formationListAndPlayerLocation.csv')
 
 dir_plot <- fs::path(dir_proj, 'plots')
