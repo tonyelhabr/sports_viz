@@ -26,9 +26,6 @@ areas$polygon_flip %>% plot(add = TRUE, lwd = 1, lty = 2, border = 'blue')
 points(areas$data_flip[[1]]$x, areas$data_flip[[1]]$y, col = 'blue', pch = 1)
 points(areas$chull_flip[[1]]$x, areas$chull_flip[[1]]$y, col = 'blue', pch = 16)
 
-pi <- st_intersection(p1, p2)
-# pd <- st_difference(p1, p2)
-pd <- st_sym_difference(p1, p2)
 areas$polygon_inner %>% plot(add = TRUE, col = 'green')
 areas$polygon_outer %>% plot(add = TRUE, col = 'red')
 

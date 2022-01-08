@@ -47,7 +47,6 @@ get_areas <- function(df) {
   a2 <- p2 %>% st_area()
   
   pi <- st_intersection(p1, p2)
-  # pd <- st_difference(p1, p2)
   pd <- st_sym_difference(p1, p2)
   
   ai <- st_area(pi)
