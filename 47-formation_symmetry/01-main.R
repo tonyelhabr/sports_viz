@@ -51,7 +51,7 @@ c(
   walk(f_import)
 
 meta <- games %>% 
-  select(game_id, home_team_id, away_team_id, game_date, away_score, home_score) %>% 
+  select(game_id, home_team_id, away_team_id, season_id, game_date, away_score, home_score) %>% 
   left_join(teams %>% rename_all(~sprintf('home_%s', .x))) %>% 
   left_join(teams %>% rename_all(~sprintf('away_%s', .x)))
 
@@ -250,7 +250,7 @@ concave_areas <- concave_areas_nested %>%
   transmute_area() %>% 
   select(-xy_hull_orig)
 
-concave_areas %>% 
+concave_area_diffs <- concave_areas %>% 
   anti_join(bad_ids) %>% 
   # count(n, sort = TRUE) %>% 
   left_join(meta) %>% 
@@ -260,8 +260,15 @@ concave_areas %>%
   select(game_id, side, area_prop) %>% 
   pivot_wider(
     names_from = side,
+    names_glue = '{side}_{.value}',
     values_from = area_prop
-  )
+  ) %>% 
+  left_join(meta) %>% 
+  mutate(
+    diff_area_prop = home_area_prop - away_area_prop
+  ) %>% 
+  arrange(desc(abs(diff_area_prop)))
+
 
 convex_areas <- convex_areas_nested %>% 
   hoist_areas() %>% 
