@@ -16,7 +16,7 @@ path_spi <- file.path(dir_proj, 'spi_538.csv')
 params <-
   crossing(
     league = c('La_liga', 'EPL', 'Bundesliga', 'Serie_A', 'Ligue_1'),
-    season = c(2014L:2020L)
+    season = c(2014L:2021L)
   )
 params
 options(readr.num_columns = 0)
@@ -64,7 +64,7 @@ unnest_df <- function(df, name) {
   tbl
 }
 
-fetch_matches <- function(league = 'EPL', season = 2020) {
+fetch_matches <- function(league = 'EPL', season = 2021) {
   # Fetch a dataframe of matches for an individual league/season's page
   # league_url %>% 
   sprintf('https://understat.com/league/%s/%s', toupper(league), season) %>% 
@@ -75,7 +75,7 @@ fetch_matches <- function(league = 'EPL', season = 2020) {
     type_convert()
 }
 
-get_matches <- function(league = 'EPL', season = 2020, overwrite = FALSE) {
+get_matches <- function(league = 'EPL', season = 2021, overwrite = FALSE) {
   path <- file.path(dir_data, sprintf('matches-%s-%s.rds', league, season)) 
   suffix <- glue::glue(' for `league = "{league}"`, `season = {season}`')
   if(file.exists(path) & !overwrite) {
@@ -103,21 +103,21 @@ get_shots <- function(match_id, overwrite = FALSE) {
     .display_info_early('{suffix}')
     return(read_rds(path))
   }
+  Sys.sleep(0.5)
   res <- understatr::get_match_shots(match_id)
   .display_info_after('{suffix}')
   write_rds(res, path)
   res
 }
 
-get_shots_slowly <- slowly(possibly(get_shots, tibble()))
+get_shots_slowly <- possibly(get_shots, tibble())
 
 match_ids <- matches %>% distinct(season, league, match_id)
 get_paths_match <- function() {
-  fs::dir_ls(dir_data, regexp = '[0-9]{5}[.]rds$')
+  fs::dir_ls(dir_data, regexp = '[0-9]{1-5}[.]rds$')
 }
 
-match_ids_existing <- 
-  get_paths_match() %>% 
+match_ids_existing <- get_paths_match() %>% 
   basename() %>%
   tools::file_path_sans_ext() %>% 
   as.integer() %>% 
@@ -128,22 +128,19 @@ match_ids %>%
   anti_join(match_ids_existing) %>% 
   count(league, season)
 
-shots_nested <-
-  match_ids %>% 
+shots_nested <- match_ids %>% 
   anti_join(match_ids_existing) %>% 
   filter(!(league == 'Ligue_1' & season == 2019)) %>% 
   select(league, season, match_id) %>% 
   mutate(data = map(match_id, get_shots_slowly))
 shots_nested
 
-match_ids_vec <-
-  match_ids %>% 
+match_ids_vec <- match_ids %>% 
   pull(match_id) 
 
-shots <-
-  # get_paths_match() %>% 
-  file.path(dir_proj, 'data', sprintf('%s.rds', match_ids_vec)) %>% 
-  map_dfr(read_rds)
+shots <- get_paths_match() %>% 
+  # file.path(dir_proj, 'data', sprintf('%s.rds', match_ids_vec)) %>% 
+  map(~read_rds(.x))
 # match_ids_existing %>% anti_join(shots %>% distinct(match_id))
 
 # beepr::beep(3)
@@ -226,13 +223,12 @@ get_league_teams_stats <- function(league_name, year, overwrite = FALSE) {
 
 get_league_teams_stats_safely <- possibly(get_league_teams_stats, otherwise = tibble(), quiet = FALSE)
 
-league_teams_stats <-
-  leagues_meta %>% 
+league_teams_stats <- leagues_meta %>% 
   mutate(data = map2(league_name, year, get_league_teams_stats_safely)) %>% 
   select(data) %>% 
   unnest(data)
 league_teams_stats
-fs::dir_ls(dir_data, regexp = '[-]2020[.]rds')
+# fs::dir_ls(dir_data, regexp = '[-]2020[.]rds')
 write_rds(league_teams_stats, path_league_teams_stats)
 
 teams <- league_teams_stats %>% distinct(league_name, year, team_name)
