@@ -51,7 +51,7 @@ c(
   walk(f_import)
 
 meta <- games %>% 
-  select(game_id, home_team_id, away_team_id) %>% 
+  select(game_id, home_team_id, away_team_id, game_date, away_score, home_score) %>% 
   left_join(teams %>% rename_all(~sprintf('home_%s', .x))) %>% 
   left_join(teams %>% rename_all(~sprintf('away_%s', .x)))
 
@@ -146,16 +146,28 @@ edges <- successful_passes %>%
   summarize(n = n()) %>% 
   ungroup()
 
-touches <- filt_actions %>% 
-  select(game_id, period_id, team_id, player_id, atomic_action_id, type_name, side, x, y)
+touches <- filt_actions %>%
+  select(
+    game_id,
+    period_id,
+    team_id,
+    player_id,
+    atomic_action_id,
+    type_name,
+    result_name,
+    side,
+    x,
+    y
+  )
 
-touches %>% 
-  filter(type_name == 'shot') %>% 
-  group_by(side, period_id) %>% 
-  summarize(
-    across(c(x, y), mean)
-  ) %>% 
-  ungroup()
+## how i figured out i needed to flip the home side
+# touches %>% 
+#   filter(type_name == 'shot') %>% 
+#   group_by(side, period_id) %>% 
+#   summarize(
+#     across(c(x, y), mean)
+#   ) %>% 
+#   ungroup()
 
 nodes <- filt_actions %>% 
   select(game_id, team_id, player_id, atomic_action_id, x, y) %>% 
@@ -165,28 +177,121 @@ nodes <- filt_actions %>%
   filter(starting_position_name != 'GK') %>% 
   group_by(game_id, team_id, player_id) %>% 
   summarize(n = n(), across(c(x, y), mean)) %>% 
-  ungroup()
+  ungroup() %>% 
+  mutate(id = sprintf('%07d-%03d', game_id, team_id))
 
-get_concave_hull_areas_verbosely <- function(name, ...) {
-  cat(name, sep = '\n')
-  get_concave_hull_areas(y_center = 34, ...)
+bad_ids <- nodes %>% 
+  group_by(id) %>% 
+  ## teams with less than 10 outfield players?!?
+  filter(n() < 10) %>% 
+  ungroup() %>% 
+  distinct(id)
+bad_ids
+
+do_get_areas <- function(.name) {
+  f <- sprintf('get_%s_hull_areas', .name)
+  fv <- function(name, ...) {
+    cat(name, sep = '\n')
+    exec(f, y_center = 34, ...)
+  }
+  path <- file.path(dir_proj, sprintf('%s_areas_nested.rds', .name))
+  if(file.exists(path)) {
+    return(read_rds(path))
+  }
+  areas_nested <- nodes %>% 
+    group_nest(id, game_id, team_id) %>%
+    mutate(
+      areas = map2(id, data, fv),
+    )
+  write_rds(areas_nested, path)
+  areas_nested
 }
 
-nested_areas <- nodes %>% 
-  mutate(id = sprintf('%s-%s', game_id, team_id)) %>% 
-  group_nest(id, game_id, team_id) %>% 
+concave_areas_nested <- do_get_areas('concave')
+convex_areas_nested <- do_get_areas('convex')
+
+# extract_areas <- function(df) {
+#   df %>% 
+#     select(id, game_id, team_id, areas) %>% 
+#     unnest(areas) %>% 
+#     transmute(
+#       id,
+#       game_id,
+#       team_id,
+#       area_inner, 
+#       area_outer,
+#       area_total = area_inner + area_outer,
+#       area_prop = area_inner / (area_inner + area_outer)
+#     )
+# }
+# concave_areas <- concave_areas_nested %>% extract_areas()
+# convex_areas <- convex_areas_nested %>% extract_areas()
+hoist_areas <- function(df) {
+  df %>% 
+    select(id, game_id, team_id, areas) %>% 
+    hoist(areas, 'area_inner') %>% 
+    hoist(areas, 'area_outer')
+}
+transmute_area <- function(df) {
+  df %>% 
+    mutate(
+      area_total = area_inner + area_outer,
+      area_prop = area_inner / (area_inner + area_outer)
+    ) %>% 
+    select(-c(areas))
+}
+
+concave_areas <- concave_areas_nested %>% 
+  hoist_areas() %>% 
+  hoist(areas, 'xy_hull_orig') %>% 
   mutate(
-    areas = map2(id, data, get_concave_hull_areas_verbosely)
+    n = map_int(xy_hull_orig, ~nrow(.x[[1]]))
+  ) %>% 
+  transmute_area() %>% 
+  select(-xy_hull_orig)
+
+concave_areas %>% 
+  anti_join(bad_ids) %>% 
+  # count(n, sort = TRUE) %>% 
+  left_join(meta) %>% 
+  mutate(
+    side = ifelse(team_id == home_team_id, 'home', 'away')
+  ) %>% 
+  select(game_id, side, area_prop) %>% 
+  pivot_wider(
+    names_from = side,
+    values_from = area_prop
   )
 
-nodes %>% 
-  count(game_id, team_id, sort = TRUE)
+convex_areas <- convex_areas_nested %>% 
+  hoist_areas() %>% 
+  unnest(c(area_inner, area_outer)) %>% 
+  transmute_area()
 
-
-nodes %>% 
+agg_convex_areas <- convex_areas %>%  
+  group_by(id) %>% 
   summarize(
-    across(c(x, y), mean)
-  )
+    n = n(),
+    area_prop = mean(area_inner / (area_inner + area_outer))
+  ) %>% 
+  ungroup()
+agg_convex_areas
+
+areas_compared <- full_join(
+  concave_areas %>% select(id, game_id, team_id, area_prop_concave = area_prop),
+  agg_convex_areas %>% select(id, area_prop_convex = area_prop)
+) %>% 
+  mutate(
+    prnk_concave = percent_rank(area_prop_concave),
+    prnk_convex = percent_rank(area_prop_convex),
+    prnk_diff = prnk_concave - prnk_convex,
+    prnk_prnk = percent_rank(prnk_diff)
+  ) %>% 
+  arrange(desc(prnk_prnk))
+areas_compared
+
+concave_areas
+
 # Reference: https://github.com/Torvaney/ggsoccer/blob/master/R/dimensions.R
 .pitch_international <- list(
   length = 105,

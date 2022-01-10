@@ -19,21 +19,40 @@ df <- tribble(
   'k',   7,   6
 )
 
-areas <- df %>% get_concave_hull_areas(y_center = 5)
-areas
+cc <- df %>% get_concave_hull_areas(y_center = 5)
+cv <- df %>% get_convex_hull_areas(y_center = 5)
 
-areas$polygon_orig %>% plot(axes = TRUE, lwd = 1, lty = 2, border = 'orange')
-points(areas$data_orig[[1]]$x, areas$data_orig[[1]]$y, col = 'orange', pch = 1)
-# points(areas$chull_orig[[1]]$x, areas$chull_orig[[1]]$y, col = 'orange', pch = 16)
+cc$polygon_hull_orig %>% plot(axes = TRUE, lwd = 1, lty = 2, border = 'orange')
+points(cc$data_orig[[1]]$x, cc$data_orig[[1]]$y, col = 'orange', pch = 1)
+# points(cc$chull_orig[[1]]$x, cc$chull_orig[[1]]$y, col = 'orange', pch = 16)
 
-areas$polygon_flip %>% plot(axes = TRUE, add = TRUE, lwd = 1, lty = 2, border = 'blue')
-points(areas$data_flip[[1]]$x, areas$data_flip[[1]]$y, col = 'blue', pch = 1)
-# points(areas$chull_flip[[1]]$x, areas$chull_flip[[1]]$y, col = 'blue', pch = 16)
+cc$polygon_hull_flip %>% plot(axes = TRUE, add = TRUE, lwd = 1, lty = 2, border = 'blue')
+points(cc$data_flip[[1]]$x, cc$data_flip[[1]]$y, col = 'blue', pch = 1)
+# points(cc$chull_flip[[1]]$x, cc$chull_flip[[1]]$y, col = 'blue', pch = 16)
 
-areas$polygon_inner %>% plot(add = TRUE, col = 'green')
-areas$polygon_outer %>% plot(add = TRUE, col = 'red')
+cc$polygon_inner %>% plot(add = TRUE, col = 'green')
+cc$polygon_outer %>% plot(add = TRUE, col = 'red')
 
-areas %>% 
+cv$polygon_hull_orig %>% plot(axes = TRUE, lwd = 1, lty = 2, border = 'orange')
+points(cv$data_orig[[1]]$x, cv$data_orig[[1]]$y, col = 'orange', pch = 1)
+# points(cv$chull_orig[[1]]$x, cv$chull_orig[[1]]$y, col = 'orange', pch = 16)
+
+cv$polygon_hull_flip %>% plot(axes = TRUE, add = TRUE, lwd = 1, lty = 2, border = 'blue')
+points(cv$data_flip[[1]]$x, cv$data_flip[[1]]$y, col = 'blue', pch = 1)
+# points(cv$chull_flip[[1]]$x, cv$chull_flip[[1]]$y, col = 'blue', pch = 16)
+
+cv$polygon_inner %>% plot(add = TRUE, col = 'green')
+cv$polygon_outer %>% plot(add = TRUE, col = 'red')
+
+
+cc %>% 
+  transmute(
+    area_inner,
+    area_outer,
+    area_prop = area_inner / (area_inner + area_outer)
+  )
+
+cv %>% 
   transmute(
     area_inner,
     area_outer,
@@ -79,21 +98,124 @@ jittered_forms <- forms %>%
     across(y, ~.x + rnorm(n(), sd = 4))
   )
 
-get_concave_hull_areas_verbosely <- function(name, ...) {
-  cat(name, sep = '\n')
-  get_concave_hull_areas(...)
-}
-
-do_get_areas <- function(f) {
+do_get_areas <- function(.name) {
+  f <- sprintf('get_%s_hull_areas', .name)
   fv <- function(name, ...) {
     cat(name, sep = '\n')
-    f(...)
+    exec(f, y_center = 50, ...)
   }
-  jittered_forms %>% 
+  path <- file.path(dir_proj, sprintf('%s_areas_nested-test.rds', .name))
+  if(file.exists(path)) {
+    return(read_rds(path))
+  }
+  areas_nested <- jittered_forms %>% 
     filter(player != 1) %>% 
     group_nest(idx_form, formation) %>% 
     mutate(
       areas = map2(formation, data, fv),
+    )
+  write_rds(areas_nested, path)
+  areas_nested
+}
+
+concave_areas_nested <- do_get_areas('concave')
+convex_areas_nested <- do_get_areas('convex')
+
+.select_unnest <- function(df, ...) {
+  df %>% 
+    select(...) %>% 
+    unnest(...)
+}
+
+plot_convex_area <- function(i) {
+  i <- 1
+  cv <- convex_areas_nested %>% filter(idx_form == i)
+  cc <- concave_areas_nested %>% filter(idx_form == i)
+  acv <- cv %>% .select_unnest(areas)
+  acc <- cc %>% .select_unnest(areas)
+  d <- cv %>% .select_unnest(data)
+  
+  p <- d %>% 
+    ggplot() +
+    aes(x = x, y = y) +
+    ggsoccer::annotate_pitch(
+      colour = 'black', 
+      fill = 'white'
+    ) +
+    coord_flip(xlim = c(1, 99), ylim = c(4, 96), clip = 'on') +
+    theme(
+      axis.title = element_text(size = 12, hjust = 0),
+      axis.ticks = element_blank(),
+      axis.text = element_blank(),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank()
+    ) +
+    labs(
+      y = NULL,
+      x = NULL
+    ) +
+    geom_point(
+      data = acv$xy_hull_orig[[1]],
+      aes(color = 'convex (1)')
+    ) +
+    geom_path(
+      data = acv$xy_hull_orig[[1]],
+      aes(color = 'convex (1)')
+    ) +
+    geom_hline(
+      aes(yintercept = 50)
+    ) +
+    geom_point(
+      data = acc$xy_hull_orig[[1]],
+      aes(color = 'concave')
+    ) +
+    geom_path(
+      data = acc$xy_hull_orig[[1]],
+      aes(color = 'concave')
+    ) +
+    # geom_point(
+    #   data = acc$xy_hull_flip[[1]],
+    #   aes(color = 'concave flipped')
+    # ) +
+    # geom_path(
+    #   data = acc$xy_hull_flip[[1]],
+    #   aes(color = 'concave flipped')
+    # ) + 
+    geom_polygon(
+      data = acc$xy_inner[[1]],
+      aes(group = l2, fill = 'inner concave')
+    ) +
+    geom_polygon(
+      data = acc$xy_outer[[1]],
+      aes(group = l2, fill = 'outer concave')
+    )
+  
+  if(nrow(acv) > 1) {
+    p <- p +
+      geom_point(
+        data = acv$xy_hull_orig[[2]],
+        aes(color = 'convex (2)')
+      ) +
+      geom_path(
+        data = acv$xy_hull_orig[[2]],
+        aes(color = 'convex (2)')
+      )
+  }
+  
+  p +
+    scale_color_manual(
+      values = c(
+        'convex (1)' = 'magenta',
+        'convex (2)' = 'yellow',
+        'concave' = 'blue', 
+        'concave flipped' = 'orange'
+      )
+    ) +
+    scale_fill_manual(
+      values = c(
+        'inner concave' = 'green',
+        'outer concave' = 'red'
+      )
     )
 }
 
@@ -110,8 +232,7 @@ extract_areas <- function(df) {
       area_prop = area_inner / (area_inner + area_outer)
     )
 }
-concave_areas_nested <- do_get_areas(get_concave_hull_areas)
-convex_areas_nested <- do_get_areas(get_convex_hull_areas)
+
 concave_areas <- concave_areas_nested %>% extract_areas()
 convex_areas <- convex_areas_nested %>% extract_areas()
 agg_convex_areas <- convex_areas %>%  
@@ -131,7 +252,8 @@ areas_compared <- full_join(
   mutate(
     prnk_concave = percent_rank(area_prop_concave),
     prnk_convex = percent_rank(area_prop_convex),
-    prnk_diff = prnk_concave - prnk_convex
+    prnk_diff = prnk_concave - prnk_convex,
+    prnk_prnk = percent_rank(prnk_diff)
   ) %>% 
   arrange(desc(abs(prnk_diff)))
 areas_compared
