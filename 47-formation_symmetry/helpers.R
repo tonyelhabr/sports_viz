@@ -3,6 +3,8 @@ library(tibble)
 library(purrr)
 library(sf)
 library(concaveman)
+library(tidygraph)
+library(igraph)
 
 ## convex ----
 flip_df <- function(df, y_center = 34) {
@@ -84,6 +86,7 @@ get_convex_hull_areas <- function(df, y_center = 34) {
         area_outer = a1,
         data_orig = df %>% list(),
         data_flip = df2 %>% list(),
+        n_players_orig = ch1 %>% distinct() %>% nrow(),
         xy_hull_orig = ch1 %>% list(),
         xy_hull_flip = ch2 %>% list(),
         polygon_hull_orig = p1,
@@ -106,6 +109,7 @@ get_convex_hull_areas <- function(df, y_center = 34) {
     area_outer = ad,
     data_orig = df %>% list(),
     data_flip = df2 %>% list(),
+    n_players_orig = ch1 %>% distinct() %>% nrow(),
     xy_hull_orig = ch1 %>% list(),
     xy_hull_flip = ch2 %>% list(),
     polygon_hull_orig = p1,
@@ -167,6 +171,19 @@ get_concave_hull_polygon <- function(df) {
   sdf %>% concaveman() %>% pluck('polygons')
 }
 
+.round_xy <- function(df, digits = 3) {
+  df %>% 
+    mutate(across(c(x, y), round, digits))
+}
+
+get_concave_hull_inner_points <- function(df1, df2) {
+  df1 %>% 
+    .round_xy() %>% 
+    anti_join(
+      df2 %>% .round_xy(),
+      by = c('x', 'y')
+    )
+}
 
 get_concave_hull_areas <- function(df, y_center = 34) {
   if(nrow(df) <= 1) {
@@ -186,23 +203,41 @@ get_concave_hull_areas <- function(df, y_center = 34) {
     return(tibble())
   }
   
+  p1_df <- p1 %>% poly_to_pts_df()
   not_has_intersection <- pi %>% pluck(1) %>% is.null()
   if(not_has_intersection) {
     warning('Returning early since there is no intersection.')
-    return(tibble())
+    return(
+      res <- tibble(
+        area_inner = 0,
+        area_outer = a1,
+        data_orig = df %>% list(),
+        data_flip = df2 %>% list(),
+        n_players_orig = p1_df %>% distinct() %>% nrow(),
+        xy_hull_orig = p1_df %>% list(),
+        xy_hull_flip = p2 %>% poly_to_pts_df() %>% list(),
+        polygon_hull_orig = p1,
+        polygon_hull_flip = p2,
+        xy_inner = NULL,
+        xy_outer = NULL,
+        polygon_inner = NULL,
+        polygon_outer = NULL
+      )
+    )
   }
   
   pd <- st_sym_difference(p1, p2)
   
   ai <- st_area(pi)
   ad <- st_area(pd)
-  
+
   res <- tibble(
     area_inner = ai,
     area_outer = ad,
     data_orig = df %>% list(),
     data_flip = df2 %>% list(),
-    xy_hull_orig = p1 %>% poly_to_pts_df() %>% list(),
+    n_players_orig = p1_df %>% distinct() %>% nrow(),
+    xy_hull_orig = p1_df %>% list(),
     xy_hull_flip = p2 %>% poly_to_pts_df() %>% list(),
     polygon_hull_orig = p1,
     polygon_hull_flip = p2,
@@ -211,6 +246,32 @@ get_concave_hull_areas <- function(df, y_center = 34) {
     polygon_inner = pi,
     polygon_outer = pd
   )
-  ## no recursion since this is highly likely to get at least 9 points
-  res
+
+  ip <- get_concave_hull_inner_points(df, p1_df)
+
+  if(nrow(ip) <= 2) {
+    return(res)
+  }
+
+  bind_rows(
+    res,
+    get_concave_hull_areas(ip)
+  )
+}
+
+compute_network_stats <- function(n, e) {
+  # n <- n %>% select(id = player_id, name)
+  e <- e %>% select(from = player_id_start, to = player_id_end, n)
+  g <- graph_from_data_frame(
+    # vertices = n,
+    e
+  ) %>% 
+    as_tbl_graph()
+
+  tibble(
+    reciprocity = reciprocity(g),
+    transitivity = transitivity(g),
+    mean_distance = mean_distance(g),
+    density = edge_density(g)
+  )
 }
