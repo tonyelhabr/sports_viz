@@ -171,16 +171,16 @@ get_concave_hull_polygon <- function(df) {
   sdf %>% concaveman() %>% pluck('polygons')
 }
 
-.round_xy <- function(df, digits = 3) {
+.round_xy <- function(df, digits = 1) {
   df %>% 
     mutate(across(c(x, y), round, digits))
 }
 
-get_concave_hull_inner_points <- function(df1, df2) {
+get_concave_hull_inner_points <- function(df1, df2, ...) {
   df1 %>% 
-    .round_xy() %>% 
+    .round_xy(...) %>% 
     anti_join(
-      df2 %>% .round_xy(),
+      df2 %>% .round_xy(...),
       by = c('x', 'y')
     )
 }
@@ -230,6 +230,10 @@ get_concave_hull_areas <- function(df, y_center = 34) {
   
   ai <- st_area(pi)
   ad <- st_area(pd)
+  
+  if(any(class(pi) == 'sfc_GEOMETRYCOLLECTION')) {
+    pi <- pi %>% st_collection_extract('POLYGON')
+  }
 
   res <- tibble(
     area_inner = ai,
@@ -247,6 +251,8 @@ get_concave_hull_areas <- function(df, y_center = 34) {
     polygon_outer = pd
   )
 
+  ## this is not actually doing a great job... it's still returning points on the hull
+  ## apparently rounding x,y is not enough
   ip <- get_concave_hull_inner_points(df, p1_df)
 
   if(nrow(ip) <= 2) {

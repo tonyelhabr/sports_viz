@@ -30,8 +30,9 @@ library(arrow)
 #   panel.background = element_rect(fill = gray_wv, color = gray_wv)
 # )
 # update_geom_defaults('text', list(family = 'Karla', size = 4))
-tonythemes::theme_set_tony()
+# tonythemes::theme_set_tony()
 dir_proj <- '47-formation_symmetry'
+understat_xg <- file.path(dir_proj, 'understat_xg.rds') %>% read_rds()
 source(file.path(dir_proj, 'helpers.R'))
 f_import <- function(name) {
   path <- file.path(dir_proj, sprintf('%s.parquet', name))
@@ -57,17 +58,80 @@ meta <- games %>%
 
 last_actions_by_game <- all_actions_atomic %>% 
   inner_join(
-    player_games %>% filter(!is_starter)
+    player_games %>% filter(!is_starter, minutes_played > 0)
   ) %>% 
   group_by(game_id) %>% 
   slice_min(atomic_action_id, n = 1) %>% 
   ungroup() %>% 
-  select(game_id, last_atomic_action_id = atomic_action_id)
-last_actions_by_game
+  select(game_id, last_atomic_action_id = atomic_action_id, period_id, time) %>% 
+  mutate(
+    last_min = as.integer((period_id - 1) * 45 + time / 60)
+  )
+
+# last_actions_by_game %>% 
+#   mutate(
+#   ggplot(aes(last_min)) +
+#   geom_histogram()
+
+pivot_stat <- function(df, .stat) {
+  df %>% 
+    pivot_longer(
+      -game_id,
+      names_pattern = sprintf('(home|away)_(team_id|%s)', .stat),
+      names_to = c('side', 'col'),
+      values_to = 'value'
+    ) %>% 
+    pivot_wider(
+      names_from = col,
+      values_from = value
+    ) %>% 
+    select(-side)
+}
+
+xg <- last_actions_by_game %>% 
+  left_join(
+    meta %>% 
+      transmute(
+        game_id,
+        date = game_date %>% lubridate::date(),
+        home_team_name,
+        away_team_name
+      )
+  ) %>% 
+  left_join(
+    understat_xg %>% 
+      transmute(
+        # understat_game_id = match_id,
+        home_team_name = team_h,
+        away_team_name = team_a,
+        understat_time = minute,
+        date,
+        home_xg = xg_h,
+        away_xg = xg_a
+      )
+  ) %>% 
+  filter(understat_time < last_min) %>% 
+  group_by(game_id) %>% 
+  summarize(
+    across(c(home_xg, away_xg), sum)
+  ) %>% 
+  ungroup() %>% 
+  left_join(
+    meta %>% 
+      select(
+        game_id,
+        home_team_id,
+        away_team_id
+      )
+  ) %>% 
+  pivot_stat('xg')
+xg
+xg %>% arrange(desc(xg))
 
 filt_actions <- all_actions_atomic %>% 
   left_join(
-    last_actions_by_game
+    last_actions_by_game %>% 
+      select(game_id, last_atomic_action_id)
   ) %>% 
   filter(!is.na(original_event_id)) %>% ## dribbles
   filter(atomic_action_id < last_atomic_action_id) %>% 
@@ -99,15 +163,13 @@ filt_actions <- all_actions_atomic %>%
     in_final_third = y <= 105 / 3
   )
 
-# most_recent_game <- filt_actions %>% 
-#   slice_max(game_id)
-
 add_side_col <- function(df) {
   df %>% 
     left_join(meta) %>% 
     mutate(
       side = ifelse(team_id == home_team_id, 'home', 'away')
-    )
+    ) %>% 
+    select(all_of(colnames(df)), side)
 }
 
 scores <- filt_actions %>% 
@@ -123,8 +185,6 @@ scores <- filt_actions %>%
   add_side_col() %>%
   select(
     game_id,
-    # final_home_score = home_score,
-    # final_away_score = away_score,
     side,
     score
   ) %>%
@@ -136,11 +196,13 @@ scores <- filt_actions %>%
   ) %>% 
   left_join(
     meta %>% 
-      rename(
-        final_home_score = home_score,
-        final_away_score = away_score
+      select(
+        game_id,
+        home_team_id,
+        away_team_id
       )
-  )
+  ) %>% 
+  pivot_stat('score')
 
 agg_actions <- function(...) {
   filt_actions %>% 
@@ -169,18 +231,17 @@ n_shots <- agg_actions(type_name == 'shot')
 #   ggplot() +
 #   aes(x = prop_passes, y = prop_field_tilt) +
 #   geom_point()
-
-drop_keepers <- function(df) {
-  df %>% 
-    anti_join(
-      player_games %>% 
-        filter(starting_position_name == 'GK')
-    )
-}
+# 
+# drop_keepers <- function(df) {
+#   df %>% 
+#     anti_join(
+#       player_games %>% 
+#         filter(starting_position_name == 'GK')
+#     )
+# }
 
 successful_passes <- filt_actions %>% 
-  # filter(action_id == 210, game_id == 1190174, period_id == 1, team_id == 13) %>% 
-  drop_keepers() %>% 
+  # drop_keepers() %>% 
   filter(type_name %in% c('pass', 'receival'), result_name == 'success') %>% 
   group_by(game_id, action_id) %>% 
   filter(n() == 2) %>% 
@@ -227,24 +288,24 @@ edges <- successful_passes %>%
 nodes <- filt_actions %>% 
   filter(type_name == 'pass') %>% 
   select(game_id, team_id, player_id, atomic_action_id, x, y) %>% 
-  drop_keepers() %>% 
+  # drop_keepers() %>% 
   group_by(game_id, team_id, player_id) %>% 
   summarize(n = n(), across(c(x, y), mean)) %>% 
   ungroup() %>% 
-  add_id_col() # %>% 
-  # left_join(players %>% rename(name = player_name))
+  add_id_col() %>% 
+  left_join(players %>% rename(name = player_name))
 
 bad_ids <- nodes %>% 
   count(id, game_id, team_id, name = 'n_players') %>% 
-  ## teams with less than 10 outfield players?!?
-  filter(n_players < 10) %>% 
+  ## teams with less than 11 players?!?
+  filter(n_players < 11) %>% 
   distinct(id, game_id, team_id, n_players)
 
 drop_bad_ids <- function(df) {
   df %>% anti_join(bad_ids)
 }
 
-do_compute_network_stats <- function(overwrite = FALSE) {
+do_compute_network_stats <- function(overwrite = F) {
   fv <- function(name, ...) {
     cat(name, sep = '\n')
     compute_network_stats(...)
@@ -271,7 +332,7 @@ do_compute_network_stats <- function(overwrite = FALSE) {
 network_stats_nested <- do_compute_network_stats()
 
 ## nested areas ----
-do_get_areas <- function(.name, overwrite = FALSE) {
+do_get_areas <- function(.name, overwrite = F) {
   f <- sprintf('get_%s_hull_areas', .name)
   fv <- function(name, ...) {
     cat(name, sep = '\n')
@@ -291,8 +352,8 @@ do_get_areas <- function(.name, overwrite = FALSE) {
   areas_nested
 }
 
-concave_areas_nested <- do_get_areas('concave', overwrite = TRUE)
-convex_areas_nested <- do_get_areas('convex',  overwrite = TRUE)
+concave_areas_nested <- do_get_areas('concave', TRUE)
+convex_areas_nested <- do_get_areas('convex')
 
 ## prep agg ----
 hoist_areas <- function(df) {
@@ -333,28 +394,49 @@ concave_areas <- concave_areas_nested %>%
   hoist_areas() %>% 
   transmute_area()
 agg_concave_areas <- concave_areas %>% aggregate_areas()
-stopifnot(1 == (concave_areas %>% count(id) %>% count(n) %>% filter(n > 1) %>% nrow()))
+
 convex_areas <- convex_areas_nested %>% 
   hoist_areas() %>% 
   transmute_area()
-convex_areas %>% count(id) %>% count(n) ## lots have 2 layers
-
 agg_convex_areas <- convex_areas %>% aggregate_areas()
 
 ## diffs ----
-concave_area_diffs_init <- concave_areas %>% 
+stat_cols <- c(
+  'concave_area_prop',
+  'concave_area_prop_first',
+  'convex_area_prop',
+  'convex_area_prop_first',
+  'field_tilt',
+  'prop_passes',
+  'prop_shots',
+  'reciprocity',
+  'transitivity',
+  'mean_distance',
+  'density',
+  'score',
+  'xg'
+)
+
+area_diffs_init <- agg_concave_areas %>% 
   select(game_id, team_id, concave_area_prop = area_prop) %>% 
-  left_join(
+  inner_join(
     concave_areas %>% 
       group_by(game_id, team_id) %>% 
       slice_max(area_outer, n = 1, with_ties = FALSE) %>% 
       ungroup() %>% 
-      select(game_id, team_id, convex_area_prop_first = area_prop)
+      select(game_id, team_id, concave_area_prop_first = area_prop)
   ) %>% 
-  left_join(
-    agg_convex_areas %>% 
+  inner_join(
+    agg_convex_areas %>%
       select(game_id, team_id, convex_area_prop = area_prop)
-  ) %>% 
+  ) %>%
+  inner_join(
+    convex_areas %>%
+      group_by(game_id, team_id) %>%
+      slice_max(area_outer, n = 1, with_ties = FALSE) %>%
+      ungroup() %>%
+      select(game_id, team_id, convex_area_prop_first = area_prop)
+  ) %>%
   left_join(
     field_tilt %>% 
       select(game_id, team_id, field_tilt = prop)
@@ -367,84 +449,269 @@ concave_area_diffs_init <- concave_areas %>%
     n_shots %>% 
       select(game_id, team_id, prop_shots = prop)
   ) %>% 
-  add_side_col() %>%
-  select(
-    game_id,
-    side,
-    convex_area_prop_first,
-    concave_area_prop,
-    convex_area_prop,
-    field_tilt,
-    prop_passes,
-    prop_shots
-  )
-
-concave_area_diffs_init
-
-concave_area_diffs <- concave_area_diffs_init %>% 
-  pivot_wider(
-    names_from = side,
-    names_glue = '{side}_{.value}',
-    values_from = c(
-      concave_area_prop,
-      convex_area_prop_first,
-      convex_area_prop,
-      field_tilt,
-      prop_passes,
-      prop_shots
-    )
+  left_join(
+    network_stats_nested %>% 
+      select(game_id, team_id, network_stats) %>% 
+      unnest(network_stats)
   ) %>% 
   ## should reduce rows since not all games are included in scores (intentionally)
-  inner_join(scores %>% select(-matches('^final_'))) %>% 
-  mutate(
-    diff_concave_area_prop = home_concave_area_prop - away_concave_area_prop,
-    diff_convex_area_prop = home_convex_area_prop - away_convex_area_prop,
-    diff_convex_area_prop_first = home_convex_area_prop - away_convex_area_prop_first,
-    diff_field_tilt = home_field_tilt - away_field_tilt,
-    diff_prop_passes = home_prop_passes - away_prop_passes,
-    diff_prop_shots = home_prop_shots - away_prop_shots,
-    diff_score = home_score - away_score
+  # inner_join(
+  left_join(
+    scores
   ) %>% 
-  arrange(desc(abs(diff_concave_area_prop)))
-
-concave_area_diffs %>% 
-  count(home_concave_area_prop > away_concave_area_prop, home_convex_area_prop < away_concave_area_prop)
-
-concave_area_diffs %>% 
-  ggplot() +
-  aes(x = diff_concave_area_prop, y = diff_convex_area_prop) +
-  geom_point()
-
-concave_area_diffs_redux <- concave_area_diffs %>% 
-  transmute(
-    game_date,
-    season_id,
-    game_id,
-    is_home_stronger = home_prop_passes > away_prop_passes,
-    stronger_concave_area_prop = ifelse(is_home_stronger, home_concave_area_prop, away_concave_area_prop),
-    weaker_concave_area_prop = ifelse(!is_home_stronger, home_concave_area_prop, away_concave_area_prop),
-    stronger_convex_area_prop_first = ifelse(is_home_stronger, home_convex_area_prop_first, away_convex_area_prop_first),
-    weaker_convex_area_prop_first = ifelse(!is_home_stronger, home_convex_area_prop_first, away_convex_area_prop_first),
-    stronger_convex_area_prop = ifelse(is_home_stronger, home_convex_area_prop, away_convex_area_prop),
-    weaker_convex_area_prop = ifelse(!is_home_stronger, home_convex_area_prop, away_convex_area_prop),
-    stronger_field_tilt = ifelse(is_home_stronger, home_field_tilt, away_field_tilt),
-    weaker_field_tilt = ifelse(!is_home_stronger, home_field_tilt, away_field_tilt),
-    stronger_prop_passes = ifelse(is_home_stronger, home_prop_passes, away_prop_passes),
-    weaker_prop_passes = ifelse(!is_home_stronger, home_prop_passes, away_prop_passes),
-    stronger_prop_shots = ifelse(is_home_stronger, home_prop_shots, away_prop_shots),
-    weaker_prop_shots = ifelse(!is_home_stronger, home_prop_shots, away_prop_shots),
-    stronger_score = ifelse(is_home_stronger, home_score, away_score),
-    weaker_score = ifelse(!is_home_stronger, home_score, away_score),
-    stronger_team = ifelse(is_home_stronger, home_team_name, away_team_name),
-    weaker_team = ifelse(!is_home_stronger, home_team_name, away_team_name),
-    diff_concave_area_prop = stronger_concave_area_prop - weaker_concave_area_prop,
-    diff_convex_area_prop_first = stronger_convex_area_prop_first - weaker_convex_area_prop_first,
-    diff_convex_area_prop = stronger_convex_area_prop - weaker_convex_area_prop,
-    diff_field_tilt = stronger_field_tilt - weaker_field_tilt,
-    diff_prop_passes = stronger_prop_passes - weaker_prop_passes,
-    diff_prop_shots = stronger_prop_shots - weaker_prop_shots,
-    diff_score = stronger_score - weaker_score
+  left_join(
+    xg
+  ) %>% 
+  left_join(
+    last_actions_by_game %>% 
+      select(game_id, last_min)
+  ) %>% 
+  add_side_col() %>%
+  mutate(
+    across(c(prop_shots, score, xg), ~coalesce(.x, 0))
   )
+area_diffs_init %>% skimr::skim()
+
+do_compute_area_diffs <- function(.side) {
+  area_diffs_init %>% 
+    select(-team_id) %>% 
+    pivot_longer(
+      -c(game_id, side),
+      names_to = 'stat',
+      values_to = 'value'
+    ) %>% 
+    mutate(
+      across(value, ~ifelse(side == .side, .x, -.x))
+    ) %>% 
+    group_by(game_id, stat) %>% 
+    summarize(
+      across(value, sum)
+    ) %>% 
+    ungroup() %>% 
+    pivot_wider(
+      names_from = stat,
+      names_glue = 'diff_{stat}',
+      values_from = value
+    ) %>% 
+    mutate(side = .side)
+}
+
+diffs <- bind_rows(
+  do_compute_area_diffs('home'),
+  do_compute_area_diffs('away')
+)
+
+team_areas <- area_diffs_init %>% 
+  left_join(
+    meta %>% 
+      select(season_id, game_id)
+  ) %>% 
+  left_join(
+    diffs
+  ) %>% 
+  # select(-c(side, game_id)) %>% 
+  pivot_longer(
+    -c(season_id, team_id, game_id, side, last_min),
+    names_to = 'stat',
+    values_to = 'value'
+  ) %>% 
+  left_join(teams) %>% 
+  mutate(
+    across(
+      value,
+      ~ifelse(
+        .x %in% c('xg'),
+        ~.x * 90 / last_min,
+        .x
+      )
+    )
+  )
+
+# team_areas %>% 
+#   pivot_wider(
+#     names_from = stat,
+#     values_from = value
+#   ) %>% 
+#   ggplot() +
+#   aes(x = field_tilt, y = diff_xg) +
+#   geom_point(aes(color = factor(season_id))) +
+#   geom_smooth(aes(color = factor(season_id)))
+
+team_season_areas <- team_areas %>% 
+  group_by(season_id, team_id, team_name, stat) %>% 
+  summarize(
+    # n = n(),
+    # across(last_min, mean),
+    across(
+    value,
+    list(
+      mean = mean,
+      sd = sd,
+      q05 = ~quantile(.x, 0.05),
+      q95 = ~quantile(.x, 0.95)
+    ),
+    na.rm = TRUE,
+    .names = '{fn}'
+  )) %>% 
+  ungroup()
+
+wide_team_season_areas <- team_season_areas %>% 
+  select(season_id, team_name, stat, mean) %>% 
+  pivot_wider(
+    names_from = stat,
+    values_from = mean
+  )
+
+wide_team_season_areas %>% 
+  select(-c(season_id:team_name)) %>% 
+  corrr::correlate(quiet = TRUE) %>% 
+  corrr::stretch() %>% 
+  filter(!is.na(r)) %>% 
+  filter(abs(r) != 1) %>% 
+  filter(x == 'diff_xg') %>% 
+  # mutate(
+  #   y_is_diff = y %>% str_detect('^diff_')
+  # ) %>% 
+  filter(y %>% str_detect('^diff_')) %>% 
+  select(y, r) %>% 
+  arrange(desc(abs(r)))
+
+wide_team_season_areas
+  ggplot() +
+  aes(x = diff_convex_area_prop, y = diff_xg, color = factor(season_id)) +
+  geom_point() +
+  geom_smooth(method = 'lm', se = FALSE)
+
+team_season_areas_filt <- team_season_areas %>% 
+  filter(stat == 'diff_convex_area_prop') %>% 
+  mutate(grp = tidytext::reorder_within(team_name, mean, season_id))
+
+team_season_areas_filt %>% 
+  ggplot() +
+  # aes(y = tidytext::reorder_within(team_name, mean, season_id), x = mean, group = grp) +
+  # tidytext::scale_y_reordered() +
+  aes(y = grp, x = mean, group = grp) +
+  scale_y_discrete(name = '', labels = team_season_areas_filt %>% select(grp, team_name) %>% deframe()) +
+  geom_errorbarh(
+    # aes(xmin = mean - 2 * sd, xmax = mean + 2 * sd)
+    aes(xmin = q05, xmax = q95)
+  ) +
+  geom_point() +
+  scale_x_continuous(labels = scales::percent) +
+  facet_wrap(~season_id, scales = 'free_y') +
+  labs(
+    x = NULL,
+    y = NULL
+  )
+
+area_diffs <- inner_join(
+  area_diffs_init %>% 
+    select(-team_id) %>% 
+    pivot_wider(
+      names_from = side,
+      names_glue = '{side}_{.value}',
+      values_from = all_of(stat_cols)
+    ),
+  diffs %>% filter(side == 'home') %>% select(-side)
+)
+
+# area_diffs %>% skimr::skim()
+# area_diffs %>% 
+#   count(home_concave_area_prop > away_concave_area_prop, home_convex_area_prop < away_concave_area_prop)
+# 
+# area_diffs %>% 
+#   ggplot() +
+#   aes(x = diff_concave_area_prop, y = diff_convex_area_prop) +
+#   geom_point()
+
+## finding examples ----
+teams %>% filter(team_name %in% c('Chelsea'))
+outlier_prnks <- area_diffs %>% 
+  left_join(
+    meta %>% select(
+      game_id,
+      season_id,
+      home_team_name,
+      away_team_name,
+      final_home_score = home_score,
+      final_away_score = away_score
+    )
+  ) %>%
+  filter(season_id >= 2020) %>% 
+  left_join(
+    last_actions_by_game %>% 
+      select(game_id, last_min)
+  ) %>% 
+  select(
+    game_id,
+    season_id,
+    home_team_name,
+    away_team_name,
+    final_home_score,
+    final_away_score,
+    home_score,
+    away_score,
+    last_min,
+    home_xg,
+    away_xg,
+    diff_xg,
+    home_concave_area_prop,
+    away_concave_area_prop,
+    diff_concave_area_prop
+  ) %>% 
+  mutate(
+    across(matches('^diff'), percent_rank)
+  ) %>% 
+  mutate(
+    prnk1 = diff_xg * diff_concave_area_prop,
+    prnk2 = (1 - diff_xg) * diff_concave_area_prop,
+    prnk3 = diff_xg * (1 - diff_concave_area_prop)
+  ) %>% 
+  relocate(home_team_name, away_team_name, final_home_score, final_away_score)
+
+
+outlier_prnks %>% 
+  filter(season_id == 2021) %>% 
+  inner_join(
+    scores %>% left_join(teams) %>% select(-score)
+  ) %>% 
+  filter(team_name == 'Arsenal')
+
+outlier_prnks %>% 
+  filter(season_id == 2021) %>% 
+  inner_join(
+    scores %>% left_join(teams) %>% select(-score)
+  ) %>% 
+  # filter(home_team_name == 'Man Utd' | away_team_name == 'Man Utd') %>% 
+  mutate(is_home = home_team_name == team_name) %>% 
+  ggplot() +
+  aes(x = diff_xg, y = diff_concave_area_prop) +
+  geom_point(aes(color = is_home)) +
+  ggrepel::geom_text_repel(
+    aes(
+      label = sprintf('%s @ %s', away_team_name, home_team_name)
+    )
+  ) +
+  facet_wrap(~team_name)
+# Norwitch @ Arsenal, Arsenal @ West Ham
+outlier_prnks %>% 
+  filter(last_min > 45) %>% 
+  # filter(home_xg > 1 | away_xg > 1) %>% 
+  filter(home_concave_area_prop < 0.3 | away_concave_area_prop < 0.3) %>% 
+  filter(home_concave_area_prop > 0.7 | away_concave_area_prop > 0.7) %>% 
+  arrange(desc(prnk1))
+outlier_prnks %>% 
+  filter(last_min > 45) %>% 
+  filter(home_concave_area_prop < 0.3 | away_concave_area_prop < 0.3) %>% 
+  filter(home_concave_area_prop > 0.7 | away_concave_area_prop > 0.7) %>% 
+  arrange(desc(prnk2))
+outlier_prnks %>% 
+  filter(last_min > 45) %>% 
+  filter(season_id == 2021) %>% 
+  filter(home_concave_area_prop < 0.4 | away_concave_area_prop < 0.4) %>% 
+  filter(home_concave_area_prop > 0.7 | away_concave_area_prop > 0.7) %>% 
+  arrange(desc(prnk3))
+
 
 ## cors ----
 .str_replace_cor_col <- function(x, i) {
@@ -458,7 +725,6 @@ do_tidy_cor <- function(data) {
     filter(!is.na(r)) %>% 
     # filter(y > x) %>% 
     filter(abs(r) != 1) %>% 
-    arrange(desc(abs(r))) %>% 
     mutate(
       across(
         c(x, y),
@@ -469,83 +735,73 @@ do_tidy_cor <- function(data) {
       )
     ) %>% 
     filter(x_suffix != y_suffix) %>% 
-    filter(x %>% str_detect('area') | y %>% str_detect('area')) %>% 
-    filter(
-      !(
-        (x %>% str_detect('area') & y %>% str_detect('area'))
-      )
-    )
+    # filter(x %>% str_detect('area') | y %>% str_detect('area')) %>% 
+    # filter(
+    #   !(
+    #     (x %>% str_detect('area') & y %>% str_detect('area'))
+    #   )
+    # ) %>% 
+    select(x, y, x_prefix, x_suffix, y_prefix, y_suffix, r) %>% 
+    arrange(desc(abs(r)))
 }
 
-concave_cors <- concave_area_diffs %>% 
+areas_cors <- area_diffs %>% 
   select(
     where(is.numeric), -matches('_id$')
   ) %>% 
   do_tidy_cor()
+areas_cors %>% filter(x == 'home_xg', y_prefix == 'home')
 
-concave_cors_redux <- concave_area_diffs_redux %>% 
-  select(
-    where(is.numeric), -matches('_id$')
-  ) %>% 
-  do_tidy_cor()
-concave_cors_redux
+area_diffs
 
-concave_cors %>% 
+area_diffs %>% 
+  filter(game_id == 1549663) %>% 
+  pivot_longer(-c(game_id)) %>% 
+  left_join(meta)
+
+area_diffs %>% 
+  filter(game_id %in% c(1549626, 1549563)) %>% 
+  glimpse()
+meta %>% filter(home_team_name == 'Man Utd', away_team_name == 'Liverpool') # 1549626, 32, 26
+meta %>% filter(home_team_name == 'Man City', away_team_name == 'Arsenal') # 1549563, 167, 13
+
+areas_cors %>% 
   filter(x == 'diff_concave_area_prop')
-concave_cors %>% 
-  filter(x == 'home_concave_area_prop')
+areas_cors %>% 
+  filter(x == 'diff_convex_area_prop', y_prefix == 'diff')
+areas_cors %>% 
+  filter(x == 'diff_xg', y_prefix == 'diff')
+areas_cors %>% 
+  filter(x == 'home_field_tilt', y_prefix == 'home')
 
-concave_cors_redux %>% 
-  filter(x == 'diff_convex_area_prop_first')
-
-concave_area_diffs_redux %>% 
-  ggplot() +
-  aes(x = stronger_concave_area_prop, y = weaker_concave_area_prop) +
-  geom_point(
-    aes(color = stronger_field_tilt)
-  ) +
-  geom_abline(
-    aes(slope = 1, intercept = 0)
-  ) +
-  coord_cartesian(
-    xlim = c(0, 1),
-    ylim = c(0, 1)
-  )
-
-concave_area_diffs_redux %>% 
-  ggplot() +
-  aes(x = stronger_concave_area_prop, y = stronger_field_tilt) +
-  geom_point(
-  ) +
-  geom_abline(
-    aes(slope = 1, intercept = 0)
-  ) +
-  coord_cartesian(
-    xlim = c(0, 1),
-    ylim = c(0, 1)
-  )
-
-
-## convex ----
-areas_compared <- full_join(
-  concave_areas %>% select(id, game_id, team_id, area_prop_concave = area_prop),
-  agg_convex_areas %>% select(id, area_prop_convex = area_prop)
-) %>% 
-  mutate(
-    prnk_concave = percent_rank(area_prop_concave),
-    prnk_convex = percent_rank(area_prop_convex),
-    prnk_diff = prnk_concave - prnk_convex,
-    prnk_prnk = percent_rank(prnk_diff)
-  ) %>% 
-  arrange(desc(prnk_prnk))
-areas_compared
-
-areas_compared %>% arrange(desc(area_prop_concave))
-
-areas_compared %>% 
-  ggplot() +
-  aes(x = prnk_concave, y = prnk_convex) +
-  geom_point()
+# stat_combos <- full_join(
+#   area_diffs %>% 
+#     select(-matches('diff|first|score')) %>% 
+#     pivot_longer(
+#       -game_id,
+#       names_to = 'stat1',
+#       values_to = 'value1'
+#     ),
+#   area_diffs %>% 
+#     select(-matches('diff|first|score')) %>% 
+#     pivot_longer(
+#       -game_id,
+#       names_to = 'stat2',
+#       values_to = 'value2'
+#     )
+# ) %>% 
+#   filter(stat1 != stat2)
+# stat_combos %>% distinct(stat1)
+# stat_combos %>% count(stat1, stat2)
+# set.seed(1)
+# meta_sample <- meta %>% slice_sample(n = 100)
+# stat_combos %>% 
+#   semi_join(meta_sample) %>% 
+#   ggplot() +
+#   aes(value1, value2) +
+#   geom_point() +
+#   facet_grid(stat1~stat2, scales = 'free') -> p
+# ggsave(plot = p, filename = 'temp.png', width = 30, height = 30)
 
 ## plot ----
 ## Reference: https://github.com/Torvaney/ggsoccer/blob/master/R/dimensions.R
@@ -565,19 +821,28 @@ areas_compared %>%
 .select_unnest <- function(df, ...) {
   df %>% 
     select(...) %>% 
-    unnest(...)
+    unnest(where(is.list))
 }
 
-plot_convex_area <- function(i) {
-  # i <- '1549543-161'
-  i <- '1549626-32' # liverpool 5 0 man utd (home)
-  cv <- convex_areas_nested %>% filter(id == i)
-  cc <- concave_areas_nested %>% filter(id == i)
-  acv <- cv %>% .select_unnest(areas)
-  acc <- cc %>% .select_unnest(areas)
-  d <- cv %>% .select_unnest(data)
-  
-  p <- d %>% 
+plot_networks <- function(.game_id = 1549626) {
+  # .game_id = 1549626 # liverpool @ man utd (2021-10-24)
+  # .game_id <- 1549646 # man city @ man utd (2021-11-06)
+  # .game_id <- 1549539
+  # .game_id <- 1549603
+  # .game_id <- 1549638
+  # .game_id <- 1549539 # arsenal at brentford (arsenal dominates)
+  .game_id <- 1549589 # tot at arsenal
+  area_diffs %>% 
+    filter(game_id == .game_id) %>% 
+    glimpse()
+  named_team_ids <- meta %>% 
+    filter(game_id == .game_id) %>% 
+    select(home_team_id, away_team_id) %>% 
+    c() %>% 
+    unlist()
+  n <- nodes %>% filter(game_id == .game_id) %>% add_side_col()
+  e <- edges %>% filter(game_id == .game_id) %>% add_side_col()
+  n %>% 
     ggplot() +
     aes(x = x, y = y) +
     ggsoccer::annotate_pitch(
@@ -586,6 +851,8 @@ plot_convex_area <- function(i) {
       fill = 'white'
     ) +
     # coord_flip(xlim = c(1, 99), ylim = c(4, 96), clip = 'on') +
+    coord_flip(ylim = c(0, 68), xlim = c(105, 0)) +
+    labs(x = NULL, y = NULL) +
     theme(
       axis.title = element_text(size = 12, hjust = 0),
       axis.ticks = element_blank(),
@@ -593,41 +860,72 @@ plot_convex_area <- function(i) {
       panel.grid.major = element_blank(),
       panel.grid.minor = element_blank()
     ) +
+    geom_point(
+      aes(size = n)
+    ) +
+    ggrepel::geom_text_repel(
+      aes(label = name)
+    ) +
+    facet_wrap(~side)
+  
+}
+
+.common_gg <- function(data, ...) {
+  list(
+    ...,
+    aes(x = x, y = y),
+    ggsoccer::annotate_pitch(
+      dimensions = .pitch_international,
+      colour = 'black', 
+      fill = 'white'
+    ),
+    # coord_flip(xlim = c(1, 99), ylim = c(4, 96), clip = 'on') +
+    theme(
+      axis.title = element_text(size = 12, hjust = 0),
+      axis.ticks = element_blank(),
+      axis.text = element_blank(),
+      panel.grid.major = element_blank(),
+      panel.grid.minor = element_blank()
+    ),
     labs(
       y = NULL,
       x = NULL
-    ) +
-    geom_point(
-      data = acv$xy_hull_orig[[1]],
-      aes(color = 'convex (1)')
-    ) +
-    geom_path(
-      data = acv$xy_hull_orig[[1]],
-      aes(color = 'convex (1)')
-    ) +
+    ),
+    coord_flip(ylim = c(0, 68), xlim = c(105, 0))
+  )
+}
+
+plot_convex_area <- function(.game_id = 1549626) {
+  named_team_ids <- meta %>% 
+    filter(game_id == .game_id) %>% 
+    select(home_team_id, away_team_id) %>% 
+    c()
+  # cvs <- convex_areas_nested %>% filter(game_id == .game_id)
+  ccs <- convex_areas_nested %>% filter(game_id == .game_id)
+  
+  acc <- ccs %>% .select_unnest(team_id, areas)
+  d <- ccs %>% .select_unnest(team_id, data)
+  
+  xy <- acc %>% 
+    mutate(grp = row_number()) %>% 
+    .select_unnest(grp, team_id, xy_hull_orig)
+  
+  p <- d %>% 
+    ggplot() +
+    .common_gg() +
+    facet_wrap(~team_id) +
     geom_hline(
       aes(yintercept = 34)
     ) +
     geom_point(
-      data = acc$xy_hull_orig[[1]],
-      aes(color = 'concave')
+      data = xy,
+      aes(color = factor(team_id))
     ) +
     geom_path(
-      data = acc$xy_hull_orig[[1]],
-      aes(color = 'concave')
+      data = xy,
+      aes(color = factor(team_id), group = grp)
     )
-  
-  if(nrow(acv) > 1) {
-    p <- p +
-      geom_point(
-        data = acv$xy_hull_orig[[2]],
-        aes(color = 'convex (2)')
-      ) +
-      geom_path(
-        data = acv$xy_hull_orig[[2]],
-        aes(color = 'convex (2)')
-      )
-  }
+  p
   
   p +
     scale_color_manual(
