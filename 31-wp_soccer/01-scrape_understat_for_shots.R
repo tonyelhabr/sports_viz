@@ -15,17 +15,13 @@ path_spi <- file.path(dir_proj, 'spi_538.csv')
 
 params <-
   crossing(
-    league = c('La_liga', 'EPL', 'Bundesliga', 'Serie_A', 'Ligue_1'),
-    season = c(2014L:2021L)
+    # league = c('La_liga', 'EPL', 'Bundesliga', 'Serie_A', 'Ligue_1'),
+    league = 'EPL',
+    # season = c(2014L:2021L)
+    season = 2017L:2021L
   )
 params
 options(readr.num_columns = 0)
-
-# .display_info <- function (x, ..., .envir = parent.frame())  {
-#   x <- glue::glue_collapse(x, '\n')
-#   x <- glue::glue(x, .envir = .envir)
-#   cli::cat_line(x)
-# }
 
 .display_info_early <- function(x, ..., .envir = parent.frame()) {
   x <- glue::glue_collapse(x, '\n')
@@ -41,7 +37,6 @@ options(readr.num_columns = 0)
 
 # Reference: https://gist.github.com/Torvaney/42cd82addb3ba2c4f33ec3247e66889c
 extract_json <- function(html, varname) {
-  # Extract a JSON variable from the raw html
   html %>% 
     rvest::html_nodes('script') %>% 
     rvest::html_text(trim = TRUE) %>% 
@@ -52,21 +47,15 @@ extract_json <- function(html, varname) {
 }
 
 unnest_df <- function(df, name) {
-  # Hack to convert list/nested dfs to a single df while keeping sane column 
-  # names
   if (!is.data.frame(df)) {
     return(tibble(!!name := df))
   }
-  
   tbl <- as_tibble(df)
   colnames(tbl) <- str_c(name, '_', colnames(tbl))
-  
   tbl
 }
 
 fetch_matches <- function(league = 'EPL', season = 2021) {
-  # Fetch a dataframe of matches for an individual league/season's page
-  # league_url %>% 
   sprintf('https://understat.com/league/%s/%s', toupper(league), season) %>% 
     xml2::read_html() %>% 
     extract_json('datesData') %>% 
@@ -88,8 +77,7 @@ get_matches <- function(league = 'EPL', season = 2021, overwrite = FALSE) {
   res
 }
 
-matches <-
-  params %>% 
+matches <- params %>% 
   mutate(data = map2(league, season, get_matches)) %>% 
   unnest(data)
 matches
@@ -103,44 +91,50 @@ get_shots <- function(match_id, overwrite = FALSE) {
     .display_info_early('{suffix}')
     return(read_rds(path))
   }
-  Sys.sleep(0.5)
-  res <- understatr::get_match_shots(match_id)
+  # Sys.sleep(1)
   .display_info_after('{suffix}')
+  res <- understatr::get_match_shots(match_id)
+  # .display_info_after('{suffix}')
   write_rds(res, path)
   res
 }
 
-get_shots_slowly <- possibly(get_shots, tibble())
+possibly_get_shots <- possibly(get_shots, otherwise = tibble(), quiet = FALSE)
 
-match_ids <- matches %>% distinct(season, league, match_id)
-get_paths_match <- function() {
-  fs::dir_ls(dir_data, regexp = '[0-9]{1-5}[.]rds$')
-}
-
-match_ids_existing <- get_paths_match() %>% 
-  basename() %>%
-  tools::file_path_sans_ext() %>% 
-  as.integer() %>% 
-  tibble(match_id = .)
-match_ids_existing
-
-match_ids %>% 
-  anti_join(match_ids_existing) %>% 
-  count(league, season)
+match_ids <- matches %>% 
+  # filter(datetime < Sys.Date()) %>% 
+  drop_na(goals_h, goals_a) %>% ## unplayed games
+  distinct(season, league, match_id)
+# get_match_paths <- function() {
+#   fs::dir_ls(dir_data, regexp = '[0-9]{1-5}[.]rds$')
+# }
+# 
+# match_ids_existing <- get_match_paths() %>% 
+#   basename() %>%
+#   tools::file_path_sans_ext() %>% 
+#   as.integer() %>% 
+#   tibble(match_id = .)
+# match_ids_existing
+# 
+# match_ids %>% 
+#   anti_join(match_ids_existing) %>% 
+#   inner_join(matches)
 
 shots_nested <- match_ids %>% 
-  anti_join(match_ids_existing) %>% 
+  # anti_join(match_ids_existing) %>% 
   filter(!(league == 'Ligue_1' & season == 2019)) %>% 
+  arrange(league, season, match_id) %>% 
   select(league, season, match_id) %>% 
-  mutate(data = map(match_id, get_shots_slowly))
-shots_nested
+  mutate(data = map(match_id, possibly_get_shots))
 
-match_ids_vec <- match_ids %>% 
-  pull(match_id) 
+shots <- shots_nested %>% 
+  select(data) %>%  
+  unnest(data)
 
-shots <- get_paths_match() %>% 
-  # file.path(dir_proj, 'data', sprintf('%s.rds', match_ids_vec)) %>% 
-  map(~read_rds(.x))
+# match_ids_vec <- match_ids %>% pull(match_id)
+# old_shots <- file.path(dir_proj, 'data', sprintf('%s.rds', match_ids_vec)) %>% map_dfr(read_rds)
+# shots <- get_match_paths() %>% map(~read_rds(.x))
+# shots <- shots %>% map(~.x %>% mutate(across(season, as.integer))) %>% reduce(bind_rows)
 # match_ids_existing %>% anti_join(shots %>% distinct(match_id))
 
 # beepr::beep(3)
@@ -224,6 +218,7 @@ get_league_teams_stats <- function(league_name, year, overwrite = FALSE) {
 get_league_teams_stats_safely <- possibly(get_league_teams_stats, otherwise = tibble(), quiet = FALSE)
 
 league_teams_stats <- leagues_meta %>% 
+  semi_join(params %>% rename(league_name = league, year = season)) %>% 
   mutate(data = map2(league_name, year, get_league_teams_stats_safely)) %>% 
   select(data) %>% 
   unnest(data)
@@ -247,14 +242,13 @@ get_team_players_stats <- function(team_name, year, overwrite = FALSE) {
   res
 }
 
-team_players_stats <-
-  teams %>% 
+team_players_stats <- teams %>% 
   mutate(
     data = map2(team_name, year, get_team_players_stats)
   ) %>% 
   select(-c(team_name, year)) %>% 
   unnest(data)
-team_players_stats
+team_players_stats %>% count(year)
 write_rds(team_players_stats, path_teams_players_stats)
 
 read_csv('https://projects.fivethirtyeight.com/soccer-api/club/spi_matches.csv') %>% 
