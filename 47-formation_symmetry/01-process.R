@@ -527,7 +527,37 @@ team_areas <- area_diffs_init %>%
         .x
       )
     )
+  ) %>% 
+  left_join(
+    xg
+  ) %>% 
+  add_side_col() %>% 
+  left_join(
+    diffs %>% 
+      select(game_id, side, diff_xg)
   )
+
+xg_season <- xg %>% 
+  add_side_col() %>% 
+  left_join(
+    meta %>% 
+      select(season_id, game_id)
+  ) %>% 
+  left_join(
+    diffs %>% 
+      select(game_id, side, diff_xg)
+  ) %>% 
+  left_join(
+    last_actions_by_game %>% 
+      select(game_id, last_min)
+  ) %>% 
+  group_by(season_id, team_id) %>% 
+  summarize(
+    n_games = n(),
+    across(last_min, list(mean = mean)),
+    across(c(xg, diff_xg), list(sum = sum))
+  ) %>% 
+  ungroup()
 
 team_season_areas <- team_areas %>% 
   group_by(season_id, team_id, team_name, stat) %>% 
@@ -545,4 +575,7 @@ team_season_areas <- team_areas %>%
     na.rm = TRUE,
     .names = '{fn}'
   )) %>% 
-  ungroup()
+  ungroup() %>% 
+  left_join(
+    xg_season
+  )
