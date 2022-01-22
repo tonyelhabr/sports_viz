@@ -8,6 +8,7 @@ library(igraph)
 library(ggplot2)
 library(ggsoccer)
 library(tidyr)
+library(sdpt3r)
 
 ## convex ----
 flip_df <- function(df, y_center = 34) {
@@ -192,7 +193,7 @@ get_concave_hull_areas <- function(df, y_center = 34) {
   if(nrow(df) <= 1) {
     return(tibble())
   }
-
+  
   p1 <- df %>% get_concave_hull_polygon()
   a1 <- p1 %>% st_area()
   
@@ -237,7 +238,7 @@ get_concave_hull_areas <- function(df, y_center = 34) {
   if(any(class(pi) == 'sfc_GEOMETRYCOLLECTION')) {
     pi <- pi %>% st_collection_extract('POLYGON')
   }
-
+  
   res <- tibble(
     area_inner = ai,
     area_outer = ad,
@@ -253,15 +254,15 @@ get_concave_hull_areas <- function(df, y_center = 34) {
     polygon_inner = pi,
     polygon_outer = pd
   )
-
+  
   ## this is not actually doing a great job... it's still returning points on the hull
   ## apparently rounding x,y is not enough
   ip <- get_concave_hull_inner_points(df, p1_df)
-
+  
   if(nrow(ip) <= 2) {
     return(res)
   }
-
+  
   bind_rows(
     res,
     get_concave_hull_areas(ip)
@@ -277,7 +278,7 @@ compute_network_stats <- function(n, e) {
     e
   ) %>% 
     as_tbl_graph()
-
+  
   tibble(
     reciprocity = reciprocity(g),
     transitivity = transitivity(g),
@@ -333,3 +334,47 @@ select_unnest <- function(df, ...) {
     unnest(where(is.list))
 }
 
+compute_max_cut <- function(df, weighted = TRUE) {
+  player_ids <- bind_rows(
+    df %>% distinct(player_id = player_id_start),
+    df %>% distinct(player_id = player_id_end)
+  ) %>% 
+    distinct(player_id) %>% 
+    arrange(player_id) %>% 
+    pull(player_id)
+  
+  if(!weighted) {
+    df <- df %>% mutate(n = 1)
+  }
+  
+  df_wide <- tidyr::crossing(
+    player_id_start = player_ids,
+    player_id_end = player_ids
+  ) %>% 
+    left_join(
+      df %>% 
+        select(player_id_start, player_id_end, n),
+      by = c('player_id_start', 'player_id_end')
+    ) %>% 
+    mutate(
+      across(n, ~coalesce(.x, 0L))
+    ) %>% 
+    pivot_wider(
+      names_from = player_id_end,
+      values_from = n
+    ) %>% 
+    mutate(
+      across(player_id_start, ~ordered(.x, player_ids))
+    ) %>% 
+    arrange(player_id_start) %>% 
+    column_to_rownames('player_id_start')
+  
+  m <- as.matrix(df_wide)
+  m_uni <- m + t(m)
+  if(!weighted) {
+    m_uni <- m_uni / 2
+  }
+  mc <- maxcut(m_uni)
+  mc$pobj
+  
+}

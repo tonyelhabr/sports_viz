@@ -2,35 +2,6 @@
 library(tidyverse)
 library(arrow)
 
-# gray_wv <- rgb(24, 24, 24, maxColorValue = 255)
-# gray_grid_wv <- rgb(64, 64, 64, maxColorValue = 255)
-# 
-# extrafont::loadfonts(device = 'win', quiet = TRUE)
-# theme_set(theme_minimal())
-# theme_update(
-#   text = element_text(family = 'Karla', color = 'white'),
-#   title = element_text('Karla', size = 14, color = 'white'),
-#   plot.title = element_text('Karla', face = 'bold', size = 24, color = 'white'),
-#   plot.title.position = 'plot',
-#   plot.subtitle = element_text('Karla', size = 18, color = '#f1f1f1'),
-#   axis.text = element_text('Karla', color = 'white', size = 14),
-#   axis.title = element_text('Karla', size = 14, color = 'white', face = 'bold', hjust = 0.99),
-#   axis.line = element_blank(),
-#   panel.grid.major = element_line(color = gray_grid_wv),
-#   panel.grid.minor = element_line(color = gray_grid_wv),
-#   panel.grid.minor.x = element_blank(),
-#   panel.grid.minor.y = element_blank(),
-#   plot.margin = margin(10, 10, 10, 10),
-#   plot.background = element_rect(fill = gray_wv, color = gray_wv),
-#   plot.caption = element_text('Karla', color = 'white', hjust = 1, size = 11, face = 'italic'),
-#   plot.caption.position = 'plot',
-#   plot.tag = ggtext::element_markdown('Karla', size = 12, color = 'white', hjust = 0),
-#   plot.tag.position = c(0.01, 0.01),
-#   strip.text = element_text('Karla', color = 'white', face = 'bold', size = 12, hjust = 0),
-#   panel.background = element_rect(fill = gray_wv, color = gray_wv)
-# )
-# update_geom_defaults('text', list(family = 'Karla', size = 4))
-# tonythemes::theme_set_tony()
 dir_proj <- '47-formation_symmetry'
 understat_xg <- file.path(dir_proj, 'understat_xg.rds') %>% read_rds()
 source(file.path(dir_proj, 'helpers.R'))
@@ -331,6 +302,33 @@ do_compute_network_stats <- function(overwrite = F) {
 
 network_stats_nested <- do_compute_network_stats()
 
+do_compute_max_cuts <- function(weighted = TRUE, overwrite = F) {
+  fv <- function(name, ...) {
+    cat(name, sep = '\n')
+    compute_max_cut(weighted = weighted, ...)
+  }
+  path <- file.path(dir_proj, sprintf('max_cuts_%sweighted.rds', ifelse(weighted, '', 'un')))
+  if(file.exists(path) & !overwrite) {
+    return(read_rds(path))
+  }
+  max_cuts_nested <- edges %>% 
+    group_nest(id, game_id, team_id) %>% 
+    drop_bad_ids() %>% 
+    mutate(
+      max_cuts = map2_dbl(id, data, fv)
+    )
+  write_rds(max_cuts_nested, path)
+  max_cuts_nested
+}
+
+weighted_max_cuts_nested <- do_compute_max_cuts(TRUE)
+unweighted_max_cuts_nested <- do_compute_max_cuts(FALSE)
+
+max_cuts <- full_join(
+  weighted_max_cuts_nested %>% select(id, game_id, team_id, max_cut_weighted = max_cuts),
+  unweighted_max_cuts_nested %>% select(id, max_cut_unweighted = max_cuts)
+)
+
 ## nested areas ----
 do_get_areas <- function(.name, overwrite = F) {
   f <- sprintf('get_%s_hull_areas', .name)
@@ -352,7 +350,7 @@ do_get_areas <- function(.name, overwrite = F) {
   areas_nested
 }
 
-concave_areas_nested <- do_get_areas('concave', TRUE)
+concave_areas_nested <- do_get_areas('concave')
 convex_areas_nested <- do_get_areas('convex')
 
 ## prep agg ----
@@ -406,6 +404,8 @@ stat_cols <- c(
   'concave_area_prop_first',
   'convex_area_prop',
   'convex_area_prop_first',
+  'max_cut_weighted',
+  'max_cut_unweighted',
   'field_tilt',
   'prop_passes',
   'prop_shots',
@@ -448,6 +448,10 @@ area_diffs_init <- agg_concave_areas %>%
   left_join(
     n_shots %>% 
       select(game_id, team_id, prop_shots = prop)
+  ) %>% 
+  left_join(
+    max_cuts %>% 
+      select(game_id, team_id, max_cut_weighted, max_cut_unweighted)
   ) %>% 
   left_join(
     network_stats_nested %>% 
