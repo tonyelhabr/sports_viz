@@ -14,28 +14,20 @@ pts <- function(x) {
 }
 
 df <- tibble::tribble(
-   ~from, ~to, ~n,
-     "a", "b", 1L,
-     "a", "c", 2L,
-     "a", "d", 6L,
-     "a", "e", 3L,
-     "b", "a", 1L,
-     "b", "c", 5L,
-     "b", "d", 1L,
-     "b", "e", 7L,
-     "c", "a", 1L,
-     "c", "b", 3L,
-     "c", "d", 1L,
-     "c", "e", 2L,
-     "d", "a", 4L,
-     "d", "b", 5L,
-     "d", "c", 4L,
-     "d", "e", 4L,
-     "e", "a", 6L,
-     "e", "b", 4L,
-     "e", "c", 2L,
-     "e", "d", 3L
-   )
+  ~from, ~to, ~n,
+  "a", "b", 1L,
+  "a", "c", 0L,
+  "a", "d", 3L,
+  "b", "a", 1L,
+  "b", "c", 1L,
+  "b", "d", 1L,
+  "c", "a", 0L,
+  "c", "b", 2L,
+  "c", "d", 1L,
+  "d", "a", 1L,
+  "d", "b", 5L,
+  "d", "c", 4L
+)
 
 wide_df <- df %>% 
   pivot_wider(
@@ -43,7 +35,7 @@ wide_df <- df %>%
     values_from = n,
     values_fill = 0
   ) %>% 
-  select(from, a, b, c, d, e) %>% 
+  select(from, a, b, c, d) %>% 
   arrange(from) %>% 
   select(-from)
 wide_df
@@ -67,24 +59,17 @@ upper_symmetric_m[upper.tri(upper_symmetric_m, diag = TRUE)] %>% length()
 set.edge.attribute(
   network, 
   'n',
-  upper_symmetric_m[upper.tri(upper_symmetric_m, diag = FALSE)]
+  upper_symmetric_m[upper.tri(upper_symmetric_m) & upper_symmetric_m > 0]
 )
 
-# set.seed(42)
+set.seed(42)
 gg_network <- network %>% 
   ggnetwork() %>% 
   as_tibble() %>% 
   mutate(
     rn = row_number()
   )
-11+8+3+10+5+7
-# a-e (9) 10
-# b-e (5) 8
-# a-d (10) 9
-# a-c (8) 7
-# b-d (3) 6
-# b-c (4) 8
-rns <- c(9, 5, 10, 8, 3, 4)
+rns <- c(5, 4, 2)
 filt_edges <- gg_network %>%
   filter(
     rn %in% rns
@@ -92,21 +77,51 @@ filt_edges <- gg_network %>%
   mutate(
     across(rn, ~factor(.x, levels = rns))
   ) %>% 
-  arrange(rn)
-filt_edges
-midpoints <- filt_edges %>% 
+  arrange(rn) %>% 
   mutate(
     x_mid = (x + xend) / 2,
     y_mid = (y + yend) / 2
   ) %>% 
   mutate(
-    x_next = coalesce(lead(x_mid), x_mid - 0.1),
-    y_next = coalesce(lead(y_mid), y_mid + 0.1)
+    x_next = lead(x_mid),
+    y_next = lead(y_mid)
+  ) %>% 
+  select(rn, vertex.names, n, x_mid, y_mid, x_next, y_next)
+
+adj_filt_edges <- filt_edges %>% 
+  add_row(
+    filt_edges %>%
+      slice(1) %>% 
+      mutate(
+        x_next = x_mid,
+        y_next = y_mid,
+        across(x_mid, ~.x + 0.2)
+      ),
+    .before = 1
+  ) %>% 
+  mutate(
+    across(
+      x_next,
+      ~ifelse(
+        rn == rev(rns)[1],
+        x_mid - 0.2,
+        .x
+      )
+    ),
+    across(
+      y_next,
+      ~ifelse(
+        rn == rev(rns)[1],
+        y_mid,
+        .x
+      )
+    )
   )
-midpoints
-gg_network %>% 
+adj_filt_edges
+
+p_ex <- gg_network %>% 
   ggplot(aes(x = x, y = y, xend = xend, yend = yend)) +
-  geom_edges(curvature = 0.1) +
+  geom_edges(curvature = 0) +
   geom_nodes(color = 'black', size = pts(36)) +
   geom_nodetext(
     data = gg_network %>% filter(is.na(n)),
@@ -116,15 +131,45 @@ gg_network %>%
     fontface = 'bold', 
     family = 'Karla'
   ) +
-  # geom_segment(
-  #   data = midpoints,
-  #   aes(
-  #     x = x_mid,
-  #     y = y_mid,
-  #     xend = x_next,
-  #     yend = y_next
-  #   ),
-  #   color = 'red'
-  # ) +
-  geom_edgetext(aes(label = n), color = 'black')
+  geom_edgetext(
+    aes(label = n), 
+    size = pts(16),
+    fill = NA,
+    hjust = 1,
+    vjust = 2,
+    color = 'black',
+    fontface = 'bold', 
+    family = 'Karla'
+  ) +
+  geom_curve(
+    data = adj_filt_edges,
+    aes(
+      x = x_mid,
+      y = y_mid,
+      xend = x_next,
+      yend = y_next
+    ),
+    curvature = 0.1,
+    size = 2,
+    linetype = 2,
+    color = 'red'
+  ) +
+  annotate(
+    geom = 'text',
+    x = 0.2,
+    y = 0.5,
+    hjust = 0,
+    size = pts(16),
+    color = 'red',
+    label = 'max cut: 15',
+    family = 'Karla',
+    fontface = 'bold'
+  ) +
+  theme_blank() +
+  labs(
+    title = 'Example max cut formulation'
+  ) +
+  theme(
+    plot.title = element_text('Karla', face = 'bold', size = 24, color = 'black', hjust = 0.5)
+  )
 
