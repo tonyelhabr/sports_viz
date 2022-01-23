@@ -278,12 +278,33 @@ compute_network_stats <- function(n, e) {
     e
   ) %>% 
     as_tbl_graph()
+
+  e_b <- g %>% 
+    activate(edges) %>% 
+    mutate(
+      z = centrality_edge_betweenness()
+    ) %>% 
+    as_tibble() %>% 
+    pull(z)
   
+  do <- degree(g, mode = 'out')
+  di <- degree(g, mode = 'in')
+  b <- betweenness(g)
   tibble(
     reciprocity = reciprocity(g),
     transitivity = transitivity(g),
     mean_distance = mean_distance(g),
-    density = edge_density(g)
+    density = edge_density(g),
+    median_node_degree_out = median(do),
+    median_node_degree_in = median(di),
+    median_node_betweenness = median(b),
+    # n_edge_betweeness = length(e_b),
+    median_edge_betweenness = median(e_b),
+    mean_node_degree_out = mean(do),
+    mean_node_degree_in = mean(di),
+    mean_node_betweenness = mean(b),
+    # n_edge_betweeness = length(e_b),
+    mean_edge_betweenness = mean(e_b), 
   )
 }
 

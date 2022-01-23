@@ -413,6 +413,11 @@ stat_cols <- c(
   'transitivity',
   'mean_distance',
   'density',
+  'median_node_degree_out',
+  'median_node_degree_in',
+  'median_node_betweenness',
+  'median_edge_betweenness',
+  'last_min',
   'score',
   'xg'
 )
@@ -527,55 +532,61 @@ team_areas <- area_diffs_init %>%
         .x
       )
     )
-  ) %>% 
-  left_join(
-    xg
-  ) %>% 
-  add_side_col() %>% 
-  left_join(
-    diffs %>% 
-      select(game_id, side, diff_xg)
-  )
+  ) # %>% 
+# left_join(
+#   xg
+# ) %>% 
+# add_side_col() %>% 
+# left_join(
+#   diffs %>% 
+#     select(game_id, side, diff_xg)
+# )
 
-xg_season <- xg %>% 
-  add_side_col() %>% 
-  left_join(
-    meta %>% 
-      select(season_id, game_id)
-  ) %>% 
-  left_join(
-    diffs %>% 
-      select(game_id, side, diff_xg)
-  ) %>% 
-  left_join(
-    last_actions_by_game %>% 
-      select(game_id, last_min)
-  ) %>% 
-  group_by(season_id, team_id) %>% 
-  summarize(
-    n_games = n(),
-    across(last_min, list(mean = mean)),
-    across(c(xg, diff_xg), list(sum = sum))
-  ) %>% 
-  ungroup()
+# xg_season <- xg %>% 
+#   semi_join(
+#     team_areas %>% 
+#       distinct(game_id, team_id)
+#   ) %>% 
+#   add_side_col() %>% 
+#   left_join(
+#     meta %>% 
+#       select(season_id, game_id)
+#   ) %>% 
+#   left_join(
+#     diffs %>% 
+#       select(game_id, side, diff_xg)
+#   ) %>% 
+#   left_join(
+#     last_actions_by_game %>% 
+#       select(game_id, last_min)
+#   ) %>% 
+#   group_by(season_id, team_id) %>% 
+#   summarize(
+#     n_games = n(),
+#     across(last_min, list(mean = mean)),
+#     across(c(xg, diff_xg), list(sum = sum))
+#   ) %>% 
+#   ungroup()
 
 team_season_areas <- team_areas %>% 
   group_by(season_id, team_id, team_name, stat) %>% 
   summarize(
-    # n = n(),
-    # across(last_min, mean),
+    n = n(),
+    across(last_min, mean),
     across(
-    value,
-    list(
-      mean = mean,
-      sd = sd,
-      q05 = ~quantile(.x, 0.05),
-      q95 = ~quantile(.x, 0.95)
-    ),
-    na.rm = TRUE,
-    .names = '{fn}'
-  )) %>% 
-  ungroup() %>% 
-  left_join(
-    xg_season
-  )
+      value,
+      list(
+        # sum = sum,
+        # sd = sd,
+        # q05 = ~quantile(.x, 0.05),
+        # q95 = ~quantile(.x, 0.95),
+        value = mean
+      ),
+      na.rm = TRUE,
+      .names = '{fn}'
+    )) %>% 
+  ungroup() # %>% 
+# left_join(
+#   xg_season
+# )
+

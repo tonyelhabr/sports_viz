@@ -32,25 +32,97 @@ source(file.path(dir_proj, '01-process.R'))
 # update_geom_defaults('text', list(family = 'Karla', size = 4))
 # tonythemes::theme_set_tony()
 wide_team_season_areas <- team_season_areas %>% 
-  select(season_id, team_name, stat, mean) %>% 
+  # select(season_id, team_name, stat, value, n, n_games, last_min_mean) %>% 
   pivot_wider(
     names_from = stat,
-    values_from = mean
+    values_from = value
   )
 
+team_areas %>% 
+  filter(stat %>% str_detect('last_min', negate = TRUE)) %>% 
+  group_by(stat) %>% 
+  mutate(
+    across(
+      value,
+      ~(.x - mean(.x)) / sd(.x)
+    )
+  ) %>% 
+  ggplot() +
+  aes(x = value) +
+  geom_histogram() +
+  facet_wrap(~stat, scales = 'free')
+
 wide_team_season_areas %>% 
-  select(-c(season_id:team_name)) %>% 
-  corrr::correlate(quiet = TRUE) %>% 
-  corrr::stretch() %>% 
-  filter(!is.na(r)) %>% 
-  filter(abs(r) != 1) %>% 
-  filter(x == 'diff_xg') %>% 
-  # mutate(
-  #   y_is_diff = y %>% str_detect('^diff_')
-  # ) %>% 
-  filter(y %>% str_detect('^diff_')) %>% 
-  select(y, r) %>% 
-  arrange(desc(abs(r)))
+  lm(formula(diff_xg ~ diff_score), data = .) %>% 
+  broom::tidy()
+
+wide_team_season_areas %>% 
+  mutate(
+    across(
+      c(matches('^diff')),
+      ~(.x - mean(.x)) / sd(.x)
+    )
+  ) %>% 
+  select(
+    m
+  )
+  lm(formula(diff_xg ~ diff_max_cut_weighted + prop_shots), data = .) %>% 
+  broom::tidy() %>% 
+  ggplot() +
+  aes(x = estimate, y = term) +
+  geom_point() +
+  geom_errorbarh(
+    aes(xmin = estimate - std.error, xmax = estimate + std.error)
+  ) +
+  geom_vline(
+    aes(xintercept = 0)
+  )
+
+wide_game_areas <- team_areas %>% 
+  select(season_id, game_id, team_name, stat, value) %>% 
+  pivot_wider(
+    names_from = stat,
+    values_from = value
+  )
+
+.str_replace_cor_col <- function(x, i) {
+  str_replace_all(x, '(diff|home|away)_(.*$)', sprintf('\\%d', i))
+}
+
+do_tidy_cor <- function(data) {
+  data %>% 
+    corrr::correlate(quiet = TRUE) %>% 
+    corrr::stretch() %>% 
+    filter(!is.na(r), abs(r) != 1) %>% 
+    mutate(
+      across(
+        c(x, y),
+        list(
+          prefix = ~.str_replace_cor_col(.x, 1),
+          suffix = ~.str_replace_cor_col(.x, 2)
+        )
+      )
+    ) %>% 
+    filter(x_suffix != y_suffix) %>% 
+    select(x, y, x_prefix, x_suffix, y_prefix, y_suffix, r) %>% 
+    arrange(desc(abs(r)))
+}
+
+do_tidy_xg_cor <- function(df) {
+  df %>% 
+    do_tidy_cor() %>% 
+    filter(x == 'diff_xg') %>% 
+    filter(y %>% str_detect('^diff_')) %>% 
+    select(y, r) %>% 
+    arrange(desc(abs(r)))
+}
+
+team_season_xg_cors <- wide_team_season_areas %>% 
+  select(-c(season_id, team_name)) %>% 
+  do_tidy_xg_cor()
+game_xg_cors <- wide_game_areas %>% 
+  select(-c(season_id, game_id, team_name)) %>% 
+  do_tidy_xg_cor()
 
 wide_team_season_areas %>% 
   ggplot() +
@@ -86,19 +158,6 @@ team_season_areas_filt %>%
     x = NULL,
     y = NULL
   )
-
-team_areas
-
-area_diffs <- inner_join(
-  area_diffs_init %>% 
-    select(-team_id) %>% 
-    pivot_wider(
-      names_from = side,
-      names_glue = '{side}_{.value}',
-      values_from = all_of(stat_cols)
-    ),
-  diffs %>% filter(side == 'home') %>% select(-side)
-)
 
 # area_diffs %>% skimr::skim()
 # area_diffs %>% 
@@ -199,36 +258,7 @@ outlier_prnks %>%
 
 
 ## cors ----
-.str_replace_cor_col <- function(x, i) {
-  str_replace_all(x, '(diff|stronger|weaker|home|away)_(.*$)', sprintf('\\%d', i))
-}
 
-do_tidy_cor <- function(data) {
-  data %>% 
-    corrr::correlate(quiet = TRUE) %>% 
-    corrr::stretch() %>% 
-    filter(!is.na(r)) %>% 
-    # filter(y > x) %>% 
-    filter(abs(r) != 1) %>% 
-    mutate(
-      across(
-        c(x, y),
-        list(
-          prefix = ~.str_replace_cor_col(.x, 1),
-          suffix = ~.str_replace_cor_col(.x, 2)
-        )
-      )
-    ) %>% 
-    filter(x_suffix != y_suffix) %>% 
-    # filter(x %>% str_detect('area') | y %>% str_detect('area')) %>% 
-    # filter(
-    #   !(
-    #     (x %>% str_detect('area') & y %>% str_detect('area'))
-    #   )
-    # ) %>% 
-    select(x, y, x_prefix, x_suffix, y_prefix, y_suffix, r) %>% 
-    arrange(desc(abs(r)))
-}
 
 areas_cors <- area_diffs %>% 
   select(
