@@ -1,5 +1,5 @@
 
-
+dir_proj <- '47-formation_symmetry'
 library(tibble)
 library(dplyr)
 library(tidyr)
@@ -173,3 +173,9 @@ p_ex <- gg_network %>%
     plot.title = element_text('Karla', face = 'bold', size = 24, color = 'black', hjust = 0.5)
   )
 
+ggsave(
+  plot = p_ex,
+  filename = file.path(dir_proj, 'example_max_cut.png'),
+  width = 6,
+  height = 6
+)
