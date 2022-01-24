@@ -310,50 +310,50 @@ compute_network_stats <- function(n, e) {
 
 ## plot ----
 ## Reference: https://github.com/Torvaney/ggsoccer/blob/master/R/dimensions.R
-.pitch_international <- list(
-  length = 105,
-  width = 68,
-  penalty_box_length = 16.5,
-  penalty_box_width = 40.32,
-  six_yard_box_length = 5.5,
-  six_yard_box_width = 18.32,
-  penalty_spot_distance = 11,
-  goal_width = 7.32,
-  origin_x = 0,
-  origin_y = 0
-)
-
-.common_gg <- function(data, ...) {
-  list(
-    ...,
-    aes(x = x, y = y),
-    ggsoccer::annotate_pitch(
-      dimensions = .pitch_international,
-      colour = 'black', 
-      fill = 'white'
-    ),
-    # coord_flip(xlim = c(1, 99), ylim = c(4, 96), clip = 'on') +
-    theme(
-      axis.title = element_text(size = 12, hjust = 0),
-      axis.ticks = element_blank(),
-      axis.text = element_blank(),
-      panel.grid.major = element_blank(),
-      panel.grid.minor = element_blank()
-    ),
-    labs(
-      y = NULL,
-      x = NULL
-    ),
-    coord_flip(ylim = c(0, 68), xlim = c(105, 0))
-  )
-}
-
-
-select_unnest <- function(df, ...) {
-  df %>% 
-    select(...) %>% 
-    unnest(where(is.list))
-}
+# .pitch_international <- list(
+#   length = 105,
+#   width = 68,
+#   penalty_box_length = 16.5,
+#   penalty_box_width = 40.32,
+#   six_yard_box_length = 5.5,
+#   six_yard_box_width = 18.32,
+#   penalty_spot_distance = 11,
+#   goal_width = 7.32,
+#   origin_x = 0,
+#   origin_y = 0
+# )
+# 
+# .common_gg <- function(data, ...) {
+#   list(
+#     ...,
+#     aes(x = x, y = y),
+#     ggsoccer::annotate_pitch(
+#       dimensions = .pitch_international,
+#       colour = 'black', 
+#       fill = 'white'
+#     ),
+#     # coord_flip(xlim = c(1, 99), ylim = c(4, 96), clip = 'on') +
+#     theme(
+#       axis.title = element_text(size = 12, hjust = 0),
+#       axis.ticks = element_blank(),
+#       axis.text = element_blank(),
+#       panel.grid.major = element_blank(),
+#       panel.grid.minor = element_blank()
+#     ),
+#     labs(
+#       y = NULL,
+#       x = NULL
+#     ),
+#     coord_flip(ylim = c(0, 68), xlim = c(105, 0))
+#   )
+# }
+# 
+# 
+# select_unnest <- function(df, ...) {
+#   df %>% 
+#     select(...) %>% 
+#     unnest(where(is.list))
+# }
 
 compute_max_cut <- function(df, weighted = TRUE) {
   player_ids <- bind_rows(
