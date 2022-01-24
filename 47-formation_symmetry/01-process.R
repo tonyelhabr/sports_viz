@@ -23,10 +23,6 @@ c(
 ) %>% 
   walk(.f_import)
 
-meta <- games %>% 
-  select(game_id, home_team_id, away_team_id, season_id, game_date, away_score, home_score) %>% 
-  left_join(teams %>% rename_all(~sprintf('home_%s', .x))) %>% 
-  left_join(teams %>% rename_all(~sprintf('away_%s', .x)))
 
 last_actions_by_game <- all_actions_atomic %>% 
   inner_join(
@@ -39,6 +35,16 @@ last_actions_by_game <- all_actions_atomic %>%
   mutate(
     last_min = as.integer((period_id - 1) * 45 + time / 60)
   )
+
+meta <- games %>% 
+  select(game_id, home_team_id, away_team_id, season_id, game_date, away_score, home_score) %>% 
+  left_join(teams %>% rename_all(~sprintf('home_%s', .x))) %>% 
+  left_join(teams %>% rename_all(~sprintf('away_%s', .x))) %>% 
+  left_join(
+    last_actions_by_game %>% 
+      select(game_id, last_min)
+  )
+
 
 # last_actions_by_game %>% 
 #   mutate(
@@ -142,8 +148,19 @@ filt_actions <- all_actions_atomic %>%
     select(all_of(colnames(df)), side)
 }
 
-scores <- filt_actions %>% 
-  filter(type_name == 'shot' & result_name == 'success') %>% 
+scores <- bind_rows(
+  filt_actions %>% 
+    filter(type_name == 'shot' & result_name == 'success'),
+  filt_actions %>% 
+    filter(type_name == 'shot' & result_name == 'owngoal') %>% 
+    left_join(
+      meta %>% 
+        select(game_id, home_team_id, away_team_id)
+    ) %>% 
+    mutate(
+      team_id = ifelse(team_id == home_team_id, away_team_id, home_team_id)
+    )
+) %>% 
   distinct(
     game_id,
     team_id,
@@ -512,6 +529,49 @@ team_season_stats <- team_stats %>%
   ) %>% 
   ungroup()
 
+## finish ----
+team_mapping <- xengagement::team_accounts_mapping %>% 
+  select(team = team_538, team_opta = team_whoscored, color_pri, team_abbrv)
+
+.change_team_name <- function(df, .side) {
+  team_name_col <- sprintf('%s_team_name', .side)
+  team_name_sym <- sym(team_name_col)
+  df %>% 
+    left_join(
+      team_mapping %>% 
+        select(
+          team_name = team_opta, new_team_name = team, color_pri
+        ) %>% 
+        rename_with(~sprintf('%s_%s', .side, .x), -c(new_team_name)),
+      by = sprintf('%s_team_name', .side)
+    ) %>% 
+    select(-all_of(team_name_col)) %>% 
+    rename(!!team_name_sym := new_team_name)
+}
+
+meta <- meta %>% 
+  .change_team_name('home') %>% 
+  .change_team_name('away') %>% 
+  rename_with(
+    ~sprintf('final_%s', .x), matches('score$')
+  ) %>% 
+  left_join(
+    scores %>% 
+      left_join(
+        meta %>% 
+          select(game_id, home_team_id, away_team_id)
+      ) %>% 
+      mutate(
+        name = ifelse(team_id == home_team_id, 'home_score', 'away_score')
+      ) %>% 
+      select(game_id, name, score) %>% 
+      pivot_wider(
+        names_from = name,
+        values_from = score
+      )
+  )
+
+
 .f_export <- function(name) {
   write_rds(get(name), file.path(dir_proj, sprintf('%s.rds', name)))
 }
@@ -520,6 +580,7 @@ c(
   'edges',
   'team_stats',
   'team_season_stats',
+  'scores',
   'meta'
 ) %>% 
   walk(.f_export)

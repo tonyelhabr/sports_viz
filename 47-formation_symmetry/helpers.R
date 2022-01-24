@@ -329,7 +329,7 @@ compute_network_stats <- function(n, e) {
 #     aes(x = x, y = y),
 #     ggsoccer::annotate_pitch(
 #       dimensions = .pitch_international,
-#       colour = 'black', 
+#       colour = 'black',
 #       fill = 'white'
 #     ),
 #     # coord_flip(xlim = c(1, 99), ylim = c(4, 96), clip = 'on') +
