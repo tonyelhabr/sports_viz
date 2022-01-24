@@ -5,7 +5,8 @@ library(arrow)
 dir_proj <- '47-formation_symmetry'
 understat_xg <- file.path(dir_proj, 'understat_xg.rds') %>% read_rds()
 source(file.path(dir_proj, 'helpers.R'))
-f_import <- function(name) {
+
+.f_import <- function(name) {
   path <- file.path(dir_proj, sprintf('%s.parquet', name))
   res <- path %>% arrow::read_parquet()
   assign(value = res, x = name, envir = .GlobalEnv)
@@ -20,7 +21,7 @@ c(
   'games',
   'teams'
 ) %>% 
-  walk(f_import)
+  walk(.f_import)
 
 meta <- games %>% 
   select(game_id, home_team_id, away_team_id, season_id, game_date, away_score, home_score) %>% 
@@ -96,8 +97,6 @@ xg <- last_actions_by_game %>%
       )
   ) %>% 
   pivot_stat('xg')
-xg
-xg %>% arrange(desc(xg))
 
 filt_actions <- all_actions_atomic %>% 
   left_join(
@@ -134,7 +133,7 @@ filt_actions <- all_actions_atomic %>%
     in_final_third = y <= 105 / 3
   )
 
-add_side_col <- function(df) {
+.add_side_col <- function(df) {
   df %>% 
     left_join(meta) %>% 
     mutate(
@@ -153,7 +152,7 @@ scores <- filt_actions %>%
     action_id
   ) %>% 
   count(game_id, team_id, name = 'score') %>%
-  add_side_col() %>%
+  .add_side_col() %>%
   select(
     game_id,
     side,
@@ -195,24 +194,7 @@ field_tilt <- agg_actions(type_name == 'pass', in_final_third)
 n_successful_passes <- agg_actions(type_name == 'pass')
 n_shots <- agg_actions(type_name == 'shot')
 
-# full_join(
-#   n_successful_passes %>% select(game_id, team_id, prop_passes = prop),
-#   field_tilt %>% select(game_id, team_id, prop_field_tilt = prop)
-# ) %>% 
-#   ggplot() +
-#   aes(x = prop_passes, y = prop_field_tilt) +
-#   geom_point()
-# 
-# drop_keepers <- function(df) {
-#   df %>% 
-#     anti_join(
-#       player_games %>% 
-#         filter(starting_position_name == 'GK')
-#     )
-# }
-
 successful_passes <- filt_actions %>% 
-  # drop_keepers() %>% 
   filter(type_name %in% c('pass', 'receival'), result_name == 'success') %>% 
   group_by(game_id, action_id) %>% 
   filter(n() == 2) %>% 
@@ -244,7 +226,7 @@ successful_passes <- filt_actions %>%
   ) %>% 
   arrange(game_id, team_id, player_id_start)
 
-add_id_col <- function(df) {
+.add_id_col <- function(df) {
   df %>% 
     mutate(id = sprintf('%07d-%03d', game_id, team_id))
 }
@@ -254,7 +236,7 @@ edges <- successful_passes %>%
   group_by(game_id, team_id, player_id_start, player_id_end) %>% 
   summarize(n = n()) %>% 
   ungroup() %>% 
-  add_id_col()
+  .add_id_col()
 
 nodes <- filt_actions %>% 
   filter(type_name == 'pass') %>% 
@@ -263,7 +245,7 @@ nodes <- filt_actions %>%
   group_by(game_id, team_id, player_id) %>% 
   summarize(n = n(), across(c(x, y), mean)) %>% 
   ungroup() %>% 
-  add_id_col() %>% 
+  .add_id_col() %>% 
   left_join(players %>% rename(name = player_name))
 
 bad_ids <- nodes %>% 
@@ -272,11 +254,14 @@ bad_ids <- nodes %>%
   filter(n_players < 11) %>% 
   distinct(id, game_id, team_id, n_players)
 
-drop_bad_ids <- function(df) {
+.drop_bad_ids <- function(df) {
   df %>% anti_join(bad_ids)
 }
 
-do_compute_network_stats <- function(overwrite = F) {
+nodes <- nodes %>% .drop_bad_ids()
+edges <- edges %>% .drop_bad_ids()
+
+do_compute_network_stats <- function(overwrite = FALSE) {
   fv <- function(name, ...) {
     cat(name, sep = '\n')
     compute_network_stats(...)
@@ -292,7 +277,6 @@ do_compute_network_stats <- function(overwrite = F) {
       edges %>% 
         group_nest(id, game_id, team_id, .key = 'edges')
     ) %>% 
-    drop_bad_ids() %>% 
     mutate(
       network_stats = pmap(list(id, nodes, edges), fv)
     )
@@ -302,7 +286,7 @@ do_compute_network_stats <- function(overwrite = F) {
 
 network_stats_nested <- do_compute_network_stats()
 
-do_compute_max_cuts <- function(weighted = TRUE, overwrite = F) {
+do_compute_max_cuts <- function(weighted = TRUE, overwrite = FALSE) {
   fv <- function(name, ...) {
     cat(name, sep = '\n')
     compute_max_cut(weighted = weighted, ...)
@@ -313,7 +297,6 @@ do_compute_max_cuts <- function(weighted = TRUE, overwrite = F) {
   }
   max_cuts_nested <- edges %>% 
     group_nest(id, game_id, team_id) %>% 
-    drop_bad_ids() %>% 
     mutate(
       max_cuts = map2_dbl(id, data, fv)
     )
@@ -330,7 +313,7 @@ max_cuts <- full_join(
 )
 
 ## nested areas ----
-do_get_areas <- function(.name, overwrite = F) {
+do_get_areas <- function(.name, overwrite = FALSE) {
   f <- sprintf('get_%s_hull_areas', .name)
   fv <- function(name, ...) {
     cat(name, sep = '\n')
@@ -341,7 +324,6 @@ do_get_areas <- function(.name, overwrite = F) {
     return(read_rds(path))
   }
   areas_nested <- nodes %>% 
-    drop_bad_ids() %>% 
     group_nest(id, game_id, team_id) %>%
     mutate(
       areas = map2(id, data, fv)
@@ -351,7 +333,6 @@ do_get_areas <- function(.name, overwrite = F) {
 }
 
 concave_areas_nested <- do_get_areas('concave')
-convex_areas_nested <- do_get_areas('convex')
 
 ## prep agg ----
 hoist_areas <- function(df) {
@@ -391,19 +372,11 @@ aggregate_areas <- function(df) {
 concave_areas <- concave_areas_nested %>% 
   hoist_areas() %>% 
   transmute_area()
-agg_concave_areas <- concave_areas %>% aggregate_areas()
-
-convex_areas <- convex_areas_nested %>% 
-  hoist_areas() %>% 
-  transmute_area()
-agg_convex_areas <- convex_areas %>% aggregate_areas()
+agg <- concave_areas %>% aggregate_areas()
 
 ## diffs ----
 stat_cols <- c(
   'concave_area_prop',
-  'concave_area_prop_first',
-  'convex_area_prop',
-  'convex_area_prop_first',
   'max_cut_weighted',
   'max_cut_unweighted',
   'field_tilt',
@@ -413,35 +386,26 @@ stat_cols <- c(
   'transitivity',
   'mean_distance',
   'density',
-  'median_node_degree_out',
-  'median_node_degree_in',
-  'median_node_betweenness',
-  'median_edge_betweenness',
+  sprintf(
+    '%s_%s',
+    rep(c('mean', 'median'), each = 4),
+    rep(
+      c(
+        'node_degree_out',
+        'node_degree_in',
+        'node_betweenness',
+        'edge_betweenness'
+      ),
+      times = 2
+    )
+  ),
   'last_min',
   'score',
   'xg'
 )
 
-area_diffs_init <- agg_concave_areas %>% 
+diffs_init <- agg %>% 
   select(game_id, team_id, concave_area_prop = area_prop) %>% 
-  inner_join(
-    concave_areas %>% 
-      group_by(game_id, team_id) %>% 
-      slice_max(area_outer, n = 1, with_ties = FALSE) %>% 
-      ungroup() %>% 
-      select(game_id, team_id, concave_area_prop_first = area_prop)
-  ) %>% 
-  inner_join(
-    agg_convex_areas %>%
-      select(game_id, team_id, convex_area_prop = area_prop)
-  ) %>%
-  inner_join(
-    convex_areas %>%
-      group_by(game_id, team_id) %>%
-      slice_max(area_outer, n = 1, with_ties = FALSE) %>%
-      ungroup() %>%
-      select(game_id, team_id, convex_area_prop_first = area_prop)
-  ) %>%
   left_join(
     field_tilt %>% 
       select(game_id, team_id, field_tilt = prop)
@@ -463,8 +427,6 @@ area_diffs_init <- agg_concave_areas %>%
       select(game_id, team_id, network_stats) %>% 
       unnest(network_stats)
   ) %>% 
-  ## should reduce rows since not all games are included in scores (intentionally)
-  # inner_join(
   left_join(
     scores
   ) %>% 
@@ -475,13 +437,13 @@ area_diffs_init <- agg_concave_areas %>%
     last_actions_by_game %>% 
       select(game_id, last_min)
   ) %>% 
-  add_side_col() %>%
+  .add_side_col() %>%
   mutate(
     across(c(prop_shots, score, xg), ~coalesce(.x, 0))
   )
 
-do_compute_area_diffs <- function(.side) {
-  area_diffs_init %>% 
+do_compute_diffs <- function(.side) {
+  diffs_init %>% 
     select(-team_id) %>% 
     pivot_longer(
       -c(game_id, side),
@@ -505,11 +467,11 @@ do_compute_area_diffs <- function(.side) {
 }
 
 diffs <- bind_rows(
-  do_compute_area_diffs('home'),
-  do_compute_area_diffs('away')
+  do_compute_diffs('home'),
+  do_compute_diffs('away')
 )
 
-team_areas <- area_diffs_init %>% 
+team_stats <- diffs_init %>% 
   left_join(
     meta %>% 
       select(season_id, game_id)
@@ -532,43 +494,9 @@ team_areas <- area_diffs_init %>%
         .x
       )
     )
-  ) # %>% 
-# left_join(
-#   xg
-# ) %>% 
-# add_side_col() %>% 
-# left_join(
-#   diffs %>% 
-#     select(game_id, side, diff_xg)
-# )
+  )
 
-# xg_season <- xg %>% 
-#   semi_join(
-#     team_areas %>% 
-#       distinct(game_id, team_id)
-#   ) %>% 
-#   add_side_col() %>% 
-#   left_join(
-#     meta %>% 
-#       select(season_id, game_id)
-#   ) %>% 
-#   left_join(
-#     diffs %>% 
-#       select(game_id, side, diff_xg)
-#   ) %>% 
-#   left_join(
-#     last_actions_by_game %>% 
-#       select(game_id, last_min)
-#   ) %>% 
-#   group_by(season_id, team_id) %>% 
-#   summarize(
-#     n_games = n(),
-#     across(last_min, list(mean = mean)),
-#     across(c(xg, diff_xg), list(sum = sum))
-#   ) %>% 
-#   ungroup()
-
-team_season_areas <- team_areas %>% 
+team_season_stats <- team_stats %>% 
   group_by(season_id, team_id, team_name, stat) %>% 
   summarize(
     n = n(),
@@ -576,17 +504,22 @@ team_season_areas <- team_areas %>%
     across(
       value,
       list(
-        # sum = sum,
-        # sd = sd,
-        # q05 = ~quantile(.x, 0.05),
-        # q95 = ~quantile(.x, 0.95),
         value = mean
       ),
       na.rm = TRUE,
       .names = '{fn}'
-    )) %>% 
-  ungroup() # %>% 
-# left_join(
-#   xg_season
-# )
+    )
+  ) %>% 
+  ungroup()
 
+.f_export <- function(name) {
+  write_rds(get(name), file.path(dir_proj, sprintf('%s.rds', name)))
+}
+c(
+  'nodes',
+  'edges',
+  'team_stats',
+  'team_season_stats',
+  'meta'
+) %>% 
+  walk(.f_export)

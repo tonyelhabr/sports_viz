@@ -1,15 +1,26 @@
 
 dir_proj <- '47-formation_symmetry'
-source(file.path(dir_proj, '01-process.R'))
 
-wide_team_season_areas <- team_season_areas %>% 
+.f_import <- function(name) {
+  path <- file.path(dir_proj, sprintf('%s.rds', name))
+  res <- path %>% read_rds()
+  assign(value = res, x = name, envir = .GlobalEnv)
+}
+
+c(
+  'team_stats',
+  'team_season_stats'
+) %>% 
+  walk(.f_import)
+
+wide_team_season_stats <- team_season_stats %>% 
   # select(season_id, team_name, stat, value, n, n_games, last_min_mean) %>% 
   pivot_wider(
     names_from = stat,
     values_from = value
   )
 
-team_areas %>% 
+team_stats %>% 
   filter(stat %>% str_detect('last_min', negate = TRUE)) %>% 
   group_by(stat) %>% 
   mutate(
@@ -23,11 +34,11 @@ team_areas %>%
   geom_histogram() +
   facet_wrap(~stat, scales = 'free')
 
-wide_team_season_areas %>% 
+wide_team_season_stats %>% 
   lm(formula(diff_xg ~ diff_score), data = .) %>% 
   broom::tidy()
 
-wide_team_season_areas %>% 
+wide_team_season_stats %>% 
   mutate(
     across(
       c(matches('^diff')),
@@ -49,7 +60,7 @@ wide_team_season_areas %>%
     aes(xintercept = 0)
   )
 
-wide_game_areas <- team_areas %>% 
+wide_game_areas <- team_stats %>% 
   select(season_id, game_id, team_name, stat, value) %>% 
   pivot_wider(
     names_from = stat,
@@ -88,36 +99,36 @@ do_tidy_xg_cor <- function(df) {
     arrange(desc(abs(r)))
 }
 
-team_season_xg_cors <- wide_team_season_areas %>% 
+team_season_xg_cors <- wide_team_season_stats %>% 
   select(-c(season_id, team_name)) %>% 
   do_tidy_xg_cor()
 game_xg_cors <- wide_game_areas %>% 
   select(-c(season_id, game_id, team_name)) %>% 
   do_tidy_xg_cor()
 
-wide_team_season_areas %>% 
+wide_team_season_stats %>% 
   ggplot() +
   aes(x = diff_convex_area_prop, y = diff_xg, color = factor(season_id)) +
   geom_point() +
   geom_smooth(method = 'lm', se = FALSE)
 
-wide_team_season_areas %>% 
+wide_team_season_stats %>% 
   ggplot() +
   aes(x = diff_max_cut_weighted, y = diff_xg, color = factor(season_id)) +
   geom_point() +
   geom_smooth(method = 'lm', se = FALSE)
 
 
-team_season_areas_filt <- team_season_areas %>% 
+team_season_stats_filt <- team_season_stats %>% 
   filter(stat == 'diff_convex_area_prop') %>% 
   mutate(grp = tidytext::reorder_within(team_name, mean, season_id))
 
-team_season_areas_filt %>% 
+team_season_stats_filt %>% 
   ggplot() +
   # aes(y = tidytext::reorder_within(team_name, mean, season_id), x = mean, group = grp) +
   # tidytext::scale_y_reordered() +
   aes(y = grp, x = mean, group = grp) +
-  scale_y_discrete(name = '', labels = team_season_areas_filt %>% select(grp, team_name) %>% deframe()) +
+  scale_y_discrete(name = '', labels = team_season_stats_filt %>% select(grp, team_name) %>% deframe()) +
   geom_errorbarh(
     # aes(xmin = mean - 2 * sd, xmax = mean + 2 * sd)
     aes(xmin = q05, xmax = q95)
