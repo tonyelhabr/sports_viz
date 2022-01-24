@@ -1,76 +1,68 @@
 
+#- load, echo=F, include=F, eval=T ----
 dir_proj <- '47-formation_symmetry'
+.f_import <- function(name) {
+  file.path(dir_proj, sprintf('%s.rds', name)) %>% read_rds()
+}
+
+#- example, echo=F, include=F, eval=T ----
 library(tibble)
 library(dplyr)
 library(tidyr)
 library(sdpt3r)
-library(ggnetwork)
-library(network)
-library(ggplot2)
-library(grid)
 
-pts <- function(x) {
-  as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
-}
-
-df <- tibble::tribble(
-  ~from, ~to, ~n,
-  "a", "b", 1L,
-  "a", "c", 0L,
-  "a", "d", 3L,
-  "b", "a", 1L,
-  "b", "c", 1L,
-  "b", "d", 1L,
-  "c", "a", 0L,
-  "c", "b", 2L,
-  "c", "d", 1L,
-  "d", "a", 1L,
-  "d", "b", 5L,
-  "d", "c", 4L
+df <- tibble(
+  from = c('a', 'a', 'a', 'b', 'b', 'b', 'c', 'c', 'c', 'd', 'd', 'd'),
+  to   = c('b', 'c', 'd', 'a', 'c', 'd', 'a', 'b', 'd', 'a', 'b', 'c'),
+  n    = c( 1L,  0L,  3L,  1L,  1L,  1L,  0L,  2L,  1L,  1L,  5L,  4L)
 )
 
 wide_df <- df %>% 
   pivot_wider(
     names_from = to,
     values_from = n,
-    values_fill = 0
+    values_fill = 0L
   ) %>% 
   select(from, a, b, c, d) %>% 
   arrange(from) %>% 
   select(-from)
 wide_df
-## # A tibble: 3 x 3
-##       a     b     c
-##   <dbl> <dbl> <dbl>
-## 1     0     2     3
-## 2     5     0     4
-## 3     1     3     0
+## # A tibble: 4 x 4
+##       a     b     c     d
+##   <int> <int> <int> <int>
+## 1     0     1     0     3
+## 2     1     0     1     1
+## 3     0     2     0     1
+## 4     1     5     4     0
 
 m <- as.matrix(wide_df)
 symmetric_m <- m + t(m) ## must be symmetric
 mc <- maxcut(symmetric_m)
 max_cut <- -round(mc$pobj, 0)
 max_cut
+## [1] 15
+
+#- plot-example, echo=F, include=F, eval=T ----
+library(network)
 
 upper_symmetric_m <- symmetric_m
 upper_symmetric_m[lower.tri(upper_symmetric_m)] <- 0
-network <- network(upper_symmetric_m)
-upper_symmetric_m[upper.tri(upper_symmetric_m, diag = TRUE)] %>% length()
+net <- network(upper_symmetric_m)
 set.edge.attribute(
-  network, 
-  'n',
+  net, 
+  'value',
   upper_symmetric_m[upper.tri(upper_symmetric_m) & upper_symmetric_m > 0]
 )
 
 set.seed(42)
-gg_network <- network %>% 
+gg_net <- net %>% 
   ggnetwork() %>% 
   as_tibble() %>% 
   mutate(
     rn = row_number()
   )
 rns <- c(5, 4, 2)
-filt_edges <- gg_network %>%
+filt_edges <- gg_net %>%
   filter(
     rn %in% rns
   ) %>% 
@@ -119,12 +111,19 @@ adj_filt_edges <- filt_edges %>%
   )
 adj_filt_edges
 
-p_ex <- gg_network %>% 
+#- plot-example, echo=F, include=F, eval=T ----
+library(ggnetwork)
+library(ggplot2)
+library(grid)
+pts <- function(x) {
+  as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
+}
+p_ex <- gg_net %>% 
   ggplot(aes(x = x, y = y, xend = xend, yend = yend)) +
   geom_edges(curvature = 0) +
   geom_nodes(color = 'black', size = pts(36)) +
   geom_nodetext(
-    data = gg_network %>% filter(is.na(n)),
+    data = gg_net %>% filter(is.na(n)),
     aes(label = vertex.names), 
     size = pts(16), 
     color = 'white',
@@ -179,3 +178,15 @@ ggsave(
   width = 6,
   height = 6
 )
+
+#- example-pass-network
+team_mapping <-
+  xengagement::team_accounts_mapping %>% 
+  select(team, team_understat, team_opta = team_whoscored) %>% 
+  add_row(
+    team = 'Brentford',
+    team_understat = 'Brentford',
+    team_opta = 'Brentford'
+  )
+team_mapping
+
