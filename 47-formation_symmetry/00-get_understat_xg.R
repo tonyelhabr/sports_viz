@@ -7,7 +7,7 @@ path_matches <- file.path(dir_understat_proj, 'matches.rds')
 path_teams_players_stats <- file.path(dir_understat_proj, 'teams_players_stats.rds')
 
 leagues_mapping <-
-  crossing(
+  tidyr::crossing(
     league = 'epl',
     league_understat = 'EPL',
     season = 2017L:2021L
@@ -16,12 +16,7 @@ leagues_mapping
 
 team_mapping <-
   xengagement::team_accounts_mapping %>% 
-  select(team, team_understat, team_opta = team_whoscored) %>% 
-  add_row(
-    team = 'Brentford',
-    team_understat = 'Brentford',
-    team_opta = 'Brentford'
-  )
+  select(team, team_understat, team_538)
 team_mapping
 
 fix_understat_meta <- function(data) {
@@ -121,8 +116,12 @@ xg_cumu <- shots_w_teams %>%
   ungroup() %>%
   select(-xg) %>% 
   rename(team_understat_h = team_h, team_understat_a = team_a) %>% 
-  left_join(team_mapping %>% select(team_h = team_opta, team_understat_h = team_understat)) %>% 
-  left_join(team_mapping %>% select(team_a = team_opta, team_understat_a = team_understat)) %>% 
+  left_join(team_mapping %>% select(team_h = team_538, team_understat_h = team_understat)) %>% 
+  left_join(team_mapping %>% select(team_a = team_538, team_understat_a = team_understat)) %>% 
+  left_join(team_mapping %>% select(team_z = team_538, team = team_understat)) %>% 
+  select(-team) %>% 
+  rename(team = team_z) %>% 
+  relocate(team) %>% 
   select(-matches('^team_understat')) %>%  
   # Aggregate by last in minute. 
   group_by(league, season, date, match_id, team_h, team_a, minute) %>% 

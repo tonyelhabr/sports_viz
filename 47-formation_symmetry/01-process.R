@@ -23,6 +23,27 @@ c(
 ) %>% 
   walk(.f_import)
 
+team_mapping <- xengagement::team_accounts_mapping %>% 
+  select(team = team_538, team_opta = team_whoscored, color_pri, team_abbrv)
+
+.change_team_name <- function(df, .side = NULL) {
+  prefix <- ifelse(is.null(.side), '', paste0(.side, '_'))
+  team_name_col <- sprintf('%steam_name', prefix)
+  team_name_sym <- sym(team_name_col)
+  df %>% 
+    left_join(
+      team_mapping %>% 
+        select(
+          team_name = team_opta, new_team_name = team, color_pri
+        ) %>% 
+        rename_with(~sprintf('%s%s', prefix, .x), -c(new_team_name)),
+      by = sprintf('%steam_name', prefix)
+    ) %>% 
+    select(-all_of(team_name_col)) %>% 
+    rename(!!team_name_sym := new_team_name)
+}
+
+teams <- teams %>% .change_team_name()
 
 last_actions_by_game <- all_actions_atomic %>% 
   inner_join(
@@ -44,7 +65,6 @@ meta <- games %>%
     last_actions_by_game %>% 
       select(game_id, last_min)
   )
-
 
 # last_actions_by_game %>% 
 #   mutate(
@@ -397,8 +417,11 @@ stat_cols <- c(
   'max_cut_weighted',
   'max_cut_unweighted',
   'field_tilt',
+  'n_f3_passes',
   'prop_passes',
+  'n_passes',
   'prop_shots',
+  'n_shots',
   'reciprocity',
   'transitivity',
   'mean_distance',
@@ -423,26 +446,49 @@ stat_cols <- c(
 
 diffs_init <- agg %>% 
   select(game_id, team_id, concave_area_prop = area_prop) %>% 
+  mutate(
+    across(concave_area_prop, ~100*.x)
+  ) %>% 
   left_join(
     field_tilt %>% 
-      select(game_id, team_id, field_tilt = prop)
+      select(game_id, team_id, field_tilt = prop, n_f3_passes = n) %>% 
+      mutate(
+        across(field_tilt, ~100*.x)
+      )
   ) %>% 
   left_join(
     n_successful_passes %>% 
-      select(game_id, team_id, prop_passes = prop)
+      select(game_id, team_id, prop_passes = prop, n_passes = n) %>% 
+      mutate(
+        across(prop_passes, ~100*.x)
+      )
   ) %>% 
   left_join(
     n_shots %>% 
-      select(game_id, team_id, prop_shots = prop)
+      select(game_id, team_id, prop_shots = prop, n_shots = n) %>% 
+      mutate(
+        across(prop_shots, ~100*.x)
+      )
   ) %>% 
   left_join(
     max_cuts %>% 
-      select(game_id, team_id, max_cut_weighted, max_cut_unweighted)
+      select(game_id, team_id, max_cut_weighted, max_cut_unweighted) %>% 
+      mutate(
+        across(matches('^max_cut'), ~-.x)
+      )
   ) %>% 
   left_join(
     network_stats_nested %>% 
       select(game_id, team_id, network_stats) %>% 
-      unnest(network_stats)
+      unnest(network_stats) %>% 
+      mutate(
+        across(
+          c(
+            reciprocity, transitivity, density
+          ),
+          ~100*.x
+        )
+      )
   ) %>% 
   left_join(
     scores
@@ -456,7 +502,15 @@ diffs_init <- agg %>%
   ) %>% 
   .add_side_col() %>%
   mutate(
-    across(c(prop_shots, score, xg), ~coalesce(.x, 0))
+    across(c(prop_shots, score, xg), ~coalesce(.x, 0)),
+    score_norm = 90 * score / last_min,
+    xg_norm = 90 * xg / last_min,
+    max_cut_weighted_norm = max_cut_weighted / last_min,
+    max_cut_unweighted_norm = max_cut_unweighted / last_min,
+    n_shots_norm = 90 * n_shots / last_min,
+    n_f3_passes_norm = 90 * n_f3_passes / last_min,
+    n_passes_norm = 90 * n_passes / last_min
+    
   )
 
 do_compute_diffs <- function(.side) {
@@ -486,7 +540,20 @@ do_compute_diffs <- function(.side) {
 diffs <- bind_rows(
   do_compute_diffs('home'),
   do_compute_diffs('away')
-)
+) %>% 
+  left_join(
+    last_actions_by_game %>% 
+      select(game_id, last_min)
+  ) %>% 
+  mutate(
+    diff_xg_norm = 90 * diff_xg / last_min,
+    diff_score_norm = 90 * diff_score / last_min,
+    diff_max_cut_weighted_norm = diff_max_cut_weighted / last_min,
+    diff_max_cut_unweighted_norm = diff_max_cut_unweighted / last_min,
+    diff_n_shots_norm = 90 * diff_n_shots / last_min,
+    diff_n_f3_passes_norm = 90 * diff_n_f3_passes / last_min,
+    diff_n_passes_norm = 90 * diff_n_passes / last_min
+  )
 
 team_stats <- diffs_init %>% 
   left_join(
@@ -530,28 +597,7 @@ team_season_stats <- team_stats %>%
   ungroup()
 
 ## finish ----
-team_mapping <- xengagement::team_accounts_mapping %>% 
-  select(team = team_538, team_opta = team_whoscored, color_pri, team_abbrv)
-
-.change_team_name <- function(df, .side) {
-  team_name_col <- sprintf('%s_team_name', .side)
-  team_name_sym <- sym(team_name_col)
-  df %>% 
-    left_join(
-      team_mapping %>% 
-        select(
-          team_name = team_opta, new_team_name = team, color_pri
-        ) %>% 
-        rename_with(~sprintf('%s_%s', .side, .x), -c(new_team_name)),
-      by = sprintf('%s_team_name', .side)
-    ) %>% 
-    select(-all_of(team_name_col)) %>% 
-    rename(!!team_name_sym := new_team_name)
-}
-
 meta <- meta %>% 
-  .change_team_name('home') %>% 
-  .change_team_name('away') %>% 
   rename_with(
     ~sprintf('final_%s', .x), matches('score$')
   ) %>% 
@@ -575,12 +621,12 @@ meta <- meta %>%
 .f_export <- function(name) {
   write_rds(get(name), file.path(dir_proj, sprintf('%s.rds', name)))
 }
+
 c(
   'nodes',
   'edges',
   'team_stats',
   'team_season_stats',
-  'scores',
   'meta'
 ) %>% 
   walk(.f_export)
