@@ -31,6 +31,7 @@ c(
   'edges',
   'team_stats',
   'team_season_stats',
+  # 'max_cuts_weighted',
   'meta'
 ) %>% 
   walk(.f_import)
@@ -69,6 +70,7 @@ theme_update(
   panel.background = element_rect(fill = gray_wv, color = gray_wv)
 )
 update_geom_defaults('text', list(family = 'Karla', size = 4))
+update_geom_defaults('point', list(color = 'white'))
 
 pts <- function(x) {
   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
@@ -274,10 +276,10 @@ library(glue)
     )
 }
 
-.join_select_nodes_to_edges <- function(df, suffix) {
+.join_select_nodes_to_edges <- function(df, nodes, suffix) {
   df %>% 
     left_join(
-      n %>% 
+      nodes %>% 
         select(player_id, x, y) %>% 
         rename_all(~sprintf('%s_%s', .x, suffix)),
       by = sprintf('player_id_%s', suffix)
@@ -347,10 +349,35 @@ library(glue)
 .ratio <- 68 / 105
 .h <- 8
 
-plot_pass_network <- function(game_id = 1549646, min_edges = 3) {
+stat_labs <- file.path(dir_proj, 'stats.csv') %>% 
+  read_csv() %>% 
+  add_row(
+    stat = 'max_cut_weighted_norm',
+    stat_lab = 'Max Cuts / 90'
+  )
+team_stats_w_labs <- team_stats %>% left_join(stat_labs)
+
+plot_pass_network <- function(
+  game_id = 1549604,
+  team_id = NULL,
+  # include_max_cuts = TRUE,
+  # include_symmetry = FALSE,
+  stats = c('max_cut_weighted'),
+  min_edges = 3
+) {
+  # game_id = 1549646
+  # team_id = NULL
+  # # include_max_cuts = TRUE
+  # # include_symmetry = FALSE
+  # stats = c('max_cut_weighted', 'concave_area_prop')
+  # min_edges = 3
+  meta_filt <- meta %>% filter(game_id == !!game_id)
   
-  meta_filt <- meta %>% 
-    filter(game_id == !!game_id)
+  filename <- sprintf('network-game_id=%s', game_id)
+  if(!is.null(team_id)) {
+    meta_filt <- meta_filt %>% filter(team_id == !!team_id)
+    filename <- sprintf('%s-team_id=%s', filename, team_id)
+  }
   
   .factor_team_name <- function(df) {
     df %>% 
@@ -365,10 +392,10 @@ plot_pass_network <- function(game_id = 1549646, min_edges = 3) {
   
   e <- edges %>% 
     .prep_nodes_or_edges(meta_filt, player_id_start, player_id_end) %>% 
-    .join_select_nodes_to_edges('start') %>% 
-    .join_select_nodes_to_edges('end') %>% 
+    .join_select_nodes_to_edges(n, 'start') %>% 
+    .join_select_nodes_to_edges(n, 'end') %>% 
     .factor_team_name()
-
+  
   p <- n %>% 
     ggplot() +
     .common_gg() +
@@ -415,8 +442,55 @@ plot_pass_network <- function(game_id = 1549646, min_edges = 3) {
       tag = '**Viz**: Tony ElHabr'
     ) +
     facet_wrap(~team_name)
+
+  if(!is.null(stats) && length(stats) > 0) {
+    filename <- sprintf('%s-%s', filename, paste0(stats, collapse = '+'))
+    extra_df <- team_stats_w_labs %>% 
+      filter(stat %in% stats) %>% 
+      mutate(
+        across(stat, ~ordered(.x, levels = stats))
+      ) %>% 
+      arrange(stat) %>% 
+      inner_join(
+        meta_filt %>%
+          select(
+            game_id,
+            home_team_id,
+            home_team_name,
+            away_team_name
+          ),
+        by = 'game_id'
+      ) %>% 
+      mutate(
+        lab = sprintf('<b>%s</b>: %s%s', stat_lab, round(value, digits), ifelse(is_percent, '%', ''))
+      ) %>% 
+      group_by(team_name) %>% 
+      summarize(
+        across(lab, paste0, collapse = '<br/>')
+      ) %>% 
+      ungroup()
+    
+    p <- p +
+      ggtext::geom_richtext(
+        # inherit.aes = FALSE,
+        # fontface = 'bold',
+        fill = NA_character_,
+        label.color = NA_character_,
+        vjust = 1,
+        hjust = 0,
+        color = 'white',
+        family = 'Karla',
+        size = pts(14),
+        data = extra_df,
+        aes(
+          x = 2,
+          y = 2,
+          label = lab
+        )
+      )
+  }
   
-  path <- file.path(dir_proj, sprintf('pass_network-game_id=%s.png', game_id))
+  path <- file.path(dir_proj, sprintf('%s.png', filename))
   ggsave(
     plot = p,
     filename = path,
@@ -437,5 +511,184 @@ plot_pass_network <- function(game_id = 1549646, min_edges = 3) {
 }
 
 plot_pass_network(
-  game_id = 1549646
+  game_id = 1549604,
+  stats =  c('max_cut_weighted', 'concave_area_prop')
 )
+
+#- cors ----
+library(stringr)
+library(tidyr)
+library(corrr)
+
+wide_team_stats <- team_stats %>% 
+  pivot_wider(
+    names_from = stat,
+    values_from = value
+  )
+wide_team_season_stats <- team_season_stats %>% 
+  pivot_wider(
+    names_from = stat,
+    values_from = value
+  )
+.str_replace_cor_col <- function(x, i) {
+  str_replace_all(x, '(diff|home|away)_(.*$)', sprintf('\\%d', i))
+}
+
+do_tidy_cor <- function(data) {
+  data %>% 
+    corrr::correlate(quiet = TRUE) %>% 
+    corrr::stretch() %>% 
+    filter(!is.na(r), abs(r) != 1) %>% 
+    mutate(
+      across(
+        c(x, y),
+        list(
+          prefix = ~.str_replace_cor_col(.x, 1),
+          suffix = ~.str_replace_cor_col(.x, 2)
+        )
+      )
+    ) %>% 
+    filter(x_suffix != y_suffix) %>% 
+    select(x, y, x_prefix, x_suffix, y_prefix, y_suffix, r) %>% 
+    arrange(desc(abs(r)))
+}
+
+do_tidy_xg_cor <- function(df) {
+  df %>% 
+    do_tidy_cor() %>% 
+    filter(x %in% c('xg_norm', 'score_norm', 'diff_xg_norm', 'diff_score')) %>% 
+    filter(
+      (x_prefix == 'diff' & y_prefix == 'diff') |
+      (x_prefix != 'diff' & y_prefix  != 'diff')
+    ) %>% 
+    mutate(
+      across(
+        matches('prefix$'),
+        ~ifelse(.x == 'diff', .x, NA_character_)
+      )
+    ) %>%
+    # filter(y %>% str_detect('^diff_')) %>%
+    select(x, y_suffix, r) %>% 
+    arrange(desc(abs(r))) %>% 
+    pivot_wider(
+      names_from = x,
+      values_from = r
+    ) %>% 
+    filter(
+      y_suffix %>% str_detect('xg|score', negate = TRUE)
+    )
+}
+
+team_season_cors <- wide_team_season_stats %>% 
+  select(-c(season_id, team_name, last_min)) %>% 
+  do_tidy_xg_cor()
+team_xg_cors <- wide_team_stats %>% 
+  select(-c(season_id, game_id, team_name, team_id, last_min, diff_last_min, side, color_pri)) %>% 
+  do_tidy_xg_cor()
+
+
+wide_team_stats %>% 
+  select(diff_xg, max_cut_weighted_norm) %>% 
+  corrr::correlate()
+
+wide_team_season_stats %>% 
+  select(diff_xg_norm, max_cut_weighted_norm) %>% 
+  corrr::correlate()
+
+
+wide_team_season_stats %>% 
+  mutate(
+    across(
+      c(
+        # diff_xg_norm,
+        diff_max_cut_unweighted_norm,
+        diff_max_cut_weighted_norm,
+        diff_prop_passes,
+        diff_field_tilt,
+        diff_prop_shots
+      ),
+      ~(.x - mean(.x)) / sd(.x)
+    )
+  ) %>% 
+  # select(
+  #   diff_xg_norm, diff_max_cut_weighted_norm, diff_prop_passes
+  # ) %>% 
+  # lm(diff_xg_norm ~ diff_max_cut_weighted_norm, data = .) %>% 
+  # lm(diff_xg_norm ~ diff_field_tilt, data = .) %>% 
+  lm(diff_xg_norm ~ diff_prop_passes, data = .) %>% 
+  broom::tidy() %>% 
+  mutate(
+    across(estimate, round, 3)
+  )
+
+wide_team_season_stats %>%
+  select(
+    diff_xg_norm,
+    diff_max_cut_weighted_norm,
+    diff_max_cut_unweighted_norm,
+    diff_field_tilt,
+    diff_prop_passes,
+    diff_prop_shots
+  ) %>%
+  corrr::correlate()
+
+wide_team_stats %>% 
+  ggplot() +
+  aes(x = diff_prop_passes, y = diff_max_cut_unweighted_norm) +
+  geom_point(aes(color = diff_xg_norm, alpha = diff_xg_norm)) +
+  scale_color_viridis_c()
+
+wide_team_stats %>% 
+  ggplot() +
+  aes(x = xg_norm, y = max_cut_unweighted_norm) +
+  geom_point() +
+  geom_smooth(
+    method = 'lm',
+    color = 'magenta',
+    se = FALSE
+  ) +
+  # coord_cartesian(
+  #   x = c(-4, 4),
+  #   y = c(-8, 8)
+  # ) +
+  labs(
+    x = 'xG / 90 Min.',
+    y = 'Max Cuts / Min.'
+  )
+
+wide_team_stats %>% 
+  ggplot() +
+  aes(x = diff_xg_norm, y = diff_max_cut_unweighted_norm) +
+  geom_point() +
+  geom_smooth(
+    method = 'lm',
+    color = 'magenta',
+    se = FALSE
+  ) +
+  # coord_cartesian(
+  #   x = c(-4, 4),
+  #   y = c(-8, 8)
+  # ) +
+  labs(
+    x = 'xG Diff. / 90 Min.',
+    y = 'Max Cuts Diff. / Min.'
+  )
+
+wide_team_stats %>% 
+  select(diff_xg, z = max_cut_weighted / last_min) %>% 
+  corrr::correlate()
+wide_team_stats %>% 
+  select(xg, z = max_cut_weighted) %>% 
+  corrr::correlate()
+wide_team_stats %>% 
+  ggplot() +
+  aes(x = diff_xg, y = max_cut_weighted / last_min) +
+  geom_point()
+wide_team_stats %>% 
+  ggplot() +
+  aes(x = last_min, y = max_cut_weighted) +
+  geom_point()
+wide_team_stats %>% 
+  ggplot() +
+  aes(x = concave_area_prop, y = max_cut_weighted) +
+  geom_point()
