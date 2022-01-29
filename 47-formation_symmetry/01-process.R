@@ -505,8 +505,8 @@ diffs_init <- agg %>%
     across(c(prop_shots, score, xg), ~coalesce(.x, 0)),
     score_norm = 90 * score / last_min,
     xg_norm = 90 * xg / last_min,
-    max_cut_weighted_norm = max_cut_weighted / last_min,
-    max_cut_unweighted_norm = max_cut_unweighted / last_min,
+    max_cut_weighted_norm = 90 * max_cut_weighted / last_min,
+    max_cut_unweighted_norm = 90 * max_cut_unweighted / last_min,
     n_shots_norm = 90 * n_shots / last_min,
     n_f3_passes_norm = 90 * n_f3_passes / last_min,
     n_passes_norm = 90 * n_passes / last_min
@@ -548,8 +548,8 @@ diffs <- bind_rows(
   mutate(
     diff_xg_norm = 90 * diff_xg / last_min,
     diff_score_norm = 90 * diff_score / last_min,
-    diff_max_cut_weighted_norm = diff_max_cut_weighted / last_min,
-    diff_max_cut_unweighted_norm = diff_max_cut_unweighted / last_min,
+    diff_max_cut_weighted_norm = 90 * diff_max_cut_weighted / last_min,
+    diff_max_cut_unweighted_norm = 90 * diff_max_cut_unweighted / last_min,
     diff_n_shots_norm = 90 * diff_n_shots / last_min,
     diff_n_f3_passes_norm = 90 * diff_n_f3_passes / last_min,
     diff_n_passes_norm = 90 * diff_n_passes / last_min

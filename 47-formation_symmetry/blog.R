@@ -349,20 +349,27 @@ library(glue)
 .ratio <- 68 / 105
 .h <- 8
 
-stat_labs <- file.path(dir_proj, 'stats.csv') %>% 
-  read_csv() %>% 
-  add_row(
-    stat = 'max_cut_weighted_norm',
-    stat_lab = 'Max Cuts / 90'
-  )
+stat_labs <- file.path(dir_proj, 'stats.csv') %>% read_csv()
 team_stats_w_labs <- team_stats %>% left_join(stat_labs)
+
+add_white_epl_logo <- function(path) {
+  tonythemes:::add_logo(
+    path_viz = path,
+    path_logo = file.path(dir_proj, 'epl-logo-white.png'),
+    delete = TRUE,
+    logo_scale = 0.1,
+    idx_x = 0.01,
+    idx_y = 0.99,
+    adjust_y = FALSE
+  )
+}
 
 plot_pass_network <- function(
   game_id = 1549604,
   team_id = NULL,
   # include_max_cuts = TRUE,
   # include_symmetry = FALSE,
-  stats = c('max_cut_weighted'),
+  stats = c('max_cut_weighted_norm'),
   min_edges = 3
 ) {
   # game_id = 1549646
@@ -427,7 +434,7 @@ plot_pass_network <- function(
       fontface = 'bold',
       # size = pts(12),
       show.legend = FALSE,
-      aes(label = name, size = n)
+      aes(label = str_replace(name, '^(.*?\\s)(.*$)', '\\2'), size = n)
     ) +
     theme(
       plot.title = element_markdown(hjust = 0.5),
@@ -436,13 +443,13 @@ plot_pass_network <- function(
     ) +
     scale_size(range = c(pts(12), pts(16))) +
     labs(
+      # tag = '**Viz**: Tony ElHabr',
       subtitle = sprintf('%s, through first player change', lubridate::date(meta_filt$game_date)),
       title = glue::glue("<b><span style='color:{meta_filt$home_color_pri};'>{meta_filt$home_team_name}</span></b> {meta_filt$home_score} - {meta_filt$away_score} <b><span style='color:{meta_filt$away_color_pri};'>{meta_filt$away_team_name}</span></b>"),
-      caption = sprintf('Transparency of edges and size of names reflect relative number of passes.\nMinimum number of successful passes: %d.', min_edges),
-      tag = '**Viz**: Tony ElHabr'
+      caption = sprintf('Transparency of edges and size of names reflect relative number of passes.\nMinimum number of successful passes: %d.', min_edges)
     ) +
     facet_wrap(~team_name)
-
+  
   if(!is.null(stats) && length(stats) > 0) {
     filename <- sprintf('%s-%s', filename, paste0(stats, collapse = '+'))
     extra_df <- team_stats_w_labs %>% 
@@ -498,21 +505,14 @@ plot_pass_network <- function(
     height = .h,
     width = 2 * .ratio * .h
   )
-  
-  tonythemes:::add_logo(
-    path_viz = path,
-    path_logo = file.path(dir_proj, 'epl-logo-white.png'),
-    delete = TRUE,
-    logo_scale = 0.08,
-    idx_x = 0.01,
-    idx_y = 0.98,
-    adjust_y = FALSE
-  )
+  add_white_epl_logo(path)
+  p
 }
 
 plot_pass_network(
   game_id = 1549604,
-  stats =  c('max_cut_weighted', 'concave_area_prop')
+  stats =  c('max_cut_weighted_norm'),
+  min_edges = 4
 )
 
 #- cors ----
@@ -525,6 +525,7 @@ wide_team_stats <- team_stats %>%
     names_from = stat,
     values_from = value
   )
+
 wide_team_season_stats <- team_season_stats %>% 
   pivot_wider(
     names_from = stat,
@@ -559,7 +560,7 @@ do_tidy_xg_cor <- function(df) {
     filter(x %in% c('xg_norm', 'score_norm', 'diff_xg_norm', 'diff_score')) %>% 
     filter(
       (x_prefix == 'diff' & y_prefix == 'diff') |
-      (x_prefix != 'diff' & y_prefix  != 'diff')
+        (x_prefix != 'diff' & y_prefix  != 'diff')
     ) %>% 
     mutate(
       across(
@@ -579,14 +580,80 @@ do_tidy_xg_cor <- function(df) {
     )
 }
 
-team_season_cors <- wide_team_season_stats %>% 
-  select(-c(season_id, team_name, last_min)) %>% 
-  do_tidy_xg_cor()
-team_xg_cors <- wide_team_stats %>% 
-  select(-c(season_id, game_id, team_name, team_id, last_min, diff_last_min, side, color_pri)) %>% 
+team_xg_cors <- wide_team_stats %>%
+  select(-c(
+    season_id,
+    game_id,
+    team_name,
+    team_id,
+    last_min,
+    diff_last_min,
+    side,
+    color_pri
+  )) %>% 
   do_tidy_xg_cor()
 
+team_season_cors <- wide_team_season_stats %>%
+  select(-c(season_id, team_name, last_min)) %>%
+  do_tidy_xg_cor()
 
+#- hist-mc ----
+lab_subtitle <- '2017/18 - 2021/22 Boxing Day'
+p_mc_hist <- wide_team_stats %>% 
+  ggplot() +
+  aes(x = diff_max_cut_weighted_norm) +
+  geom_histogram(binwidth = 20) +
+  labs(
+    title = 'Game-level Weighted Max Cuts',
+    subtitle = lab_subtitle,
+    x = 'Weighted Max Cuts Per 90 Min.',
+    y = NULL
+  )
+p_mc_hist
+
+path_mc_hist <- file.path(dir_proj, 'mc_hist.png')
+ggsave(
+  plot = p_mc_hist,
+  filename = path_mc_hist,
+  width = 7,
+  height = 7 / 1.5
+)
+add_white_epl_logo(path_mc_hist)
+
+#- scatter-mc-vs-xg ----
+p_mc_xg_scatter <- wide_team_stats %>% 
+  ggplot() +
+  aes(x = diff_max_cut_weighted_norm, y = diff_xg_norm) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(
+    color = 'magenta',
+    method = 'lm',
+    se = FALSE
+  ) +
+  geom_text(
+    data = team_xg_cors %>% filter(y_suffix == 'max_cut_weighted_norm') %>% pull(diff_xg_norm)
+    aes(x = 0.3, y = 0.3)
+  )
+  labs(
+    title = 'Game-level Weighted Max Cuts Diff. vs. xG Diff.',
+    subtitle = lab_subtitle,
+    x = 'Weighted Max Cuts Diff. Per 90 Min.',
+    y = 'xG Diff. Per 90 Min.'
+  )
+p_mc_xg_scatter
+
+tonythemes:::add_logo(
+  path_viz = p_mc_xg_scatter,
+  path_logo = file.path(dir_proj, 'epl-logo-white.png'),
+  delete = TRUE,
+  logo_scale = 0.1,
+  idx_x = 0.01,
+  idx_y = 0.99,
+  adjust_y = FALSE
+)
+
+
+# moar ----
 wide_team_stats %>% 
   select(diff_xg, max_cut_weighted_norm) %>% 
   corrr::correlate()
