@@ -159,6 +159,93 @@ filt_actions <- all_actions_atomic %>%
     in_final_third = y <= 105 / 3
   )
 
+create_seq <- function(n, max) {
+  1:n * max / n
+}
+seq_x <- create_seq(12, 105)
+seq_y <- create_seq(8, 68)
+w_x <- seq_x[2] - seq_x[1]
+w_y <- seq_y[2] - seq_y[1]
+
+xt_grid <- 'https://raw.githubusercontent.com/mckayjohns/xT/main/xT_Grid.csv' %>% 
+  read_csv(
+    ## reverse since i flipped home instead of away
+    col_names = c(12:1) %>% as.character()
+  ) %>% 
+  mutate(
+    row = row_number()
+  ) %>% 
+  pivot_longer(
+    -c(row),
+    names_to = 'col',
+    values_to = 'xt'
+  ) %>% 
+  mutate(
+    across(col, as.integer)
+  )
+xt_grid
+
+pitch_grid <- tidyr::crossing(
+  x_hi = seq_x,
+  y_hi = seq_y
+) %>% 
+  mutate(
+    col = dense_rank(x_hi),
+    row = dense_rank(y_hi),
+    x_lo = x_hi - w_x,
+    y_lo = y_hi - w_y
+  ) %>% 
+  left_join(xt_grid) %>% 
+  mutate(
+    ## buffer since there are some events at the very edges
+    across(
+      c(x_lo, y_lo),
+      ~ifelse(
+        .x == min(.x),
+        .x - 10,
+        .x
+      )
+    ),
+    across(
+      c(x_hi, y_hi),
+      ~ifelse(
+        .x == max(.x),
+        .x + 10,
+        .x
+      )
+    )
+  )
+pitch_grid
+
+# pitch_grid %>% 
+#   left_join(
+#     xt_grid
+#   ) %>% 
+#   ggplot() +
+#   # aes(x = x_lo, y = y_lo)
+#   geom_rect(
+#     aes(
+#       fill = xt,
+#       xmin = x_lo,
+#       xmax = x_hi,
+#       ymin = y_lo,
+#       ymax = y_hi
+#     )
+#   ) +
+#   geom_text(
+#     aes(x = (x_lo + x_hi) / 2, y = (y_lo + y_hi) / 2, label = sprintf('%s,%s', row, col))
+#   ) +
+#   coord_flip()
+
+filt_actions_dt <- filt_actions %>% data.table::as.data.table()
+pitch_grid_dt <- pitch_grid %>% data.table::as.data.table()
+
+filt_actions_xt <- filt_actions_dt[pitch_grid_dt, on=.(x >= x_lo, x < x_hi, y>= y_lo, y < y_hi)] %>% 
+  as_tibble() %>% 
+  select(-matches('1$')) %>% 
+  arrange(game_id, atomic_action_id)
+filt_actions_xt
+
 .add_side_col <- function(df) {
   df %>% 
     left_join(meta) %>% 
@@ -168,10 +255,15 @@ filt_actions <- all_actions_atomic %>%
     select(all_of(colnames(df)), side)
 }
 
+## check
+# filt_actions_xt %>% 
+#   filter(type_name == 'shot' & result_name == 'success') %>% 
+#   count(row, col, xt, sort = TRUE)
+
 scores <- bind_rows(
-  filt_actions %>% 
+  filt_actions_xt %>% 
     filter(type_name == 'shot' & result_name == 'success'),
-  filt_actions %>% 
+  filt_actions_xt %>% 
     filter(type_name == 'shot' & result_name == 'owngoal') %>% 
     left_join(
       meta %>% 
@@ -212,7 +304,7 @@ scores <- bind_rows(
   pivot_stat('score')
 
 agg_actions <- function(...) {
-  filt_actions %>% 
+  filt_actions_xt %>% 
     filter(...) %>% 
     distinct(
       game_id,
@@ -227,11 +319,17 @@ agg_actions <- function(...) {
     ungroup()
 }
 
+xt <- filt_actions_xt %>% 
+  group_by(game_id, team_id) %>% 
+  summarize(
+    across(xt, sum)
+  ) %>% 
+  ungroup()
 field_tilt <- agg_actions(type_name == 'pass', in_final_third)
 n_successful_passes <- agg_actions(type_name == 'pass')
 n_shots <- agg_actions(type_name == 'shot')
 
-successful_passes <- filt_actions %>% 
+successful_passes <- filt_actions_xt %>% 
   filter(type_name %in% c('pass', 'receival'), result_name == 'success') %>% 
   group_by(game_id, action_id) %>% 
   filter(n() == 2) %>% 
@@ -275,7 +373,7 @@ edges <- successful_passes %>%
   ungroup() %>% 
   .add_id_col()
 
-nodes <- filt_actions %>% 
+nodes <- filt_actions_xt %>% 
   filter(type_name == 'pass') %>% 
   select(game_id, team_id, player_id, atomic_action_id, x, y) %>% 
   # drop_keepers() %>% 
@@ -416,7 +514,7 @@ stat_cols <- c(
   'concave_area_prop',
   'max_cut_weighted',
   'max_cut_unweighted',
-  'field_tilt',
+  'prop_f3_passes',
   'n_f3_passes',
   'prop_passes',
   'n_passes',
@@ -441,7 +539,8 @@ stat_cols <- c(
   ),
   'last_min',
   'score',
-  'xg'
+  'xg',
+  'xt'
 )
 
 diffs_init <- agg %>% 
@@ -451,9 +550,9 @@ diffs_init <- agg %>%
   ) %>% 
   left_join(
     field_tilt %>% 
-      select(game_id, team_id, field_tilt = prop, n_f3_passes = n) %>% 
+      select(game_id, team_id, prop_f3_passes = prop, n_f3_passes = n) %>% 
       mutate(
-        across(field_tilt, ~100*.x)
+        across(prop_f3_passes, ~100*.x)
       )
   ) %>% 
   left_join(
