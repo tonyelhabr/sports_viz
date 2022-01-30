@@ -554,29 +554,55 @@ do_tidy_cor <- function(data) {
     arrange(desc(abs(r)))
 }
 
-do_tidy_xg_cor <- function(df) {
-  df %>% 
+y_stats <- c(
+  # 'n_shots_norm',
+  'prop_shots',
+  # 'n_passes_norm',
+  'prop_passes',
+  # 'n_f3_passes_norm',
+  'prop_f3_passes',
+  'max_cut_weighted_norm',
+  'mean_distance',
+  'mean_edge_betweenness',
+  'mean_node_betweenness',
+  'mean_node_degree_in',
+  'mean_node_degree_out'
+)
+
+do_tidy_xg_cor <- function(df, label = FALSE) {
+  cors <- df %>% 
     do_tidy_cor() %>% 
-    filter(x %in% c('xg_norm', 'score_norm', 'diff_xg_norm', 'diff_score')) %>% 
+    # filter(x %in% c('xg_norm', 'score_norm', 'diff_xg_norm', 'diff_score')) %>% 
+    filter(x %in% c('diff_xg_norm')) %>% 
     filter(
-      (x_prefix == 'diff' & y_prefix == 'diff') |
-        (x_prefix != 'diff' & y_prefix  != 'diff')
+      y %in% y_stats
     ) %>% 
-    mutate(
-      across(
-        matches('prefix$'),
-        ~ifelse(.x == 'diff', .x, NA_character_)
-      )
-    ) %>%
-    # filter(y %>% str_detect('^diff_')) %>%
-    select(x, y_suffix, r) %>% 
-    arrange(desc(abs(r))) %>% 
+    select(x, y, r) %>% 
+    arrange(desc(abs(r)))
+  
+  if(!label) {
+    return(
+      cors %>% 
+        pivot_wider(
+          names_from = x,
+          values_from = r
+        )
+    )
+  }
+  
+  cors %>% 
+    left_join(
+      stat_labs %>% 
+        select(y = stat, y_lab = stat_lab)
+    ) %>% 
+    left_join(
+      stat_labs %>% 
+        select(x = stat, x_lab = stat_lab)
+    ) %>% 
+    select(x_lab, y_lab, r) %>% 
     pivot_wider(
-      names_from = x,
+      names_from = x_lab,
       values_from = r
-    ) %>% 
-    filter(
-      y_suffix %>% str_detect('xg|score', negate = TRUE)
     )
 }
 
@@ -593,25 +619,32 @@ team_xg_cors <- wide_team_stats %>%
   )) %>% 
   do_tidy_xg_cor()
 
-team_season_cors <- wide_team_season_stats %>%
-  select(-c(season_id, team_name, last_min)) %>%
+team_season_xg_cors <- wide_team_season_stats %>%
+  select(-c(
+    season_id, 
+    team_name, 
+    team_id, 
+    last_min, 
+    n, 
+    diff_last_min
+  )) %>% 
   do_tidy_xg_cor()
 
 #- hist-mc ----
 lab_subtitle <- '2017/18 - 2021/22 Boxing Day'
 p_mc_hist <- wide_team_stats %>% 
   ggplot() +
-  aes(x = diff_max_cut_weighted_norm) +
-  geom_histogram(binwidth = 20) +
+  aes(x = max_cut_weighted_norm) +
+  geom_histogram(binwidth = 20, fill = 'white') +
   labs(
-    title = 'Game-level Weighted Max Cuts',
+    title = 'Game-level Weighted Max Cut',
     subtitle = lab_subtitle,
-    x = 'Weighted Max Cuts Per 90 Min.',
+    x = 'Weighted Max Cut Per 90 Min.',
     y = NULL
   )
 p_mc_hist
 
-path_mc_hist <- file.path(dir_proj, 'mc_hist.png')
+path_mc_hist <- file.path(dir_proj, 'game_mc_hist.png')
 ggsave(
   plot = p_mc_hist,
   filename = path_mc_hist,
@@ -621,35 +654,235 @@ ggsave(
 add_white_epl_logo(path_mc_hist)
 
 #- scatter-mc-vs-xg ----
+pal <- c('#ef426f', '#00b2a9', '#ff8200', '#7a5195')
+game_cor_color <- '#00b2a9'
+season_cor_color <- '#7a5195'
 p_mc_xg_scatter <- wide_team_stats %>% 
   ggplot() +
-  aes(x = diff_max_cut_weighted_norm, y = diff_xg_norm) +
-  geom_point(alpha = 0.2) +
+  aes(x = max_cut_weighted_norm, y = diff_xg_norm) +
+  geom_point(alpha = 0.5) +
   geom_smooth(
-    color = 'magenta',
+    size = 2,
+    color = game_cor_color,
     method = 'lm',
     se = FALSE
   ) +
-  geom_text(
-    data = team_xg_cors %>% filter(y_suffix == 'max_cut_weighted_norm') %>% pull(diff_xg_norm)
-    aes(x = 0.3, y = 0.3)
-  )
+  ggtext::geom_richtext(
+    data = team_xg_cors %>%
+      filter(y == 'max_cut_weighted_norm') %>% 
+      select(lab = diff_xg_norm),
+    fill = NA_character_,
+    label.color = NA_character_,
+    hjust = 1,
+    color = game_cor_color,
+    family = 'Karla',
+    size = pts(18),
+    aes(x = 600, y = 8, label = sprintf('<b>Correlation</b>: %.0f%%', 100 * lab))
+  ) +
   labs(
-    title = 'Game-level Weighted Max Cuts Diff. vs. xG Diff.',
+    title = 'Game-level Weighted Max Cut vs. xG Diff.',
     subtitle = lab_subtitle,
-    x = 'Weighted Max Cuts Diff. Per 90 Min.',
+    caption = 'Each point represents one team in one game.',
+    x = 'Weighted Max Cut Diff. Per 90 Min.',
     y = 'xG Diff. Per 90 Min.'
   )
 p_mc_xg_scatter
 
-tonythemes:::add_logo(
-  path_viz = p_mc_xg_scatter,
-  path_logo = file.path(dir_proj, 'epl-logo-white.png'),
-  delete = TRUE,
-  logo_scale = 0.1,
-  idx_x = 0.01,
-  idx_y = 0.99,
-  adjust_y = FALSE
+path_mc_xg_scatter <- file.path(dir_proj, 'game_mc_xg_scatter.png')
+ggsave(
+  plot = p_mc_xg_scatter,
+  filename = path_mc_xg_scatter,
+  width = 7,
+  height = 7
+)
+add_white_epl_logo(path_mc_xg_scatter)
+
+# game-cors-table ----
+library(gt)
+library(gtExtras)
+
+.gt_theme_538 <- function(data,...) {
+  data %>%
+    gt::opt_table_font(
+      font = list(
+        gt::google_font('Karla'),
+        gt::default_fonts()
+      )
+    ) %>%
+    gt::tab_style(
+      style = gt::cell_borders(
+        sides = 'bottom', color = 'transparent', weight = gt::px(2)
+      ),
+      locations = gt::cells_column_labels(
+        columns = gt::everything()
+      )
+    )  %>%
+    gt::tab_style(
+      style = gt::cell_borders(
+        sides = 'bottom', color = 'black', weight = px(1)
+      ),
+      locations = gt::cells_row_groups()
+    ) %>%
+    gt::tab_options(
+      column_labels.background.color = 'white',
+      heading.border.bottom.style = 'none',
+      table.border.top.width = gt::px(3),
+      table.border.top.style = 'none', #transparent
+      table.border.bottom.style = 'none',
+      # column_labels.font.weight = 'normal',
+      column_labels.border.top.style = 'none',
+      column_labels.border.bottom.width = gt::px(0),
+      # column_labels.border.bottom.color = 'black',
+      # row_group.border.top.style = 'none',
+      # row_group.border.top.color = 'black',
+      # row_group.border.bottom.width = px(1),
+      # row_group.border.bottom.color = 'white',
+      stub.border.color = 'white',
+      stub.border.width = gt::px(0),
+      data_row.padding = gt::px(1), # px(3),
+      source_notes.font.size = 10,  # 12,
+      source_notes.border.lr.style = 'none',
+      table.font.size = 16,
+      heading.align = 'left',
+      
+      footnotes.font.size = 12,
+      footnotes.padding = gt::px(0),
+      row_group.font.weight = 'bold',
+      
+      ...
+    ) %>% opt_css(
+      "tbody tr:last-child {
+    border-bottom: 2px solid #ffffff00;
+      }
+    
+    ",
+    add = TRUE
+    )
+}
+
+.highlight_gt_row <- function(gt) {
+  gt %>% 
+    gt::tab_style(
+      location = cells_body(
+        rows = y_lab == 'Weighted Max Cut / 90',
+      ),
+      style = list(
+        gt::cell_text(weight = 'bold', style = 'italic')
+      )
+    )
+}
+
+.finish_gt <- function(gt) {
+  gt %>% 
+    .highlight_gt_row() %>% 
+    .gt_theme_538()
+}
+
+.add_gt_bar <- function(gt, col, color) {
+  gt %>% 
+    gtExtras::gt_plt_bar(
+      color = color,
+      column = all_of(col),
+      scaled = FALSE, 
+      width = 20
+    )
+}
+
+team_xg_cors_tb <- team_xg_cors %>%
+  filter(
+    y %in% y_stats
+  ) %>% 
+  left_join(
+    stat_labs %>% select(y = stat, y_lab = stat_lab, stat_group_lab)
+  ) %>% 
+  select(stat_group_lab, y_lab, r = diff_xg_norm) %>% 
+  mutate(r2 = r) %>% 
+  group_by(stat_group_lab) %>% 
+  gt::gt(rowname_col = 'Group') %>% 
+  gt::cols_label(
+    .list = list(
+      y_lab = '',
+      r = '',
+      r2 = ''
+    )
+  ) %>% 
+  gt::fmt_percent(
+    decimals = 0,
+    columns = c(r)
+  ) %>% 
+  .add_gt_bar(
+    'r2',
+    game_cor_color
+  ) %>% 
+  gt::tab_header(
+    title = gt::html('<b>Game-level Correlation with xG Diff. / 90</b>')
+  ) %>% 
+  .finish_gt()
+team_xg_cors_tb
+
+gt::gtsave(
+  team_xg_cors_tb,
+  filename = file.path(dir_proj, 'game_xg_cors_table.png')
+)
+
+# table-2 ----
+team_xg_cors_tb <- team_xg_cors %>%
+  rename(
+    game_r = diff_xg_norm
+  ) %>% 
+  left_join(
+    team_season_xg_cors %>% 
+      rename(season_r = diff_xg_norm)
+  ) %>% 
+  left_join(
+    stat_labs %>% select(y = stat, y_lab = stat_lab, stat_group_lab)
+  ) %>% 
+  select(stat_group_lab, y_lab, game_r, season_r) %>% 
+  mutate(game_r2 = game_r, season_r2 = season_r) %>% 
+  group_by(stat_group_lab) %>% 
+  gt::gt(rowname_col = 'Group') %>% 
+  gt::cols_label(
+    .list = list(
+      y_lab = '',
+      game_r = gt::html('<b>Game</b>'),
+      game_r2 = '',
+      season_r = gt::html('<b>Season</b>'),
+      season_r2 = ''
+    )
+  ) %>% 
+  gt::fmt_percent(
+    decimals = 0,
+    columns = c(game_r, season_r)
+  ) %>% 
+  gtExtras::gt_plt_bar(
+    color = game_cor_color,
+    column = game_r2,
+    scaled = FALSE, 
+    width = 20
+  ) %>% 
+  gtExtras::gt_plt_bar(
+    color = season_cor_color,
+    column = season_r2,
+    scaled = FALSE, 
+    width = 20
+  ) %>% 
+  gt::cols_move(
+    columns = game_r2,
+    after = game_r
+  ) %>% 
+  gt::cols_move(
+    columns = season_r2,
+    after = season_r
+  ) %>% 
+  gt::tab_header(
+    title = gt::html('<b>Correlation with xG Diff. / 90</b>')
+  ) %>% 
+  .finish_gt()
+team_xg_cors_tb
+
+gt::gtsave(
+  team_xg_cors_tb,
+  filename = file.path(dir_proj, 'game_and_season_xg_cors_table.png')
 )
 
 
