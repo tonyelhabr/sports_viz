@@ -159,93 +159,6 @@ filt_actions <- all_actions_atomic %>%
     in_final_third = y <= 105 / 3
   )
 
-create_seq <- function(n, max) {
-  1:n * max / n
-}
-seq_x <- create_seq(12, 105)
-seq_y <- create_seq(8, 68)
-w_x <- seq_x[2] - seq_x[1]
-w_y <- seq_y[2] - seq_y[1]
-
-xt_grid <- 'https://raw.githubusercontent.com/mckayjohns/xT/main/xT_Grid.csv' %>% 
-  read_csv(
-    ## reverse since i flipped home instead of away
-    col_names = c(12:1) %>% as.character()
-  ) %>% 
-  mutate(
-    row = row_number()
-  ) %>% 
-  pivot_longer(
-    -c(row),
-    names_to = 'col',
-    values_to = 'xt'
-  ) %>% 
-  mutate(
-    across(col, as.integer)
-  )
-xt_grid
-
-pitch_grid <- tidyr::crossing(
-  x_hi = seq_x,
-  y_hi = seq_y
-) %>% 
-  mutate(
-    col = dense_rank(x_hi),
-    row = dense_rank(y_hi),
-    x_lo = x_hi - w_x,
-    y_lo = y_hi - w_y
-  ) %>% 
-  left_join(xt_grid) %>% 
-  mutate(
-    ## buffer since there are some events at the very edges
-    across(
-      c(x_lo, y_lo),
-      ~ifelse(
-        .x == min(.x),
-        .x - 10,
-        .x
-      )
-    ),
-    across(
-      c(x_hi, y_hi),
-      ~ifelse(
-        .x == max(.x),
-        .x + 10,
-        .x
-      )
-    )
-  )
-pitch_grid
-
-# pitch_grid %>% 
-#   left_join(
-#     xt_grid
-#   ) %>% 
-#   ggplot() +
-#   # aes(x = x_lo, y = y_lo)
-#   geom_rect(
-#     aes(
-#       fill = xt,
-#       xmin = x_lo,
-#       xmax = x_hi,
-#       ymin = y_lo,
-#       ymax = y_hi
-#     )
-#   ) +
-#   geom_text(
-#     aes(x = (x_lo + x_hi) / 2, y = (y_lo + y_hi) / 2, label = sprintf('%s,%s', row, col))
-#   ) +
-#   coord_flip()
-
-filt_actions_dt <- filt_actions %>% data.table::as.data.table()
-pitch_grid_dt <- pitch_grid %>% data.table::as.data.table()
-
-filt_actions_xt <- filt_actions_dt[pitch_grid_dt, on=.(x >= x_lo, x < x_hi, y>= y_lo, y < y_hi)] %>% 
-  as_tibble() %>% 
-  select(-matches('1$')) %>% 
-  arrange(game_id, atomic_action_id)
-filt_actions_xt
-
 .add_side_col <- function(df) {
   df %>% 
     left_join(meta) %>% 
@@ -256,14 +169,14 @@ filt_actions_xt
 }
 
 ## check
-# filt_actions_xt %>% 
+# filt_actions %>% 
 #   filter(type_name == 'shot' & result_name == 'success') %>% 
 #   count(row, col, xt, sort = TRUE)
 
 scores <- bind_rows(
-  filt_actions_xt %>% 
+  filt_actions %>% 
     filter(type_name == 'shot' & result_name == 'success'),
-  filt_actions_xt %>% 
+  filt_actions %>% 
     filter(type_name == 'shot' & result_name == 'owngoal') %>% 
     left_join(
       meta %>% 
@@ -304,7 +217,7 @@ scores <- bind_rows(
   pivot_stat('score')
 
 agg_actions <- function(...) {
-  filt_actions_xt %>% 
+  filt_actions %>% 
     filter(...) %>% 
     distinct(
       game_id,
@@ -319,17 +232,15 @@ agg_actions <- function(...) {
     ungroup()
 }
 
-xt <- filt_actions_xt %>% 
+xt <- filt_actions %>% 
   group_by(game_id, team_id) %>% 
-  summarize(
-    across(xt, sum)
-  ) %>% 
+  summarize(across(xt, sum, na.rm = TRUE)) %>% 
   ungroup()
 field_tilt <- agg_actions(type_name == 'pass', in_final_third)
 n_successful_passes <- agg_actions(type_name == 'pass')
 n_shots <- agg_actions(type_name == 'shot')
 
-successful_passes <- filt_actions_xt %>% 
+successful_passes <- filt_actions %>% 
   filter(type_name %in% c('pass', 'receival'), result_name == 'success') %>% 
   group_by(game_id, action_id) %>% 
   filter(n() == 2) %>% 
@@ -373,7 +284,7 @@ edges <- successful_passes %>%
   ungroup() %>% 
   .add_id_col()
 
-nodes <- filt_actions_xt %>% 
+nodes <- filt_actions %>% 
   filter(type_name == 'pass') %>% 
   select(game_id, team_id, player_id, atomic_action_id, x, y) %>% 
   # drop_keepers() %>% 
@@ -596,20 +507,23 @@ diffs_init <- agg %>%
     xg
   ) %>% 
   left_join(
+    xt
+  ) %>% 
+  left_join(
     last_actions_by_game %>% 
       select(game_id, last_min)
   ) %>% 
   .add_side_col() %>%
   mutate(
-    across(c(prop_shots, score, xg), ~coalesce(.x, 0)),
+    across(c(prop_shots, score, xg, xt), ~coalesce(.x, 0)),
     score_norm = 90 * score / last_min,
     xg_norm = 90 * xg / last_min,
+    xt_norm = 90 * xt / last_min,
     max_cut_weighted_norm = 90 * max_cut_weighted / last_min,
     max_cut_unweighted_norm = 90 * max_cut_unweighted / last_min,
     n_shots_norm = 90 * n_shots / last_min,
     n_f3_passes_norm = 90 * n_f3_passes / last_min,
     n_passes_norm = 90 * n_passes / last_min
-    
   )
 
 do_compute_diffs <- function(.side) {
