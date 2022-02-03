@@ -1,24 +1,19 @@
 
-#- setup, include=F, echo=F, cache=F ----
-knitr::opts_chunk$set(
-  include = FALSE,
-  echo = FALSE,
-  cache = FALSE,
-  eval = FALSE,
-  cache.lazy = FALSE,
-  fig.show = 'hide',
-  fig.align = 'center',
-  fig.width = 8,
-  fig.asp = 0.75,
-  fig.retina = 2,
-  warning = FALSE,
-  message = FALSE
-)
+library(tidyverse)
+# library(tonythemes)
+library(extrafont)
+library(ggtext)
+library(grid)
+library(network)
+library(ggnetwork)
+library(ggsoccer)
+library(ggrepel)
+library(glue)
+library(corrr)
+library(gt)
+library(gtExtras)
+library(broom)
 
-#- load ----
-library(readr)
-library(magrittr)
-library(purrr)
 dir_proj <- '47-formation_symmetry'
 .f_import <- function(name) {
   path <- file.path(dir_proj, sprintf('%s.rds', name))
@@ -31,16 +26,9 @@ c(
   'edges',
   'team_stats',
   'team_season_stats',
-  # 'max_cuts_weighted',
   'meta'
 ) %>% 
   walk(.f_import)
-
-#- setup-ggplot ----
-library(ggplot2)
-library(extrafont)
-library(ggtext)
-library(grid)
 
 gray_wv <- rgb(24, 24, 24, maxColorValue = 255)
 gray_grid_wv <- rgb(64, 64, 64, maxColorValue = 255)
@@ -66,57 +54,18 @@ theme_update(
   plot.caption.position = 'plot',
   plot.tag = ggtext::element_markdown('Karla', size = 12, color = 'white', hjust = 0),
   plot.tag.position = c(0.01, 0.01),
-  strip.text = element_text('Karla', color = 'white', face = 'bold', size = 12, hjust = 0),
+  strip.text = element_text('Karla', color = 'white', face = 'bold', size = 14, hjust = 0),
   panel.background = element_rect(fill = gray_wv, color = gray_wv)
 )
-update_geom_defaults('text', list(family = 'Karla', size = 4))
+update_geom_defaults('text', list(family = 'Karla', size = 4, fontface = 'bold'))
 update_geom_defaults('point', list(color = 'white'))
 
 pts <- function(x) {
   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
 }
 
-#- example, echo=F, include=F, eval=T ----
-library(tibble)
-library(dplyr)
-library(tidyr)
-library(sdpt3r)
 
-df <- tibble(
-  from = c('a', 'a', 'a', 'b', 'b', 'b', 'c', 'c', 'c', 'd', 'd', 'd'),
-  to   = c('b', 'c', 'd', 'a', 'c', 'd', 'a', 'b', 'd', 'a', 'b', 'c'),
-  n    = c( 1L,  0L,  3L,  1L,  1L,  1L,  0L,  2L,  1L,  1L,  5L,  4L)
-)
-
-wide_df <- df %>% 
-  pivot_wider(
-    names_from = to,
-    values_from = n,
-    values_fill = 0L
-  ) %>% 
-  select(from, a, b, c, d) %>% 
-  arrange(from) %>% 
-  select(-from)
-wide_df
-## # A tibble: 4 x 4
-##       a     b     c     d
-##   <int> <int> <int> <int>
-## 1     0     1     0     3
-## 2     1     0     1     1
-## 3     0     2     0     1
-## 4     1     5     4     0
-
-m <- as.matrix(wide_df)
-symmetric_m <- m + t(m) ## must be symmetric
-mc <- maxcut(symmetric_m)
-max_cut <- -round(mc$pobj, 0)
-max_cut
-## [1] 15
-
-#- max-cut-plot-example-prep ----
-library(network)
-library(ggnetwork)
-
+# max-cut-plot-example-prep ----
 upper_symmetric_m <- symmetric_m
 upper_symmetric_m[lower.tri(upper_symmetric_m)] <- 0
 net <- network(upper_symmetric_m)
@@ -183,7 +132,7 @@ adj_filt_edges <- filt_edges %>%
   )
 adj_filt_edges
 
-#- max-cut-plot-example ----
+# max-cut-plot-example ----
 p_ex <- gg_net %>% 
   ggplot(aes(x = x, y = y, xend = xend, yend = yend)) +
   geom_edges(curvature = 0) +
@@ -235,22 +184,18 @@ p_ex <- gg_net %>%
     title = 'Example max cut formulation'
   ) +
   theme(
-    plot.title = element_text('Karla', face = 'bold', size = 24, color = 'black', hjust = 0.5)
+    plot.title = element_text('Karla', face = 'bold', size = 18, color = 'black', hjust = 0.5)
   )
 p_ex
 
 ggsave(
   plot = p_ex,
   filename = file.path(dir_proj, 'example_max_cut.png'),
-  width = 6,
-  height = 6
+  width = 8,
+  height = 8
 )
 
-#- example-pass-network ----
-library(ggsoccer)
-library(ggrepel)
-library(glue)
-
+# example-pass-network ----
 .prep_nodes_or_edges <- function(df, meta, ...) {
   df %>% 
     inner_join(
@@ -359,7 +304,7 @@ add_white_epl_logo <- function(path) {
     delete = TRUE,
     logo_scale = 0.1,
     idx_x = 0.01,
-    idx_y = 0.99,
+    idx_y = 0.98,
     adjust_y = FALSE
   )
 }
@@ -515,12 +460,9 @@ plot_pass_network(
   min_edges = 4
 )
 
-#- cors ----
-library(stringr)
-library(tidyr)
-library(corrr)
-
+# cors ----
 wide_team_stats <- team_stats %>% 
+  filter(last_min >= 45) %>% 
   pivot_wider(
     names_from = stat,
     values_from = value
@@ -531,6 +473,7 @@ wide_team_season_stats <- team_season_stats %>%
     names_from = stat,
     values_from = value
   )
+
 .str_replace_cor_col <- function(x, i) {
   str_replace_all(x, '(diff|home|away)_(.*$)', sprintf('\\%d', i))
 }
@@ -555,25 +498,25 @@ do_tidy_cor <- function(data) {
 }
 
 y_stats <- c(
-  # 'n_shots_norm',
+  'diff_n_shots_norm',
   'prop_shots',
-  # 'n_passes_norm',
-  'prop_passes',
-  # 'n_f3_passes_norm',
+  'diff_n_passes_norm',
+  'diff_prop_passes',
+  'n_f3_passes_norm',
   'prop_f3_passes',
-  'max_cut_weighted_norm',
-  'mean_distance',
-  'mean_edge_betweenness',
-  'mean_node_betweenness',
-  'mean_node_degree_in',
-  'mean_node_degree_out'
+  'diff_max_cut_weighted_norm',
+  'diff_mean_distance',
+  'diff_mean_edge_betweenness',
+  'diff_mean_node_betweenness',
+  'diff_mean_node_degree_in',
+  'diff_mean_node_degree_out'
 )
 
-do_tidy_xg_cor <- function(df, label = FALSE) {
+do_tidy_x_cor <- function(df, label = FALSE) {
   cors <- df %>% 
     do_tidy_cor() %>% 
     # filter(x %in% c('xg_norm', 'score_norm', 'diff_xg_norm', 'diff_score')) %>% 
-    filter(x %in% c('diff_xg_norm')) %>% 
+    filter(x %in% c('diff_xg_norm', 'diff_xt_norm')) %>% 
     filter(
       y %in% y_stats
     ) %>% 
@@ -606,7 +549,7 @@ do_tidy_xg_cor <- function(df, label = FALSE) {
     )
 }
 
-team_xg_cors <- wide_team_stats %>%
+team_x_cors <- wide_team_stats %>%
   select(-c(
     season_id,
     game_id,
@@ -617,9 +560,9 @@ team_xg_cors <- wide_team_stats %>%
     side,
     color_pri
   )) %>% 
-  do_tidy_xg_cor()
+  do_tidy_x_cor()
 
-team_season_xg_cors <- wide_team_season_stats %>%
+team_season_x_cors <- wide_team_season_stats %>%
   select(-c(
     season_id, 
     team_name, 
@@ -628,18 +571,22 @@ team_season_xg_cors <- wide_team_season_stats %>%
     n, 
     diff_last_min
   )) %>% 
-  do_tidy_xg_cor()
+  do_tidy_x_cor()
 
-#- hist-mc ----
+# mc_hist ----
+max_cut_color <- '#89CFF0'
 lab_subtitle <- '2017/18 - 2021/22 Boxing Day'
 p_mc_hist <- wide_team_stats %>% 
   ggplot() +
   aes(x = max_cut_weighted_norm) +
   geom_histogram(binwidth = 20, fill = 'white') +
+  theme(
+    axis.title.x = ggtext::element_markdown()
+  ) +
   labs(
-    title = 'Game-level Weighted Max Cut',
+    title = glue::glue('Game-level Weighted <span style="color:{max_cut_color}">Max Cut</span>'),
     subtitle = lab_subtitle,
-    x = 'Weighted Max Cut Per 90 Min.',
+    x = glue::glue('Weighted <span style="color:{max_cut_color}">Max Cut</span> Per 90 Min.'),
     y = NULL
   )
 p_mc_hist
@@ -648,59 +595,160 @@ path_mc_hist <- file.path(dir_proj, 'game_mc_hist.png')
 ggsave(
   plot = p_mc_hist,
   filename = path_mc_hist,
-  width = 7,
-  height = 7 / 1.5
+  width = 10,
+  height = 10 / 1.5
 )
 add_white_epl_logo(path_mc_hist)
 
-#- scatter-mc-vs-xg ----
-pal <- c('#ef426f', '#00b2a9', '#ff8200', '#7a5195')
-game_cor_color <- '#00b2a9'
-season_cor_color <- '#7a5195'
-p_mc_xg_scatter <- wide_team_stats %>% 
+# mc_hist_diff ----
+diff_max_cut_color <- '#f08995'
+
+# mc_scatter_diff ----
+p_mc_scatter_diff <- wide_team_stats %>% 
   ggplot() +
-  aes(x = max_cut_weighted_norm, y = diff_xg_norm) +
+  aes(
+    x = max_cut_weighted_norm,
+    y = diff_max_cut_weighted_norm
+  ) +
+  geom_point(alpha = 0.5) +
+  theme(
+    plot.title = ggtext::element_markdown(size = 18),
+    axis.title.x = ggtext::element_markdown(),
+    axis.title.y = ggtext::element_markdown()
+  ) +
+  labs(
+    title = glue::glue('Game-level Weighted <span style="color:{diff_max_cut_color}">Max Cut Difference</span> as a function of <span style="color:{max_cut_color}">Max Cut</span>'),
+    subtitle = lab_subtitle,
+    x = glue::glue('Weighted <span style="color:{max_cut_color}">Max Cut</span> Per 90 Min.'),
+    y = glue::glue('Weighted <span style="color:{diff_max_cut_color}">Max Cut Diff.</span> Per 90 Min.')
+  )
+p_mc_scatter_diff
+
+path_mc_scatter_diff <- file.path(dir_proj, 'game_mc_scatter_diff.png')
+ggsave(
+  plot = p_mc_scatter_diff,
+  filename = path_mc_scatter_diff,
+  width = 10,
+  height = 10 / 1.5
+)
+add_white_epl_logo(path_mc_scatter_diff)
+
+# scatter-mc-vs-xg ----
+# pal <- c('#ef426f', '#00b2a9', '#ff8200', '#7a5195') %>% scales::show_col()
+game_xg_cor_color <- '#F0D389'  #  '#00b2a9' 
+season_xg_cor_color <- '#b2fd89' # '#ff8200'
+game_xt_cor_color <- '#f089ed' # '#ef426f'
+season_xt_cor_color <- '#9899f0' #'#7a5195'
+scales::show_col(
+  c(game_xg_cor_color, season_xg_cor_color, game_xt_cor_color, season_xt_cor_color)
+)
+id_cols <- c(
+  'game_id',
+  'team_id'
+)
+potential_treatments <- c(
+  'max_cut_unweighted_norm',
+  'max_cut_weighted_norm',
+  'diff_max_cut_weighted_norm'
+)
+potential_confounders <- c(
+  'diff_n_shots_norm',
+  'n_shots_norm',
+  'prop_shots',
+  'diff_n_passes_norm',
+  'n_passes_norm',
+  'prop_passes'
+)
+potential_outcomes <- c(
+  'xg_norm',
+  'xt_norm',
+  'diff_xg_norm',
+  'diff_xt_norm'
+)
+slim_team_stats <- wide_team_stats %>% 
+  select(
+    all_of(id_cols),
+    all_of(potential_treatments),
+    all_of(potential_confounders),
+    all_of(potential_outcomes)
+  ) %>% 
+  pivot_longer(
+    -c(
+      all_of(id_cols),
+      all_of(potential_treatments),
+      all_of(potential_confounders),
+    ),
+    names_to = 'stat',
+    values_to = 'value'
+  ) %>% 
+  left_join(stat_labs) %>% 
+  select(
+    all_of(potential_treatments),
+    all_of(potential_confounders),
+    stat,
+    stat_lab, 
+    value
+  )
+
+p_mc_x_scatter <- slim_team_stats %>% 
+  filter(
+    stat %in% c('diff_xg_norm', 'diff_xt_norm')
+  ) %>% 
+  ggplot() +
+  aes(x = diff_max_cut_weighted_norm, y = value) +
   geom_point(alpha = 0.5) +
   geom_smooth(
     size = 2,
-    color = game_cor_color,
+    show.legend = FALSE,
+    aes(color = stat_lab),
+    # color = game_cor_color,
     method = 'lm',
     se = FALSE
   ) +
   ggtext::geom_richtext(
-    data = team_xg_cors %>%
-      filter(y == 'max_cut_weighted_norm') %>% 
-      select(lab = diff_xg_norm),
+    data = team_x_cors %>%
+      filter(y == 'diff_max_cut_weighted_norm') %>% 
+      pivot_longer(
+        -y,
+        names_to = 'stat',
+        values_to = 'r'
+      ) %>% 
+      left_join(stat_labs) %>% 
+      mutate(
+        y_pos = ifelse(stat == 'diff_xg_norm', 8, 3)
+      ),
     fill = NA_character_,
     label.color = NA_character_,
     hjust = 1,
-    color = game_cor_color,
+    # color = game_cor_color,
     family = 'Karla',
     size = pts(18),
-    aes(x = 600, y = 8, label = sprintf('<b>Correlation</b>: %.0f%%', 100 * lab))
+    show.legend = FALSE,
+    aes(color = stat_lab, x = 600, y = y_pos, label = sprintf('<b>Correlation</b>: %.0f%%', 100 * r))
   ) +
+  scale_color_manual(
+    values = c(game_xg_cor_color, game_xt_cor_color)
+  ) +
+  facet_wrap(~stat_lab, scales = 'free_y') +
   labs(
-    title = 'Game-level Weighted Max Cut vs. xG Diff.',
+    title = 'Game-level Weighted Max Cut Diff.',
     subtitle = lab_subtitle,
     caption = 'Each point represents one team in one game.',
     x = 'Weighted Max Cut Diff. Per 90 Min.',
-    y = 'xG Diff. Per 90 Min.'
+    y = NULL
   )
-p_mc_xg_scatter
+p_mc_x_scatter
 
-path_mc_xg_scatter <- file.path(dir_proj, 'game_mc_xg_scatter.png')
+path_mc_x_scatter <- file.path(dir_proj, 'game_mc_x_scatter.png')
 ggsave(
-  plot = p_mc_xg_scatter,
-  filename = path_mc_xg_scatter,
+  plot = p_mc_x_scatter,
+  filename = path_mc_x_scatter,
   width = 7,
   height = 7
 )
-add_white_epl_logo(path_mc_xg_scatter)
+add_white_epl_logo(path_mc_x_scatter)
 
 # game-cors-table ----
-library(gt)
-library(gtExtras)
-
 .gt_theme_538 <- function(data,...) {
   data %>%
     gt::opt_table_font(
@@ -764,7 +812,7 @@ library(gtExtras)
   gt %>% 
     gt::tab_style(
       location = cells_body(
-        rows = y_lab == 'Weighted Max Cut / 90',
+        rows = y_lab == 'Weighted Max Cut Diff. / 90',
       ),
       style = list(
         gt::cell_text(weight = 'bold', style = 'italic')
@@ -788,207 +836,293 @@ library(gtExtras)
     )
 }
 
-team_xg_cors_tb <- team_xg_cors %>%
+.str_upper_first <- function(x) {
+  x <- tolower(x)
+  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+  x
+}
+
+make_x_cor_gt <- function(granularity) {
+  if(granularity == 'game') {
+    df <- team_x_cors
+    xg_color <- game_xg_cor_color
+    xt_color <- game_xt_cor_color
+  } else {
+    df <- team_season_x_cors
+    xg_color <- season_xg_cor_color
+    xt_color <- season_xt_cor_color
+  }
+  tb <- df %>%
+    filter(
+      y %in% y_stats
+    ) %>% 
+    left_join(
+      stat_labs %>% select(y = stat, y_lab = stat_lab, stat_group_lab)
+    ) %>% 
+    select(stat_group_lab, y_lab, diff_xg_norm, diff_xt_norm) %>% 
+    mutate(diff_xg_norm2 = diff_xg_norm, diff_xt_norm2 = diff_xt_norm) %>% 
+    arrange(desc(stat_group_lab), desc(y_lab)) %>% 
+    group_by(stat_group_lab) %>% 
+    gt::gt(rowname_col = 'Group') %>% 
+    gt::cols_label(
+      .list = list(
+        y_lab = '',
+        diff_xg_norm = gt::html('<b>xG</b>'),
+        diff_xt_norm = gt::html('<b>xT</b>'),
+        diff_xg_norm2 = '',
+        diff_xt_norm2 = ''
+      )
+    ) %>% 
+    gt::fmt_percent(
+      decimals = 0,
+      columns = c(diff_xg_norm, diff_xt_norm)
+    ) %>% 
+    .add_gt_bar(
+      'diff_xg_norm2',
+      xg_color
+    ) %>% 
+    .add_gt_bar(
+      'diff_xt_norm2',
+      xt_color
+    ) %>% 
+    gt::cols_move(
+      columns = diff_xg_norm2,
+      after = diff_xg_norm
+    ) %>% 
+    gt::cols_move(
+      columns = diff_xt_norm2,
+      after = diff_xt_norm
+    ) %>% 
+    gt::tab_header(
+      title = gt::html(sprintf('<b>%s-level Correlation with xG and xT Diff. / 90</b>', .str_upper_first(granularity)))
+    ) %>% 
+    .finish_gt()
+  gt::gtsave(
+    tb,
+    filename = file.path(dir_proj, sprintf('%s_x_cors_table.png', granularity))
+  )
+  tb
+}
+
+c(
+  'game',
+  'season'
+) %>% 
+  walk(make_x_cor_gt)
+
+
+# fits ----
+nest_fits <- function(form) {
+  slim_team_stats %>% 
+    group_by(stat) %>% 
+    mutate(
+      across(c(where(is.numeric)), ~(.x - mean(.x)) / sd(.x))
+    ) %>% 
+    ungroup() %>% 
+    group_nest(stat, stat_lab) %>% 
+    mutate(
+      fit = map(data, ~lm(formula(form), data = .x)),
+      coefs = map(fit, broom::tidy, conf.int = TRUE),
+      summ = map(fit, broom::glance)
+    )
+  
+}
+
+## check for normality
+# team_stats %>% 
+#   filter(
+#     stat %in% potential_treatments
+#   ) %>% 
+#   ggplot() +
+#   aes(x = value) +
+#   geom_histogram() +
+#   # scale_x_log10() +
+#   facet_wrap(~stat, scales = 'free')
+
+team_stat_fits <- nest_fits(value ~ max_cut_weighted_norm)
+team_stat_fits_diffs <- nest_fits(value ~ diff_max_cut_weighted_norm)
+team_stat_fits_w_confounders <- nest_fits(value ~ max_cut_weighted_norm + n_shots_norm + n_passes_norm)
+team_stat_fits_w_confounders_diffs <- nest_fits(value ~ diff_max_cut_weighted_norm + diff_n_shots_norm + diff_n_passes_norm)
+
+select_unnest <- function(df, ...) {
+  df %>% 
+    select(
+      stat, stat_lab, ...
+    ) %>% 
+    unnest(...) %>% 
+    mutate(
+      across(where(is.numeric), round, 3)
+    )
+}
+
+select_unnest_coefs <- function(df, ...) {
+  select_unnest(df, coefs)
+}
+
+team_stat_coefs <- team_stat_fits %>% select_unnest_coefs()
+team_stat_coefs_diffs <- team_stat_fits_diffs %>% select_unnest_coefs()
+team_stat_coefs_w_confounders <- team_stat_fits_w_confounders %>% select_unnest_coefs()
+team_stat_coefs_w_confounders_diffs <- team_stat_fits_w_confounders_diffs %>% select_unnest_coefs()
+
+
+factor_status <- function(x) {
+  factor(x, levels = c('Single-term Regression', 'Regression with Confounders'))
+}
+
+term_lab_factors <-  rev(
+  c(
+    '(Intercept)' = '<span>Intercept</span>', 
+    'diff_max_cut_weighted_norm' = glue::glue('<b>Weighted <span style="color:{diff_max_cut_color}">Max Cut Diff.</span> / 90</b>'), 
+    'diff_n_passes_norm' = '<span># Completed Passes Diff. / 90</span>', 
+    'diff_n_shots_norm' = '<span># Shots Diff. / 90</span>'
+  )
+)
+team_stat_coefs_diffs_w_labs <- list(
+  `Single-term Regression` = team_stat_coefs_diffs,
+  `Regression with Confounders` = team_stat_coefs_w_confounders_diffs
+) %>% 
+  bind_rows(.id = 'status') %>% 
   filter(
-    y %in% y_stats
+    stat %>% str_detect('^diff_')
   ) %>% 
   left_join(
-    stat_labs %>% select(y = stat, y_lab = stat_lab, stat_group_lab)
+    term_lab_factors %>% 
+      enframe('term', 'term_lab') %>% 
+      mutate(
+        across(term_lab, forcats::fct_inorder)
+      )
   ) %>% 
-  select(stat_group_lab, y_lab, r = diff_xg_norm) %>% 
-  mutate(r2 = r) %>% 
-  group_by(stat_group_lab) %>% 
-  gt::gt(rowname_col = 'Group') %>% 
-  gt::cols_label(
-    .list = list(
-      y_lab = '',
-      r = '',
-      r2 = ''
-    )
-  ) %>% 
-  gt::fmt_percent(
-    decimals = 0,
-    columns = c(r)
-  ) %>% 
-  .add_gt_bar(
-    'r2',
-    game_cor_color
-  ) %>% 
-  gt::tab_header(
-    title = gt::html('<b>Game-level Correlation with xG Diff. / 90</b>')
-  ) %>% 
-  .finish_gt()
-team_xg_cors_tb
-
-gt::gtsave(
-  team_xg_cors_tb,
-  filename = file.path(dir_proj, 'game_xg_cors_table.png')
-)
-
-# table-2 ----
-team_xg_cors_tb <- team_xg_cors %>%
-  rename(
-    game_r = diff_xg_norm
-  ) %>% 
-  left_join(
-    team_season_xg_cors %>% 
-      rename(season_r = diff_xg_norm)
-  ) %>% 
-  left_join(
-    stat_labs %>% select(y = stat, y_lab = stat_lab, stat_group_lab)
-  ) %>% 
-  select(stat_group_lab, y_lab, game_r, season_r) %>% 
-  mutate(game_r2 = game_r, season_r2 = season_r) %>% 
-  group_by(stat_group_lab) %>% 
-  gt::gt(rowname_col = 'Group') %>% 
-  gt::cols_label(
-    .list = list(
-      y_lab = '',
-      game_r = gt::html('<b>Game</b>'),
-      game_r2 = '',
-      season_r = gt::html('<b>Season</b>'),
-      season_r2 = ''
-    )
-  ) %>% 
-  gt::fmt_percent(
-    decimals = 0,
-    columns = c(game_r, season_r)
-  ) %>% 
-  gtExtras::gt_plt_bar(
-    color = game_cor_color,
-    column = game_r2,
-    scaled = FALSE, 
-    width = 20
-  ) %>% 
-  gtExtras::gt_plt_bar(
-    color = season_cor_color,
-    column = season_r2,
-    scaled = FALSE, 
-    width = 20
-  ) %>% 
-  gt::cols_move(
-    columns = game_r2,
-    after = game_r
-  ) %>% 
-  gt::cols_move(
-    columns = season_r2,
-    after = season_r
-  ) %>% 
-  gt::tab_header(
-    title = gt::html('<b>Correlation with xG Diff. / 90</b>')
-  ) %>% 
-  .finish_gt()
-team_xg_cors_tb
-
-gt::gtsave(
-  team_xg_cors_tb,
-  filename = file.path(dir_proj, 'game_and_season_xg_cors_table.png')
-)
-
-
-# moar ----
-wide_team_stats %>% 
-  select(diff_xg, max_cut_weighted_norm) %>% 
-  corrr::correlate()
-
-wide_team_season_stats %>% 
-  select(diff_xg_norm, max_cut_weighted_norm) %>% 
-  corrr::correlate()
-
-
-wide_team_season_stats %>% 
   mutate(
     across(
-      c(
-        # diff_xg_norm,
-        diff_max_cut_unweighted_norm,
-        diff_max_cut_weighted_norm,
-        diff_prop_passes,
-        diff_field_tilt,
-        diff_prop_shots
-      ),
-      ~(.x - mean(.x)) / sd(.x)
+      status,
+      factor_status
+    ),
+    ## don't really need to factor since it's already in the desired order
+    across(
+      stat_lab,
+      factor,
+      levels = sprintf('x%s Diff. / 90', c('G', 'T'))
     )
-  ) %>% 
-  # select(
-  #   diff_xg_norm, diff_max_cut_weighted_norm, diff_prop_passes
-  # ) %>% 
-  # lm(diff_xg_norm ~ diff_max_cut_weighted_norm, data = .) %>% 
-  # lm(diff_xg_norm ~ diff_field_tilt, data = .) %>% 
-  lm(diff_xg_norm ~ diff_prop_passes, data = .) %>% 
-  broom::tidy() %>% 
-  mutate(
-    across(estimate, round, 3)
   )
+team_stat_coefs_diffs_w_labs
 
-wide_team_season_stats %>%
-  select(
-    diff_xg_norm,
-    diff_max_cut_weighted_norm,
-    diff_max_cut_unweighted_norm,
-    diff_field_tilt,
-    diff_prop_passes,
-    diff_prop_shots
-  ) %>%
-  corrr::correlate()
+arw_annotate <- arrow(length = unit(5, 'pt'), type = 'closed')
+df_xg <- tibble(status = factor_status('Regression with Confounders'), stat_lab = 'xG Diff. / 90')
+df_xt <- tibble(status = factor_status('Regression with Confounders'), stat_lab = 'xT Diff. / 90')
+add_cor_text <- function(..., .data, .color) {
+  list(
+    ...,
+    geom_text(
+      data = .data,
+      color = .color,
+      fontface = 'bold',
+      vjust = -1,
+      hjust = 0,
+      size = pts(14),
+      aes(label = round(estimate, 2))
+    )
+  )
+}
 
-wide_team_stats %>% 
+p_team_stat_coefs_diffs <- team_stat_coefs_diffs_w_labs %>% 
   ggplot() +
-  aes(x = diff_prop_passes, y = diff_max_cut_unweighted_norm) +
-  geom_point(aes(color = diff_xg_norm, alpha = diff_xg_norm)) +
-  scale_color_viridis_c()
-
-wide_team_stats %>% 
-  ggplot() +
-  aes(x = xg_norm, y = max_cut_unweighted_norm) +
-  geom_point() +
-  geom_smooth(
-    method = 'lm',
-    color = 'magenta',
-    se = FALSE
+  geom_vline(
+    size = 2,
+    color = gray_grid_wv,
+    aes(xintercept = 0)
   ) +
-  # coord_cartesian(
-  #   x = c(-4, 4),
-  #   y = c(-8, 8)
-  # ) +
-  labs(
-    x = 'xG / 90 Min.',
-    y = 'Max Cuts / Min.'
-  )
-
-wide_team_stats %>% 
-  ggplot() +
-  aes(x = diff_xg_norm, y = diff_max_cut_unweighted_norm) +
-  geom_point() +
-  geom_smooth(
-    method = 'lm',
-    color = 'magenta',
-    se = FALSE
+  aes(
+    x = estimate,
+    y = term_lab,
   ) +
-  # coord_cartesian(
-  #   x = c(-4, 4),
-  #   y = c(-8, 8)
-  # ) +
+  theme(
+    axis.text.y = ggtext::element_markdown()
+  ) +
+  geom_errorbarh(
+    color = 'white',
+    aes(
+      xmin = conf.low,
+      xmax = conf.high,
+      height = 0.25
+    )
+  ) +
+  geom_point() +
+  add_cor_text(
+    .data = team_stat_coefs_diffs_w_labs %>% 
+      filter(!(term == 'diff_max_cut_weighted_norm' & status == 'Single-term Regression')),
+    .color = 'white'
+  ) +
+  add_cor_text(
+    .data = team_stat_coefs_diffs_w_labs %>% 
+      filter(term == 'diff_max_cut_weighted_norm' & status == 'Single-term Regression' & stat_lab == 'xG Diff. / 90'),
+    .color = game_xg_cor_color
+  ) +
+  add_cor_text(
+    .data = team_stat_coefs_diffs_w_labs %>%
+      filter(term == 'diff_max_cut_weighted_norm' & status == 'Single-term Regression' & stat_lab == 'xT Diff. / 90'),
+    .color = game_xt_cor_color
+  ) +
+  facet_grid(stat_lab~status) +
   labs(
-    x = 'xG Diff. / 90 Min.',
-    y = 'Max Cuts Diff. / Min.'
+    y = NULL,
+    x = 'Estimate'
+  ) +
+  ggtext::geom_richtext(
+    data = df_xg,
+    fill = NA_character_,
+    label.color = NA_character_,
+    color = 'white',
+    family = 'Karla',
+    size = pts(14),
+    aes(x = 0.25, y = 2.5, label = '<i><b>Effect negated</b></i>')
+  ) +
+  geom_curve(
+    data = df_xg,
+    arrow = arw_annotate,
+    curvature = -0.2,
+    color = 'white',
+    aes(x = 0.25, y = 2.35, xend = -0.3, yend = 2.05)
+  ) +
+  geom_curve(
+    data = df_xg,
+    arrow = arw_annotate,
+    curvature = -0.2,
+    color = 'white',
+    aes(x = 0.25, y = 2.65, xend = 0.35, yend = 2.9)
+  ) +
+  ggtext::geom_richtext(
+    data = df_xt,
+    fill = NA_character_,
+    label.color = NA_character_,
+    hjust = 1,
+    color = 'white',
+    family = 'Karla',
+    size = pts(14),
+    aes(x = -0.1, y = 3.5, label = '<i><b>Effect minimized</b></i>')
+  ) +
+  geom_curve(
+    data = df_xt,
+    arrow = arw_annotate,
+    curvature = -0.2,
+    color = 'white',
+    aes(x = -0.09, y = 3.5, xend =- 0.01, yend = 3.05)
+  ) +
+  theme(
+    panel.background = element_rect(color = gray_grid_wv),
+    plot.title = ggtext::element_markdown(size = 18)
+  ) +
+  labs(
+    title = glue::glue('Effect of Weighted <span style="color:{diff_max_cut_color}">Max Cut Diff.</span> / 90 is suppressed by confounders'),
+    subtitle = lab_subtitle,
+    caption = 'Error bars represent 95% confidence intervals.'
   )
+p_team_stat_coefs_diffs
 
-wide_team_stats %>% 
-  select(diff_xg, z = max_cut_weighted / last_min) %>% 
-  corrr::correlate()
-wide_team_stats %>% 
-  select(xg, z = max_cut_weighted) %>% 
-  corrr::correlate()
-wide_team_stats %>% 
-  ggplot() +
-  aes(x = diff_xg, y = max_cut_weighted / last_min) +
-  geom_point()
-wide_team_stats %>% 
-  ggplot() +
-  aes(x = last_min, y = max_cut_weighted) +
-  geom_point()
-wide_team_stats %>% 
-  ggplot() +
-  aes(x = concave_area_prop, y = max_cut_weighted) +
-  geom_point()
+path_team_stat_coefs_diffs <- file.path(dir_proj, 'team_stat_coefs.png')
+ggsave(
+  plot = p_team_stat_coefs_diffs,
+  filename = path_team_stat_coefs_diffs,
+  width = 10,
+  height = 10 / 1.5
+)
+add_white_epl_logo(path_team_stat_coefs_diffs)

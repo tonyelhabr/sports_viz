@@ -515,7 +515,10 @@ diffs_init <- agg %>%
   ) %>% 
   .add_side_col() %>%
   mutate(
-    across(c(prop_shots, score, xg, xt), ~coalesce(.x, 0)),
+    across(
+      c(n_passes, prop_passes, n_shots, prop_shots, score, xg, xt),
+      ~coalesce(.x, 0)
+    ),
     score_norm = 90 * score / last_min,
     xg_norm = 90 * xg / last_min,
     xt_norm = 90 * xt / last_min,
