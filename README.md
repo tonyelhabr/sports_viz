@@ -6,6 +6,22 @@ gitignor’ed here.
 The projects are listed in reverse chronoligical order. A skipped number
 corresponds to an idea that I scrapped.
 
+# 47. [Pass Network Max Cut](https://tonyelhabr.rbind.io/post/soccer-pass-network-max-cut/)
+
+![pass networks for Liverpool vs. Manchester City 2021-10-03 match,
+showing weighted max cut
+values](47-formation_symmetry/network-game_id=1549604-max_cut_weighted_norm_w_logo.png "Liverpool vs. Manchester City 2021-10-03 pass networks")
+
+![table showing correlations of various traditional and network stats
+with xG and xT diff. / 90, showing that weighted max cut is stronger
+than other network stats and has similar strength to pass-derived
+stats](47-formation_symmetry/game_x_cors_table.png "Game-level Correlations with xG and xT Diff. / 90")
+
+![horizontal error bars facetted on regression type (with or without
+confounders), showing that weighted max cut diff. / 90 effectively plays
+no role in describing match outcome in the presense of
+confounders](47-formation_symmetry/team_stat_coefs_w_logo.png "Effect of Weighted Max Cut Diff. / 90 is suppressed by confounders")
+
 # 46. EPL “Rage” Fouls
 
 ![spiral chart with minutes played on x-axis and count of rage fouls on
