@@ -6,6 +6,13 @@ gitignor’ed here.
 The projects are listed in reverse chronoligical order. A skipped number
 corresponds to an idea that I scrapped.
 
+# 48. 2021-22 Premier League In-game xG Difference
+
+![five horizontal bars per facet, where each facet is for a signle team,
+each bar represents one of the last 5 games, fill represents proportion
+of match ahead or behind in
+xG](48-202122_game_state/202122_xg_game_state_w_logo.png "Proportion of match spent ahead or behind in xG")
+
 # 47. [Pass Network Max Cut](https://tonyelhabr.rbind.io/post/soccer-pass-network-max-cut/)
 
 ![pass networks for Liverpool vs. Manchester City 2021-10-03 match,

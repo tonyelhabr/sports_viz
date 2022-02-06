@@ -302,7 +302,7 @@ ggsave(
 tonythemes:::add_logo(
   path_viz = path_viz,
   path_logo = file.path(dir_proj, 'epl-logo-white.png'),
-  delete = FALSE,
+  delete = TRUE,
   logo_scale = 0.1,
   idx_x = 0.01,
   idx_y = 0.98,
