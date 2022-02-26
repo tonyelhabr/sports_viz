@@ -6,6 +6,10 @@ gitignor’ed here.
 The projects are listed in reverse chronoligical order. A skipped number
 corresponds to an idea that I scrapped.
 
+# 49. Premier League Team Foul Rate by Season
+
+![](49-yellow_cards/fouls_per_match_w_logo.png "Premier League Team Foul Rate by Season since 2012-13")
+
 # 48. 2021-22 Premier League In-game xG Difference
 
 ![five horizontal bars per facet, where each facet is for a signle team,
