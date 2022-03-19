@@ -6,6 +6,14 @@ gitignor’ed here.
 The projects are listed in reverse chronoligical order. A skipped number
 corresponds to an idea that I scrapped.
 
+# 49. Premier League Time to Throw In
+
+![](50-throw_in_times/throw_ins-g_state-w_logo.png "How much time do leading teams waste on throw-ins?")
+
+![](50-throw_in_times/throw_ins-g_state+is_home-w_logo.png "How much time do leading teams waste on throw-ins (including home/away indicator)?")
+
+![](50-throw_in_times/gks-g_state+is_home-w_logo.png "How much time do leading teams waste on goalkicks (including home/away indicator)?")
+
 # 49. Premier League Team Foul Rate by Season
 
 ![](49-yellow_cards/fouls_per_match_w_logo.png "Premier League Team Foul Rate by Season since 2012-13")
