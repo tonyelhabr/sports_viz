@@ -1,0 +1,23 @@
+season_id,game_id,period_id,expanded_minute,second,team_name,player_name,type_name,outcome_type_name,is_shot,x,y,goal_mouth_y,goal_mouth_z
+2021,1549727,1,5,7,Southampton,Oriol Romeu,MissedShots,Successful,TRUE,75.4,44.7,40.2,30.6
+2021,1549727,1,7,38,Southampton,Mohamed Elyounoussi,Goal,Successful,TRUE,81.1,52.4,47.1,9.5
+2021,1549727,1,19,22,West Ham,Craig Dawson,SavedShot,Successful,TRUE,95.3,49.7,52.1,11.1
+2021,1549727,1,19,28,West Ham,Declan Rice,SavedShot,Successful,TRUE,74.1,64.3,48.6,19
+2021,1549727,1,28,15,Southampton,Theo Walcott,SavedShot,Successful,TRUE,87.3,82.4,47.1,19
+2021,1549727,1,32,37,Southampton,Mohamed Elyounoussi,SavedShot,Successful,TRUE,85.3,47.2,50.8,3.8
+2021,1549727,1,34,39,Southampton,Nathan Redmond,SavedShot,Successful,TRUE,72.4,52.8,50.6,4.4
+2021,1549727,1,38,40,West Ham,Nikola Vlasic,SavedShot,Successful,TRUE,80.9,55.5,47.8,0.6
+2021,1549727,1,40,33,Southampton,Armando Broja,MissedShots,Successful,TRUE,96.9,69.7,1.5,4.2
+2021,1549727,2,49,37,West Ham,Michail Antonio,SavedShot,Successful,TRUE,87.6,64.1,50.6,1.3
+2021,1549727,2,50,11,Southampton,Nathan Redmond,SavedShot,Successful,TRUE,77.5,37.3,47.8,1.3
+2021,1549727,2,51,2,West Ham,Michail Antonio,Goal,Successful,TRUE,96.6,50.7,50.3,27.2
+2021,1549727,2,57,43,Southampton,Kyle Walker-Peters,SavedShot,Successful,TRUE,86.5,66.6,52.4,19
+2021,1549727,2,58,42,West Ham,Declan Rice,MissedShots,Successful,TRUE,72,37.7,56.6,15.3
+2021,1549727,2,63,12,Southampton,James Ward-Prowse,Goal,Successful,TRUE,88.5,50,52.9,10.8
+2021,1549727,2,66,58,West Ham,Saïd Benrahma,Goal,Successful,TRUE,91.6,51.8,54.1,19.6
+2021,1549727,2,72,7,Southampton,Jan Bednarek,Goal,Successful,TRUE,90.2,52.6,46.1,14.6
+2021,1549727,2,74,7,West Ham,Tomas Soucek,SavedShot,Successful,TRUE,94.7,52.4,51.2,19
+2021,1549727,2,81,5,West Ham,Saïd Benrahma,MissedShots,Successful,TRUE,77.2,40,36,97.2
+2021,1549727,2,92,5,West Ham,Michail Antonio,SavedShot,Successful,TRUE,91.8,46.1,46.7,19
+2021,1549727,2,93,17,West Ham,Arthur Masuaku,MissedShots,Successful,TRUE,72.4,57.5,59.7,94.4
+2021,1549727,2,96,13,Southampton,Stuart Armstrong,SavedShot,Successful,TRUE,75.9,48,49.5,19
