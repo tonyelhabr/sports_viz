@@ -1,0 +1,1607 @@
+country,team_name,player_name,group,minutes_played,foot
+England,Retired,Sean Dyche,manager,,
+England,Retired,Jürgen Klopp,manager,,right
+England,Retired,Pep Guardiola,manager,,both
+England,Retired,Ralph Hasenhüttl,manager,,right
+England,Retired,Brendan Rodgers,manager,,
+England,Retired,Graham Potter,manager,,left
+England,Retired,Mikel Arteta,manager,,right
+England,Retired,David Moyes,manager,,right
+England,Retired,Thomas Tuchel,manager,,right
+England,Retired,Patrick Vieira,manager,,right
+England,Retired,Antonio Conte,manager,,right
+England,Retired,Eddie Howe,manager,,right
+England,Retired,Steven Gerrard,manager,,right
+England,Retired,Dean Smith,manager,,right
+England,Retired,Ralf Rangnick,manager,,
+England,Retired,Roy Hodgson,manager,,right
+England,Retired,Frank Lampard,manager,,both
+England,Retired,Jesse Marsch,manager,,right
+Spain,Retired,Diego Simeone,manager,,right
+Spain,Retired,Jagoba Arrasate,manager,,
+Spain,Retired,Imanol Alguacil,manager,,right
+Spain,Retired,Julen Lopetegui,manager,,
+Spain,Retired,Unai Emery,manager,,left
+Spain,Retired,Manuel Pellegrini,manager,,right
+Spain,Retired,Vicente Moreno,manager,,right
+Spain,Retired,Andoni Iraola,manager,,right
+Spain,Retired,Eduardo Coudet,manager,,right
+Spain,Retired,Marcelino,manager,,
+Spain,Retired,Carlo Ancelotti,manager,,right
+Spain,Retired,Quique Sánchez Flores,manager,,right
+Spain,Retired,Xavi,manager,,right
+Spain,Retired,Francisco Rodríguez,manager,,right
+Spain,Retired,Sergio,manager,,right
+Spain,Retired,Rubén Torrecilla,manager,,right
+Spain,Retired,Javier Aguirre,manager,,
+Italy,Retired,Gian Piero Gasperini,manager,,
+Italy,Retired,Sinisa Mihajlovic,manager,,left
+Italy,Retired,Stefano Pioli,manager,,
+Italy,Retired,Paolo Zanetti,manager,,right
+Italy,Retired,Massimiliano Allegri,manager,,
+Italy,Retired,Simone Inzaghi,manager,,right
+Italy,Retired,José Mourinho,manager,,right
+Italy,Retired,Luciano Spalletti,manager,,
+Italy,Retired,Alessio Dionisi,manager,,
+Italy,Retired,Ivan Juric,manager,,left
+Italy,Retired,Vincenzo Italiano,manager,,right
+Italy,Retired,Thiago Motta,manager,,left
+Italy,Retired,Igor Tudor,manager,,right
+Italy,Retired,Walter Mazzarri,manager,,
+Italy,Retired,Gabriele Cioffi,manager,,right
+Italy,Retired,Marco Giampaolo,manager,,
+Italy,Retired,Alexander Blessin,manager,,right
+Italy,Retired,Davide Nicola,manager,,both
+Germany,Retired,Christian Streich,manager,,
+Germany,Retired,Urs Fischer,manager,,
+Germany,Retired,Stefan Leitl,manager,,both
+Germany,Retired,Thomas Reis,manager,,left
+Germany,Retired,Pellegrino Matarazzo,manager,,both
+Germany,Retired,Sebastian Hoeneß,manager,,left
+Germany,Retired,Bo Svensson,manager,,right
+Germany,Retired,Frank Kramer,manager,,both
+Germany,Retired,Markus Weinzierl,manager,,right
+Germany,Retired,Steffen Baumgart,manager,,right
+Germany,Retired,Gerardo Seoane,manager,,both
+Germany,Retired,Marco Rose,manager,,left
+Germany,Retired,Adi Hütter,manager,,right
+Germany,Retired,Oliver Glasner,manager,,both
+Germany,Retired,Julian Nagelsmann,manager,,right
+Germany,Retired,Florian Kohfeldt,manager,,
+Germany,Retired,Felix Magath,manager,,right
+France,Retired,Pascal Gastien,manager,,
+France,Retired,Franck Haise,manager,,
+France,Retired,Frédéric Antonetti,manager,,
+France,Retired,Mauricio Pochettino,manager,,right
+France,Retired,Antoine Kombouaré,manager,,
+France,Retired,Bruno Génésio,manager,,
+France,Retired,Gérald Baticle,manager,,
+France,Retired,Julien Stéphan,manager,,
+France,Retired,Peter Bosz,manager,,right
+France,Retired,Olivier Dall'Oglio,manager,,
+France,Retired,Michel Der Zakarian,manager,,left
+France,Retired,Óscar García,manager,,
+France,Retired,Christophe Galtier,manager,,left
+France,Retired,Jocelyn Gourvennec,manager,,right
+France,Retired,Pascal Dupraz,manager,,
+France,Retired,Bruno Irles,manager,,right
+France,Retired,Philippe Clement,manager,,right
+France,Retired,David Guion,manager,,
+England,Manchester City,#31 Ederson,keeper,3403,left
+England,Manchester City,#3 Rúben Dias,outfielder,2811,right
+England,Manchester City,#27 João Cancelo,outfielder,3602,right
+England,Manchester City,#14 Aymeric Laporte,outfielder,2796,left
+England,Manchester City,#5 John Stones,outfielder,1686,right
+England,Manchester City,#2 Kyle Walker,outfielder,2412,right
+England,Manchester City,#6 Nathan Aké,outfielder,1472,left
+England,Manchester City,#11 Oleksandr Zinchenko,outfielder,1168,left
+England,Manchester City,#17 Kevin De Bruyne,outfielder,2521,right
+England,Manchester City,#47 Phil Foden,outfielder,2336,left
+England,Manchester City,#20 Bernardo Silva,outfielder,3131,left
+England,Manchester City,#16 Rodri,outfielder,2955,right
+England,Manchester City,#8 Ilkay Gündogan,outfielder,2468,right
+England,Manchester City,#25 Fernandinho,outfielder,1218,right
+England,Manchester City,#7 Raheem Sterling,outfielder,2476,right
+England,Manchester City,#10 Jack Grealish,outfielder,2222,right
+England,Manchester City,#9 Gabriel Jesus,outfielder,1813,right
+England,Manchester City,#26 Riyad Mahrez,outfielder,2376,left
+England,Liverpool FC,#1 Alisson,keeper,3600,right
+England,Liverpool FC,#66 Trent Alexander-Arnold,outfielder,3224,right
+England,Liverpool FC,#26 Andrew Robertson,outfielder,3028,left
+England,Liverpool FC,#4 Virgil van Dijk,outfielder,3630,right
+England,Liverpool FC,#5 Ibrahima Konaté,outfielder,1648,right
+England,Liverpool FC,#32 Joel Matip,outfielder,2956,right
+England,Liverpool FC,#21 Konstantinos Tsimikas,outfielder,1397,left
+England,Liverpool FC,#3 Fabinho,outfielder,2901,right
+England,Liverpool FC,#8 Naby Keïta,outfielder,1399,right
+England,Liverpool FC,#17 Curtis Jones,outfielder,1363,right
+England,Liverpool FC,#6 Thiago,outfielder,1464,right
+England,Liverpool FC,#14 Jordan Henderson,outfielder,3019,right
+England,Liverpool FC,#15 Alex Oxlade-Chamberlain,outfielder,1525,right
+England,Liverpool FC,#7 James Milner,outfielder,1045,right
+England,Liverpool FC,#11 Mohamed Salah,outfielder,3161,left
+England,Liverpool FC,#10 Sadio Mané,outfielder,2886,right
+England,Liverpool FC,#20 Diogo Jota,outfielder,2810,right
+England,Liverpool FC,#9 Roberto Firmino,outfielder,1564,right
+England,Chelsea FC,#16 Edouard Mendy,keeper,3509,right
+England,Chelsea FC,#1 Kepa Arrizabalaga,keeper,1201,right
+England,Chelsea FC,#24 Reece James,outfielder,1914,right
+England,Chelsea FC,#2 Antonio Rüdiger,outfielder,4170,right
+England,Chelsea FC,#4 Andreas Christensen,outfielder,2366,right
+England,Chelsea FC,#14 Trevoh Chalobah,outfielder,1870,right
+England,Chelsea FC,#3 Marcos Alonso,outfielder,2719,left
+England,Chelsea FC,#28 César Azpilicueta,outfielder,2985,right
+England,Chelsea FC,#31 Malang Sarr,outfielder,1394,left
+England,Chelsea FC,#6 Thiago Silva,outfielder,3145,right
+England,Chelsea FC,#19 Mason Mount,outfielder,2929,right
+England,Chelsea FC,#29 Kai Havertz,outfielder,2678,left
+England,Chelsea FC,#7 N'Golo Kanté,outfielder,2122,right
+England,Chelsea FC,#5 Jorginho,outfielder,2946,right
+England,Chelsea FC,#8 Mateo Kovacic,outfielder,2540,right
+England,Chelsea FC,#22 Hakim Ziyech,outfielder,2184,left
+England,Chelsea FC,#17 Saúl Ñíguez,outfielder,1061,left
+England,Chelsea FC,#12 Ruben Loftus-Cheek,outfielder,1545,right
+England,Chelsea FC,#9 Romelu Lukaku,outfielder,2298,left
+England,Chelsea FC,#10 Christian Pulisic,outfielder,1770,right
+England,Chelsea FC,#11 Timo Werner,outfielder,1647,right
+England,Chelsea FC,#20 Callum Hudson-Odoi,outfielder,1876,right
+England,Manchester United,#1 David de Gea,keeper,3510,right
+England,Manchester United,#19 Raphaël Varane,outfielder,2001,right
+England,Manchester United,#23 Luke Shaw,outfielder,2211,left
+England,Manchester United,#5 Harry Maguire,outfielder,2879,right
+England,Manchester United,#29 Aaron Wan-Bissaka,outfielder,2123,right
+England,Manchester United,#2 Victor Lindelöf,outfielder,2330,right
+England,Manchester United,#20 Diogo Dalot,outfielder,1710,right
+England,Manchester United,#27 Alex Telles,outfielder,1501,left
+England,Manchester United,#18 Bruno Fernandes,outfielder,3237,right
+England,Manchester United,#6 Paul Pogba,outfielder,1698,both
+England,Manchester United,#39 Scott McTominay,outfielder,2551,right
+England,Manchester United,#17 Fred,outfielder,2456,left
+England,Manchester United,#31 Nemanja Matic,outfielder,1277,left
+England,Manchester United,#25 Jadon Sancho,outfielder,2258,right
+England,Manchester United,#10 Marcus Rashford,outfielder,1459,right
+England,Manchester United,#7 Cristiano Ronaldo,outfielder,2741,right
+England,Manchester United,#11 Mason Greenwood,outfielder,1700,both
+England,Tottenham Hotspur,#1 Hugo Lloris,keeper,3180,left
+England,Tottenham Hotspur,#4 Cristian Romero,outfielder,2101,right
+England,Tottenham Hotspur,#6 Davinson Sánchez,outfielder,2064,right
+England,Tottenham Hotspur,#3 Sergio Reguilón,outfielder,2121,left
+England,Tottenham Hotspur,#12 Emerson Royal,outfielder,2130,right
+England,Tottenham Hotspur,#15 Eric Dier,outfielder,2778,right
+England,Tottenham Hotspur,#33 Ben Davies,outfielder,3059,left
+England,Tottenham Hotspur,#25 Japhet Tanganga,outfielder,1376,right
+England,Tottenham Hotspur,#2 Matt Doherty,outfielder,1631,right
+England,Tottenham Hotspur,#5 Pierre-Emile Höjbjerg,outfielder,3266,right
+England,Tottenham Hotspur,#36 Dele Alli,outfielder,1042,right
+England,Tottenham Hotspur,#29 Oliver Skipp,outfielder,2006,right
+England,Tottenham Hotspur,#8 Harry Winks,outfielder,1648,right
+England,Tottenham Hotspur,#10 Harry Kane,outfielder,3530,right
+England,Tottenham Hotspur,#7 Heung-min Son,outfielder,2846,both
+England,Tottenham Hotspur,#27 Lucas Moura,outfielder,2219,right
+England,Arsenal FC,#32 Aaron Ramsdale,keeper,2610,right
+England,Arsenal FC,#4 Ben White,outfielder,2918,right
+England,Arsenal FC,#3 Kieran Tierney,outfielder,2154,left
+England,Arsenal FC,#6 Gabriel,outfielder,2575,left
+England,Arsenal FC,#18 Takehiro Tomiyasu,outfielder,1476,right
+England,Arsenal FC,#17 Cédric Soares,outfielder,1357,right
+England,Arsenal FC,#7 Bukayo Saka,outfielder,2692,left
+England,Arsenal FC,#8 Martin Ødegaard,outfielder,2387,left
+England,Arsenal FC,#5 Thomas Partey,outfielder,2109,right
+England,Arsenal FC,#10 Emile Smith Rowe,outfielder,1913,right
+England,Arsenal FC,#34 Granit Xhaka,outfielder,1829,left
+England,Arsenal FC,#23 Albert Sambi Lokonga,outfielder,1391,right
+England,Arsenal FC,#35 Gabriel Martinelli,outfielder,1836,right
+England,Arsenal FC,#9 Alexandre Lacazette,outfielder,2033,right
+England,Arsenal FC,#25 Pierre-Emerick Aubameyang,outfielder,1116,right
+England,Leicester City,#1 Kasper Schmeichel,keeper,3690,right
+England,Leicester City,#4 Caglar Söyüncü,outfielder,3232,right
+England,Leicester City,#27 Timothy Castagne,outfielder,1963,right
+England,Leicester City,#21 Ricardo Pereira,outfielder,1195,right
+England,Leicester City,#23 Jannik Vestergaard,outfielder,1171,both
+England,Leicester City,#33 Luke Thomas,outfielder,2456,left
+England,Leicester City,#18 Daniel Amartey,outfielder,2509,right
+England,Leicester City,#6 Jonny Evans,outfielder,1330,both
+England,Leicester City,#25 Wilfred Ndidi,outfielder,2585,right
+England,Leicester City,#8 Youri Tielemans,outfielder,3096,right
+England,Leicester City,#10 James Maddison,outfielder,2704,right
+England,Leicester City,#7 Harvey Barnes,outfielder,2642,right
+England,Leicester City,#42 Boubakary Soumaré,outfielder,1619,right
+England,Leicester City,#22 Kiernan Dewsbury-Hall,outfielder,2108,left
+England,Leicester City,#11 Marc Albrighton,outfielder,1591,right
+England,Leicester City,#29 Patson Daka,outfielder,1547,right
+England,Leicester City,#14 Kelechi Iheanacho,outfielder,1729,left
+England,Leicester City,#37 Ademola Lookman,outfielder,1859,right
+England,Leicester City,#9 Jamie Vardy,outfielder,1681,right
+England,Everton FC,#1 Jordan Pickford,keeper,2700,left
+England,Everton FC,#27 Lucas Digne,outfielder,1276,left
+England,Everton FC,#5 Michael Keane,outfielder,2879,right
+England,Everton FC,#22 Ben Godfrey,outfielder,2285,right
+England,Everton FC,#4 Mason Holgate,outfielder,1894,right
+England,Everton FC,#2 Jonjoe Kenny,outfielder,1320,right
+England,Everton FC,#23 Seamus Coleman,outfielder,2347,right
+England,Everton FC,#16 Abdoulaye Doucouré,outfielder,2249,right
+England,Everton FC,#6 Allan,outfielder,2327,right
+England,Everton FC,#7 Richarlison,outfielder,2130,right
+England,Everton FC,#9 Dominic Calvert-Lewin,outfielder,1048,right
+England,Everton FC,#11 Demarai Gray,outfielder,2158,right
+England,Everton FC,#17 Alex Iwobi,outfielder,1544,right
+England,Everton FC,#24 Anthony Gordon,outfielder,2115,right
+England,Everton FC,#14 Andros Townsend,outfielder,1845,left
+England,Aston Villa,#1 Emiliano Martínez,keeper,2700,right
+England,Aston Villa,#5 Tyrone Mings,outfielder,2558,left
+England,Aston Villa,#4 Ezri Konsa,outfielder,2174,right
+England,Aston Villa,#2 Matty Cash,outfielder,2827,right
+England,Aston Villa,#13 Matt Targett,outfielder,1613,left
+England,Aston Villa,#18 Ashley Young,outfielder,1210,both
+England,Aston Villa,#6 Douglas Luiz,outfielder,2179,right
+England,Aston Villa,#7 John McGinn,outfielder,2463,left
+England,Aston Villa,#41 Jacob Ramsey,outfielder,2115,right
+England,Aston Villa,#10 Emiliano Buendía,outfielder,1729,right
+England,Aston Villa,#11 Ollie Watkins,outfielder,2346,right
+England,Aston Villa,#20 Danny Ings,outfielder,1621,right
+England,Wolverhampton Wanderers,#1 José Sá,keeper,2880,right
+England,Wolverhampton Wanderers,#16 Conor Coady,outfielder,3219,right
+England,Wolverhampton Wanderers,#22 Nélson Semedo,outfielder,2189,right
+England,Wolverhampton Wanderers,#23 Max Kilman,outfielder,3049,left
+England,Wolverhampton Wanderers,#3 Rayan Aït-Nouri,outfielder,1715,left
+England,Wolverhampton Wanderers,#27 Romain Saïss,outfielder,2559,left
+England,Wolverhampton Wanderers,#5 Marçal,outfielder,1498,left
+England,Wolverhampton Wanderers,#8 Rúben Neves,outfielder,2534,right
+England,Wolverhampton Wanderers,#32 Leander Dendoncker,outfielder,1839,right
+England,Wolverhampton Wanderers,#28 João Moutinho,outfielder,2671,right
+England,Wolverhampton Wanderers,#11 Adama Traoré,outfielder,1182,right
+England,Wolverhampton Wanderers,#9 Raúl Jiménez,outfielder,2209,right
+England,Wolverhampton Wanderers,#10 Daniel Podence,outfielder,1794,right
+England,Wolverhampton Wanderers,#11 Francisco Trincão,outfielder,1344,left
+England,Wolverhampton Wanderers,#26 Hee-chan Hwang,outfielder,1551,right
+England,West Ham United,#13 Alphonse Areola,keeper,1410,right
+England,West Ham United,#1 Lukasz Fabianski,keeper,2790,right
+England,West Ham United,#4 Kurt Zouma,outfielder,2291,right
+England,West Ham United,#5 Vladimir Coufal,outfielder,1940,right
+England,West Ham United,#23 Issa Diop,outfielder,1756,right
+England,West Ham United,#31 Ben Johnson,outfielder,2153,right
+England,West Ham United,#3 Aaron Cresswell,outfielder,2837,left
+England,West Ham United,#15 Craig Dawson,outfielder,3423,right
+England,West Ham United,#41 Declan Rice,outfielder,3584,right
+England,West Ham United,#28 Tomas Soucek,outfielder,3584,right
+England,West Ham United,#11 Nikola Vlasic,outfielder,1228,right
+England,West Ham United,#8 Pablo Fornals,outfielder,2969,right
+England,West Ham United,#10 Manuel Lanzini,outfielder,2222,right
+England,West Ham United,#20 Jarrod Bowen,outfielder,3263,left
+England,West Ham United,#22 Saïd Benrahma,outfielder,2548,right
+England,West Ham United,#9 Michail Antonio,outfielder,3262,right
+England,Newcastle United,#1 Martin Dubravka,keeper,1800,right
+England,Newcastle United,#6 Jamaal Lascelles,outfielder,1806,right
+England,Newcastle United,#5 Fabian Schär,outfielder,1961,right
+England,Newcastle United,#17 Emil Krafth,outfielder,1306,right
+England,Newcastle United,#19 Javier Manquillo,outfielder,1347,right
+England,Newcastle United,#2 Ciaran Clark,outfielder,1104,left
+England,Newcastle United,#11 Matt Ritchie,outfielder,1395,left
+England,Newcastle United,#28 Joe Willock,outfielder,1898,right
+England,Newcastle United,#7 Joelinton,outfielder,2211,right
+England,Newcastle United,#24 Miguel Almirón,outfielder,1251,left
+England,Newcastle United,#36 Sean Longstaff,outfielder,1247,right
+England,Newcastle United,#8 Jonjo Shelvey,outfielder,1806,right
+England,Newcastle United,#14 Isaac Hayden,outfielder,1001,right
+England,Newcastle United,#10 Allan Saint-Maximin,outfielder,2330,right
+England,Newcastle United,#9 Callum Wilson,outfielder,1187,right
+England,Newcastle United,#20 Chris Wood,outfielder,1060,right
+England,Newcastle United,#21 Ryan Fraser,outfielder,1630,right
+England,Newcastle United,#23 Jacob Murphy,outfielder,1301,right
+England,Leeds United,#1 Illan Meslier,keeper,3235,left
+England,Leeds United,#14 Diego Llorente,outfielder,2087,right
+England,Leeds United,#5 Robin Koch,outfielder,1191,right
+England,Leeds United,#21 Pascal Struijk,outfielder,1962,left
+England,Leeds United,#3 Junior Firpo,outfielder,1615,left
+England,Leeds United,#6 Liam Cooper,outfielder,1486,left
+England,Leeds United,#2 Luke Ayling,outfielder,2172,right
+England,Leeds United,#15 Stuart Dallas,outfielder,3041,right
+England,Leeds United,#23 Kalvin Phillips,outfielder,1355,right
+England,Leeds United,#43 Mateusz Klich,outfielder,2014,right
+England,Leeds United,#4 Adam Forshaw,outfielder,1730,right
+England,Leeds United,#10 Raphinha,outfielder,2468,left
+England,Leeds United,#20 Daniel James,outfielder,2433,right
+England,Leeds United,#19 Rodrigo,outfielder,2070,left
+England,Leeds United,#22 Jack Harrison,outfielder,2428,left
+England,Leeds United,#11 Tyler Roberts,outfielder,1172,right
+England,Southampton FC,#1 Alex McCarthy,keeper,1350,right
+England,Southampton FC,#44 Fraser Forster,keeper,1770,right
+England,Southampton FC,#21 Tino Livramento,outfielder,2377,right
+England,Southampton FC,#35 Jan Bednarek,outfielder,2436,right
+England,Southampton FC,#2 Kyle Walker-Peters,outfielder,2411,right
+England,Southampton FC,#22 Mohammed Salisu,outfielder,2822,left
+England,Southampton FC,#5 Jack Stephens,outfielder,1140,right
+England,Southampton FC,#15 Romain Perraud,outfielder,1542,left
+England,Southampton FC,#8 James Ward-Prowse,outfielder,3151,right
+England,Southampton FC,#27 Ibrahima Diallo,outfielder,1432,right
+England,Southampton FC,#17 Stuart Armstrong,outfielder,1424,right
+England,Southampton FC,#6 Oriol Romeu,outfielder,2794,right
+England,Southampton FC,#10 Ché Adams,outfielder,1959,right
+England,Southampton FC,#11 Nathan Redmond,outfielder,1651,right
+England,Southampton FC,#18 Armando Broja,outfielder,1997,right
+England,Southampton FC,#9 Adam Armstrong,outfielder,1604,right
+England,Southampton FC,#24 Mohamed Elyounoussi,outfielder,1911,right
+England,Crystal Palace,#13 Vicente Guaita,keeper,2205,right
+England,Crystal Palace,#6 Marc Guéhi,outfielder,3060,right
+England,Crystal Palace,#16 Joachim Andersen,outfielder,2555,right
+England,Crystal Palace,#3 Tyrick Mitchell,outfielder,2952,left
+England,Crystal Palace,#2 Joel Ward,outfielder,2336,right
+England,Crystal Palace,#23 Conor Gallagher,outfielder,2653,right
+England,Crystal Palace,#7 Michael Olise,outfielder,1315,left
+England,Crystal Palace,#15 Jeffrey Schlupp,outfielder,1652,left
+England,Crystal Palace,#12 Will Hughes,outfielder,1007,left
+England,Crystal Palace,#8 Cheikhou Kouyaté,outfielder,1999,right
+England,Crystal Palace,#18 James McArthur,outfielder,1215,both
+England,Crystal Palace,#11 Wilfried Zaha,outfielder,2383,right
+England,Crystal Palace,#22 Odsonne Edouard,outfielder,1350,right
+England,Crystal Palace,#14 Jean-Philippe Mateta,outfielder,1090,right
+England,Crystal Palace,#20 Christian Benteke,outfielder,1180,right
+England,Crystal Palace,#9 Jordan Ayew,outfielder,1792,right
+England,Brighton & Hove Albion,#1 Robert Sánchez,keeper,2790,right
+England,Brighton & Hove Albion,#5 Lewis Dunk,outfielder,2061,right
+England,Brighton & Hove Albion,#3 Marc Cucurella,outfielder,2638,left
+England,Brighton & Hove Albion,#2 Tariq Lamptey,outfielder,1493,right
+England,Brighton & Hove Albion,#4 Adam Webster,outfielder,1326,right
+England,Brighton & Hove Albion,#34 Joël Veltman,outfielder,2433,right
+England,Brighton & Hove Albion,#33 Dan Burn,outfielder,1277,left
+England,Brighton & Hove Albion,#24 Shane Duffy,outfielder,1643,right
+England,Brighton & Hove Albion,#8 Yves Bissouma,outfielder,1828,right
+England,Brighton & Hove Albion,#15 Jakub Moder,outfielder,2006,right
+England,Brighton & Hove Albion,#10 Alexis Mac Allister,outfielder,1758,right
+England,Brighton & Hove Albion,#20 Solly March,outfielder,1494,left
+England,Brighton & Hove Albion,#13 Pascal Groß,outfielder,1908,right
+England,Brighton & Hove Albion,#14 Adam Lallana,outfielder,1576,both
+England,Brighton & Hove Albion,#9 Neal Maupay,outfielder,2355,right
+England,Brighton & Hove Albion,#11 Leandro Trossard,outfielder,2434,right
+England,Brentford FC,#1 David Raya,keeper,1620,right
+England,Brentford FC,#40 Álvaro Fernández,keeper,1440,left
+England,Brentford FC,#3 Rico Henry,outfielder,2355,left
+England,Brentford FC,#20 Kristoffer Ajer,outfielder,1785,right
+England,Brentford FC,#5 Ethan Pinnock,outfielder,2856,left
+England,Brentford FC,#18 Pontus Jansson,outfielder,2962,right
+England,Brentford FC,#30 Mads Roerslev Rasmussen,outfielder,1337,right
+England,Brentford FC,#27 Vitaly Janelt,outfielder,2158,left
+England,Brentford FC,#6 Christian Nörgaard,outfielder,2770,right
+England,Brentford FC,#15 Frank Onyeka,outfielder,1198,right
+England,Brentford FC,#8 Mathias Jensen,outfielder,1563,right
+England,Brentford FC,#17 Ivan Toney,outfielder,2490,right
+England,Brentford FC,#19 Bryan Mbeumo,outfielder,2461,left
+England,Brentford FC,#7 Sergi Canós,outfielder,2343,right
+England,Brentford FC,#11 Yoane Wissa,outfielder,1165,right
+England,Norwich City,#1 Tim Krul,keeper,2250,left
+England,Norwich City,#2 Max Aarons,outfielder,2419,right
+England,Norwich City,#15 Ozan Kabak,outfielder,1014,right
+England,Norwich City,#21 Brandon Williams,outfielder,2145,right
+England,Norwich City,#4 Ben Gibson,outfielder,2495,left
+England,Norwich City,#5 Grant Hanley,outfielder,2449,right
+England,Norwich City,#8 Billy Gilmour,outfielder,1719,right
+England,Norwich City,#16 Mathias Normann,outfielder,1248,right
+England,Norwich City,#20 Pierre Lees-Melou,outfielder,2013,right
+England,Norwich City,#23 Kenny McLean,outfielder,2693,left
+England,Norwich City,#17 Milot Rashica,outfielder,1910,right
+England,Norwich City,#24 Josh Sargent,outfielder,1782,right
+England,Norwich City,#22 Teemu Pukki,outfielder,2692,right
+England,Burnley FC,#1 Nick Pope,keeper,2700,right
+England,Burnley FC,#5 James Tarkowski,outfielder,2610,right
+England,Burnley FC,#22 Nathan Collins,outfielder,1130,right
+England,Burnley FC,#3 Charlie Taylor,outfielder,1951,left
+England,Burnley FC,#6 Ben Mee,outfielder,2110,left
+England,Burnley FC,#14 Connor Roberts,outfielder,1167,right
+England,Burnley FC,#2 Matthew Lowton,outfielder,1635,right
+England,Burnley FC,#8 Josh Brownhill,outfielder,2460,right
+England,Burnley FC,#18 Ashley Westwood,outfielder,2337,right
+England,Burnley FC,#4 Jack Cork,outfielder,1270,right
+England,Burnley FC,#11 Dwight McNeil,outfielder,2561,left
+England,Burnley FC,#20 Maxwel Cornet,outfielder,1344,left
+England,Burnley FC,#20 Chris Wood,outfielder,1557,right
+England,Burnley FC,#7 Jóhann Berg Gudmundsson,outfielder,1180,left
+England,Burnley FC,#19 Jay Rodríguez,outfielder,1339,right
+England,Burnley FC,#17 Aaron Lennon,outfielder,1501,right
+England,Watford FC,#26 Daniel Bachmann,keeper,1080,right
+England,Watford FC,#1 Ben Foster,keeper,1890,left
+England,Watford FC,#14 Hassane Kamara,outfielder,1164,left
+England,Watford FC,#5 William Troost-Ekong,outfielder,1466,right
+England,Watford FC,#22 Samir,outfielder,1170,left
+England,Watford FC,#21 Kiko Femenía,outfielder,1821,right
+England,Watford FC,#15 Craig Cathcart,outfielder,2276,right
+England,Watford FC,#6 Imrân Louza,outfielder,1328,left
+England,Watford FC,#19 Moussa Sissoko,outfielder,2681,right
+England,Watford FC,#8 Tom Cleverley,outfielder,1459,right
+England,Watford FC,#33 Juraj Kucka,outfielder,1774,right
+England,Watford FC,#23 Ismaïla Sarr,outfielder,1526,right
+England,Watford FC,#10 João Pedro,outfielder,1243,right
+England,Watford FC,#29 Cucho Hernández,outfielder,1389,right
+England,Watford FC,#7 Joshua King,outfielder,2036,right
+England,Watford FC,#25 Emmanuel Dennis,outfielder,2301,right
+Spain,Real Madrid,#1 Thibaut Courtois,keeper,3810,left
+Spain,Real Madrid,#3 Éder Militão,outfielder,3683,right
+Spain,Real Madrid,#4 David Alaba,outfielder,3593,left
+Spain,Real Madrid,#23 Ferland Mendy,outfielder,2256,left
+Spain,Real Madrid,#2 Daniel Carvajal,outfielder,1928,right
+Spain,Real Madrid,#17 Lucas Vázquez,outfielder,1856,right
+Spain,Real Madrid,#6 Nacho Fernández,outfielder,1834,right
+Spain,Real Madrid,#15 Federico Valverde,outfielder,1962,right
+Spain,Real Madrid,#25 Eduardo Camavinga,outfielder,1072,left
+Spain,Real Madrid,#14 Casemiro,outfielder,3353,right
+Spain,Real Madrid,#8 Toni Kroos,outfielder,2719,right
+Spain,Real Madrid,#10 Luka Modric,outfielder,2763,both
+Spain,Real Madrid,#20 Vinicius Junior,outfielder,3469,right
+Spain,Real Madrid,#11 Marco Asensio,outfielder,1713,left
+Spain,Real Madrid,#21 Rodrygo,outfielder,1660,right
+Spain,Real Madrid,#9 Karim Benzema,outfielder,3066,both
+Spain,FC Barcelona,#1 Marc-André ter Stegen,keeper,3660,right
+Spain,FC Barcelona,#4 Ronald Araújo,outfielder,2607,right
+Spain,FC Barcelona,#2 Sergiño Dest,outfielder,1854,right
+Spain,FC Barcelona,#24 Eric García,outfielder,2210,right
+Spain,FC Barcelona,#18 Jordi Alba,outfielder,3083,left
+Spain,FC Barcelona,#22 Óscar Mingueza,outfielder,1179,right
+Spain,FC Barcelona,#3 Gerard Piqué,outfielder,2991,right
+Spain,FC Barcelona,#16 Pedri,outfielder,1630,right
+Spain,FC Barcelona,#21 Frenkie de Jong,outfielder,2839,right
+Spain,FC Barcelona,#30 Gavi,outfielder,2277,right
+Spain,FC Barcelona,#14 Nico González,outfielder,1600,right
+Spain,FC Barcelona,#5 Sergio Busquets,outfielder,3610,right
+Spain,FC Barcelona,#9 Memphis Depay,outfielder,2084,right
+Spain,FC Barcelona,#19 Ferran Torres,outfielder,1293,right
+Spain,FC Barcelona,#7 Ousmane Dembélé,outfielder,1287,both
+Spain,Atlético de Madrid,#13 Jan Oblak,keeper,3780,right
+Spain,Atlético de Madrid,#2 José María Giménez,outfielder,2405,right
+Spain,Atlético de Madrid,#12 Renan Lodi,outfielder,1498,left
+Spain,Atlético de Madrid,#22 Mario Hermoso,outfielder,2293,left
+Spain,Atlético de Madrid,#15 Stefan Savic,outfielder,2171,right
+Spain,Atlético de Madrid,#15 Kieran Trippier,outfielder,1198,right
+Spain,Atlético de Madrid,#23 Reinildo Mandava,outfielder,1013,left
+Spain,Atlético de Madrid,#18 Felipe,outfielder,1762,right
+Spain,Atlético de Madrid,#24 Sime Vrsaljko,outfielder,1200,right
+Spain,Atlético de Madrid,#14 Marcos Llorente,outfielder,2538,right
+Spain,Atlético de Madrid,#5 Rodrigo de Paul,outfielder,2491,right
+Spain,Atlético de Madrid,#11 Thomas Lemar,outfielder,1821,left
+Spain,Atlético de Madrid,#6 Koke,outfielder,2678,right
+Spain,Atlético de Madrid,#4 Geoffrey Kondogbia,outfielder,1926,left
+Spain,Atlético de Madrid,#16 Héctor Herrera,outfielder,1077,right
+Spain,Atlético de Madrid,#7 João Félix,outfielder,1893,both
+Spain,Atlético de Madrid,#8 Antoine Griezmann,outfielder,1668,left
+Spain,Atlético de Madrid,#10 Ángel Correa,outfielder,2105,right
+Spain,Atlético de Madrid,#21 Yannick Carrasco,outfielder,2660,right
+Spain,Atlético de Madrid,#9 Luis Suárez,outfielder,2029,right
+Spain,Sevilla FC,#13 Bono,keeper,3180,left
+Spain,Sevilla FC,#23 Jules Koundé,outfielder,3116,right
+Spain,Sevilla FC,#20 Diego Carlos,outfielder,3303,right
+Spain,Sevilla FC,#2 Gonzalo Montiel,outfielder,1488,right
+Spain,Sevilla FC,#19 Marcos Acuña,outfielder,2391,left
+Spain,Sevilla FC,#3 Ludwig Augustinsson,outfielder,1262,left
+Spain,Sevilla FC,#4 Karim Rekik,outfielder,1495,left
+Spain,Sevilla FC,#16 Jesús Navas,outfielder,1918,right
+Spain,Sevilla FC,#8 Joan Jordán,outfielder,2867,right
+Spain,Sevilla FC,#21 Óliver Torres,outfielder,1475,right
+Spain,Sevilla FC,#18 Thomas Delaney,outfielder,1645,left
+Spain,Sevilla FC,#10 Ivan Rakitic,outfielder,2563,right
+Spain,Sevilla FC,#6 Nemanja Gudelj,outfielder,1335,right
+Spain,Sevilla FC,#25 Fernando,outfielder,2541,right
+Spain,Sevilla FC,#15 Youssef En-Nesyri,outfielder,1159,left
+Spain,Sevilla FC,#5 Lucas Ocampos,outfielder,2811,both
+Spain,Sevilla FC,#12 Rafa Mir,outfielder,2266,right
+Spain,Sevilla FC,#11 Munir El Haddadi,outfielder,1051,left
+Spain,Sevilla FC,#24 Papu Gómez,outfielder,2093,right
+Spain,Real Sociedad,#1 Álex Remiro,keeper,3060,right
+Spain,Real Sociedad,#24 Robin Le Normand,outfielder,3622,right
+Spain,Real Sociedad,#6 Aritz Elustondo,outfielder,2684,right
+Spain,Real Sociedad,#5 Igor Zubeldia,outfielder,1641,right
+Spain,Real Sociedad,#18 Andoni Gorosabel,outfielder,2182,right
+Spain,Real Sociedad,#12 Aihen Muñoz,outfielder,2191,left
+Spain,Real Sociedad,#2 Joseba Zaldua,outfielder,1740,right
+Spain,Real Sociedad,#15 Diego Rico,outfielder,1219,left
+Spain,Real Sociedad,#8 Mikel Merino,outfielder,2962,left
+Spain,Real Sociedad,#3 Martín Zubimendi,outfielder,2605,right
+Spain,Real Sociedad,#16 Ander Guevara,outfielder,1335,right
+Spain,Real Sociedad,#21 David Silva,outfielder,1664,left
+Spain,Real Sociedad,#10 Mikel Oyarzabal,outfielder,2554,left
+Spain,Real Sociedad,#19 Alexander Isak,outfielder,2244,right
+Spain,Real Sociedad,#7 Portu,outfielder,2023,right
+Spain,Real Sociedad,#11 Adnan Januzaj,outfielder,2094,left
+Spain,Real Sociedad,#23 Alexander Sörloth,outfielder,1577,left
+Spain,Villarreal CF,#13 Gerónimo Rulli,keeper,3298,right
+Spain,Villarreal CF,#4 Pau Torres,outfielder,3405,left
+Spain,Villarreal CF,#8 Juan Foyth,outfielder,2370,right
+Spain,Villarreal CF,#24 Alfonso Pedraza,outfielder,1863,left
+Spain,Villarreal CF,#12 Pervis Estupiñán,outfielder,1811,left
+Spain,Villarreal CF,#22 Aïssa Mandi,outfielder,1222,right
+Spain,Villarreal CF,#18 Alberto Moreno,outfielder,1812,left
+Spain,Villarreal CF,#3 Raúl Albiol,outfielder,3031,right
+Spain,Villarreal CF,#14 Manu Trigueros,outfielder,2210,right
+Spain,Villarreal CF,#5 Dani Parejo,outfielder,2984,right
+Spain,Villarreal CF,#6 Étienne Capoue,outfielder,2741,right
+Spain,Villarreal CF,#15 Arnaut Danjuma,outfielder,2085,right
+Spain,Villarreal CF,#7 Gerard Moreno,outfielder,1662,left
+Spain,Villarreal CF,#21 Yéremy Pino,outfielder,2091,right
+Spain,Villarreal CF,#11 Samuel Chukwueze,outfielder,1133,left
+Spain,Villarreal CF,#16 Boulaye Dia,outfielder,1284,right
+Spain,Villarreal CF,#23 Moi Gómez,outfielder,1459,right
+Spain,Valencia CF,#28 Giorgi Mamardashvili,keeper,1350,left
+Spain,Valencia CF,#13 Jasper Cillessen,keeper,1278,right
+Spain,Valencia CF,#14 José Gayà,outfielder,1887,left
+Spain,Valencia CF,#5 Gabriel Paulista,outfielder,1370,right
+Spain,Valencia CF,#2 Thierry Correia,outfielder,1043,right
+Spain,Valencia CF,#12 Mouctar Diakhaby,outfielder,2121,right
+Spain,Valencia CF,#15 Omar Alderete,outfielder,2273,left
+Spain,Valencia CF,#20 Dimitri Foulquier,outfielder,2264,right
+Spain,Valencia CF,#10 Carlos Soler,outfielder,2299,right
+Spain,Valencia CF,#6 Hugo Guillamón,outfielder,2431,right
+Spain,Valencia CF,#8 Uros Racic,outfielder,1049,both
+Spain,Valencia CF,#17 Daniel Wass,outfielder,1784,right
+Spain,Valencia CF,#7 Gonçalo Guedes,outfielder,2565,right
+Spain,Valencia CF,#4 Yunus Musah,outfielder,1397,right
+Spain,Valencia CF,#9 Maxi Gómez,outfielder,1830,right
+Spain,Valencia CF,#11 Hélder Costa,outfielder,1073,left
+Spain,Valencia CF,#19 Hugo Duro,outfielder,1979,left
+Spain,Valencia CF,#22 Marcos André,outfielder,1018,right
+Spain,Real Betis Balompié,#13 Rui Silva,keeper,2388,left
+Spain,Real Betis Balompié,#25 Claudio Bravo,keeper,1602,right
+Spain,Real Betis Balompié,#19 Héctor Bellerín,outfielder,2240,right
+Spain,Real Betis Balompié,#15 Álex Moreno,outfielder,2666,left
+Spain,Real Betis Balompié,#3 Edgar González,outfielder,2559,right
+Spain,Real Betis Balompié,#5 Marc Bartra,outfielder,2167,right
+Spain,Real Betis Balompié,#33 Juan Miranda,outfielder,1254,left
+Spain,Real Betis Balompié,#16 Germán Pezzella,outfielder,2234,right
+Spain,Real Betis Balompié,#6 Víctor Ruiz,outfielder,1701,left
+Spain,Real Betis Balompié,#8 Nabil Fekir,outfielder,3165,left
+Spain,Real Betis Balompié,#21 Guido Rodríguez,outfielder,3093,right
+Spain,Real Betis Balompié,#10 Sergio Canales,outfielder,2944,left
+Spain,Real Betis Balompié,#14 William Carvalho,outfielder,2563,right
+Spain,Real Betis Balompié,#18 Andrés Guardado,outfielder,1489,left
+Spain,Real Betis Balompié,#12 Willian José,outfielder,1825,right
+Spain,Real Betis Balompié,#7 Juanmi,outfielder,2311,right
+Spain,Real Betis Balompié,#9 Borja Iglesias,outfielder,2268,right
+Spain,Real Betis Balompié,#11 Cristian Tello,outfielder,1241,both
+Spain,Real Betis Balompié,#24 Aitor Ruibal,outfielder,1694,right
+Spain,Real Betis Balompié,#17 Joaquín,outfielder,1036,right
+Spain,Athletic Bilbao,#1 Unai Simón,keeper,2520,right
+Spain,Athletic Bilbao,#4 Iñigo Martínez,outfielder,2463,left
+Spain,Athletic Bilbao,#5 Yeray Álvarez,outfielder,1800,right
+Spain,Athletic Bilbao,#12 Dani Vivian,outfielder,1787,right
+Spain,Athletic Bilbao,#15 Iñigo Lekue,outfielder,2107,right
+Spain,Athletic Bilbao,#18 Óscar de Marcos,outfielder,1602,right
+Spain,Athletic Bilbao,#24 Mikel Balenziaga,outfielder,2035,left
+Spain,Athletic Bilbao,#16 Unai Vencedor,outfielder,1969,right
+Spain,Athletic Bilbao,#14 Dani García,outfielder,2363,right
+Spain,Athletic Bilbao,#19 Oier Zarraga,outfielder,1131,right
+Spain,Athletic Bilbao,#6 Mikel Vesga,outfielder,1491,left
+Spain,Athletic Bilbao,#9 Iñaki Williams,outfielder,2689,right
+Spain,Athletic Bilbao,#8 Oihan Sancet,outfielder,1616,right
+Spain,Athletic Bilbao,#10 Iker Muniain,outfielder,2675,right
+Spain,Athletic Bilbao,#7 Álex Berenguer,outfielder,2153,right
+Spain,Athletic Bilbao,#30 Nico Williams,outfielder,1254,right
+Spain,Athletic Bilbao,#22 Raúl García,outfielder,1836,right
+Spain,Getafe CF,#13 David Soria,keeper,2695,right
+Spain,Getafe CF,#17 Mathí­as Olivera,outfielder,2177,left
+Spain,Getafe CF,#2 Djené,outfielder,2487,right
+Spain,Getafe CF,#15 Jorge Cuenca,outfielder,2065,left
+Spain,Getafe CF,#22 Damián Suárez,outfielder,2188,right
+Spain,Getafe CF,#23 Stefan Mitrovic,outfielder,2132,both
+Spain,Getafe CF,#18 Mauro Arambarri,outfielder,2037,right
+Spain,Getafe CF,#20 Nemanja Maksimovic,outfielder,2427,right
+Spain,Getafe CF,#11 Carles Aleñá,outfielder,2079,left
+Spain,Getafe CF,#10 Enes Ünal,outfielder,2102,right
+Spain,Getafe CF,#12 Sandro Ramírez,outfielder,1358,right
+Spain,Celta de Vigo,#1 Matías Dituro,keeper,2790,right
+Spain,Celta de Vigo,#17 Javi Galán,outfielder,2658,left
+Spain,Celta de Vigo,#4 Néstor Araújo,outfielder,1910,right
+Spain,Celta de Vigo,#15 Joseph Aidoo,outfielder,1920,right
+Spain,Celta de Vigo,#2 Hugo Mallo,outfielder,1979,right
+Spain,Celta de Vigo,#24 Jeison Murillo,outfielder,1364,right
+Spain,Celta de Vigo,#8 Fran Beltrán,outfielder,2174,right
+Spain,Celta de Vigo,#6 Denis Suárez,outfielder,2418,right
+Spain,Celta de Vigo,#14 Renato Tapia,outfielder,1393,right
+Spain,Celta de Vigo,#23 Brais Méndez,outfielder,2546,left
+Spain,Celta de Vigo,#22 Santi Mina,outfielder,2305,right
+Spain,Celta de Vigo,#10 Iago Aspas,outfielder,2421,left
+Spain,Celta de Vigo,#11 Franco Cervi,outfielder,1567,left
+Spain,Celta de Vigo,#9 Nolito,outfielder,1424,right
+Spain,RCD Espanyol Barcelona,#13 Diego López,keeper,2668,right
+Spain,RCD Espanyol Barcelona,#3 Adrià Pedrosa,outfielder,2666,left
+Spain,RCD Espanyol Barcelona,#4 Leandro Cabrera,outfielder,2910,left
+Spain,RCD Espanyol Barcelona,#12 Óscar Gil,outfielder,1691,both
+Spain,RCD Espanyol Barcelona,#24 Sergi Gómez,outfielder,2455,right
+Spain,RCD Espanyol Barcelona,#22 Aleix Vidal,outfielder,1633,right
+Spain,RCD Espanyol Barcelona,#25 Yangel Herrera,outfielder,1178,right
+Spain,RCD Espanyol Barcelona,#10 Sergi Darder,outfielder,2649,right
+Spain,RCD Espanyol Barcelona,#6 Manu Morlanes,outfielder,1184,right
+Spain,RCD Espanyol Barcelona,#20 Keidi Bare,outfielder,1545,right
+Spain,RCD Espanyol Barcelona,#11 Raúl de Tomás,outfielder,2544,right
+Spain,RCD Espanyol Barcelona,#9 Javi Puado,outfielder,1779,right
+Spain,RCD Espanyol Barcelona,#23 Adrián Embarba,outfielder,1921,right
+Spain,CA Osasuna,#1 Sergio Herrera,keeper,2700,
+Spain,CA Osasuna,#5 David García,outfielder,2565,right
+Spain,CA Osasuna,#39 Manu Sánchez,outfielder,1926,left
+Spain,CA Osasuna,#2 Nacho Vidal,outfielder,2396,right
+Spain,CA Osasuna,#3 Juan Cruz,outfielder,1713,left
+Spain,CA Osasuna,#4 Unai García,outfielder,1316,left
+Spain,CA Osasuna,#7 Jon Moncayola,outfielder,2434,right
+Spain,CA Osasuna,#24 Lucas Torró,outfielder,2266,right
+Spain,CA Osasuna,#8 Darko Brasanac,outfielder,1986,right
+Spain,CA Osasuna,#9 Chimy Ávila,outfielder,1454,right
+Spain,CA Osasuna,#14 Rubén García,outfielder,2099,left
+Spain,CA Osasuna,#17 Ante Budimir,outfielder,1203,left
+Spain,CA Osasuna,#18 Kike García,outfielder,1798,right
+Spain,Granada CF,#1 Luís Maximiano,keeper,2507,both
+Spain,Granada CF,#22 Domingos Duarte,outfielder,1148,right
+Spain,Granada CF,#15 Carlos Neva,outfielder,2177,left
+Spain,Granada CF,#28 Raúl Torrente,outfielder,1416,left
+Spain,Granada CF,#3 Sergio Escudero,outfielder,1018,left
+Spain,Granada CF,#6 Germán Sánchez,outfielder,2180,right
+Spain,Granada CF,#16 Víctor Díaz,outfielder,1039,right
+Spain,Granada CF,#17 Quini,outfielder,1766,right
+Spain,Granada CF,#5 Luis Milla,outfielder,2350,right
+Spain,Granada CF,#4 Maxime Gonalons,outfielder,1352,right
+Spain,Granada CF,#19 Ángel Montoro,outfielder,1258,right
+Spain,Granada CF,#9 Luis Suárez,outfielder,2527,right
+Spain,Granada CF,#11 Darwin Machís,outfielder,1183,right
+Spain,Granada CF,#10 Antonio Puertas,outfielder,1744,right
+Spain,Granada CF,#23 Jorge Molina,outfielder,1616,right
+Spain,Levante UD,#1 Aitor Fernández,keeper,1377,right
+Spain,Levante UD,#34 Dani Cárdenas,keeper,1530,right
+Spain,Levante UD,#14 Rúben Vezo,outfielder,1917,right
+Spain,Levante UD,#19 Carlos Clerc,outfielder,1517,left
+Spain,Levante UD,#20 Jorge Miramón,outfielder,1520,right
+Spain,Levante UD,#4 Rober Pier,outfielder,1602,right
+Spain,Levante UD,#2 Son,outfielder,1434,right
+Spain,Levante UD,#6 Óscar Duarte,outfielder,1605,right
+Spain,Levante UD,#10 Enis Bardhi,outfielder,1476,right
+Spain,Levante UD,#24 José Campaña,outfielder,1096,right
+Spain,Levante UD,#22 Gonzalo Melero,outfielder,1431,right
+Spain,Levante UD,#12 Mickaël Malsa,outfielder,1132,right
+Spain,Levante UD,#8 Pepelu,outfielder,1517,right
+Spain,Levante UD,#18 Jorge de Frutos,outfielder,1766,right
+Spain,Levante UD,#9 Roger Martí,outfielder,1912,right
+Spain,Levante UD,#11 José Luis Morales,outfielder,2080,right
+Spain,RCD Mallorca,#1 Manolo Reina,keeper,1620,right
+Spain,RCD Mallorca,#15 Pablo Maffeo,outfielder,2367,right
+Spain,RCD Mallorca,#24 Martin Valjent,outfielder,2668,right
+Spain,RCD Mallorca,#18 Jaume Costa,outfielder,1611,left
+Spain,RCD Mallorca,#5 Franco Russo,outfielder,1589,right
+Spain,RCD Mallorca,#3 Brian Oliván,outfielder,1919,left
+Spain,RCD Mallorca,#19 Kang-in Lee,outfielder,1361,left
+Spain,RCD Mallorca,#12 Iddrisu Baba,outfielder,1652,right
+Spain,RCD Mallorca,#4 Iñigo Ruiz de Galarreta,outfielder,1599,right
+Spain,RCD Mallorca,#16 Rodrigo Battaglia,outfielder,1037,right
+Spain,RCD Mallorca,#14 Dani Rodríguez,outfielder,2690,right
+Spain,RCD Mallorca,#10 Antonio Sánchez,outfielder,1361,right
+Spain,RCD Mallorca,#8 Salva Sevilla,outfielder,1251,right
+Spain,RCD Mallorca,#17 Takefusa Kubo,outfielder,1448,left
+Spain,RCD Mallorca,#22 Ángel Rodríguez,outfielder,1351,right
+Spain,Deportivo Alavés,#1 Fernando Pacheco,keeper,2424,left
+Spain,Deportivo Alavés,#3 Rubén Duarte,outfielder,2196,left
+Spain,Deportivo Alavés,#21 Martín Aguirregabiria,outfielder,1460,right
+Spain,Deportivo Alavés,#5 Víctor Laguardia,outfielder,2424,right
+Spain,Deportivo Alavés,#22 Florian Lejeune,outfielder,2070,right
+Spain,Deportivo Alavés,#6 Mamadou Loum,outfielder,1711,right
+Spain,Deportivo Alavés,#20 Pere Pons,outfielder,1247,right
+Spain,Deportivo Alavés,#15 Toni Moya,outfielder,1438,right
+Spain,Deportivo Alavés,#8 Tomás Pina,outfielder,1334,right
+Spain,Deportivo Alavés,#9 Joselu,outfielder,2526,right
+Spain,Deportivo Alavés,#11 Luis Rioja,outfielder,2600,left
+Spain,Deportivo Alavés,#17 Edgar Méndez,outfielder,1259,right
+Spain,Elche CF,#13 Édgar Badía,keeper,1620,right
+Spain,Elche CF,#1 Kiko Casilla,keeper,1260,right
+Spain,Elche CF,#22 Johan Mojica,outfielder,2547,left
+Spain,Elche CF,#3 Enzo Roco,outfielder,2081,right
+Spain,Elche CF,#4 Diego González,outfielder,1762,left
+Spain,Elche CF,#14 Helibelton Palacios,outfielder,1807,right
+Spain,Elche CF,#6 Pedro Bigas,outfielder,1179,left
+Spain,Elche CF,#5 Gonzalo Verdú,outfielder,1373,right
+Spain,Elche CF,#19 Antonio Barragán,outfielder,1148,right
+Spain,Elche CF,#8 Raúl Guti,outfielder,1628,right
+Spain,Elche CF,#21 Omar Mascarell,outfielder,1985,right
+Spain,Elche CF,#2 Gerard Gumbau,outfielder,1664,left
+Spain,Elche CF,#9 Lucas Boyé,outfielder,1666,right
+Spain,Elche CF,#10 Pere Milla,outfielder,1625,left
+Spain,Elche CF,#25 Lucas Pérez,outfielder,1356,left
+Spain,Elche CF,#16 Fidel,outfielder,2086,left
+Spain,Elche CF,#7 Guido Carrillo,outfielder,1150,right
+Spain,Elche CF,#11 Tete Morente,outfielder,1313,right
+Spain,Cádiz CF,#1 Jeremías Ledesma,keeper,2700,right
+Spain,Cádiz CF,#22 Alfonso Espino,outfielder,2738,left
+Spain,Cádiz CF,#3 Fali,outfielder,1600,right
+Spain,Cádiz CF,#20 Iza Carcelén,outfielder,1449,right
+Spain,Cádiz CF,#5 Varazdat Haroyan,outfielder,1648,right
+Spain,Cádiz CF,#32 Víctor Chust,outfielder,1944,both
+Spain,Cádiz CF,#16 Juan Cala,outfielder,1103,right
+Spain,Cádiz CF,#15 Carlos Akapo,outfielder,1519,right
+Spain,Cádiz CF,#8 Álex Fernández,outfielder,1667,right
+Spain,Cádiz CF,#2 Jens Jönsson,outfielder,1313,right
+Spain,Cádiz CF,#12 Tomás Alarcón,outfielder,1362,right
+Spain,Cádiz CF,#9 Choco Lozano,outfielder,1546,right
+Spain,Cádiz CF,#7 Salvi Sánchez,outfielder,1424,right
+Spain,Cádiz CF,#21 Rubén Sobrino,outfielder,1651,right
+Spain,Cádiz CF,#18 Álvaro Negredo,outfielder,1964,left
+Spain,Rayo Vallecano,#13 Stole Dimitrievski,keeper,2231,right
+Spain,Rayo Vallecano,#1 Luca Zidane,keeper,1036,right
+Spain,Rayo Vallecano,#33 Fran García,outfielder,2805,left
+Spain,Rayo Vallecano,#5 Alejandro Catena,outfielder,2790,right
+Spain,Rayo Vallecano,#20 Iván Balliu,outfielder,2906,right
+Spain,Rayo Vallecano,#24 Esteban Saveljich,outfielder,1754,right
+Spain,Rayo Vallecano,#4 Mario Suárez,outfielder,1198,right
+Spain,Rayo Vallecano,#6 Santi Comesaña,outfielder,2604,both
+Spain,Rayo Vallecano,#9 Randy Nteka,outfielder,1266,left
+Spain,Rayo Vallecano,#8 Óscar Trejo,outfielder,2088,right
+Spain,Rayo Vallecano,#23 Óscar Valentín,outfielder,2343,right
+Spain,Rayo Vallecano,#21 Pathé Ciss,outfielder,1065,right
+Spain,Rayo Vallecano,#18 Álvaro García,outfielder,2455,both
+Spain,Rayo Vallecano,#16 Sergi Guardiola,outfielder,1551,left
+Spain,Rayo Vallecano,#7 Isi Palazón,outfielder,2189,left
+Italy,Juventus FC,#1 Wojciech Szczesny,keeper,3150,right
+Italy,Juventus FC,#4 Matthijs de Ligt,outfielder,3080,right
+Italy,Juventus FC,#6 Danilo,outfielder,2136,right
+Italy,Juventus FC,#11 Juan Cuadrado,outfielder,2848,right
+Italy,Juventus FC,#12 Alex Sandro,outfielder,2277,left
+Italy,Juventus FC,#19 Leonardo Bonucci,outfielder,2188,right
+Italy,Juventus FC,#2 Mattia De Sciglio,outfielder,1546,right
+Italy,Juventus FC,#24 Daniele Rugani,outfielder,1075,right
+Italy,Juventus FC,#3 Giorgio Chiellini,outfielder,1234,left
+Italy,Juventus FC,#27 Manuel Locatelli,outfielder,2846,right
+Italy,Juventus FC,#30 Rodrigo Bentancur,outfielder,1585,right
+Italy,Juventus FC,#14 Weston McKennie,outfielder,1951,right
+Italy,Juventus FC,#5 Arthur,outfielder,1335,right
+Italy,Juventus FC,#25 Adrien Rabiot,outfielder,2631,left
+Italy,Juventus FC,#22 Federico Chiesa,outfielder,1204,right
+Italy,Juventus FC,#10 Paulo Dybala,outfielder,2019,left
+Italy,Juventus FC,#9 Álvaro Morata,outfielder,2754,right
+Italy,Juventus FC,#18 Moise Kean,outfielder,1096,right
+Italy,Juventus FC,#20 Federico Bernardeschi,outfielder,1483,left
+Italy,Inter Milan,#1 Samir Handanovic,keeper,3810,right
+Italy,Inter Milan,#37 Milan Skriniar,outfielder,3540,right
+Italy,Inter Milan,#95 Alessandro Bastoni,outfielder,3005,left
+Italy,Inter Milan,#6 Stefan de Vrij,outfielder,2623,right
+Italy,Inter Milan,#32 Federico Dimarco,outfielder,1529,left
+Italy,Inter Milan,#36 Matteo Darmian,outfielder,1706,right
+Italy,Inter Milan,#33 Danilo D'Ambrosio,outfielder,1183,right
+Italy,Inter Milan,#23 Nicolò Barella,outfielder,3186,right
+Italy,Inter Milan,#77 Marcelo Brozovic,outfielder,3273,both
+Italy,Inter Milan,#20 Hakan Calhanoglu,outfielder,2701,right
+Italy,Inter Milan,#2 Denzel Dumfries,outfielder,2349,right
+Italy,Inter Milan,#14 Ivan Perisic,outfielder,3117,both
+Italy,Inter Milan,#22 Arturo Vidal,outfielder,1249,right
+Italy,Inter Milan,#10 Lautaro Martínez,outfielder,2612,right
+Italy,Inter Milan,#9 Edin Dzeko,outfielder,2974,right
+Italy,Inter Milan,#7 Alexis Sánchez,outfielder,1201,right
+Italy,SSC Napoli,#1 Alex Meret,keeper,1064,left
+Italy,SSC Napoli,#25 David Ospina,keeper,2565,right
+Italy,SSC Napoli,#26 Kalidou Koulibaly,outfielder,2497,right
+Italy,SSC Napoli,#13 Amir Rrahmani,outfielder,2978,both
+Italy,SSC Napoli,#22 Giovanni Di Lorenzo,outfielder,3451,right
+Italy,SSC Napoli,#6 Mário Rui,outfielder,2796,left
+Italy,SSC Napoli,#5 Juan Jesus,outfielder,1566,left
+Italy,SSC Napoli,#8 Fabián Ruiz,outfielder,2358,left
+Italy,SSC Napoli,#20 Piotr Zielinski,outfielder,2362,both
+Italy,SSC Napoli,#99 André Zambo Anguissa,outfielder,1831,right
+Italy,SSC Napoli,#7 Eljif Elmas,outfielder,2188,right
+Italy,SSC Napoli,#68 Stanislav Lobotka,outfielder,1625,both
+Italy,SSC Napoli,#9 Victor Osimhen,outfielder,1773,right
+Italy,SSC Napoli,#11 Hirving Lozano,outfielder,1582,right
+Italy,SSC Napoli,#21 Matteo Politano,outfielder,1746,left
+Italy,SSC Napoli,#24 Lorenzo Insigne,outfielder,2133,right
+Italy,SSC Napoli,#14 Dries Mertens,outfielder,1364,right
+Italy,AC Milan,#16 Mike Maignan,keeper,2820,right
+Italy,AC Milan,#19 Theo Hernández,outfielder,2833,left
+Italy,AC Milan,#23 Fikayo Tomori,outfielder,2648,right
+Italy,AC Milan,#2 Davide Calabria,outfielder,1997,right
+Italy,AC Milan,#13 Alessio Romagnoli,outfielder,1905,left
+Italy,AC Milan,#20 Pierre Kalulu,outfielder,1797,right
+Italy,AC Milan,#24 Simon Kjaer,outfielder,1073,right
+Italy,AC Milan,#25 Alessandro Florenzi,outfielder,1392,right
+Italy,AC Milan,#79 Franck Kessié,outfielder,2190,right
+Italy,AC Milan,#8 Sandro Tonali,outfielder,2554,right
+Italy,AC Milan,#4 Ismaël Bennacer,outfielder,1838,left
+Italy,AC Milan,#10 Brahim Díaz,outfielder,2193,both
+Italy,AC Milan,#33 Rade Krunic,outfielder,1495,right
+Italy,AC Milan,#17 Rafael Leão,outfielder,2499,right
+Italy,AC Milan,#56 Alexis Saelemaekers,outfielder,2092,right
+Italy,AC Milan,#30 Junior Messias,outfielder,1451,left
+Italy,AC Milan,#11 Zlatan Ibrahimovic,outfielder,1097,both
+Italy,AC Milan,#9 Olivier Giroud,outfielder,1957,left
+Italy,Atalanta BC,#1 Juan Musso,keeper,3473,right
+Italy,Atalanta BC,#28 Merih Demiral,outfielder,2611,right
+Italy,Atalanta BC,#19 Berat Djimsiti,outfielder,2450,right
+Italy,Atalanta BC,#3 Joakim Maehle,outfielder,1966,right
+Italy,Atalanta BC,#33 Hans Hateboer,outfielder,1518,right
+Italy,Atalanta BC,#2 Rafael Tolói,outfielder,1978,right
+Italy,Atalanta BC,#77 Davide Zappacosta,outfielder,2431,right
+Italy,Atalanta BC,#6 José Luis Palomino,outfielder,2842,left
+Italy,Atalanta BC,#13 Giuseppe Pezzella,outfielder,1177,left
+Italy,Atalanta BC,#18 Ruslan Malinovskyi,outfielder,2089,left
+Italy,Atalanta BC,#88 Mario Pasalic,outfielder,2074,right
+Italy,Atalanta BC,#7 Teun Koopmeiners,outfielder,2407,left
+Italy,Atalanta BC,#11 Remo Freuler,outfielder,2987,right
+Italy,Atalanta BC,#15 Marten de Roon,outfielder,2947,right
+Italy,Atalanta BC,#32 Matteo Pessina,outfielder,1656,left
+Italy,Atalanta BC,#91 Duván Zapata,outfielder,1709,right
+Italy,Atalanta BC,#9 Luis Muriel,outfielder,1559,right
+Italy,Atalanta BC,#72 Josip Ilicic,outfielder,1077,left
+Italy,AS Roma,#1 Rui Patrício,keeper,3870,left
+Italy,AS Roma,#3 Roger Ibañez,outfielder,3266,right
+Italy,AS Roma,#23 Gianluca Mancini,outfielder,3228,right
+Italy,AS Roma,#24 Marash Kumbulla,outfielder,1531,right
+Italy,AS Roma,#2 Rick Karsdorp,outfielder,3255,right
+Italy,AS Roma,#5 Matías Viña,outfielder,2072,left
+Italy,AS Roma,#6 Chris Smalling,outfielder,2092,right
+Italy,AS Roma,#7 Lorenzo Pellegrini,outfielder,2453,both
+Italy,AS Roma,#17 Jordan Veretout,outfielder,2650,right
+Italy,AS Roma,#4 Bryan Cristante,outfielder,3046,right
+Italy,AS Roma,#77 Henrikh Mkhitaryan,outfielder,2976,both
+Italy,AS Roma,#9 Tammy Abraham,outfielder,3345,right
+Italy,AS Roma,#22 Nicolò Zaniolo,outfielder,2332,left
+Italy,AS Roma,#14 Eldor Shomurodov,outfielder,1033,right
+Italy,AS Roma,#92 Stephan El Shaarawy,outfielder,1242,right
+Italy,SS Lazio,#1 Thomas Strakosha,keeper,2160,right
+Italy,SS Lazio,#25 Pepe Reina,keeper,1560,right
+Italy,SS Lazio,#3 Luiz Felipe,outfielder,3227,right
+Italy,SS Lazio,#29 Manuel Lazzari,outfielder,1526,right
+Italy,SS Lazio,#77 Adam Marusic,outfielder,2765,right
+Italy,SS Lazio,#23 Elseid Hysaj,outfielder,2580,right
+Italy,SS Lazio,#4 Patric,outfielder,1737,right
+Italy,SS Lazio,#33 Francesco Acerbi,outfielder,2447,left
+Italy,SS Lazio,#21 Sergej Milinković-Savić,outfielder,3147,right
+Italy,SS Lazio,#10 Luis Alberto,outfielder,2618,right
+Italy,SS Lazio,#20 Mattia Zaccagni,outfielder,1873,right
+Italy,SS Lazio,#88 Toma Basic,outfielder,1180,left
+Italy,SS Lazio,#32 Danilo Cataldi,outfielder,1734,right
+Italy,SS Lazio,#6 Lucas Leiva,outfielder,1972,right
+Italy,SS Lazio,#17 Ciro Immobile,outfielder,2906,right
+Italy,SS Lazio,#7 Felipe Anderson,outfielder,2968,right
+Italy,SS Lazio,#9 Pedro,outfielder,2466,both
+Italy,ACF Fiorentina,#1 Pietro Terracciano,keeper,2485,right
+Italy,ACF Fiorentina,#4 Nikola Milenkovic,outfielder,2653,right
+Italy,ACF Fiorentina,#2 Lucas Martínez Quarta,outfielder,1369,right
+Italy,ACF Fiorentina,#29 Álvaro Odriozola,outfielder,1716,right
+Italy,ACF Fiorentina,#3 Cristiano Biraghi,outfielder,2859,left
+Italy,ACF Fiorentina,#98 Igor,outfielder,1867,left
+Italy,ACF Fiorentina,#23 Lorenzo Venuti,outfielder,1411,right
+Italy,ACF Fiorentina,#18 Lucas Torreira,outfielder,2222,right
+Italy,ACF Fiorentina,#10 Gaetano Castrovilli,outfielder,1481,right
+Italy,ACF Fiorentina,#32 Alfred Duncan,outfielder,1472,left
+Italy,ACF Fiorentina,#14 Youssef Maleh,outfielder,1001,left
+Italy,ACF Fiorentina,#5 Giacomo Bonaventura,outfielder,2178,right
+Italy,ACF Fiorentina,#8 Riccardo Saponara,outfielder,1209,right
+Italy,ACF Fiorentina,#7 Dusan Vlahovic,outfielder,2038,left
+Italy,ACF Fiorentina,#22 Nicolás González,outfielder,1916,left
+Italy,ACF Fiorentina,#33 Riccardo Sottil,outfielder,1305,right
+Italy,ACF Fiorentina,#7 José Callejón,outfielder,1362,right
+Italy,US Sassuolo,#47 Andrea Consigli,keeper,2700,right
+Italy,US Sassuolo,#31 Gian Marco Ferrari,outfielder,2851,left
+Italy,US Sassuolo,#17 Mert Müldür,outfielder,1654,right
+Italy,US Sassuolo,#6 Rogério,outfielder,1598,left
+Italy,US Sassuolo,#22 Jeremy Toljan,outfielder,1376,right
+Italy,US Sassuolo,#77 Georgios Kyriakopoulos,outfielder,1723,left
+Italy,US Sassuolo,#21 Vlad Chiriches,outfielder,1896,right
+Italy,US Sassuolo,#23 Hamed Junior Traorè,outfielder,1500,both
+Italy,US Sassuolo,#16 Davide Frattesi,outfielder,2450,right
+Italy,US Sassuolo,#8 Maxime López,outfielder,2552,right
+Italy,US Sassuolo,#25 Domenico Berardi,outfielder,2414,left
+Italy,US Sassuolo,#91 Gianluca Scamacca,outfielder,1770,right
+Italy,US Sassuolo,#18 Giacomo Raspadori,outfielder,2313,both
+Italy,US Sassuolo,#92 Grégoire Defrel,outfielder,1271,left
+Italy,Torino FC,#32 Vanja Milinković-Savić,keeper,2370,right
+Italy,Torino FC,#3 Bremer,outfielder,2458,right
+Italy,Torino FC,#17 Stephane Singo,outfielder,2290,right
+Italy,Torino FC,#27 Mërgim Vojvoda,outfielder,1588,right
+Italy,Torino FC,#34 Ola Aina,outfielder,1273,right
+Italy,Torino FC,#99 Alessandro Buongiorno,outfielder,1179,left
+Italy,Torino FC,#26 Koffi Djidji,outfielder,1696,right
+Italy,Torino FC,#13 Ricardo Rodríguez,outfielder,1966,left
+Italy,Torino FC,#22 Dennis Praet,outfielder,1071,right
+Italy,Torino FC,#4 Tommaso Pobega,outfielder,1795,both
+Italy,Torino FC,#38 Rolando Mandragora,outfielder,1449,left
+Italy,Torino FC,#10 Sasa Lukic,outfielder,2457,right
+Italy,Torino FC,#11 Marko Pjaca,outfielder,1106,right
+Italy,Torino FC,#77 Karol Linetty,outfielder,1018,right
+Italy,Torino FC,#9 Andrea Belotti,outfielder,1043,right
+Italy,Torino FC,#14 Josip Brekalo,outfielder,1789,right
+Italy,Torino FC,#19 Antonio Sanabria,outfielder,1637,right
+Italy,Bologna FC 1909,#28 Lukasz Skorupski,keeper,2790,right
+Italy,Bologna FC 1909,#3 Aaron Hickey,outfielder,2215,both
+Italy,Bologna FC 1909,#6 Arthur Theate,outfielder,1978,left
+Italy,Bologna FC 1909,#4 Kevin Bonifazi,outfielder,1017,right
+Italy,Bologna FC 1909,#5 Adama Soumaoro,outfielder,1823,right
+Italy,Bologna FC 1909,#29 Lorenzo De Silvestri,outfielder,1833,right
+Italy,Bologna FC 1909,#17 Gary Medel,outfielder,2350,right
+Italy,Bologna FC 1909,#32 Mattias Svanberg,outfielder,2233,right
+Italy,Bologna FC 1909,#8 Nicolás Domínguez,outfielder,1786,right
+Italy,Bologna FC 1909,#21 Roberto Soriano,outfielder,2240,right
+Italy,Bologna FC 1909,#99 Musa Barrow,outfielder,1699,right
+Italy,Bologna FC 1909,#7 Riccardo Orsolini,outfielder,1490,left
+Italy,Bologna FC 1909,#9 Marko Arnautovic,outfielder,2277,both
+Italy,Cagliari Calcio,#28 Alessio Cragno,keeper,2610,right
+Italy,Cagliari Calcio,#12 Raoul Bellanova,outfielder,1896,right
+Italy,Cagliari Calcio,#25 Gabriele Zappa,outfielder,1404,right
+Italy,Cagliari Calcio,#44 Andrea Carboni,outfielder,2043,left
+Italy,Cagliari Calcio,#22 Charalampos Lykogiannis,outfielder,1619,left
+Italy,Cagliari Calcio,#29 Dalbert,outfielder,1888,left
+Italy,Cagliari Calcio,#23 Luca Ceppitelli,outfielder,1147,both
+Italy,Cagliari Calcio,#18 Nahitan Nández,outfielder,1433,right
+Italy,Cagliari Calcio,#8 Razvan Marin,outfielder,2448,right
+Italy,Cagliari Calcio,#20 Gastón Pereiro,outfielder,1002,left
+Italy,Cagliari Calcio,#27 Alberto Grassi,outfielder,1713,right
+Italy,Cagliari Calcio,#14 Alessandro Deiola,outfielder,1895,right
+Italy,Cagliari Calcio,#10 João Pedro,outfielder,2817,right
+Italy,Cagliari Calcio,#30 Leonardo Pavoletti,outfielder,1331,right
+Italy,Hellas Verona,#96 Lorenzo Montipò,keeper,2520,right
+Italy,Hellas Verona,#5 Davide Faraoni,outfielder,2120,right
+Italy,Hellas Verona,#16 Nicolò Casale,outfielder,2037,right
+Italy,Hellas Verona,#21 Koray Günter,outfielder,2155,right
+Italy,Hellas Verona,#27 Pawel Dawidowicz,outfielder,1275,both
+Italy,Hellas Verona,#17 Federico Ceccherini,outfielder,1943,right
+Italy,Hellas Verona,#7 Antonin Barak,outfielder,2107,left
+Italy,Hellas Verona,#14 Ivan Ilic,outfielder,2056,left
+Italy,Hellas Verona,#61 Adrien Tamèze,outfielder,2064,right
+Italy,Hellas Verona,#8 Darko Lazovic,outfielder,2365,right
+Italy,Hellas Verona,#4 Miguel Veloso,outfielder,1369,left
+Italy,Hellas Verona,#99 Giovanni Simeone,outfielder,2087,right
+Italy,Hellas Verona,#10 Gianluca Caprari,outfielder,2148,right
+Italy,Genoa CFC,#57 Salvatore Sirigu,keeper,2790,right
+Italy,Genoa CFC,#3 Zinho Vanheusden,outfielder,1198,right
+Italy,Genoa CFC,#50 Andrea Cambiaso,outfielder,1891,both
+Italy,Genoa CFC,#52 Nikola Maksimovic,outfielder,1026,right
+Italy,Genoa CFC,#15 Johan Vásquez,outfielder,2156,left
+Italy,Genoa CFC,#4 Davide Biraschi,outfielder,1112,right
+Italy,Genoa CFC,#4 Domenico Criscito,outfielder,1389,left
+Italy,Genoa CFC,#65 Nicolò Rovella,outfielder,1478,right
+Italy,Genoa CFC,#27 Stefano Sturaro,outfielder,1702,right
+Italy,Genoa CFC,#90 Manolo Portanova,outfielder,1177,right
+Italy,Genoa CFC,#47 Milan Badelj,outfielder,2605,right
+Italy,Genoa CFC,#23 Mattia Destro,outfielder,1659,right
+Italy,Genoa CFC,#20 Caleb Ekuban,outfielder,1621,right
+Italy,Udinese Calcio,#1 Marco Silvestri,keeper,2640,right
+Italy,Udinese Calcio,#16 Nahuel Molina,outfielder,2117,right
+Italy,Udinese Calcio,#13 Destiny Udogie,outfielder,1937,left
+Italy,Udinese Calcio,#22 Samir,outfielder,1574,left
+Italy,Udinese Calcio,#2 Nehuén Pérez,outfielder,1204,right
+Italy,Udinese Calcio,#17 Bram Nuytinck,outfielder,1838,left
+Italy,Udinese Calcio,#50 Rodrigo Becão,outfielder,2535,right
+Italy,Udinese Calcio,#37 Roberto Pereyra,outfielder,1497,both
+Italy,Udinese Calcio,#11 Walace,outfielder,2399,right
+Italy,Udinese Calcio,#6 Jean-Victor Makengo,outfielder,1893,left
+Italy,Udinese Calcio,#5 Tolgay Arslan,outfielder,1462,right
+Italy,Udinese Calcio,#9 Beto,outfielder,2140,right
+Italy,Udinese Calcio,#10 Gerard Deulofeu,outfielder,1911,right
+Italy,Udinese Calcio,#23 Ignacio Pussetto,outfielder,1155,right
+Italy,UC Sampdoria,#1 Emil Audero,keeper,2025,right
+Italy,UC Sampdoria,#33 Wladimiro Falcone,keeper,1034,right
+Italy,UC Sampdoria,#15 Omar Colley,outfielder,2229,left
+Italy,UC Sampdoria,#24 Bartosz Bereszynski,outfielder,2506,right
+Italy,UC Sampdoria,#3 Tommaso Augello,outfielder,2078,left
+Italy,UC Sampdoria,#22 Maya Yoshida,outfielder,1695,right
+Italy,UC Sampdoria,#29 Nicola Murru,outfielder,1023,left
+Italy,UC Sampdoria,#25 Alex Ferrari,outfielder,1158,right
+Italy,UC Sampdoria,#2 Morten Thorsby,outfielder,2589,right
+Italy,UC Sampdoria,#23 Adrien Silva,outfielder,1128,right
+Italy,UC Sampdoria,#87 Antonio Candreva,outfielder,2691,right
+Italy,UC Sampdoria,#6 Albin Ekdal,outfielder,1562,right
+Italy,UC Sampdoria,#23 Manolo Gabbiadini,outfielder,1266,left
+Italy,UC Sampdoria,#10 Francesco Caputo,outfielder,2361,right
+Italy,UC Sampdoria,#27 Fabio Quagliarella,outfielder,1615,right
+Italy,FC Empoli,#13 Guglielmo Vicario,keeper,2970,right
+Italy,FC Empoli,#42 Mattia Viti,outfielder,1429,left
+Italy,FC Empoli,#65 Fabiano Parisi,outfielder,1121,left
+Italy,FC Empoli,#30 Petar Stojanovic,outfielder,2453,right
+Italy,FC Empoli,#33 Sebastiano Luperto,outfielder,1462,left
+Italy,FC Empoli,#3 Riccardo Marchizza,outfielder,1615,left
+Italy,FC Empoli,#34 Ardian Ismajli,outfielder,1278,right
+Italy,FC Empoli,#6 Simone Romagnoli,outfielder,1573,right
+Italy,FC Empoli,#28 Samuele Ricci,outfielder,1708,right
+Italy,FC Empoli,#10 Nedim Bajrami,outfielder,2050,right
+Italy,FC Empoli,#27 Szymon Zurkowski,outfielder,1988,right
+Italy,FC Empoli,#23 Kristjan Asllani,outfielder,1021,right
+Italy,FC Empoli,#32 Nicolas Haas,outfielder,1090,right
+Italy,FC Empoli,#8 Liam Henderson,outfielder,1862,right
+Italy,FC Empoli,#25 Filippo Bandinelli,outfielder,1781,left
+Italy,FC Empoli,#99 Andrea Pinamonti,outfielder,2467,right
+Italy,FC Empoli,#9 Patrick Cutrone,outfielder,1330,right
+Italy,FC Empoli,#11 Federico Di Francesco,outfielder,1255,right
+Italy,Venezia FC,#88 Sergio Romero,keeper,1440,right
+Italy,Venezia FC,#44 Ethan Ampadu,outfielder,1839,right
+Italy,Venezia FC,#31 Mattia Caldara,outfielder,2373,right
+Italy,Venezia FC,#55 Ridgeciano Haps,outfielder,1506,left
+Italy,Venezia FC,#32 Pietro Ceccaroni,outfielder,2523,left
+Italy,Venezia FC,#30 Pasquale Mazzocchi,outfielder,1369,right
+Italy,Venezia FC,#22 Tyronne Ebuehi,outfielder,1192,right
+Italy,Venezia FC,#30 Michael Svoboda,outfielder,1082,right
+Italy,Venezia FC,#27 Gianluca Busio,outfielder,1730,right
+Italy,Venezia FC,#10 Mattia Aramu,outfielder,1732,left
+Italy,Venezia FC,#23 Sofian Kiyine,outfielder,1119,right
+Italy,Venezia FC,#33 Domen Crnigoj,outfielder,1489,right
+Italy,Venezia FC,#14 Thomas Henry,outfielder,1639,right
+Italy,Venezia FC,#77 David Okereke,outfielder,1776,right
+Italy,Venezia FC,#17 Dennis Johnsen,outfielder,1440,right
+Italy,Spezia Calcio,#94 Ivan Provedel,keeper,2250,right
+Italy,Spezia Calcio,#28 Martin Erlic,outfielder,2318,right
+Italy,Spezia Calcio,#27 Kelvin Amian,outfielder,2198,right
+Italy,Spezia Calcio,#13 Arkadiusz Reca,outfielder,1600,left
+Italy,Spezia Calcio,#43 Dimitrios Nikolaou,outfielder,2790,left
+Italy,Spezia Calcio,#21 Salva Ferrer,outfielder,1392,right
+Italy,Spezia Calcio,#15 Petko Hristov,outfielder,1199,right
+Italy,Spezia Calcio,#25 Giulio Maggiore,outfielder,2517,right
+Italy,Spezia Calcio,#20 Simone Bastoni,outfielder,2231,left
+Italy,Spezia Calcio,#8 Viktor Kovalenko,outfielder,1209,right
+Italy,Spezia Calcio,#14 Jakub Kiwior,outfielder,1468,left
+Italy,Spezia Calcio,#10 Daniele Verde,outfielder,1681,left
+Italy,Spezia Calcio,#18 M'Bala Nzola,outfielder,1120,left
+Italy,Spezia Calcio,#11 Emmanuel Gyasi,outfielder,2612,right
+Italy,Spezia Calcio,#9 Rey Manaj,outfielder,1317,both
+Italy,US Salernitana 1919,#72 Vid Belec,keeper,1890,right
+Italy,US Salernitana 1919,#19 Luca Ranieri,outfielder,1788,left
+Italy,US Salernitana 1919,#6 Stefan Strandberg,outfielder,1024,right
+Italy,US Salernitana 1919,#23 Norbert Gyomber,outfielder,1882,right
+Italy,US Salernitana 1919,#31 Riccardo Gagliolo,outfielder,1198,left
+Italy,US Salernitana 1919,#18 Lassana Coulibaly,outfielder,1750,right
+Italy,US Salernitana 1919,#20 Grigoris Kastanos,outfielder,1204,left
+Italy,US Salernitana 1919,#24 Wajdi Kechrida,outfielder,1128,right
+Italy,US Salernitana 1919,#14 Francesco Di Tacchio,outfielder,1378,left
+Italy,US Salernitana 1919,#22 Joel Obi,outfielder,1099,left
+Italy,US Salernitana 1919,#9 Federico Bonazzoli,outfielder,1569,left
+Italy,US Salernitana 1919,#7 Franck Ribéry,outfielder,1182,right
+Italy,US Salernitana 1919,#11 Milan Djuric,outfielder,1661,right
+Germany,Bayern Munich,#1 Manuel Neuer,keeper,3060,right
+Germany,Bayern Munich,#19 Alphonso Davies,outfielder,1922,left
+Germany,Bayern Munich,#21 Lucas Hernández,outfielder,2366,left
+Germany,Bayern Munich,#2 Dayot Upamecano,outfielder,2564,right
+Germany,Bayern Munich,#4 Niklas Süle,outfielder,2409,right
+Germany,Bayern Munich,#5 Benjamin Pavard,outfielder,2503,right
+Germany,Bayern Munich,#6 Joshua Kimmich,outfielder,2874,right
+Germany,Bayern Munich,#8 Leon Goretzka,outfielder,1550,right
+Germany,Bayern Munich,#42 Jamal Musiala,outfielder,1708,right
+Germany,Bayern Munich,#24 Corentin Tolisso,outfielder,1051,right
+Germany,Bayern Munich,#7 Serge Gnabry,outfielder,2346,right
+Germany,Bayern Munich,#10 Leroy Sané,outfielder,2783,left
+Germany,Bayern Munich,#11 Kingsley Coman,outfielder,1823,right
+Germany,Bayern Munich,#9 Robert Lewandowski,outfielder,3467,right
+Germany,Bayern Munich,#25 Thomas Müller,outfielder,3187,right
+Germany,Borussia Dortmund,#1 Gregor Kobel,keeper,3465,right
+Germany,Borussia Dortmund,#13 Raphaël Guerreiro,outfielder,1834,left
+Germany,Borussia Dortmund,#16 Manuel Akanji,outfielder,2605,right
+Germany,Borussia Dortmund,#15 Mats Hummels,outfielder,2477,right
+Germany,Borussia Dortmund,#24 Thomas Meunier,outfielder,2096,right
+Germany,Borussia Dortmund,#34 Marin Pongracic,outfielder,1049,right
+Germany,Borussia Dortmund,#14 Nico Schulz,outfielder,1310,left
+Germany,Borussia Dortmund,#22 Jude Bellingham,outfielder,3346,right
+Germany,Borussia Dortmund,#19 Julian Brandt,outfielder,2346,right
+Germany,Borussia Dortmund,#8 Mahmoud Dahoud,outfielder,2230,right
+Germany,Borussia Dortmund,#23 Emre Can,outfielder,1626,right
+Germany,Borussia Dortmund,#11 Marco Reus,outfielder,2995,right
+Germany,Borussia Dortmund,#28 Axel Witsel,outfielder,2433,right
+Germany,Borussia Dortmund,#9 Erling Haaland,outfielder,1945,left
+Germany,Borussia Dortmund,#21 Donyell Malen,outfielder,2312,right
+Germany,Borussia Dortmund,#10 Thorgan Hazard,outfielder,1656,right
+Germany,Borussia Dortmund,#39 Marius Wolf,outfielder,1212,right
+Germany,RB Leipzig,#1 Péter Gulácsi,keeper,3420,right
+Germany,RB Leipzig,#32 Josko Gvardiol,outfielder,2942,left
+Germany,RB Leipzig,#22 Nordi Mukiele,outfielder,1989,right
+Germany,RB Leipzig,#16 Lukas Klostermann,outfielder,2148,right
+Germany,RB Leipzig,#2 Mohamed Simakan,outfielder,2522,right
+Germany,RB Leipzig,#4 Willi Orbán,outfielder,2961,right
+Germany,RB Leipzig,#39 Benjamin Henrichs,outfielder,1444,right
+Germany,RB Leipzig,#18 Christopher Nkunku,outfielder,3353,right
+Germany,RB Leipzig,#3 Angeliño,outfielder,2986,left
+Germany,RB Leipzig,#27 Konrad Laimer,outfielder,1665,right
+Germany,RB Leipzig,#8 Amadou Haidara,outfielder,1633,right
+Germany,RB Leipzig,#14 Tyler Adams,outfielder,1675,right
+Germany,RB Leipzig,#44 Kevin Kampl,outfielder,2359,right
+Germany,RB Leipzig,#33 André Silva,outfielder,2681,right
+Germany,RB Leipzig,#17 Dominik Szoboszlai,outfielder,1650,right
+Germany,RB Leipzig,#9 Yussuf Poulsen,outfielder,1187,right
+Germany,RB Leipzig,#10 Emil Forsberg,outfielder,1891,right
+Germany,Bayer 04 Leverkusen,#1 Lukas Hradecky,keeper,3240,right
+Germany,Bayer 04 Leverkusen,#12 Edmond Tapsoba,outfielder,1767,right
+Germany,Bayer 04 Leverkusen,#4 Jonathan Tah,outfielder,3182,right
+Germany,Bayer 04 Leverkusen,#6 Odilon Kossounou,outfielder,1640,right
+Germany,Bayer 04 Leverkusen,#30 Jeremie Frimpong,outfielder,2787,right
+Germany,Bayer 04 Leverkusen,#33 Piero Hincapié,outfielder,1863,left
+Germany,Bayer 04 Leverkusen,#5 Mitchel Bakker,outfielder,1867,left
+Germany,Bayer 04 Leverkusen,#27 Florian Wirtz,outfielder,2327,right
+Germany,Bayer 04 Leverkusen,#10 Kerem Demirbay,outfielder,2420,left
+Germany,Bayer 04 Leverkusen,#25 Exequiel Palacios,outfielder,1326,right
+Germany,Bayer 04 Leverkusen,#8 Robert Andrich,outfielder,1881,right
+Germany,Bayer 04 Leverkusen,#20 Charles Aránguiz,outfielder,1541,right
+Germany,Bayer 04 Leverkusen,#19 Moussa Diaby,outfielder,3049,left
+Germany,Bayer 04 Leverkusen,#14 Patrik Schick,outfielder,1727,left
+Germany,Bayer 04 Leverkusen,#31 Amine Adli,outfielder,1843,left
+Germany,Bayer 04 Leverkusen,#7 Paulinho,outfielder,1212,right
+Germany,VfL Wolfsburg,#1 Koen Casteels,keeper,2730,left
+Germany,VfL Wolfsburg,#4 Maxence Lacroix,outfielder,2825,right
+Germany,VfL Wolfsburg,#3 Sebastiaan Bornauw,outfielder,2047,right
+Germany,VfL Wolfsburg,#19 Kevin Mbabu,outfielder,1712,right
+Germany,VfL Wolfsburg,#25 John Anthony Brooks,outfielder,2617,left
+Germany,VfL Wolfsburg,#15 Jérôme Roussillon,outfielder,2005,left
+Germany,VfL Wolfsburg,#20 Ridle Baku,outfielder,2548,right
+Germany,VfL Wolfsburg,#27 Maximilian Arnold,outfielder,3146,left
+Germany,VfL Wolfsburg,#8 Aster Vranckx,outfielder,1387,right
+Germany,VfL Wolfsburg,#31 Yannick Gerhardt,outfielder,1371,left
+Germany,VfL Wolfsburg,#23 Josuha Guilavogui,outfielder,1431,right
+Germany,VfL Wolfsburg,#10 Lukas Nmecha,outfielder,1645,right
+Germany,VfL Wolfsburg,#9 Wout Weghorst,outfielder,2071,right
+Germany,VfL Wolfsburg,#28 Dodi Lukébakio,outfielder,1164,left
+Germany,VfL Wolfsburg,#17 Maximilian Philipp,outfielder,1134,right
+Germany,VfL Wolfsburg,#11 Renato Steffen,outfielder,1270,left
+Germany,Borussia Mönchengladbach,#1 Yann Sommer,keeper,2880,right
+Germany,Borussia Mönchengladbach,#28 Matthias Ginter,outfielder,2580,right
+Germany,Borussia Mönchengladbach,#30 Nico Elvedi,outfielder,2458,right
+Germany,Borussia Mönchengladbach,#25 Ramy Bensebaini,outfielder,1660,left
+Germany,Borussia Mönchengladbach,#29 Joe Scally,outfielder,2036,right
+Germany,Borussia Mönchengladbach,#18 Stefan Lainer,outfielder,1269,right
+Germany,Borussia Mönchengladbach,#20 Luca Netz,outfielder,1056,left
+Germany,Borussia Mönchengladbach,#15 Jordan Beyer,outfielder,1086,right
+Germany,Borussia Mönchengladbach,#28 Denis Zakaria,outfielder,1528,right
+Germany,Borussia Mönchengladbach,#32 Florian Neuhaus,outfielder,1939,right
+Germany,Borussia Mönchengladbach,#17 Kouadio Koné,outfielder,2036,right
+Germany,Borussia Mönchengladbach,#13 Lars Stindl,outfielder,1622,right
+Germany,Borussia Mönchengladbach,#10 Marcus Thuram,outfielder,1007,right
+Germany,Borussia Mönchengladbach,#23 Jonas Hofmann,outfielder,1714,right
+Germany,Borussia Mönchengladbach,#14 Alassane Plea,outfielder,1815,right
+Germany,Borussia Mönchengladbach,#36 Breel Embolo,outfielder,1862,right
+Germany,TSG 1899 Hoffenheim,#1 Oliver Baumann,keeper,2610,right
+Germany,TSG 1899 Hoffenheim,#17 David Raum,outfielder,2581,left
+Germany,TSG 1899 Hoffenheim,#38 Stefan Posch,outfielder,2017,right
+Germany,TSG 1899 Hoffenheim,#28 Chris Richards,outfielder,1344,both
+Germany,TSG 1899 Hoffenheim,#25 Kevin Akpoguma,outfielder,1521,right
+Germany,TSG 1899 Hoffenheim,#22 Kevin Vogt,outfielder,2405,right
+Germany,TSG 1899 Hoffenheim,#14 Christoph Baumgartner,outfielder,1706,right
+Germany,TSG 1899 Hoffenheim,#11 Florian Grillitsch,outfielder,1495,right
+Germany,TSG 1899 Hoffenheim,#18 Diadié Samassékou,outfielder,1233,right
+Germany,TSG 1899 Hoffenheim,#8 Dennis Geiger,outfielder,1551,right
+Germany,TSG 1899 Hoffenheim,#13 Angelo Stiller,outfielder,1499,left
+Germany,TSG 1899 Hoffenheim,#27 Andrej Kramaric,outfielder,2397,right
+Germany,TSG 1899 Hoffenheim,#9 Ihlas Bebou,outfielder,1811,right
+Germany,TSG 1899 Hoffenheim,#33 Georginio Rutter,outfielder,1621,left
+Germany,TSG 1899 Hoffenheim,#10 Munas Dabbur,outfielder,1166,right
+Germany,Eintracht Frankfurt,#1 Kevin Trapp,keeper,3360,right
+Germany,Eintracht Frankfurt,#2 Evan Ndicka,outfielder,3120,left
+Germany,Eintracht Frankfurt,#35 Tuta,outfielder,2439,right
+Germany,Eintracht Frankfurt,#13 Martin Hinteregger,outfielder,2582,left
+Germany,Eintracht Frankfurt,#22 Timothy Chandler,outfielder,1316,right
+Germany,Eintracht Frankfurt,#15 Daichi Kamada,outfielder,2696,right
+Germany,Eintracht Frankfurt,#10 Filip Kostic,outfielder,2847,left
+Germany,Eintracht Frankfurt,#8 Djibril Sow,outfielder,3141,right
+Germany,Eintracht Frankfurt,#29 Jesper Lindström,outfielder,2223,right
+Germany,Eintracht Frankfurt,#6 Kristijan Jakic,outfielder,2329,right
+Germany,Eintracht Frankfurt,#20 Makoto Hasebe,outfielder,1434,right
+Germany,Eintracht Frankfurt,#19 Rafael Borré,outfielder,2952,right
+Germany,VfB Stuttgart,#1 Florian Müller,keeper,2250,left
+Germany,VfB Stuttgart,#24 Borna Sosa,outfielder,2230,left
+Germany,VfB Stuttgart,#5 Konstantinos Mavropanos,outfielder,2404,right
+Germany,VfB Stuttgart,#2 Waldemar Anton,outfielder,2158,right
+Germany,VfB Stuttgart,#20 Marc Oliver Kempf,outfielder,1004,left
+Germany,VfB Stuttgart,#37 Hiroki Ito,outfielder,2078,left
+Germany,VfB Stuttgart,#23 Orel Mangala,outfielder,1664,right
+Germany,VfB Stuttgart,#3 Wataru Endo,outfielder,2632,right
+Germany,VfB Stuttgart,#16 Atakan Karazor,outfielder,1736,right
+Germany,VfB Stuttgart,#20 Philipp Förster,outfielder,1010,left
+Germany,VfB Stuttgart,#7 Tanguy Coulibaly,outfielder,1137,left
+Germany,VfB Stuttgart,#17 Omar Marmoush,outfielder,1391,right
+Germany,VfB Stuttgart,#22 Chris Führich,outfielder,1480,right
+Germany,SC Freiburg,#26 Mark Flekken,keeper,2640,both
+Germany,SC Freiburg,#4 Nico Schlotterbeck,outfielder,2668,left
+Germany,SC Freiburg,#3 Philipp Lienhart,outfielder,2658,right
+Germany,SC Freiburg,#30 Christian Günter,outfielder,2940,left
+Germany,SC Freiburg,#5 Manuel Gulde,outfielder,1396,right
+Germany,SC Freiburg,#17 Lukas Kübler,outfielder,2191,right
+Germany,SC Freiburg,#8 Maximilian Eggestein,outfielder,2009,right
+Germany,SC Freiburg,#27 Nicolas Höfler,outfielder,2371,right
+Germany,SC Freiburg,#32 Vincenzo Grifo,outfielder,2580,right
+Germany,SC Freiburg,#22 Roland Sallai,outfielder,1193,both
+Germany,SC Freiburg,#20 Kevin Schade,outfielder,1017,
+Germany,SC Freiburg,#9 Lucas Höler,outfielder,2553,right
+Germany,SC Freiburg,#29 Woo-yeong Jeong,outfielder,1739,right
+Germany,1.FSV Mainz 05,#27 Robin Zentner,keeper,2940,right
+Germany,1.FSV Mainz 05,#19 Moussa Niakhaté,outfielder,2365,left
+Germany,1.FSV Mainz 05,#3 Aarón Martín,outfielder,2159,left
+Germany,1.FSV Mainz 05,#30 Silvan Widmer,outfielder,2859,right
+Germany,1.FSV Mainz 05,#16 Stefan Bell,outfielder,2690,right
+Germany,1.FSV Mainz 05,#42 Alexander Hack,outfielder,1933,left
+Germany,1.FSV Mainz 05,#8 Leandro Barreiro,outfielder,1688,right
+Germany,1.FSV Mainz 05,#6 Anton Stach,outfielder,1644,both
+Germany,1.FSV Mainz 05,#31 Dominik Kohr,outfielder,1479,right
+Germany,1.FSV Mainz 05,#5 Jean-Paul Boëtius,outfielder,1789,right
+Germany,1.FSV Mainz 05,#7 Jae-sung Lee,outfielder,1620,left
+Germany,1.FSV Mainz 05,#29 Jonathan Burkardt,outfielder,2434,right
+Germany,1.FSV Mainz 05,#9 Karim Onisiwo,outfielder,2281,right
+Germany,FC Augsburg,#1 Rafal Gikiewicz,keeper,2820,right
+Germany,FC Augsburg,#4 Reece Oxford,outfielder,2370,right
+Germany,FC Augsburg,#6 Jeffrey Gouweleeuw,outfielder,2248,right
+Germany,FC Augsburg,#22 Iago,outfielder,2075,left
+Germany,FC Augsburg,#2 Robert Gumny,outfielder,2114,right
+Germany,FC Augsburg,#3 Mads Pedersen,outfielder,1178,left
+Germany,FC Augsburg,#30 Niklas Dorsch,outfielder,2018,right
+Germany,FC Augsburg,#10 Arne Maier,outfielder,1730,right
+Germany,FC Augsburg,#16 Rubén Vargas,outfielder,1881,right
+Germany,FC Augsburg,#11 Michael Gregoritsch,outfielder,1093,left
+Germany,FC Augsburg,#7 Florian Niederlechner,outfielder,1048,left
+Germany,FC Augsburg,#21 Andi Zeqiri,outfielder,1087,left
+Germany,FC Augsburg,#28 André Hahn,outfielder,1933,right
+Germany,FC Augsburg,#20 Daniel Caligiuri,outfielder,1722,right
+Germany,Hertha BSC,#1 Alexander Schwolow,keeper,2446,right
+Germany,Hertha BSC,#5 Niklas Stark,outfielder,2120,right
+Germany,Hertha BSC,#17 Maximilian Mittelstädt,outfielder,1408,left
+Germany,Hertha BSC,#4 Dedryck Boyata,outfielder,1540,right
+Germany,Hertha BSC,#21 Marvin Plattenhardt,outfielder,1520,left
+Germany,Hertha BSC,#2 Peter Pekarik,outfielder,1832,right
+Germany,Hertha BSC,#8 Suat Serdar,outfielder,2076,right
+Germany,Hertha BSC,#29 Lucas Tousart,outfielder,1627,right
+Germany,Hertha BSC,#18 Santiago Ascacíbar,outfielder,2023,right
+Germany,Hertha BSC,#6 Vladimir Darida,outfielder,1697,right
+Germany,Hertha BSC,#23 Marco Richter,outfielder,1597,right
+Germany,Hertha BSC,#19 Stevan Jovetic,outfielder,1154,right
+Germany,Hertha BSC,#14 Ishak Belfodil,outfielder,1543,right
+Germany,1. FC Köln,#20 Marvin Schwäbe,keeper,1770,right
+Germany,1. FC Köln,#1 Timo Horn,keeper,1170,left
+Germany,1. FC Köln,#14 Jonas Hector,outfielder,2541,left
+Germany,1. FC Köln,#15 Luca Kilian,outfielder,1971,right
+Germany,1. FC Köln,#4 Timo Hübers,outfielder,1622,right
+Germany,1. FC Köln,#2 Benno Schmitz,outfielder,2325,right
+Germany,1. FC Köln,#5 Rafael Czichos,outfielder,1524,left
+Germany,1. FC Köln,#28 Ellyes Skhiri,outfielder,1414,right
+Germany,1. FC Köln,#6 Salih Özcan,outfielder,2167,right
+Germany,1. FC Köln,#7 Dejan Ljubicic,outfielder,1804,right
+Germany,1. FC Köln,#18 Ondrej Duda,outfielder,1707,right
+Germany,1. FC Köln,#29 Jan Thielmann,outfielder,1312,right
+Germany,1. FC Köln,#11 Florian Kainz,outfielder,2084,right
+Germany,1. FC Köln,#9 Sebastian Andersson,outfielder,1453,right
+Germany,1. FC Köln,#13 Mark Uth,outfielder,1884,left
+Germany,1. FC Köln,#27 Anthony Modeste,outfielder,2342,right
+Germany,1.FC Union Berlin,#1 Andreas Luthe,keeper,2880,right
+Germany,1.FC Union Berlin,#5 Marvin Friedrich,outfielder,1890,right
+Germany,1.FC Union Berlin,#31 Robin Knoche,outfielder,3630,right
+Germany,1.FC Union Berlin,#25 Timo Baumgartl,outfielder,2901,right
+Germany,1.FC Union Berlin,#6 Julian Ryerson,outfielder,1310,right
+Germany,1.FC Union Berlin,#3 Paul Jaeckel,outfielder,2015,right
+Germany,1.FC Union Berlin,#23 Niko Gießelmann,outfielder,2308,left
+Germany,1.FC Union Berlin,#28 Christopher Trimmel,outfielder,2530,right
+Germany,1.FC Union Berlin,#8 Rani Khedira,outfielder,3302,right
+Germany,1.FC Union Berlin,#21 Grischa Prömel,outfielder,2546,right
+Germany,1.FC Union Berlin,#24 Genki Haraguchi,outfielder,2203,right
+Germany,1.FC Union Berlin,#14 Taiwo Awoniyi,outfielder,2425,right
+Germany,1.FC Union Berlin,#27 Sheraldo Becker,outfielder,1987,right
+Germany,1.FC Union Berlin,#9 Max Kruse,outfielder,1803,left
+Germany,1.FC Union Berlin,#9 Andreas Voglsammer,outfielder,1177,right
+Germany,Arminia Bielefeld,#1 Stefan Ortega,keeper,2730,right
+Germany,Arminia Bielefeld,#2 Amos Pieper,outfielder,2332,right
+Germany,Arminia Bielefeld,#4 Joakim Nilsson,outfielder,2379,left
+Germany,Arminia Bielefeld,#27 Cédric Brunner,outfielder,2266,right
+Germany,Arminia Bielefeld,#30 Andrés Andrade,outfielder,1111,left
+Germany,Arminia Bielefeld,#5 Jacob Barrett Laursen,outfielder,1452,left
+Germany,Arminia Bielefeld,#11 Masaya Okugawa,outfielder,2268,both
+Germany,Arminia Bielefeld,#8 Alessandro Schöpf,outfielder,2307,right
+Germany,Arminia Bielefeld,#19 Manuel Prietl,outfielder,1905,right
+Germany,Arminia Bielefeld,#16 Fabian Kunze,outfielder,1184,right
+Germany,Arminia Bielefeld,#20 Patrick Wimmer,outfielder,1780,
+Germany,Arminia Bielefeld,#18 Florian Krüger,outfielder,1127,
+Germany,Arminia Bielefeld,#21 Robin Hack,outfielder,1277,right
+Germany,Arminia Bielefeld,#10 Bryan Lasme,outfielder,1033,right
+Germany,Arminia Bielefeld,#9 Fabian Klos,outfielder,1564,right
+Germany,VfL Bochum,#1 Manuel Riemann,keeper,2671,right
+Germany,VfL Bochum,#37 Armel Bella Kotchap,outfielder,1787,right
+Germany,VfL Bochum,#29 Maxim Leitsch,outfielder,1416,left
+Germany,VfL Bochum,#4 Erhan Masovic,outfielder,1490,both
+Germany,VfL Bochum,#3 Danilo Soares,outfielder,2485,left
+Germany,VfL Bochum,#16 Konstantinos Stafylidis,outfielder,1435,left
+Germany,VfL Bochum,#2 Cristian Gamboa,outfielder,1573,right
+Germany,VfL Bochum,#24 Vasilios Lampropoulos,outfielder,1264,right
+Germany,VfL Bochum,#20 Elvis Rexhbecaj,outfielder,2637,left
+Germany,VfL Bochum,#38 Eduard Löwen,outfielder,1350,right
+Germany,VfL Bochum,#27 Milos Pantovic,outfielder,1528,right
+Germany,VfL Bochum,#8 Anthony Losilla,outfielder,2847,right
+Germany,VfL Bochum,#17 Gerrit Holtmann,outfielder,1919,left
+Germany,VfL Bochum,#10 Takuma Asano,outfielder,1386,right
+Germany,VfL Bochum,#40 Sebastian Polter,outfielder,2151,right
+Germany,VfL Bochum,#22 Christopher Antwi-Adjei,outfielder,1269,right
+Germany,SpVgg Greuther Fürth,#30 Sascha Burchert,keeper,1170,right
+Germany,SpVgg Greuther Fürth,#18 Marco Meyerhöfer,outfielder,2280,right
+Germany,SpVgg Greuther Fürth,#4 Maximilian Bauer,outfielder,1723,right
+Germany,SpVgg Greuther Fürth,#15 Jetro Willems,outfielder,1357,left
+Germany,SpVgg Greuther Fürth,#27 Luca Itter,outfielder,1002,left
+Germany,SpVgg Greuther Fürth,#24 Nick Viergever,outfielder,1684,left
+Germany,SpVgg Greuther Fürth,#33 Paul Seguin,outfielder,2171,right
+Germany,SpVgg Greuther Fürth,#21 Timothy Tillman,outfielder,1701,right
+Germany,SpVgg Greuther Fürth,#28 Jeremy Dudziak,outfielder,1129,left
+Germany,SpVgg Greuther Fürth,#13 Max Christiansen,outfielder,1921,right
+Germany,SpVgg Greuther Fürth,#22 Sebastian Griesbeck,outfielder,1991,right
+Germany,SpVgg Greuther Fürth,#40 Jamie Leweling,outfielder,1734,both
+Germany,SpVgg Greuther Fürth,#10 Branimir Hrgota,outfielder,2460,left
+Germany,SpVgg Greuther Fürth,#16 Havard Nielsen,outfielder,1355,right
+France,Paris Saint-Germain,#50 Gianluigi Donnarumma,keeper,1800,right
+France,Paris Saint-Germain,#1 Keylor Navas,keeper,1955,right
+France,Paris Saint-Germain,#5 Marquinhos,outfielder,2952,right
+France,Paris Saint-Germain,#2 Achraf Hakimi,outfielder,2687,right
+France,Paris Saint-Germain,#3 Presnel Kimpembe,outfielder,3016,left
+France,Paris Saint-Germain,#25 Nuno Mendes,outfielder,2018,left
+France,Paris Saint-Germain,#24 Thilo Kehrer,outfielder,1712,right
+France,Paris Saint-Germain,#22 Abdou Diallo,outfielder,1222,left
+France,Paris Saint-Germain,#6 Marco Verratti,outfielder,2023,right
+France,Paris Saint-Germain,#18 Georginio Wijnaldum,outfielder,1792,right
+France,Paris Saint-Germain,#8 Leandro Paredes,outfielder,1244,right
+France,Paris Saint-Germain,#15 Danilo Pereira,outfielder,2084,right
+France,Paris Saint-Germain,#27 Idrissa Gueye,outfielder,1778,right
+France,Paris Saint-Germain,#21 Ander Herrera,outfielder,1551,right
+France,Paris Saint-Germain,#7 Kylian Mbappé,outfielder,3192,right
+France,Paris Saint-Germain,#10 Neymar,outfielder,1802,right
+France,Paris Saint-Germain,#30 Lionel Messi,outfielder,2242,left
+France,Paris Saint-Germain,#9 Mauro Icardi,outfielder,1307,right
+France,Paris Saint-Germain,#11 Ángel Di María,outfielder,1558,left
+France,AS Monaco,#16 Alexander Nübel,keeper,3720,right
+France,AS Monaco,#5 Benoît Badiashile,outfielder,1980,left
+France,AS Monaco,#12 Caio Henrique,outfielder,3188,left
+France,AS Monaco,#3 Guillermo Maripán,outfielder,2491,right
+France,AS Monaco,#6 Axel Disasi,outfielder,3142,right
+France,AS Monaco,#26 Ruben Aguilar,outfielder,2275,right
+France,AS Monaco,#19 Djibril Sidibé,outfielder,1543,right
+France,AS Monaco,#14 Ismail Jakobs,outfielder,1439,left
+France,AS Monaco,#8 Aurélien Tchouameni,outfielder,3604,right
+France,AS Monaco,#17 Aleksandr Golovin,outfielder,1607,right
+France,AS Monaco,#22 Youssouf Fofana,outfielder,2322,right
+France,AS Monaco,#11 Jean Lucas,outfielder,2172,right
+France,AS Monaco,#36 Eliot Matazo,outfielder,1187,right
+France,AS Monaco,#10 Wissam Ben Yedder,outfielder,2935,both
+France,AS Monaco,#31 Kevin Volland,outfielder,3078,left
+France,AS Monaco,#37 Sofiane Diop,outfielder,2520,right
+France,AS Monaco,#7 Gelson Martins,outfielder,2603,right
+France,AS Monaco,#9 Myron Boadu,outfielder,1261,right
+France,Olympique Lyon,#1 Anthony Lopes,keeper,3314,left
+France,Olympique Lyon,#5 Jason Denayer,outfielder,1181,right
+France,Olympique Lyon,#4 Castello Lukeba,outfielder,1916,left
+France,Olympique Lyon,#3 Emerson,outfielder,2464,left
+France,Olympique Lyon,#14 Léo Dubois,outfielder,1909,right
+France,Olympique Lyon,#17 Malo Gusto,outfielder,1673,right
+France,Olympique Lyon,#27 Jérôme Boateng,outfielder,1633,right
+France,Olympique Lyon,#21 Damien Da Silva,outfielder,1017,right
+France,Olympique Lyon,#10 Lucas Paquetá,outfielder,2676,left
+France,Olympique Lyon,#39 Bruno Guimarães,outfielder,1871,right
+France,Olympique Lyon,#8 Houssem Aouar,outfielder,2519,right
+France,Olympique Lyon,#25 Maxence Caqueret,outfielder,2727,right
+France,Olympique Lyon,#23 Thiago Mendes,outfielder,2052,right
+France,Olympique Lyon,#9 Moussa Dembélé,outfielder,1918,right
+France,Olympique Lyon,#7 Karl Toko Ekambi,outfielder,2282,right
+France,Olympique Marseille,#16 Pau López,keeper,2970,left
+France,Olympique Marseille,#30 Steve Mandanda,keeper,1080,right
+France,Olympique Marseille,#2 William Saliba,outfielder,3775,right
+France,Olympique Marseille,#15 Duje Caleta-Car,outfielder,2464,right
+France,Olympique Marseille,#5 Leonardo Balerdi,outfielder,1271,right
+France,Olympique Marseille,#29 Pol Lirola,outfielder,2236,right
+France,Olympique Marseille,#14 Luan Peres,outfielder,3138,left
+France,Olympique Marseille,#4 Boubacar Kamara,outfielder,2903,right
+France,Olympique Marseille,#6 Mattéo Guendouzi,outfielder,3732,right
+France,Olympique Marseille,#8 Gerson,outfielder,2660,left
+France,Olympique Marseille,#21 Valentin Rongier,outfielder,2516,right
+France,Olympique Marseille,#22 Pape Gueye,outfielder,1613,left
+France,Olympique Marseille,#7 Amine Harit,outfielder,1034,right
+France,Olympique Marseille,#10 Dimitri Payet,outfielder,3175,right
+France,Olympique Marseille,#17 Cengiz Ünder,outfielder,2783,left
+France,Olympique Marseille,#9 Arkadiusz Milik,outfielder,1983,left
+France,Olympique Marseille,#12 Bamba Dieng,outfielder,1233,right
+France,Olympique Marseille,#20 Konrad de la Fuente,outfielder,1077,right
+France,OGC Nice,#40 Walter Benítez,keeper,2610,right
+France,OGC Nice,#25 Jean-Clair Todibo,outfielder,2675,right
+France,OGC Nice,#20 Youcef Atal,outfielder,1126,both
+France,OGC Nice,#26 Melvin Bard,outfielder,2356,left
+France,OGC Nice,#23 Jordan Lotomba,outfielder,1607,right
+France,OGC Nice,#4 Dante,outfielder,2647,left
+France,OGC Nice,#19 Khéphren Thuram,outfielder,1807,right
+France,OGC Nice,#18 Mario Lemina,outfielder,1813,right
+France,OGC Nice,#8 Pablo Rosario,outfielder,2319,right
+France,OGC Nice,#28 Hicham Boudaoui,outfielder,1424,right
+France,OGC Nice,#11 Amine Gouiri,outfielder,2631,right
+France,OGC Nice,#9 Kasper Dolberg,outfielder,1358,right
+France,OGC Nice,#21 Justin Kluivert,outfielder,1550,both
+France,OGC Nice,#22 Calvin Stengs,outfielder,1137,left
+France,OGC Nice,#7 Andy Delort,outfielder,1964,right
+France,LOSC Lille,#1 Ivo Grbic,keeper,2610,right
+France,LOSC Lille,#30 Léo Jardim,keeper,1080,right
+France,LOSC Lille,#4 Sven Botman,outfielder,2488,left
+France,LOSC Lille,#2 Zeki Celik,outfielder,2677,right
+France,LOSC Lille,#23 Reinildo Mandava,outfielder,2178,left
+France,LOSC Lille,#3 Tiago Djaló,outfielder,2676,right
+France,LOSC Lille,#5 Gabriel Gudmundsson,outfielder,1368,left
+France,LOSC Lille,#6 José Fonte,outfielder,3690,right
+France,LOSC Lille,#10 Renato Sanches,outfielder,1717,right
+France,LOSC Lille,#21 Benjamin André,outfielder,2940,right
+France,LOSC Lille,#24 Amadou Onana,outfielder,1413,both
+France,LOSC Lille,#8 Xeka,outfielder,1993,both
+France,LOSC Lille,#20 Angel Gomes,outfielder,1048,right
+France,LOSC Lille,#9 Jonathan David,outfielder,3085,both
+France,LOSC Lille,#11 Jonathan Ikoné,outfielder,1420,left
+France,LOSC Lille,#7 Jonathan Bamba,outfielder,2575,right
+France,LOSC Lille,#22 Timothy Weah,outfielder,1337,right
+France,LOSC Lille,#17 Burak Yilmaz,outfielder,2488,right
+France,Stade Rennais FC,#16 Alfred Gomis,keeper,2576,right
+France,Stade Rennais FC,#4 Loïc Badé,outfielder,1597,right
+France,Stade Rennais FC,#3 Adrien Truffert,outfielder,1825,left
+France,Stade Rennais FC,#6 Nayef Aguerd,outfielder,3220,left
+France,Stade Rennais FC,#23 Warmed Omari,outfielder,2635,right
+France,Stade Rennais FC,#27 Hamari Traoré,outfielder,3062,right
+France,Stade Rennais FC,#25 Birger Meling,outfielder,1972,left
+France,Stade Rennais FC,#21 Lovro Majer,outfielder,1811,left
+France,Stade Rennais FC,#14 Benjamin Bourigeaud,outfielder,3394,right
+France,Stade Rennais FC,#8 Baptiste Santamaria,outfielder,2743,right
+France,Stade Rennais FC,#20 Flavien Tait,outfielder,2265,right
+France,Stade Rennais FC,#28 Jonas Martin,outfielder,2041,right
+France,Stade Rennais FC,#10 Kamaldeen Sulemana,outfielder,1391,right
+France,Stade Rennais FC,#24 Gaëtan Laborde,outfielder,2913,left
+France,Stade Rennais FC,#7 Martin Terrier,outfielder,2784,right
+France,Stade Rennais FC,#9 Serhou Guirassy,outfielder,1387,right
+France,RC Lens,#16 Jean-Louis Leca,keeper,2205,right
+France,RC Lens,#14 Facundo Medina,outfielder,2416,left
+France,RC Lens,#4 Kevin Danso,outfielder,2432,right
+France,RC Lens,#24 Jonathan Gradit,outfielder,2451,right
+France,RC Lens,#21 Massadio Haidara,outfielder,1040,left
+France,RC Lens,#8 Seko Fofana,outfielder,2907,right
+France,RC Lens,#11 Jonathan Clauss,outfielder,2730,right
+France,RC Lens,#28 Cheick Doucouré,outfielder,2596,right
+France,RC Lens,#10 Gaël Kakuta,outfielder,1748,left
+France,RC Lens,#29 Przemyslaw Frankowski,outfielder,2096,right
+France,RC Lens,#15 Arnaud Kalimuendo,outfielder,1825,right
+France,RC Lens,#7 Florian Sotoca,outfielder,2046,right
+France,Stade Reims,#1 Predrag Rajkovic,keeper,2790,right
+France,Stade Reims,#2 Wout Faes,outfielder,2880,right
+France,Stade Reims,#3 Ghislain Konan,outfielder,2152,left
+France,Stade Reims,#6 Andreaw Gravillon,outfielder,1854,right
+France,Stade Reims,#32 Thomas Foket,outfielder,1703,right
+France,Stade Reims,#4 Maxime Busi,outfielder,1019,right
+France,Stade Reims,#5 Yunis Abdelhamid,outfielder,2714,left
+France,Stade Reims,#21 Azor Matusiwa,outfielder,1929,right
+France,Stade Reims,#20 Ilan Kebbal,outfielder,1659,left
+France,Stade Reims,#15 Marshall Munetsi,outfielder,1408,right
+France,Stade Reims,#26 Dion Lopy,outfielder,1230,right
+France,Stade Reims,#22 Hugo Ekitike,outfielder,1250,right
+France,Stade Reims,#11 Nathanaël Mbuku,outfielder,1396,left
+France,Stade Reims,#12 Alexis Flips,outfielder,1282,right
+France,Montpellier HSC,#1 Jonas Omlin,keeper,2229,right
+France,Montpellier HSC,#6 Junior Sambia,outfielder,1665,right
+France,Montpellier HSC,#3 Mamadou Sakho,outfielder,2218,left
+France,Montpellier HSC,#31 Nicolas Cozza,outfielder,2368,left
+France,Montpellier HSC,#14 Maxime Estève,outfielder,1308,left
+France,Montpellier HSC,#2 Arnaud Souquet,outfielder,1871,right
+France,Montpellier HSC,#11 Téji Savanier,outfielder,2299,right
+France,Montpellier HSC,#13 Joris Chotard,outfielder,2628,right
+France,Montpellier HSC,#25 Florent Mollet,outfielder,2409,right
+France,Montpellier HSC,#12 Jordan Ferri,outfielder,2645,right
+France,Montpellier HSC,#7 Mihailo Ristic,outfielder,1770,left
+France,Montpellier HSC,#10 Stephy Mavididi,outfielder,1834,right
+France,Montpellier HSC,#21 Elye Wahi,outfielder,1582,right
+France,Montpellier HSC,#9 Valère Germain,outfielder,1728,right
+France,AS Saint-Étienne,#40 Etienne Green,keeper,1199,right
+France,AS Saint-Étienne,#50 Paul Bernardoni,keeper,1170,left
+France,AS Saint-Étienne,#2 Harold Moukoudi,outfielder,1403,right
+France,AS Saint-Étienne,#5 Timothée Kolodziejczak,outfielder,2684,left
+France,AS Saint-Étienne,#3 Mickaël Nade,outfielder,2323,right
+France,AS Saint-Étienne,#27 Yvann Maçon,outfielder,1506,right
+France,AS Saint-Étienne,#6 Lucas Gourna-Douath,outfielder,1487,right
+France,AS Saint-Étienne,#8 Mahdi Camara,outfielder,2716,right
+France,AS Saint-Étienne,#28 Zaydou Youssouf,outfielder,1594,left
+France,AS Saint-Étienne,#7 Ryad Boudebouz,outfielder,2071,left
+France,AS Saint-Étienne,#20 Denis Bouanga,outfielder,1917,right
+France,AS Saint-Étienne,#10 Wahbi Khazri,outfielder,2005,right
+France,AS Saint-Étienne,#18 Arnaud Nordin,outfielder,1736,left
+France,RC Strasbourg Alsace,#1 Matz Sels,keeper,2700,right
+France,RC Strasbourg Alsace,#24 Alexander Djiku,outfielder,2253,right
+France,RC Strasbourg Alsace,#2 Frédéric Guilbert,outfielder,2230,right
+France,RC Strasbourg Alsace,#19 Anthony Caci,outfielder,1985,right
+France,RC Strasbourg Alsace,#22 Gerzino Nyamsi,outfielder,2353,right
+France,RC Strasbourg Alsace,#5 Lucas Perrin,outfielder,2079,right
+France,RC Strasbourg Alsace,#10 Adrien Thomasson,outfielder,2018,right
+France,RC Strasbourg Alsace,#27 Ibrahima Sissoko,outfielder,2077,right
+France,RC Strasbourg Alsace,#17 Jean-Ricner Bellegarde,outfielder,1856,right
+France,RC Strasbourg Alsace,#14 Sanjin Prcic,outfielder,1900,right
+France,RC Strasbourg Alsace,#11 Dimitri Liénard,outfielder,1757,left
+France,RC Strasbourg Alsace,#25 Ludovic Ajorque,outfielder,2357,left
+France,RC Strasbourg Alsace,#20 Habib Diallo,outfielder,1340,right
+France,RC Strasbourg Alsace,#9 Kévin Gameiro,outfielder,1942,right
+France,FC Nantes,#1 Alban Lafont,keeper,2700,right
+France,FC Nantes,#3 Andrei Girotto,outfielder,2970,right
+France,FC Nantes,#21 Jean-Charles Castelletto,outfielder,2156,both
+France,FC Nantes,#29 Quentin Merlin,outfielder,1701,left
+France,FC Nantes,#24 Sébastien Corchia,outfielder,1149,right
+France,FC Nantes,#2 Fábio,outfielder,1442,right
+France,FC Nantes,#12 Dennis Appiah,outfielder,1983,right
+France,FC Nantes,#4 Nicolas Pallois,outfielder,2471,left
+France,FC Nantes,#10 Ludovic Blas,outfielder,2785,left
+France,FC Nantes,#5 Pedro Chirivella,outfielder,2827,right
+France,FC Nantes,#8 Wylan Cyprien,outfielder,1095,right
+France,FC Nantes,#18 Samuel Moutoussamy,outfielder,1260,left
+France,FC Nantes,#23 Randal Kolo Muani,outfielder,2797,right
+France,FC Nantes,#27 Moses Simon,outfielder,2168,right
+France,FC Girondins Bordeaux,#1 Benoît Costil,keeper,1980,right
+France,FC Girondins Bordeaux,#22 Timothée Pembélé,outfielder,1538,right
+France,FC Girondins Bordeaux,#25 Enock Kwateng,outfielder,1708,right
+France,FC Girondins Bordeaux,#2 Stian Gregersen,outfielder,1811,right
+France,FC Girondins Bordeaux,#12 Ricardo Mangas,outfielder,1789,left
+France,FC Girondins Bordeaux,#4 Mexer,outfielder,1315,right
+France,FC Girondins Bordeaux,#19 Yacine Adli,outfielder,2025,right
+France,FC Girondins Bordeaux,#5 Otávio,outfielder,1239,right
+France,FC Girondins Bordeaux,#8 Jean Onana,outfielder,1369,right
+France,FC Girondins Bordeaux,#13 Fransérgio,outfielder,1116,right
+France,FC Girondins Bordeaux,#18 Ui-jo Hwang,outfielder,2097,both
+France,FC Girondins Bordeaux,#29 Alberth Elis,outfielder,1505,right
+France,FC Girondins Bordeaux,#21 Javairô Dilrosun,outfielder,1300,left
+France,FC Girondins Bordeaux,#28 Rémi Oudin,outfielder,1598,left
+France,FC Metz,#16 Alexandre Oukidja,keeper,1618,right
+France,FC Metz,#30 Marc-Aurèle Caillard,keeper,1172,right
+France,FC Metz,#18 Fabien Centonze,outfielder,1530,right
+France,FC Metz,#23 Kiki Kouyaté,outfielder,2036,both
+France,FC Metz,#2 Dylan Bronn,outfielder,2160,right
+France,FC Metz,#3 Matthieu Udol,outfielder,1007,left
+France,FC Metz,#5 Jemerson,outfielder,1129,right
+France,FC Metz,#17 Thomas Delaine,outfielder,1798,left
+France,FC Metz,#15 Pape Sarr,outfielder,1618,right
+France,FC Metz,#10 Farid Boulaya,outfielder,1337,right
+France,FC Metz,#19 Habib Maïga,outfielder,1273,right
+France,FC Metz,#8 Boubacar Traoré,outfielder,1148,
+France,FC Metz,#14 Vincent Pajot,outfielder,1815,right
+France,FC Metz,#7 Ibrahima Niane,outfielder,1578,right
+France,FC Metz,#9 Nicolas de Préville,outfielder,1451,right
+France,FC Metz,#11 Opa Nguette,outfielder,1022,right
+France,Stade Brestois 29,#40 Marco Bizot,keeper,2700,right
+France,Stade Brestois 29,#18 Ronaël Pierre-Gabriel,outfielder,2194,right
+France,Stade Brestois 29,#5 Brendan Chardonnet,outfielder,2369,right
+France,Stade Brestois 29,#2 Jean-Kévin Duverne,outfielder,2669,right
+France,Stade Brestois 29,#23 Christophe Hérelle,outfielder,1439,right
+France,Stade Brestois 29,#3 Lilian Brassier,outfielder,1980,left
+France,Stade Brestois 29,#15 Romain Faivre,outfielder,1890,left
+France,Stade Brestois 29,#10 Lucien Agoumé,outfielder,1757,right
+France,Stade Brestois 29,#7 Haris Belkebla,outfielder,1809,right
+France,Stade Brestois 29,#27 Hugo Magnetti,outfielder,1325,left
+France,Stade Brestois 29,#9 Franck Honorat,outfielder,2812,right
+France,Stade Brestois 29,#15 Steve Mounié,outfielder,1955,right
+France,Stade Brestois 29,#14 Irvin Cardona,outfielder,1211,right
+France,Stade Brestois 29,#26 Jérémy Le Douaron,outfielder,1515,left
+France,SCO Angers,#50 Paul Bernardoni,keeper,1260,left
+France,SCO Angers,#30 Danijel Petkovic,keeper,1350,right
+France,SCO Angers,#3 Souleyman Doumbia,outfielder,1704,left
+France,SCO Angers,#6 Enzo Ebosse,outfielder,1278,left
+France,SCO Angers,#24 Romain Thomas,outfielder,2055,right
+France,SCO Angers,#29 Vincent Manceau,outfielder,2152,right
+France,SCO Angers,#8 Ismaël Traoré,outfielder,2584,right
+France,SCO Angers,#10 Angelo Fulgini,outfielder,2364,right
+France,SCO Angers,#11 Jimmy Cabot,outfielder,2012,right
+France,SCO Angers,#2 Batista Mendy,outfielder,2034,right
+France,SCO Angers,#18 Azzedine Ounahi,outfielder,1268,right
+France,SCO Angers,#5 Thomas Mangani,outfielder,2056,left
+France,SCO Angers,#21 Mohamed-Ali Cho,outfielder,1458,left
+France,SCO Angers,#7 Sofiane Boufal,outfielder,2157,right
+France,ESTAC Troyes,#30 Gauthier Gallon,keeper,2700,right
+France,ESTAC Troyes,#4 Giulian Biancone,outfielder,1673,right
+France,ESTAC Troyes,#29 Issa Kaboré,outfielder,1567,right
+France,ESTAC Troyes,#2 Erik Palmer-Brown,outfielder,1107,right
+France,ESTAC Troyes,#17 Yoann Salmier,outfielder,2388,right
+France,ESTAC Troyes,#15 Jimmy Giraudon,outfielder,1620,right
+France,ESTAC Troyes,#19 Oualid El Hajjam,outfielder,1074,right
+France,ESTAC Troyes,#23 Adil Rami,outfielder,1196,right
+France,ESTAC Troyes,#20 Renaud Ripart,outfielder,1339,right
+France,ESTAC Troyes,#24 Xavier Chavalerin,outfielder,2074,left
+France,ESTAC Troyes,#6 Rominigue Kouamé,outfielder,2371,left
+France,ESTAC Troyes,#10 Florian Tardieu,outfielder,1911,right
+France,ESTAC Troyes,#25 Mama Baldé,outfielder,1562,right
+France,ESTAC Troyes,#7 Yoann Touzghar,outfielder,1185,right
+France,FC Lorient,#30 Paul Nardi,keeper,1980,right
+France,FC Lorient,#3 Moritz Jenz,outfielder,1316,right
+France,FC Lorient,#15 Julien Laporte,outfielder,2442,right
+France,FC Lorient,#17 Houboulang Mendes,outfielder,2768,right
+France,FC Lorient,#2 Igor Silva,outfielder,1340,right
+France,FC Lorient,#19 Léo Pétrot,outfielder,1554,left
+France,FC Lorient,#25 Vincent Le Goff,outfielder,2430,left
+France,FC Lorient,#10 Enzo Le Fée,outfielder,1771,right
+France,FC Lorient,#6 Laurent Abergel,outfielder,2385,right
+France,FC Lorient,#23 Thomas Monconduit,outfielder,2035,right
+France,FC Lorient,#13 Terem Moffi,outfielder,2319,left
+France,FC Lorient,#28 Armand Laurienté,outfielder,2071,right
+France,Clermont Foot 63,#40 Ouparine Djoco,keeper,1530,right
+France,Clermont Foot 63,#1 Arthur Desmas,keeper,1350,right
+France,Clermont Foot 63,#20 Akim Zedadka,outfielder,2760,right
+France,Clermont Foot 63,#4 Cédric Hountondji,outfielder,2035,right
+France,Clermont Foot 63,#12 Vital N'Simba,outfielder,2443,left
+France,Clermont Foot 63,#36 Alidu Seidu,outfielder,1132,right
+France,Clermont Foot 63,#21 Florent Ogier,outfielder,1921,right
+France,Clermont Foot 63,#19 Salis Abdul Samed,outfielder,2134,right
+France,Clermont Foot 63,#7 Yohann Magnin,outfielder,1242,right
+France,Clermont Foot 63,#8 Jason Berthomier,outfielder,1678,left
+France,Clermont Foot 63,#25 Johan Gastien,outfielder,2220,right
+France,Clermont Foot 63,#27 Mohamed Bayo,outfielder,1844,right
+France,Clermont Foot 63,#11 Jim Allevinah,outfielder,1106,right
+France,Clermont Foot 63,#18 Elbasan Rashani,outfielder,1793,left
+France,Clermont Foot 63,#24 Jodel Dossou,outfielder,1656,
