@@ -1,5 +1,6 @@
 
 library(tidyverse)
+library(ggchicklet)
 dir_proj <- '52-manager_footedness'
 gray_wv <- rgb(24, 24, 24, maxColorValue = 255)
 gray_grid_wv <- rgb(64, 64, 64, maxColorValue = 255)
@@ -7,10 +8,10 @@ gray_grid_wv <- rgb(64, 64, 64, maxColorValue = 255)
 extrafont::loadfonts(device = 'win', quiet = TRUE)
 theme_set(theme_minimal())
 theme_update(
-  title = element_text('Karla', size = 22, color = 'white'),
-  plot.title = ggtext::element_markdown('Karla', face = 'bold', size = 22, color = 'white'),
+  title = element_text('Karla', size = 20, color = 'white'),
+  plot.title = ggtext::element_markdown('Karla', face = 'bold', size = 20, color = 'white'),
   plot.title.position = 'plot',
-  plot.subtitle = ggtext::element_markdown('Karla', size = 18, color = '#f1f1f1'),
+  plot.subtitle = ggtext::element_markdown('Karla', size = 16, color = '#f1f1f1'),
   axis.text = element_text('Karla', color = 'white', size = 14),
   axis.title = element_text('Karla', size = 14, color = 'white', face = 'bold', hjust = 0.99),
   axis.line = element_blank(),
@@ -20,205 +21,234 @@ theme_update(
   panel.grid.minor.y = element_blank(),
   plot.margin = margin(10, 10, 10, 10),
   plot.background = element_rect(fill = gray_wv, color = gray_wv),
-  plot.caption = element_text('Karla', color = 'white', hjust = 1, size = 12, face = 'italic'),
+  plot.caption = ggtext::element_markdown('Karla', color = 'white', hjust = 1, size = 12, face = 'italic'),
   plot.caption.position = 'plot',
   plot.tag = ggtext::element_markdown('Karla', size = 12, color = 'white', hjust = 0),
-  plot.tag.position = c(0.01, 0.01),
+  plot.tag.position = c(0.01, 0.03),
   panel.background = element_rect(fill = gray_wv, color = gray_wv)
 )
 footedness <- read_csv(file.path(dir_proj, 'footedness.csv'))
 
 pal <- c(
-  'both' = '#ffa600', 
-  'left' = '#7a5195', 
-  'right' = '#ef5675'
+  'Both' = '#ffa600', 
+  'Right' = '#7a5195', 
+  'Left' = '#ef5675'
 )
 
 pts <- function(x) {
   as.numeric(grid::convertUnit(grid::unit(x, 'pt'), 'mm'))
 }
 
-n_footedness <- footedness %>% 
-  # filter(!is.na(foot)) %>% 
-  filter(country %in% c('England', 'Spain')) %>% 
+upper1 <- function(x) {
+  x <- tolower(x)
+  substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+  x
+}
+
+lvls_foot <- c('Right', 'Both', 'Left')
+lvls_group <- c('Outfielder', 'Keeper', 'Manager')
+filt_footedness <- footedness %>% 
+  mutate(
+    across(
+      c(group, foot),
+      upper1
+    )
+  ) %>% 
+  filter(!is.na(foot)) %>% 
+  filter(
+    (group == 'Manager') | (group != 'Manager' & minutes_played >= 1000)
+  ) %>% 
+  filter(country %in% c('England', 'Spain'))
+
+n_footedness <- filt_footedness %>% 
   count(group, foot) %>% 
   group_by(group) %>% 
   mutate(
-    prop = n / sum(n),
-    n2 = ifelse(is.na(foot), NA_integer_, n),
-    prop2 = n2 / sum(n2, na.rm = TRUE)
+    prop = n / sum(n)
+    # n2 = ifelse(is.na(foot), NA_integer_, n),
+    # prop2 = n2 / sum(n2, na.rm = TRUE)
   ) %>% 
   ungroup() %>% 
   mutate(
     across(
       group,
       factor,
-      levels = c('outfielder', 'keeper', 'manager')
+      levels = lvls_group
     ),
     across(
       foot,
       factor,
-      levels = c('left', 'both', 'right')
+      levels = lvls_foot
     )
   ) %>% 
-  arrange(group, foot) %>% 
+  arrange(group, desc(foot)) %>% 
   group_by(group) %>% 
   mutate(
-    prop2_cumu = cumsum(prop2),
-    prop2_cumu_lag1 = lag(prop2_cumu, default = 0, n = 1)
+    across(
+      prop,
+      list(cumu = cumsum)
+    ),
+    across(
+      prop_cumu,
+      list(lag1 = ~dplyr::lag(.x, n = 1, default = 0))
+    )
   ) %>% 
-  ungroup()
-n_footedness
-
-n_footedness %>% 
-  filter(!is.na(foot)) %>% 
-  ggplot() +
-  aes(
-    y = group,
-    x = prop2,
-    fill = foot
-  ) +
-  geom_bar(
-    stat = 'identity',
-    width = 0.5
-  ) +
-  theme(
-    axis.text.x = element_blank(),
-    panel.grid.major = element_blank()
-  ) +
-  labs(
-    x = NULL,
-    y = NULL
-  )
-library(dplyr)
-summary = df %>% group_by(Brand, Category) %>% dplyr::summarize(USD = sum(USD)) %>% dplyr::group_by(Brand) %>%  mutate(percent = USD/sum(USD))
-ggplot(summary, aes(x=reorder(Brand, USD, sum), y=percent, fill=Category)) +
-  geom_bar(width = .7, colour="black", lwd=0.1)
-
-df <- n_footedness %>% 
-  # filter(group == 'outfielder') %>% 
-  # filter(foot %in% c('left', 'right')) %>% 
-  filter(!is.na(foot)) %>% 
-  group_by(group) %>% 
-  mutate(
-    area = n / sum(n),
-    r = area ^ (1/2), # square instead of sqrt since we want more overlap and proportion doesn't matter too too much
-    across(r, ~(.x / sum(.x)))
-  ) %>% 
-  ungroup()
-df
-
-coords <- tibble(
-  group = rep(c('outfielder', 'keeper', 'manager'), each = 3),
-  foot = rep(c('left', 'right', 'both'), times = 3),
-  # x0 = c(
-  #   c(-0.5, 0.5,  0),
-  #   c(-2,  -1,   -1.5),
-  #   c( 1,   2,    1.5)
-  # ),
-  y0 = rep(c(-1, 1, 1), each = 3),
-) %>% 
-  left_join(df) %>% 
-  mutate(
-    r_both = ifelse(foot == 'both', r, NA_real_)
-  ) %>% 
-  group_by(group) %>% 
-  fill(r_both, .direction = 'downup') %>% 
   ungroup() %>% 
   mutate(
-    x0 = case_when(
-      group == 'outfielder' ~ 0,
-      group == 'keeper' ~ -1,
-      group == 'manager' ~ +1
-    ) + 
-      case_when(
-        foot == 'both' ~ 0,
-        foot == 'left' ~ -1,
-        foot == 'right' ~ +1
-      ) * (r_both / 2 + r / 2)
+    x_lab = (prop_cumu + prop_cumu_lag1) / 2
   )
-coords
+n_footedness
 
-paths <- sprintf(
-  'c:/users/antho/downloads/%s.png',
-  c(
-    'orange-feet',
-    'pink-left-foot',
-    'purple-right-foot'
-  )
-)
-paths
-paths_df <- tibble(
-  path = paths,
-  x = c(0, -1, 1),
-  y = c(0, 0, 0)
-)
-
-ggplot() +
-  nflplotR::geom_from_path(
-    data = paths_df,
-    width = .08,
-    aes(
-      x = x,
-      y = y,
-      path = path
+add_text <- function(..., .data, .size) {
+  list(
+    ...,
+    geom_text(
+      data = .data,
+      position = position_stack(vjust = 0.5),
+      color = 'white',
+      family = 'Karla',
+      size = pts(.size),
+      fontface = 'bold',
+      hjust = 0.5,
+      aes(
+        y = prop,
+        label = sprintf('%.0f%% (%d)', 100 * prop, n)
+      )
     )
-  ) +
-  coord_cartesian(
-    xlim = c(-2, 2),
-    ylim = c(-2, 2)
-  ) +
-  theme(
-    axis.text = element_blank(),
-    panel.grid.major = element_blank()
-  ) +
-  labs(
-    x = NULL,
-    y = NULL
   )
+}
 
-p <- coords %>% 
-  filter(foot != 'both') %>% 
+p <- n_footedness %>% 
   ggplot() +
-  ggforce::geom_circle(
-    alpha = 0.5,
-    show.legend = FALSE,
-    aes(x0 = x0, y0 = y0, r = 1 * r, fill = foot, color = foot)
+  aes(
+    x = group,
+    y = prop,
+    fill = foot
   ) +
   scale_fill_manual(
-    values = pal
+    name = NULL,
+    values = pal,
+    breaks = rev(lvls_foot)
   ) +
-  scale_color_manual(
-    values = pal
+  scale_y_continuous(
+    limits = c(0, 1),
+    expand = c(0, 0)
   ) +
-  geom_text(
-    data = coords %>% filter(foot == 'left'),
-    color = 'white',
-    family = 'Karla',
-    size = pts(18),
-    hjust = 1.2,
-    aes(x = x0 - r, y = y0, label = sprintf('%d\n%s', n, scales::percent(prop2, accuracy = 1)))
+  geom_chicklet(
+    width = 0.8, 
+    colour = gray_wv,
+    radius = unit(6, units = 'pt'), 
+    position = position_stack(reverse = FALSE)
   ) +
-  geom_text(
-    data = coords %>% filter(foot == 'right'),
-    color = 'white',
-    family = 'Karla',
-    size = pts(18),
-    hjust = -1.2,
-    aes(x = x0 + r, y = y0, label = sprintf('%d\n%s', n, scales::percent(prop2, accuracy = 1)))
+  coord_flip() +
+  add_text(
+    .data = n_footedness %>% 
+      filter(
+        (group != 'Manager' & foot != 'Both') |
+          (group == 'Manager' & foot == 'Right')
+      ),
+    .size = 16
+  ) +
+  add_text(
+    .data = n_footedness %>% filter(group == 'Manager', foot != 'Right'),
+    .size = 12
   ) +
   theme(
-    axis.text = element_blank(),
+    legend.position = 'top',
+    legend.text = ggtext::element_markdown(color = 'white', size = 14, face = 'bold', family = 'Karla'),
+    axis.text.x = element_blank(),
+    axis.text.y = element_text(face = 'bold'),
     panel.grid.major = element_blank()
   ) +
   labs(
+    title = glue::glue('Are <span style="color:{pal["Left"]}">Left</span>-Footed Managers out of Favor?'),
+    subtitle = 'Current managers and players for La Liga and the English Premier League',
+    tag = '**Viz**: Tony ElHabr<br>**Data**: transfermarkt (2021/22 season up through 2022-04-09)',
+    caption = '12 managers did not have proper player data.<br>Outfielders and keepers must have >1k minutes played.',
     x = NULL,
     y = NULL
   )
 p
+
+path_viz <- file.path(dir_proj, 'manager_footedness.png')
 ggsave(
-  plot = last_plot(),
-  filename = file.path(dir_proj, 'temp.svg'),
-  width = 6,
-  height = 6
+  plot = p,
+  filename = path_viz,
+  width = 10,
+  height = 5
 )
+
+add_logo(
+  path_viz = path_viz,
+  path_logo = file.path(dir_proj, 'epl-logo-white.png'),
+  logo_scale = 0.13,
+  path_suffix = '',
+  idx_x = 0.01,
+  idx_y = 0.98,
+  adjust_y = FALSE,
+  delete = FALSE
+)
+
+add_logo(
+  path_viz = path_viz,
+  path_logo = file.path(dir_proj, 'la-liga-white.png'),
+  logo_scale = 0.04,
+  path_suffix = '_w_logo',
+  idx_x = 0.15,
+  idx_y = 0.98,
+  adjust_y = FALSE,
+  delete = TRUE
+)
+
+## ci ----
+resample_footedness <- function(.group = 'Manager') {
+  df <- filt_footedness %>% filter(group == .group)
+  set.seed(42) ## for reproducibility
+  rerun_df <- rerun(
+    1000,
+    df %>% 
+      slice_sample(prop = 1, replace = TRUE) %>% 
+      count(foot) %>% 
+      mutate(prop = n / sum(n))
+  ) %>%
+    bind_rows()
+  
+  rerun_df %>% 
+    group_by(foot) %>% 
+    summarize(
+      across(
+        prop,
+        list(
+          mean = mean,
+          median = median,
+          ci_lo = ~quantile(.x, 0.025),
+          ci_hi = ~quantile(.x, 0.975)
+        ),
+        .names = '{fn}'
+      )
+    ) %>% 
+    ungroup()
+}
+cis <- lvls_group %>% 
+  setNames(., .) %>% 
+  map_dfr(resample_footedness, .id = 'group')
+cis
+cis %>% 
+  filter(foot == 'Left') %>% 
+  ggplot() +
+  aes(x = median, y = group) +
+  geom_point(
+    size = 2
+  ) +
+  geom_errorbarh(
+    height = 0.5,
+    aes(
+      xmin = ci_lo,
+      xmax = ci_hi
+    )
+  ) +
+  labs(
+    title = 'Uncertainty for Relative Left-Footed Share',
+    y = NULL,
+    x = 'xGOT'
+  )

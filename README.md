@@ -6,7 +6,13 @@ gitignor’ed here.
 The projects are listed in reverse chronoligical order. A skipped number
 corresponds to an idea that I scrapped.
 
-# 49. Premier League Time to Throw In
+# 52. Premier League Time to Throw In
+
+![](52-manager_footedness/manager_footedness_w_logo.png "Are Left-Footed Managers in La Liga and the Premier League out of Favor?")
+
+![](52-manager_footedness/manager_footedness_left_cis_w_logo.png "Uncertainty in Relative Left-Footed Share")
+
+# 50. Premier League Time to Throw In
 
 ![](50-throw_in_times/throw_ins-g_state-w_logo.png "How much time do leading teams waste on throw-ins?")
 
