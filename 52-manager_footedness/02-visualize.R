@@ -118,6 +118,9 @@ add_text <- function(..., .data, .size) {
   )
 }
 
+lab_subtitle <- 'Current managers and players for La Liga and the English Premier League'
+lab_caption <- '12 managers did not have proper player data.<br>Outfielders and keepers must have >1k minutes played.'
+lab_tag <-  '**Viz**: Tony ElHabr<br>**Data**: transfermarkt (2021/22 season up through 2022-04-09)'
 p <- n_footedness %>% 
   ggplot() +
   aes(
@@ -162,48 +165,51 @@ p <- n_footedness %>%
   ) +
   labs(
     title = glue::glue('Are <span style="color:{pal["Left"]}">Left</span>-Footed Managers out of Favor?'),
-    subtitle = 'Current managers and players for La Liga and the English Premier League',
-    tag = '**Viz**: Tony ElHabr<br>**Data**: transfermarkt (2021/22 season up through 2022-04-09)',
-    caption = '12 managers did not have proper player data.<br>Outfielders and keepers must have >1k minutes played.',
+    subtitle = lab_subtitle,
+    tag = lab_tag,
+    caption = lab_caption,
     x = NULL,
     y = NULL
   )
 p
 
-path_viz <- file.path(dir_proj, 'manager_footedness.png')
-ggsave(
-  plot = p,
-  filename = path_viz,
-  width = 10,
-  height = 5
-)
+save_viz <- function(p, file) {
+  ggsave(
+    plot = p,
+    filename = file.path(dir_proj, sprintf('%s.png', file)),
+    width = 10,
+    height = 5
+  )
+  
+  add_logo(
+    path_viz = path_viz,
+    path_logo = file.path(dir_proj, 'epl-logo-white.png'),
+    logo_scale = 0.13,
+    path_suffix = '',
+    idx_x = 0.01,
+    idx_y = 0.98,
+    adjust_y = FALSE,
+    delete = FALSE
+  )
+  
+  add_logo(
+    path_viz = path_viz,
+    path_logo = file.path(dir_proj, 'la-liga-white.png'),
+    logo_scale = 0.04,
+    path_suffix = '_w_logo',
+    idx_x = 0.15,
+    idx_y = 0.98,
+    adjust_y = FALSE,
+    delete = TRUE
+  )
+  
+}
 
-add_logo(
-  path_viz = path_viz,
-  path_logo = file.path(dir_proj, 'epl-logo-white.png'),
-  logo_scale = 0.13,
-  path_suffix = '',
-  idx_x = 0.01,
-  idx_y = 0.98,
-  adjust_y = FALSE,
-  delete = FALSE
-)
-
-add_logo(
-  path_viz = path_viz,
-  path_logo = file.path(dir_proj, 'la-liga-white.png'),
-  logo_scale = 0.04,
-  path_suffix = '_w_logo',
-  idx_x = 0.15,
-  idx_y = 0.98,
-  adjust_y = FALSE,
-  delete = TRUE
-)
+save_viz(p, 'manager_footedness')
 
 ## ci ----
 resample_footedness <- function(.group = 'Manager') {
   df <- filt_footedness %>% filter(group == .group)
-  set.seed(42) ## for reproducibility
   rerun_df <- rerun(
     1000,
     df %>% 
@@ -229,26 +235,47 @@ resample_footedness <- function(.group = 'Manager') {
     ) %>% 
     ungroup()
 }
+
+set.seed(1)
 cis <- lvls_group %>% 
   setNames(., .) %>% 
-  map_dfr(resample_footedness, .id = 'group')
+  map_dfr(resample_footedness, .id = 'group') %>% 
+  mutate(
+    across(
+      group,
+      factor,
+      lvls_group
+    )
+  )
 cis
-cis %>% 
+p_cis <- cis %>% 
   filter(foot == 'Left') %>% 
   ggplot() +
   aes(x = median, y = group) +
   geom_point(
-    size = 2
+    size = 5,
+    color = pal[['Left']]
   ) +
   geom_errorbarh(
     height = 0.5,
+    size = 2,
+    color = pal[['Left']],
     aes(
       xmin = ci_lo,
       xmax = ci_hi
     )
   ) +
+  scale_x_continuous(
+    labels = scales::percent
+  ) +
   labs(
-    title = 'Uncertainty for Relative Left-Footed Share',
+    title = 'Uncertainty in Relative Left-Footed Share',
+    subtitle = lab_subtitle,
+    tag = lab_tag,
+    caption = lab_caption,
     y = NULL,
-    x = 'xGOT'
+    x = '% of Group that is Left-Footed'
   )
+p_cis
+
+save_viz(p_cis, 'manager_footedness_left_cis')
