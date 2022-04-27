@@ -47,7 +47,7 @@ upper1 <- function(x) {
 
 lvls_foot <- c('Right', 'Both', 'Left')
 lvls_group <- c('Outfielder', 'Keeper', 'Manager')
-filt_footedness <- footedness %>% 
+clean_footedness <- footedness %>% 
   mutate(
     across(
       c(group, foot),
@@ -57,61 +57,58 @@ filt_footedness <- footedness %>%
   filter(!is.na(foot)) %>% 
   filter(
     (group == 'Manager') | (group != 'Manager' & minutes_played >= 1000)
-  ) %>% 
-  filter(country %in% c('England', 'Spain'))
-
-n_footedness <- filt_footedness %>% 
-  count(group, foot) %>% 
-  group_by(group) %>% 
-  mutate(
-    prop = n / sum(n)
-    # n2 = ifelse(is.na(foot), NA_integer_, n),
-    # prop2 = n2 / sum(n2, na.rm = TRUE)
-  ) %>% 
-  ungroup() %>% 
-  mutate(
-    across(
-      group,
-      factor,
-      levels = lvls_group
-    ),
-    across(
-      foot,
-      factor,
-      levels = lvls_foot
-    )
-  ) %>% 
-  arrange(group, desc(foot)) %>% 
-  group_by(group) %>% 
-  mutate(
-    across(
-      prop,
-      list(cumu = cumsum)
-    ),
-    across(
-      prop_cumu,
-      list(lag1 = ~dplyr::lag(.x, n = 1, default = 0))
-    )
-  ) %>% 
-  ungroup() %>% 
-  mutate(
-    x_lab = (prop_cumu + prop_cumu_lag1) / 2
   )
-n_footedness
+
+count_footedness <- function(df) {
+  df %>% 
+    count(group, foot) %>% 
+    group_by(group) %>% 
+    mutate(
+      prop = n / sum(n)
+    ) %>% 
+    ungroup() %>% 
+    mutate(
+      across(
+        group,
+        factor,
+        levels = lvls_group
+      ),
+      across(
+        foot,
+        factor,
+        levels = lvls_foot
+      )
+    ) %>% 
+    arrange(group, desc(foot)) %>% 
+    group_by(group) %>% 
+    mutate(
+      across(
+        prop,
+        list(cumu = cumsum)
+      ),
+      across(
+        prop_cumu,
+        list(lag1 = ~dplyr::lag(.x, n = 1, default = 0))
+      )
+    ) %>% 
+    ungroup() %>% 
+    mutate(
+      x_lab = (prop_cumu + prop_cumu_lag1) / 2
+    )
+}
 
 add_text <- function(..., .data, .size) {
   list(
     ...,
     geom_text(
       data = .data,
-      position = position_stack(vjust = 0.5),
       color = 'white',
       family = 'Karla',
       size = pts(.size),
       fontface = 'bold',
       hjust = 0.5,
       aes(
-        y = prop,
+        y = x_lab,
         label = sprintf('%.0f%% (%d)', 100 * prop, n)
       )
     )
@@ -121,29 +118,55 @@ add_text <- function(..., .data, .size) {
 lab_subtitle <- 'Current managers and players for La Liga and the English Premier League'
 lab_caption <- '12 managers did not have proper player data.<br>Outfielders and keepers must have >1k minutes played.'
 lab_tag <-  '**Viz**: Tony ElHabr<br>**Data**: transfermarkt (2021/22 season up through 2022-04-09)'
+plot_footedness <- function(df) {
+  df %>% 
+    ggplot() +
+    aes(
+      x = group,
+      y = prop,
+      fill = foot
+    ) +
+    scale_fill_manual(
+      name = NULL,
+      values = pal,
+      breaks = rev(lvls_foot)
+    ) +
+    scale_y_continuous(
+      limits = c(0, 1),
+      expand = c(0, 0)
+    ) +
+    geom_chicklet(
+      width = 0.8, 
+      colour = gray_wv,
+      radius = unit(6, units = 'pt'), 
+      position = position_stack(reverse = FALSE)
+    ) +
+    coord_flip() +
+    theme(
+      legend.position = 'top',
+      legend.text = ggtext::element_markdown(color = 'white', size = 14, face = 'bold', family = 'Karla'),
+      axis.text.x = element_blank(),
+      axis.text.y = element_text(face = 'bold'),
+      panel.grid.major = element_blank()
+    ) +
+    labs(
+      title = glue::glue('Are <span style="color:{pal["Left"]}">Left</span>-Footed Managers out of Favor?'),
+      subtitle = lab_subtitle,
+      tag = lab_tag,
+      caption = lab_caption,
+      x = NULL,
+      y = NULL
+    )
+}
+
+filt_footedness <- clean_footedness %>% 
+  filter(country %in% c('England', 'Spain'))
+
+n_footedness <- filt_footedness%>% 
+  count_footedness()
+
 p <- n_footedness %>% 
-  ggplot() +
-  aes(
-    x = group,
-    y = prop,
-    fill = foot
-  ) +
-  scale_fill_manual(
-    name = NULL,
-    values = pal,
-    breaks = rev(lvls_foot)
-  ) +
-  scale_y_continuous(
-    limits = c(0, 1),
-    expand = c(0, 0)
-  ) +
-  geom_chicklet(
-    width = 0.8, 
-    colour = gray_wv,
-    radius = unit(6, units = 'pt'), 
-    position = position_stack(reverse = FALSE)
-  ) +
-  coord_flip() +
+  plot_footedness() +
   add_text(
     .data = n_footedness %>% 
       filter(
@@ -155,28 +178,36 @@ p <- n_footedness %>%
   add_text(
     .data = n_footedness %>% filter(group == 'Manager', foot != 'Right'),
     .size = 12
-  ) +
-  theme(
-    legend.position = 'top',
-    legend.text = ggtext::element_markdown(color = 'white', size = 14, face = 'bold', family = 'Karla'),
-    axis.text.x = element_blank(),
-    axis.text.y = element_text(face = 'bold'),
-    panel.grid.major = element_blank()
-  ) +
-  labs(
-    title = glue::glue('Are <span style="color:{pal["Left"]}">Left</span>-Footed Managers out of Favor?'),
-    subtitle = lab_subtitle,
-    tag = lab_tag,
-    caption = lab_caption,
-    x = NULL,
-    y = NULL
   )
 p
 
+n_footedness_all <- clean_footedness %>% 
+  count_footedness()
+
+p_all <- n_footedness_all %>% 
+  plot_footedness() +
+  add_text(
+    .data = n_footedness_all %>% 
+      filter(
+        !((group == 'Keeper' & foot == 'Both') |
+          (group == 'Outfielder' & foot == 'Both'))
+      ),
+    .size = 16
+  ) +
+  theme(
+    plot.tag.position = c(0.01, 0.025)
+  ) +
+  labs(
+    subtitle = lab_subtitle %>% str_replace('for.*', 'for Big 5 leagues'),
+    caption = lab_caption %>% str_remove('.*br\\>')
+  )
+p_all
+
 save_viz <- function(p, file) {
+  path_viz <- file.path(dir_proj, sprintf('%s.png', file))
   ggsave(
     plot = p,
-    filename = file.path(dir_proj, sprintf('%s.png', file)),
+    filename = path_viz,
     width = 10,
     height = 5
   )
@@ -207,8 +238,15 @@ save_viz <- function(p, file) {
 
 save_viz(p, 'manager_footedness')
 
+ggsave(
+  plot = p_all,
+  filename = file.path(dir_proj, 'manager_footedness_big5.png'),
+  width = 10,
+  height = 5
+)
+
 ## ci ----
-resample_footedness <- function(.group = 'Manager') {
+resample_footedness <- function(.group) {
   df <- filt_footedness %>% filter(group == .group)
   rerun_df <- rerun(
     1000,
@@ -248,6 +286,7 @@ cis <- lvls_group %>%
     )
   )
 cis
+
 p_cis <- cis %>% 
   filter(foot == 'Left') %>% 
   ggplot() +
@@ -266,13 +305,16 @@ p_cis <- cis %>%
     )
   ) +
   scale_x_continuous(
-    labels = scales::percent
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  theme(
+    plot.tag.position = c(0.01, 0.025)
   ) +
   labs(
     title = 'Uncertainty in Relative Left-Footed Share',
     subtitle = lab_subtitle,
     tag = lab_tag,
-    caption = lab_caption,
+    caption = lab_caption %>% str_remove('.*\\<br\\>') %>% paste0('<br/>Based on 1k resamples.'),
     y = NULL,
     x = '% of Group that is Left-Footed'
   )
