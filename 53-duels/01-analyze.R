@@ -3,7 +3,7 @@ library(qs)
 library(ebbr)
 dir_proj <- '53-duels'
 
-duels <- file.path(dir_proj, 'epl_duels.qs') %>% qs::qread()
+duels <- file.path(dir_proj, 'duels.qs') %>% qs::qread()
 
 count_duels <- function(df) {
   df %>% 
@@ -79,51 +79,3 @@ splits_adj <- inner_join(
   ) %>% 
   arrange(desc(prop_won_adj_diff))
 splits_adj %>% arrange(prop_won_adj_diff)
-
-
-options(tibble.print_min = 25)
-
-epl_players_2021 <- tibble(
-  player_name = c('Rayan Aït-Nouri', 'Conor Coady', 'Nélson Semedo'),
-  duels_won = c(79, 91, 223),
-  duels_lost  = c(99, 69, 182),
-  successful_5050s = c(26, 6,62),
-  aerials_won = c(5, 41, 41),
-  aerials_lost = c(23, 29, 45)
-)
-
-# Successful Dispossessed doesn't count towards Successful duels?
-# Unsuccessful Passes don't count towards Unsuccessful duels?
-z <- duels %>% 
-  semi_join(
-    epl_players_2021
-  ) %>% 
-  count(player_name, type_name, is_aerial, is_offensive, outcome_type_name) %>% 
-  group_by(player_name, outcome_type_name) %>% 
-  mutate(total = sum(n), diff = total - n, total_aerials = sum(ifelse(is_aerial, n, 0))) %>% 
-  ungroup() %>% 
-  relocate(player_name, outcome_type_name, is_offensive, type_name, is_aerial) %>% 
-  arrange(player_name, outcome_type_name, is_offensive, type_name) %>% 
-  inner_join(
-    bind_rows(
-      epl_players_2021 %>% 
-        transmute(player_name, outcome_type_name = 'Successful', epl_total = duels_won, epl_aerials = aerials_won),
-      epl_players_2021 %>% 
-        transmute(player_name, outcome_type_name = 'Unsuccessful', epl_total = duels_lost, epl_aerials = aerials_lost)
-    )
-  )
-
-z %>% 
-  filter(is_aerial) %>% 
-  mutate(
-    aerial_diff = ifelse(is_aerial, epl_aerials - total_aerials, NA_integer_)
-  )
-
-z %>% 
-  mutate(
-    epl_diff = epl_total - total
-  ) %>% 
-  group_by(player_name, outcome_type_name) %>% 
-  slice_min(abs(diff), n = 1)
-
-
