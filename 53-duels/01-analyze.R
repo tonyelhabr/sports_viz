@@ -3,7 +3,8 @@ library(qs)
 library(ebbr)
 dir_proj <- '53-duels'
 
-duels <- file.path(dir_proj, 'duels.qs') %>% qs::qread()
+duels <- file.path(dir_proj, 'duels.qs') %>% 
+  qs::qread()
 
 count_duels <- function(df) {
   df %>% 
@@ -46,14 +47,6 @@ q25s <- splits %>%
     q = round(quantile(n, 0.25))
   )
 
-## tidy eval doesn't work with ebbr
-# splits_adj <- splits %>% 
-#   nest(data = -c(is_aerial)) %>% 
-#   inner_join(q25s)
-#   mutate(
-#     data_adj = map2(data, q, ~ebbr::add_ebb_estimate(.x, n_won, n, prior_subset = n >= .y))
-#   )
-# splits_adj
 ground_splits <- splits %>% filter(!is_aerial)
 aerial_splits <- splits %>% filter(is_aerial)
 
@@ -78,4 +71,75 @@ splits_adj <- inner_join(
     prop_won_adj_diff = prop_won_adj_ground - prop_won_adj_aerial
   ) %>% 
   arrange(desc(prop_won_adj_diff))
-splits_adj %>% arrange(prop_won_adj_diff)
+splits_adj
+
+## model ----
+pitch_x <- 105
+pitch_y <- 68
+goal_x <- pitch_x
+goal_y <- pitch_y / 2
+add_angle_col <- function(df) {
+  df %>% 
+    mutate(
+      angle = atan((goal_y - y) / (goal_x - x))
+    )
+}
+mirror_y_col <- function(df) {
+  df %>% mutate(across(y, ~ifelse(.x > goal_y, goal_y - (.x - goal_y), .x)))
+}
+flip_bool_cols <- function(df) {
+  df %>% mutate(across(c(is_offensive, is_successful), ~ifelse(.x, FALSE, TRUE)))
+}
+invert_xy_cols <- function(df) {
+  df %>% 
+    mutate(
+      across(x, ~scales::rescale(.x, to = c(pitch_x, 0), from = c(0, pitch_x))),
+      across(y, ~scales::rescale(.x, to = c(pitch_y, 0), from = c(0, pitch_y)))
+    )
+}
+factor_is_successful_col <- function(df) {
+  df %>% 
+    mutate(
+      across(is_successful, ~ifelse(.x, 'yes', 'no') %>% factor())
+    )
+}
+
+fit_xw_model <- function(df) {
+  model_df <- bind_rows(
+    df %>% add_angle_col(),
+    df %>% mirror_y_col() %>% add_angle_col(),
+    df %>% flip_bool_cols() %>% invert_xy_cols() %>% add_angle_col(),
+    df %>% flip_bool_cols() %>% mirror_y_col() %>% invert_xy_cols() %>% add_angle_col()
+  ) %>% 
+    filter(is_offensive) %>% 
+    select(-is_offensive) %>% 
+    factor_is_successful_col()
+  
+  glm(
+    is_successful ~ x + y + angle + is_aerial + x*angle + y*angle,
+    data = model_df,
+    family = 'binomial'
+  )
+}
+
+debugonce(broom:::augment.glm)
+add_xw_col <- function(df, fit) {
+  df %>%
+    mirror_y_col() %>% 
+    add_angle_col() %>% 
+    factor_is_successful_col() %>% 
+    broom::augment(fit, newdata = ., type.predict = 'response') %>% 
+    mutate(
+      xw = ifelse(is_offensive, .pred_yes, .pred_no)
+    ) %>% 
+    select(-c(.pred_class, .pred_no, .pred_yes))
+}
+
+fit_xw <- duels %>% fit_xw_model()
+duels_xw <- duels %>% add_xw_col(fit_xw)
+
+## final ----
+splits_adj %>% 
+  filter(player_name == 'Harry Maguire') %>% 
+  mutate(n_won = n_won_aerial + n_won_ground, n_lost = n_lost_aerial + n_lost_ground) %>% 
+  glimpse()
