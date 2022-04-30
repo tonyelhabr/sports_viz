@@ -1,8 +1,9 @@
 library(tidyverse)
-library(arrow)
 library(qs)
-# library(xgboost)
 dir_proj <- '53-duels'
+
+duels <- file.path(dir_proj, 'duels.qs') %>% 
+  qs::qread()
 
 pitch_x <- 105
 pitch_y <- 68
@@ -14,22 +15,11 @@ add_angle_col <- function(df) {
       angle = atan((goal_y - y) / (goal_x - x))
     )
 }
-
-duels <- file.path(dir_proj, 'duels.qs') %>% 
-  qs::qread() %>% 
-  add_angle_col()
-
-mirror_y <- function(x) {
-  ifelse(x > goal_y, goal_y - (x - goal_y), x)
-}
-flip_bool <- function(x) {
-  ifelse(x, FALSE, TRUE)
-}
 mirror_y_col <- function(df) {
-  df %>% mutate(across(y, mirror_y))
+  df %>% mutate(across(y, ~ifelse(.x > goal_y, goal_y - (.x - goal_y), .x)))
 }
 flip_bool_cols <- function(df) {
-  df %>% mutate(across(c(is_offensive, is_successful), flip_bool))
+  df %>% mutate(across(c(is_offensive, is_successful), ~ifelse(.x, FALSE, TRUE)))
 }
 invert_xy_cols <- function(df) {
   df %>% 
@@ -38,60 +28,141 @@ invert_xy_cols <- function(df) {
       across(y, ~scales::rescale(.x, to = c(pitch_y, 0), from = c(0, pitch_y)))
     )
 }
+factor_is_successful_col <- function(df) {
+  df %>% 
+    mutate(
+      across(is_successful, ~ifelse(.x, 'yes', 'no') %>% factor())
+    )
+}
 
-# duels_slim <- duels %>% select(game_id, original_event_id, is_offensive, is_successful, x, y)
 model_df <- bind_rows(
-  duels,
-  duels %>% flip_y_col(),
-  duels %>% flip_bool_cols() %>% invert_xy_cols(),
-  duels %>% flip_y_col() %>% flip_bool_cols() %>% invert_xy_cols()
+  duels %>% add_angle_col(),
+  duels %>% mirror_y_col() %>% add_angle_col(),
+  duels %>% flip_bool_cols() %>% invert_xy_cols() %>% add_angle_col(),
+  duels %>% flip_bool_cols() %>% mirror_y_col() %>% invert_xy_cols() %>% add_angle_col()
 ) %>% 
   filter(is_offensive) %>% 
   select(-is_offensive) %>% 
-  mutate(
-    across(is_successful, ~ifelse(.x, 'yes', 'no') %>% factor())
+  filter(is_aerial) %>% 
+  factor_is_successful_col()
+
+fit <- glm(
+  is_successful ~ x + y + angle + x*angle + y*angle, #  + poly(x, 2) + poly(y, 2), # angle + x*angle + y*angle,
+  data = model_df,
+  family = 'binomial'
+)
+
+grid <- tidyr::crossing(
+  x = seq.int(0.5, goal_x - 0.5),
+  y = seq.int(0.5, goal_y - 0.5)
+) %>% 
+  add_angle_col()
+grid
+
+probs <- grid %>% 
+  broom::augment_columns(fit, newdata = ., type.predict = 'response')
+
+dual_probs <- bind_rows(
+  probs,
+  probs %>% mutate(across(y, ~pitch_y - .x))
+)
+
+probs %>% 
+  group_by(x) %>% 
+  summarize(
+    across(
+      .fitted,
+      list(min = min, max = max, median = median)
+    )
+  ) %>% 
+  ungroup() %>% 
+  ggplot() +
+  aes(x = x) +
+  geom_line(aes(y = .fitted_median), color = 'black') +
+  geom_line(aes(y = .fitted_min), color = 'red') +
+  geom_line(aes(y = .fitted_max), color = 'blue')
+
+dual_probs %>% 
+  summarize(
+    cuts = ggplot2::cut_interval(.fitted, n = 4)
   )
-# duels %>% count(is_successful) %>% mutate(prop = n / sum(n))
-df %>% count(is_successful) %>% mutate(prop = n / sum(n))
-# df %>% count(is_offensive)
-df %>% count(is_successful)
-# df %>% count(is_offensive, is_successful)
-duels %>% count(is_successful)
-duels %>% flip_bool_cols() %>% count(is_successful)
+  summarize(
+    q25 = quantile(.fitted, 0.25),
+    q75 = quantile(.fitted, 0.75)
+  )
 
-# duels %>% 
-#   transmute(
-#     x,
-#     y,
-#     dx = goal_x - x,
-#     dy = goal_y - y,
-#     angle = atan((goal_y - y) / (goal_x - x)),
-#     angle_deg = 180 * angle / pi
-#   ) %>% 
-#   head(1000) %>% 
-#   # slice_min(angle)
-#   ggplot() +
-#   aes(x = x, y = y) +
-#   geom_point() +
-#   geom_spoke(aes(angle = angle), radius = 10)
+breaks <- dual_probs$.fitted %>%
+  ggplot2::cut_interval(n = 4) %>% 
+  levels() %>% 
+  str_replace_all("(\\[|\\()(.*)\\,(.*)", '\\2') %>% 
+  as.double()
+breaks
 
-# socceraction_names <- c(
-#   'player_games',
-#   'players',
-#   'results',
-#   'games',
-#   'teams'
-# )
-# 
-# socceraction_names %>% 
-#   walk(
-#     ~{
-#       res <- file.path(dir_proj, sprintf('%s.parquet', .x)) %>% 
-#         map_dfr(arrow::read_parquet) %>% 
-#         distinct()
-#       assign(value = res, x = .x, envir = .GlobalEnv)
-#     }
-#   )
+dual_probs %>% 
+  ggplot() +
+  aes(x = x, y = y) +
+  common_gg() +
+  # scale_fill_viridis_c() +
+  # scale_color_viridis_c() +
+  geom_tile(
+    alpha = 0.5,
+    # color = gray_wv,
+    aes(fill = .fitted)
+  ) +
+  scale_fill_viridis_c(
+    name = '',
+    breaks = breaks,
+    labels = c('', 'Lower', '', 'Higher')
+  ) +
+  # guides(fill = guide_colorbar(title = '', )) +
+  theme(legend.key.width = unit(0.1, 'npc'), legend.key.height = unit(0.01, 'npc'))
+
+actual_probs <- duels %>% 
+  add_angle_col() %>% 
+  filter(is_offensive, is_aerial) %>% 
+  broom::augment(fit, newdata = ., type.predict = 'response')
+
+# 0.220 with 4, 0.218 with mirror or just 1
+actual_probs %>% 
+  brier_score(
+    truth = factor(is_successful),
+    estimate = .fitted,
+    event_level = 'second'
+  )
+
+# 0.122 with 4, 0.126 with mirror or just 1
+actual_probs %>% 
+  mutate(ref = 0.5) %>% 
+  brier_skill_score(
+    truth = factor(is_successful),
+    estimate = .fitted,
+    ref_estimate = ref,
+    event_level = 'second'
+  )
+
+actual_probs %>% 
+  mutate(
+    across(is_successful, as.integer)
+  ) %>% 
+  compute_calibration_table(outcome = is_successful, prob = .fitted) %>% 
+  make_calibration_plot(prob = .fitted, actual = actual)
+
+duels %>% 
+  add_angle_col() %>% 
+  filter(is_offensive, is_aerial) %>% 
+  broom::augment(fit, newdata = ., type.predict = 'response') %>% 
+  group_by(is_successful) %>% 
+  summarize(
+    n = n(),
+    across(.fitted, mean)
+  )
+
+duels %>% 
+  filter(!is_offensive) %>% 
+  count(is_successful) %>% 
+  mutate(prop = n / sum(n))
+
+
 library(recipes)
 rec <- recipe(
   is_successful ~ x + y + angle + is_aerial,
@@ -99,7 +170,7 @@ rec <- recipe(
 ) %>% 
   step_interact(~x:angle) %>% 
   step_interact(~y:angle) # %>% 
-  # step_interact(~x:y)
+# step_interact(~x:y)
 rec
 
 library(workflows)

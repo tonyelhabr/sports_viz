@@ -104,42 +104,178 @@ factor_is_successful_col <- function(df) {
     )
 }
 
-fit_xw_model <- function(df) {
+fit_xw_model <- function(duels, ...) {
   model_df <- bind_rows(
-    df %>% add_angle_col(),
-    df %>% mirror_y_col() %>% add_angle_col(),
-    df %>% flip_bool_cols() %>% invert_xy_cols() %>% add_angle_col(),
-    df %>% flip_bool_cols() %>% mirror_y_col() %>% invert_xy_cols() %>% add_angle_col()
+    duels %>% add_angle_col(),
+    duels %>% mirror_y_col() %>% add_angle_col(),
+    duels %>% flip_bool_cols() %>% invert_xy_cols() %>% add_angle_col(),
+    duels %>% flip_bool_cols() %>% mirror_y_col() %>% invert_xy_cols() %>% add_angle_col()
   ) %>% 
     filter(is_offensive) %>% 
     select(-is_offensive) %>% 
+    filter(...) %>% 
     factor_is_successful_col()
   
   glm(
-    is_successful ~ x + y + angle + is_aerial + x*angle + y*angle,
+    is_successful ~ x + y + angle + x*angle + y*angle,
     data = model_df,
     family = 'binomial'
   )
 }
 
-debugonce(broom:::augment.glm)
-add_xw_col <- function(df, fit) {
+add_xw_col <- function(df, fit, ...) {
   df %>%
     mirror_y_col() %>% 
     add_angle_col() %>% 
     factor_is_successful_col() %>% 
     broom::augment(fit, newdata = ., type.predict = 'response') %>% 
     mutate(
-      xw = ifelse(is_offensive, .pred_yes, .pred_no)
+      xw = ifelse(is_offensive, .fitted, 1 - .fitted)
     ) %>% 
-    select(-c(.pred_class, .pred_no, .pred_yes))
+    select(-c(.fitted))
 }
 
-fit_xw <- duels %>% fit_xw_model()
-duels_xw <- duels %>% add_xw_col(fit_xw)
+summarize_model <- function(probs) {
+  grid <- tidyr::crossing(
+    x = seq.int(0 + 0.5, goal_x - 0.5),
+    y = seq.int(0 + 0.5, goal_y - 0.5)
+  ) %>% 
+    add_angle_col()
+  grid
+  
+  probs_grid <- grid %>% 
+    broom::augment_columns(fit, newdata = ., type.predict = 'response')
+  
+  probs_grid_mirrored <- bind_rows(
+    probs_grid,
+    probs_grid %>% mutate(across(y, ~pitch_y - .x))
+  )
+  
+  breaks <- probs_grid_mirrored$.fitted %>%
+    ggplot2::cut_interval(n = 4) %>% 
+    levels() %>% 
+    str_replace_all('(\\[|\\()(.*)\\,(.*)', '\\2') %>% 
+    as.double()
+  
+  prob_min <- probs_grid_mirrored %>% 
+    slice_min(.fitted) %>% 
+    distinct()
+  
+  prob_max <- probs_grid_mirrored %>% 
+    slice_max(.fitted) %>% 
+    distinct()
+  
+  p_grid <- probs_grid_mirrored %>% 
+    ggplot() +
+    aes(x = x, y = y) +
+    common_gg() +
+    geom_tile(
+      alpha = 0.5,
+      # color = gray_wv,
+      aes(fill = .fitted)
+    ) +
+    geom_point(
+      data = prob_min,
+      color = 'white',
+      shape = 16,
+      size = 4
+    ) +
+    geom_point(
+      data = prob_max,
+      color = 'white',
+      shape = 18,
+      size = 4
+    ) +
+    scale_fill_viridis_c(
+      name = '',
+      option = 'B',
+      begin = 0.2,
+      end = 0.9,
+      breaks = breaks,
+      labels = c('', 'Lower', '', 'Higher')
+    ) +
+    theme(
+      legend.key.width = unit(0.1, 'npc'),
+      legend.key.height = unit(0.01, 'npc')
+    )
+  
+  bs <- probs %>% 
+    brier_score(
+      truth = factor(is_successful),
+      estimate = .fitted,
+      event_level = 'second'
+    )
+  bss <- probs %>% 
+    mutate(ref = 0.5) %>% 
+    brier_score(
+      truth = factor(is_successful),
+      estimate = .fitted,
+      ref_estimate = ref,
+      event_level = 'second'
+    )
+  
+  list(
+    brier_score = bs$.estimate,
+    brier_skill_score = bss$.estimate
+  )
+}
+
+aerial_fit_xw <- duels %>% fit_xw_model(is_aerial)
+aerial_duels_xw <- duels %>% add_xw_col(aerial_fit_xw, is_aerial)
+ground_fit_xw <- duels %>% fit_xw_model(!is_aerial)
+ground_duels_xw <- duels %>% add_xw_col(ground_fit_xw, !is_aerial)
 
 ## final ----
-splits_adj %>% 
-  filter(player_name == 'Harry Maguire') %>% 
-  mutate(n_won = n_won_aerial + n_won_ground, n_lost = n_lost_aerial + n_lost_ground) %>% 
-  glimpse()
+xwoe <- inner_join(
+  splits_adj %>% 
+    # filter(player_name == 'Harry Maguire') %>% 
+    transmute(
+      season_id,
+      player_name,
+      n_won_aerial,
+      n_lost_aerial,
+      n_won_ground,
+      n_lost_ground,
+      n_won = n_won_aerial + n_won_ground, 
+      n_lost = n_lost_aerial + n_lost_ground,
+      n = n_won + n_lost,
+      prop_won_adj_aerial,
+      prop_won_adj_ground
+    ),
+  duels_xw %>% 
+    # filter(player_name == 'Harry Maguire') %>% 
+    group_by(season_id, player_name, is_aerial) %>% 
+    summarize(
+      # n_duels = n(),
+      across(xw, mean)
+    ) %>% 
+    # ungroup() %>% 
+    # group_by(season_id, player_name) %>% 
+    # mutate(
+    #   across(n_duels, sum)
+    # ) %>% 
+    # ungroup() %>% 
+    mutate(across(is_aerial, ~ifelse(.x, 'aerial', 'ground'))) %>% 
+    pivot_wider(
+      names_from = is_aerial,
+      names_prefix = 'xw_',
+      values_from = xw
+    )
+) %>% 
+  mutate(
+    xwoe_aerial = prop_won_adj_aerial - xw_aerial,
+    xwoe_ground = prop_won_adj_ground - xw_ground
+  )
+xwoe %>% 
+  arrange(desc(n))
+xwoe %>% 
+  ggplot() +
+  aes(
+    x = xw_ground,
+    y = xw_aerial
+  ) +
+  geom_point(aes(size = n))
+xwoe %>% 
+  ggplot() +
+  aes(x = xwoe_ground, y = xwoe_aerial) +
+  geom_point()
