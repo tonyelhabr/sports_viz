@@ -106,6 +106,12 @@ factor_is_successful_col <- function(df) {
       across(is_successful, ~ifelse(.x, 'yes', 'no') %>% factor())
     )
 }
+
+library(tidymodels)
+library(recipes)
+library(parsnip)
+library(workflows)
+library(tune)
 fit_model <- function(duels, ...) {
   model_df <- bind_rows(
     duels %>% add_angle_col(),
@@ -123,6 +129,38 @@ fit_model <- function(duels, ...) {
     data = model_df,
     family = 'binomial'
   )
+  # folds <- model_df %>% vfold_cv(strata = is_successful, v = 5)
+  rec <- recipe(
+    is_successful ~ x + y,
+    data = model_df
+  )
+  spec <- rand_forest(
+    # trees = tune(),
+    # mtry = tune(),
+    # min_n = tune(),
+    trees = 500,
+    mtry = 2,
+    min_n = 5,
+    mode = 'classification',
+    engine = 'ranger'
+  )
+  wf <- workflow() %>% 
+    add_recipe(rec) %>% 
+    add_model(spec)
+  wf %>% fit(model_df)
+  # params_grid <- crossing(
+  #   trees = c(10, 25, 50, 100, 500, 1000),
+  #   mtry = c(2, 3),
+  #   min_n = c(2, 5, 10, 20)
+  # )
+  # res_tune <- tune_grid(
+  #   wf,
+  #   folds,
+  #   grid = params_grid,
+  #   control = control_grid(verbose = TRUE)
+  # )
+  # res_tune
+  # autoplot(res_tune)
 }
 add_xw_col <- function(df, fit, ...) {
   df %>%
