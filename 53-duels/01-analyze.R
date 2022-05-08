@@ -1,8 +1,11 @@
 library(tidyverse)
 library(qs)
 library(ebbr)
+library(yardstick)
+library(broom)
 dir_proj <- '53-duels'
 
+source(file.path(dir_proj, 'helpers.R'))
 duels <- file.path(dir_proj, 'duels.qs') %>% 
   qs::qread()
 
@@ -103,8 +106,7 @@ factor_is_successful_col <- function(df) {
       across(is_successful, ~ifelse(.x, 'yes', 'no') %>% factor())
     )
 }
-
-fit_xw_model <- function(duels, ...) {
+fit_model <- function(duels, ...) {
   model_df <- bind_rows(
     duels %>% add_angle_col(),
     duels %>% mirror_y_col() %>% add_angle_col(),
@@ -122,7 +124,6 @@ fit_xw_model <- function(duels, ...) {
     family = 'binomial'
   )
 }
-
 add_xw_col <- function(df, fit, ...) {
   df %>%
     mirror_y_col() %>% 
@@ -134,14 +135,22 @@ add_xw_col <- function(df, fit, ...) {
     ) %>% 
     select(-c(.fitted))
 }
-
-summarize_model <- function(probs) {
-  grid <- tidyr::crossing(
+do_model <- function(...) {
+  fit <- duels %>% fit_model(...)
+  probs <- duels %>% add_xw_col(fit, ...)
+  
+  grid <- crossing(
     x = seq.int(0 + 0.5, goal_x - 0.5),
     y = seq.int(0 + 0.5, goal_y - 0.5)
   ) %>% 
     add_angle_col()
-  grid
+  
+  center_prob <- broom::augment(
+    fit,
+    newdata = tibble(x = goal_x / 2, y = goal_y) %>% add_angle_col(),
+    type.predict = 'response'
+  ) %>% 
+    pull(.fitted)
   
   probs_grid <- grid %>% 
     broom::augment_columns(fit, newdata = ., type.predict = 'response')
@@ -152,7 +161,7 @@ summarize_model <- function(probs) {
   )
   
   breaks <- probs_grid_mirrored$.fitted %>%
-    ggplot2::cut_interval(n = 4) %>% 
+    cut_interval(n = 4) %>% 
     levels() %>% 
     str_replace_all('(\\[|\\()(.*)\\,(.*)', '\\2') %>% 
     as.double()
@@ -198,32 +207,83 @@ summarize_model <- function(probs) {
       legend.key.width = unit(0.1, 'npc'),
       legend.key.height = unit(0.01, 'npc')
     )
+  p_grid
   
   bs <- probs %>% 
     brier_score(
       truth = factor(is_successful),
-      estimate = .fitted,
+      estimate = xw,
       event_level = 'second'
     )
+  
   bss <- probs %>% 
     mutate(ref = 0.5) %>% 
-    brier_score(
+    brier_skill_score(
       truth = factor(is_successful),
-      estimate = .fitted,
+      estimate = xw,
       ref_estimate = ref,
       event_level = 'second'
     )
   
+  p_roc <- probs %>% 
+    roc_curve(
+      estimate = xw,
+      truth = is_successful,
+      event_level = 'second'
+    ) %>% 
+    autoplot()
+  
+  prob_center <- predict(
+    fit,
+    tibble(x = goal_x / 2, y = goal_y) %>% add_angle_col(),
+    type = 'response'
+  ) %>% 
+    unname()
+  
+  acc <- probs %>% 
+    mutate(
+      cls = ifelse(xw <= prob_center, 'no', 'yes') %>% factor()
+    ) %>%
+    accuracy(
+      estimate = cls,
+      truth = is_successful,
+      event_level = 'second'
+    )
+  
+  p_calib <- probs %>% 
+    compute_calibration_table(
+      outcome = 'is_successful',
+      prob = xw,
+      event_level = 'second',
+      n_buckets = 50
+    ) %>% 
+    make_calibration_plot(
+      prob = 'xw'
+    )
+  
   list(
+    fit = fit,
+    probs = probs,
+    pitch_plot = p_grid,
     brier_score = bs$.estimate,
-    brier_skill_score = bss$.estimate
+    brier_skill_score = bss$.estimate,
+    roc_curve = p_roc,
+    threshold = prob_center,
+    accuracy = acc$.estimate,
+    calibration_plot = p_calib
   )
 }
 
-aerial_fit_xw <- duels %>% fit_xw_model(is_aerial)
-aerial_duels_xw <- duels %>% add_xw_col(aerial_fit_xw, is_aerial)
-ground_fit_xw <- duels %>% fit_xw_model(!is_aerial)
-ground_duels_xw <- duels %>% add_xw_col(ground_fit_xw, !is_aerial)
+aerial_res <- do_model(is_aerial)
+aerial_fit <- aerial_res$fit
+aerial_duels <- aerial_res$probs
+ground_res <- do_model(!is_aerial)
+ground_fit <- ground_res$fit
+ground_duels <- ground_res$probs
+aerial_res$roc_curve
+ground_res$roc_curve
+aerial_res$pitch_plot
+ground_res$pitch_plot
 
 ## final ----
 xwoe <- inner_join(
@@ -242,7 +302,7 @@ xwoe <- inner_join(
       prop_won_adj_aerial,
       prop_won_adj_ground
     ),
-  duels_xw %>% 
+  duels %>% 
     # filter(player_name == 'Harry Maguire') %>% 
     group_by(season_id, player_name, is_aerial) %>% 
     summarize(
