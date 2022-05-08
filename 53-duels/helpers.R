@@ -2,24 +2,21 @@
 ## calibration ----
 library(rlang)
 library(yardstick)
-is_binary <- function(v) {
-  x <- unique(v)
-  length(x) - sum(is.na(x)) == 2L
-}
 
 is_0_or_1 <- function(v) {
   x <- sort(unique(v))
-  identical(as.double(x), c(0, 1))
+  all(as.integer(x) %in% c(0L, 1L))
 }
 
-compute_calibration_table <- function(data, outcome = 'outcome', prob = 'prob', ..., n_buckets = 20, alpha = 0.05, event_level = c('second', 'first')) {
+compute_calibration_table <- function(data, outcome = 'outcome', prob = 'prob', ..., width = 0.05, alpha = 0.05, event_level = c('second', 'first')) {
   
+  stopifnot('`width` should be less than 1' = width < 1)
   event_level <- match.arg(event_level)
   outcome_sym <- ensym(outcome)
   prob_sym <- ensym(prob)
   
   outcome_class <- class(data[[outcome_sym]])
-  outcome_is_usable <- outcome_class[1] %in% c('logical', 'factor', 'numeric', 'integer')
+  outcome_is_usable <- outcome_class[1] %in% c('logical', 'factor', 'numeric')
   
   if(!outcome_is_usable) {
     abort(
@@ -31,15 +28,17 @@ compute_calibration_table <- function(data, outcome = 'outcome', prob = 'prob', 
     )
   }
   
-  is_factor <- outcome_class[1] == 'factor'
+  is_factor <- outcome_class[1] == "factor"
   
   if(is_factor) {
-    is_binary <- is_binary(data[[outcome_sym]])
-    if(!is_binary) {
+    lvls <- levels(data[[outcome_sym]])
+    n_lvls <- length(lvls)
+    if(n_lvls != 2) {
       abort(
         sprintf(
-          'If the outcome variable `%s` is a factor, it may only have 2 classes.',
-          as.character(outcome_sym)
+          'Since the outcome variable `%s` is a factor, it may only have 2 classes not %d.',
+          as.character(outcome_sym),
+          n_lvls
         )
       )
     }
@@ -49,7 +48,7 @@ compute_calibration_table <- function(data, outcome = 'outcome', prob = 'prob', 
   }
   
   is_0_or_1 <- is_0_or_1(data[[outcome_sym]])
-  if(!is_0_or_1) {
+  if(!is_factor & !is_0_or_1) {
     abort(
       sprintf(
         'Outcome variable `%s` must have only 0 or 1 values.',
@@ -58,7 +57,7 @@ compute_calibration_table <- function(data, outcome = 'outcome', prob = 'prob', 
     )
   }
   
-  if(event_level == 'first') {
+  if(event_level == "first") {
     data <- data %>%
       mutate(
         across(
@@ -71,6 +70,7 @@ compute_calibration_table <- function(data, outcome = 'outcome', prob = 'prob', 
       )
   }
   
+  n_buckets <- round(1 / width)
   data %>%
     mutate(
       across(!!prob_sym, ~round(.x * n_buckets) / n_buckets)
@@ -86,24 +86,12 @@ compute_calibration_table <- function(data, outcome = 'outcome', prob = 'prob', 
     )
 }
 
-
 make_calibration_plot <- function(data, prob = 'prob', actual = 'actual', ..., ci_lower = 'ci_lower', ci_upper = 'ci_upper', n = 'n') {
-  ## This seems to be the best approach to passing groups to facets: https://github.com/tidyverse/ggplot2/issues/3070#issuecomment-457181939
-  facet_vars <- vars(...)
-  
   prob_sym <- ensym(prob)
   actual_sym <- ensym(actual)
   
-  p <- data %>%
-    ggplot(aes(x = !!prob_sym, y = !!actual_sym))
-  
-  suppressWarnings(
-    p <- p +
-      ## label1 and 2 are useful if passing the plot into ggplotly
-      geom_point(aes(size = !!ensym(n), label1 = !!ensym(ci_lower), label2 = !!ensym(ci_upper)))
-  )
-  
-  p <- p +
+  data %>%
+    ggplot(aes(x = !!prob_sym, y = !!actual_sym)) +
     geom_errorbar(aes(ymin = !!ensym(ci_lower), ymax = !!ensym(ci_upper)), width = .025, alpha = .5) +
     geom_abline(slope = 1, intercept = 0) +
     lims(
@@ -114,11 +102,6 @@ make_calibration_plot <- function(data, prob = 'prob', actual = 'actual', ..., c
       x = 'Probability',
       y = 'Actual Proportion'
     )
-  
-  if (length(facet_vars) != 0) {
-    p <- p + facet_wrap(facet_vars)
-  }
-  p
 }
 
 mse <- function(data, ...) {
