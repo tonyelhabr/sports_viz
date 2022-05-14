@@ -145,34 +145,19 @@ fit_model <- function(df, ...) {
     df |> flip_bool_cols() |> invert_xy_cols() |> add_angle_col(),
     df |> flip_bool_cols() |> mirror_y_col() |> invert_xy_cols() |> add_angle_col()
   ) |>
-    # filter(...) |>
-    # filter(!is_aerial) |> 
     factor_is_successful_col() |> 
     shift_xy_cols()
 
-  # fit <- nls(
-  #   is_successful ~ 0 + x + y + is_offensive, #  + x*is_offensive + y*is_offensive + x:y,
-  #   data = model_df,
-  #   start = list(x = 0, y = 0, is_offensive = 0),
-  #   lower = list(x = -Inf, y = -Inf, is_offensive = -Inf),
-  #   upper = list(x = +Inf, y = +Inf, is_offensive = +Inf),
-  #   # family = 'binomial',
-  #   algorithm = 'port'
-  # )
-  # fit
-  
   fit <- glm(
     is_successful ~ x + y + x:y + 0, # angle + x*angle + y*angle + 0,
     data = model_df,
-    # data = duels |> add_angle_col(),
     family = 'binomial'
   )
 }
 
 add_xw_col <- function(df, fit, ...) {
+  df <- duels |> filter(!is_aerial)
   new_df <- df |>
-    filter(...) |> 
-    # filter(!is_aerial) |> 
     mirror_y_col() |> 
     add_angle_col() |> 
     factor_is_successful_col() |> 
@@ -189,30 +174,22 @@ add_xw_col <- function(df, fit, ...) {
 do_model <- function(...) {
   # fit <- duels |> fit_model(...)
   #A probs <- duels |> add_xw_col(fit, ...)
-  n_cls <-  duels |> filter(!is_aerial) |> count(is_successful, is_offensive)
+  df <- duels |> filter(!is_aerial)
+  n_cls <- df |> filter(!is_aerial) |> count(is_successful)
   smallest_cls <- n_cls |> slice_min(n, n = 1)
-  balanced_duels <- bind_rows(
-    duels |> 
-      filter(!is_aerial, is_successful == smallest_cls$is_successful, is_offensive == smallest_cls$is_offensive),
-    duels |> 
-      filter(!is_aerial, is_successful != smallest_cls$is_successful, is_offensive == smallest_cls$is_offensive) |> 
-      slice_sample(n = smallest_cls$n),
-    duels |> 
-      filter(!is_aerial, is_successful == smallest_cls$is_successful, is_offensive != smallest_cls$is_offensive) |> 
-      slice_sample(n = smallest_cls$n),
-    duels |> 
-      filter(!is_aerial, is_successful != smallest_cls$is_successful, is_offensive != smallest_cls$is_offensive) |> 
+  balanced_df <- bind_rows(
+    df |> 
+      filter(is_successful == smallest_cls$is_successful),
+    df |> 
+      filter(is_successful != smallest_cls$is_successful) |> 
       slice_sample(n = smallest_cls$n)
   )
-  balanced_duels |> filter(!is_aerial) |> count(is_successful, is_offensive)
-  fit <- balanced_duels |> fit_model(!is_aerial)
-  probs <- duels |> add_xw_col(fit, !is_aerial) ## 0.48
+  fit <- balanced_df |> fit_model()
+  probs <- duels |> add_xw_col(fit) ## 0.48
   
-  .is_offensive <- TRUE
   grid <- crossing(
     x = seq.int(0 + 0.5, goal_x - 0.5),
-    y = seq.int(0 + 0.5, goal_y - 0.5),
-    is_offensive = .is_offensive
+    y = seq.int(0 + 0.5, goal_y - 0.5)
   ) |> 
     add_angle_col()
 
@@ -220,8 +197,7 @@ do_model <- function(...) {
     fit,
     newdata = tibble(
       x = goal_x / 2, 
-      y = goal_y, 
-      is_offensive = .is_offensive
+      y = goal_y
     ) |> 
       shift_xy_cols() |> 
       add_angle_col(),
@@ -249,53 +225,56 @@ do_model <- function(...) {
   
   prob_min <- probs_grid_mirrored |> 
     slice_min(.fitted) |> 
-    distinct()
-  
+    distinct() |> 
+    mutate(
+      across(x, ~.x - 10)
+    )
   prob_max <- probs_grid_mirrored |> 
     slice_max(.fitted) |> 
     distinct()
+  probs_mid <- probs_grid_mirrored |> 
+    filter(round(.fitted, 2) == .50)
   
   p_grid <- probs_grid_mirrored |> 
     ggplot() +
     aes(x = x, y = y) +
-    common_gg() +
+    # common_gg() +
     geom_tile(
       alpha = 0.5,
       # color = gray_wv,
       aes(fill = .fitted)
     ) +
-    geom_point(
+    geom_tile(
       data = prob_min,
       color = 'white',
-      shape = 16,
       size = 4
     ) +
-    geom_point(
+    geom_tile(
       data = prob_max,
       color = 'white',
-      shape = 18,
       size = 4
     ) +
     geom_tile(
       inherit.aes = FALSE,
-      data = probs_grid_mirrored |> filter(round(.fitted, 2) == .50),
+      data = probs_mid,
       color = 'white',
       fill = 'white',
       aes(x = x, y = y)
     ) +
     scale_fill_viridis_c(
-      # name = '',
-      # option = 'B',
-      # begin = 0.2,
-      # end = 0.9,
-      # breaks = breaks,
-      # labels = c('', 'Lower', '', 'Higher')
+      name = '',
+      option = 'B',
+      begin = 0.2,
+      end = 0.9,
+      breaks = breaks,
+      labels = c('', 'Lower', '', 'Higher')
     ) +
     theme(
       legend.key.width = unit(0.1, 'npc'),
       legend.key.height = unit(0.01, 'npc')
     )
   p_grid
+  
   bs <- probs |> 
     brier_score(
       truth = factor(is_successful),
