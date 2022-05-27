@@ -1,5 +1,8 @@
 
 library(tidyverse)
+library(worldfootballR)
+library(glue)
+library(janitor)
 
 dir_proj <- '53-duels'
 dir_data <- file.path(dir_proj, 'data')
