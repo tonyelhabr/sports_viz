@@ -1,5 +1,8 @@
 
 library(tidyverse)
+library(gt)
+library(scales)
+library(RColorBrewer)
 dir_proj <- '53-duels'
 dir_data <- file.path(dir_proj, 'data')
 
@@ -104,7 +107,6 @@ topbot_diffs <- bind_rows(
     local_path_img = map2_chr(player_name, player_url_sb, scrape_player_img)
   )
 
-library(gt)
 url_opta <- 'https://i.imgur.com/ANqRiKr.png'
 url_sb <- 'https://i.imgur.com/5NulVuZ.png'
 tag_sb <- sprintf("<img src='%s' width='24' height='24'>", url_sb)
@@ -164,12 +166,8 @@ md_opta <- gt::md(tag_opta)
     )
 }
 
-rng_diff_won <- range(diffs_filt$diff_won)
-rng_diff_lost <- range(diffs_filt$diff_lost)
-rng_dnd <- range(diffs_filt$dnd)
-mi <- pmin(rng_diff_won[1], rng_diff_lost[1], rng_dnd[1])
-ma <- pmax(rng_diff_won[2], rng_diff_lost[2], rng_dnd[2])
-rng <- c(mi, ma)
+mi <- pmin(rng_diff_won$diff_won, rng_diff_lost$diff_won, rng_dnd$diff_won)
+ma <- pmax(rng_diff_won$diff_won, rng_diff_lost$diff_won, rng_dnd$diff_won)
 
 .pal <- function(x) {
   hex_neg = RColorBrewer::brewer.pal(7, 'PRGn')[1:3]
@@ -195,7 +193,6 @@ rng <- c(mi, ma)
     alpha = 0.9
   )
 }
-
 
 make_table <- function(.group) {
   adj1 <- switch(
@@ -285,18 +282,3 @@ make_table <- function(.group) {
 }
 
 c('top', 'bot') |> walk(make_table)
-diffs_filt |> 
-  mutate(
-    across(position_opta, ~str_remove(.x, '\\,.*$') |> str_remove('\\(.*$') |> str_replace('DMC', 'DM'))
-  ) |> 
-  count(position_opta)
-
-# https://twitter.com/johnspacemuller/status/1526565544731848704?s=20&t=OYICc3dzaC9hJM7qfFEaAg
-diffs_filt |> 
-  ggplot() +
-  aes(x = aerials_opta, y = dnd) +
-  geom_point(aes(color = position_opta))
-diffs_filt |> 
-  ggplot() +
-  aes(x = aerials_opta, y = aerials_sb)  +
-  geom_point()
