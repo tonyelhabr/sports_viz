@@ -11,6 +11,12 @@ This repo stores my code and plots for sports-related plots. Any "small" data is
 
 The projects are listed in reverse chronoligical order. A skipped number corresponds to an idea that I scrapped.
 
+# 53. 2021/22 Premier League Aerial Duels
+
+![](53-duels/top.png "Who was awarded the most aerial duels won + aerial duels not lost by Opta?")
+
+![](53-duels/bot.png "Who was awarded the least aerial duels won + aerial duels not lost by Opta?")
+
 # 52. Premier League Time to Throw In
 
 ![](52-manager_footedness/manager_footedness_w_logo.png "Are Left-Footed Managers in La Liga and the Premier League out of Favor?")
