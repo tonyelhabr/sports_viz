@@ -749,7 +749,7 @@ ggsave(
 add_white_epl_logo(path_mc_x_scatter)
 
 # game-cors-table ----
-.gt_theme_538 <- function(data,...) {
+.gt_theme_538 <- function(data, ...) {
   data %>%
     gt::opt_table_font(
       font = list(
@@ -798,7 +798,8 @@ add_white_epl_logo(path_mc_x_scatter)
       row_group.font.weight = 'bold',
       
       ...
-    ) %>% opt_css(
+    ) %>% 
+    opt_css(
       "tbody tr:last-child {
     border-bottom: 2px solid #ffffff00;
       }
