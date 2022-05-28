@@ -47,6 +47,7 @@ pcts <- path_data |>
     p = percentile,
     mp = based_on_minutes
   ) |> 
+  ## npxG is also in a diff `stat_group`, so let's not have dups
   filter(!(stat_group == 'Standard' & statistic == 'npxG')) |> 
   mutate(
     group = case_when(
