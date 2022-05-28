@@ -78,10 +78,11 @@ profiles <- setNames(
   )
 
 teams <- misc |> 
+  filter(Season == '2021-2022') |> 
   distinct(player_name, player_url, team_name = Squad) |> 
   filter(team_name %in% c('Liverpool', 'Real Madrid')) |> 
   as_tibble()
-teams
+
 profiles |> 
   inner_join(
     teams,
