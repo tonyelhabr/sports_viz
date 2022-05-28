@@ -1,10 +1,14 @@
 
 This repo stores my code and plots for sports-related plots. Any “small”
 data is stored in the repo. Otherwise, it’s saved locally and
-gitignor’ed here.
+git-ignored here.
 
-The projects are listed in reverse chronoligical order. A skipped number
+The projects are listed in reverse chronological order. A skipped number
 corresponds to an idea that I scrapped.
+
+# 54. 2021/22 UCL Final Nice Dawgs
+
+![](54-202122_ucl_final/nice_dawgs.png "That boy nice vs. He got that dawg in him plot for players on teams in UCL 2021/22 final")
 
 # 53. 2021/22 Premier League Aerial Duels
 
