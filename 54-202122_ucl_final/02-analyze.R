@@ -47,6 +47,7 @@ pcts <- path_data |>
     p = percentile,
     mp = based_on_minutes
   ) |> 
+  filter(!(stat_group == 'Standard' & statistic == 'npxG')) |> 
   mutate(
     group = case_when(
       statistic %in% c('Progressive Passes', 'Progressive Passes Rec', 'Progressive Carries', 'npxG') ~ 'nice',
@@ -142,7 +143,7 @@ p <- agg |>
   ) +
   labs(
     caption = '<br/>Niceness based on blend of npxG and progression stats, relative to position.<br/>Dawgness based on pressures, tackles, and interceptions, relative to position.<br/>Point size based on minutes played.',
-    tag = '**Viz**: Tony ElHabr<br/>**Data**: StatsBomb bia fbref'
+    tag = '**Viz**: Tony ElHabr<br/>**Data**: StatsBomb via fbref'
   )
 p
 

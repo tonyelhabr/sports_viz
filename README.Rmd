@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 This repo stores my code and plots for sports-related plots. Any "small" data is stored in the repo. Otherwise, it's saved locally and git-ignored here.
 
-The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I scrapped.
+The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I scraped.
 
 # 54. 2021/22 UCL Final Nice Dawgs
 
@@ -306,3 +306,5 @@ knitr::include_graphics('04-2020_ucl_npg90_adj/04_ucl_npg90_adj.utf8.pdf')
 -   Which positions is it ok to have a weak spot at? ([inspiration](https://theathletic.com/2832130/2021/09/19/in-which-positions-can-a-team-have-a-glaring-weakness-but-still-win-the-premier-league-title/))
 
 -   Do coaches sub-off players with yellow cards at a higher rate than they would otherwise?
+
+-   Liverpool's shots conceded (outside the penalty area) vs. shots blocked in 2021/22

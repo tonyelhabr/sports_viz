@@ -4,7 +4,7 @@ data is stored in the repo. Otherwise, it’s saved locally and
 git-ignored here.
 
 The projects are listed in reverse chronological order. A skipped number
-corresponds to an idea that I scrapped.
+corresponds to an idea that I scraped.
 
 # 54. 2021/22 UCL Final Nice Dawgs
 
@@ -425,3 +425,6 @@ Chart](01-nba_seed_p/nba_seed_p.png "2020 NBA Western Conference League Restart 
 
 -   Do coaches sub-off players with yellow cards at a higher rate than
     they would otherwise?
+
+-   Liverpool’s shots conceded (outside the penalty area) vs. shots
+    blocked in 2021/22
