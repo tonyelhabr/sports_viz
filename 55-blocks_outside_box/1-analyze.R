@@ -35,7 +35,7 @@ theme_update(
 df <- sprintf('%s/blocks_and_shots.qs', dir_proj) |> 
   qs::qread()|> 
   mutate(
-    is_outside_box = case_when(
+    is_oob = case_when(
       y > (pitch_opta$width / 2 + pitch_opta$penalty_box_width / 2) ~ TRUE,
       y < (pitch_opta$width / 2 - pitch_opta$penalty_box_width / 2) ~ TRUE,
       x < (pitch_opta$length - pitch_opta$penalty_box_length) ~ TRUE,
@@ -43,89 +43,99 @@ df <- sprintf('%s/blocks_and_shots.qs', dir_proj) |>
     )
   )
 
-# df |> 
-#   ggplot() +
-#   aes(
-#     x = x, y = y
-#   ) +
-#   geom_point(aes(color = is_outside_box))
-
-outside_box_blocks <- df |> 
-  filter(is_blocked) |> 
-  count(season_id, team_id = opponent_id, team_name = opponent_name, is_outside_box, name = 'blocked_shots')
-
-outside_box_shots_conceded <- df |> 
-  filter(is_shot) |> 
-  count(season_id, team_id = opponent_id,team_name = opponent_name, is_outside_box, name = 'shots_conceded')
-
-props <- full_join(
-  outside_box_blocks,
-  outside_box_shots_conceded
-) |> 
-  mutate(
-    prop = blocked_shots / shots_conceded
-  ) |> 
-  arrange(prop)
-props
-
-props_outside_box <- props |> 
-  filter(season_id == 2022) |> 
-  filter(is_outside_box) |> 
-  mutate(
-    across(team_name, fct_reorder, -prop)
-  ) |> 
-  select(-is_outside_box)
-
-size <- 0.05
-init <- props_outside_box |> 
-  mutate(
-    n = prop %/% !!size
-  ) |> 
-  uncount(n) |> 
-  group_by(season_id, team_id, team_name) |> 
-  mutate(
-    idx = row_number()
-  ) |> 
-  ungroup() |> 
-  mutate(
-    prop_idx = idx * !!size
+oob_blocks <- df |> 
+  filter(is_blocked) |>
+  count(
+    season_id,
+    team_id = opponent_id,
+    team_name = opponent_name,
+    is_oob,
+    name = 'blocked_shots'
   )
 
-res <- bind_rows(
-  init,
-  init |> 
+oob_shots_conceded <- df |>
+  filter(is_shot) |>
+  count(
+    season_id,
+    team_id = opponent_id,
+    team_name = opponent_name,
+    is_oob,
+    name = 'shots_conceded'
+  )
+
+oob_props <- full_join(
+  oob_blocks,
+  oob_shots_conceded
+) |> 
+  mutate(
+    oob_box_prop = blocked_shots / shots_conceded
+  ) |> 
+  arrange(oob_box_prop)
+
+## 2022 chart ----
+latest_oob_box_props <- oob_props |> 
+  filter(season_id == 2022) |> 
+  filter(is_oob) |> 
+  mutate(
+    across(team_name, fct_reorder, -oob_box_prop)
+  ) |> 
+  select(-is_oob)
+
+width <- 0.004
+# https://twitter.com/CrumpledJumper/status/1529979231735672834/photo/1
+tilize <- function(df, size = 0.05, min_width = width / 2) {
+  init <- df |> 
+    mutate(
+      n = oob_box_prop %/% !!size
+    ) |> 
+    uncount(n) |> 
     group_by(season_id, team_id, team_name) |> 
-    slice_max(idx) |> 
+    mutate(
+      idx = row_number()
+    ) |> 
     ungroup() |> 
     mutate(
-      across(idx, ~.x + 1L),
-      prop_idx = prop_idx + prop %% !!size
+      prop_idx = idx * !!size
     )
-) |> 
-  arrange(season_id, team_name, idx) |> 
-  group_by(season_id, team_name) |> 
-  mutate(
-    across(prop_idx, list(lag = dplyr::lag), default = 0)
+  
+  bind_rows(
+    init,
+    init |> 
+      group_by(season_id, team_id, team_name) |> 
+      slice_max(idx) |> 
+      ungroup() |> 
+      mutate(
+        across(idx, ~.x + 1L),
+        prop_idx = prop_idx + oob_box_prop %% !!size
+      )
   ) |> 
-  ungroup()
+    arrange(season_id, team_name, idx) |> 
+    group_by(season_id, team_name) |> 
+    mutate(
+      across(prop_idx, list(lag = dplyr::lag), default = 0)
+    ) |> 
+    ungroup() |> 
+    filter(
+      (prop_idx - prop_idx_lag) > (!!min_width)
+    )
+}
 
-
-# https://twitter.com/CrumpledJumper/status/1529979231735672834/photo/1
-res2 <- res |> 
-  filter(
-    (prop_idx - prop_idx_lag) > 0.002
-  )
-res
-
-
-p <- res2 |> 
+tiled_latest_oob_box_props <- latest_oob_box_props |> tilize()
+lab_oob <- 'Blocked % of shots conceded outside of box'
+height <- 0.9
+p_tile <- tiled_latest_oob_box_props |> 
   ggplot() +
   geom_rect(
+    data = tiled_latest_oob_box_props |>
+      mutate(
+        ymin = as.numeric(team_name) - height / 2,
+        ymax = as.numeric(team_name) + height / 2
+      ),
     aes(
-      xmin = prop_idx_lag + 0.002,
-      xmax = prop_idx - 0.002,
-      ymin = as.numeric(res2$team_name) - 0.45,
-      ymax = as.numeric(res2$team_name) + 0.45,
+      xmin = prop_idx_lag + !!width / 2,
+      xmax = prop_idx - !!width / 2,
+      ymin = ymin,
+      ymax = ymax,
       fill = idx
     ),
     color = gray_grid_wv,
@@ -145,167 +155,151 @@ p <- res2 |>
   scale_y_continuous(
     breaks = 20:1,
     expand = c(0.01, 0.01),
-    labels = props_outside_box$team_name
+    labels = latest_oob_box_props$team_name
   ) +
   labs(
     title = 'Percentage of outside-the-box shots blocked',
     subtitle = '2021/22 Premier League',
-    y = 'Blocked % of shots conceded outside of box',
+    tag = '**Viz**: Tony ElHabr',
+    caption = '<br/>',
+    y = lab_oob,
     x = NULL
   )
-p
-ggsave(p, filename = sprintf('%s/temp.png', dir_proj), width = 8, height = 6)
-res |> 
-  ggplot() +
-  aes(
-  ) +
-  geom_chicklet(
-    aes(
-      x = team_name,
-      y = prop_idx - prop_idx_lag,
-      group = team_name,
-      fill = idx
-    ),
-    width = 0.8,
-    radius = unit(10, 'pt'),
-    color = 'white',
-    show.legend = FALSE
-  ) +
-  scale_fill_viridis_c(
-    option = 'G',
-    begin = 0.2,
-    end = 0.9
-  ) +
-  coord_flip() +
-  theme(
-    panel.grid.major.y = element_blank()
-  ) +
-  scale_y_continuous(
-    labels = scales::percent
-  ) +
-  labs(
-    title = 'Percentage of outside-the-box shots blocked',
-    y = NULL, #  '% of outside-the-box shots blocked',
-    x = NULL
-  )
+p_tile
+path_tile <- sprintf('%s/tiled_oob_blocks.png', dir_proj)
+ggsave(
+  p_tile,
+  filename = path_tile,
+  width = 10,
+  height = 7.5
+)
 
-res |> 
-  mutate(
-    x = (prop_idx + prop_idx_lag) / 2,
-    w = (prop_idx - prop_idx_lag) * 0.9
-  ) |> 
-  # filter(team_name == 'Liverpool')
-  ggplot() +
-  aes(
-    y = team_name,
-    x = x
-  ) +
-  geom_tile(
-    aes(width = w, fill = x),
-    height = 0.8,
-    color = 'white',
-    show.legend = FALSE,
-    linejoin = 'round'
-  ) +
-  scale_fill_viridis_c(
-    option = 'G',
-    begin = 0.2
-  ) +
-  theme(
-    panel.grid.major.y = element_blank()
-  ) +
-  scale_x_continuous(
-    breaks = c(0.2, 0.4),
-    labels = scales::percent
-  ) +
-  labs(
-    title = 'Percentage of outside-the-box shots blocked',
-    x = '% of outside-the-box shots blocked',
-    y = NULL
-  )
-
-props |> 
-  filter(is_outside_box) |> 
-  mutate(
-    across(team_name, fct_reorder, -prop)
-  ) |> 
-  ggplot() +
-  aes(
-    y = team_name,
-    x = prop
-  ) +
-  geom_col(
-    width = 0.8
-  ) +
-  theme(
-    panel.grid.major.y = element_blank()
-  ) +
-  scale_x_continuous(
-    labels = scales::percent
-  ) +
-  labs(
-    title = 'Percentage of outside-the-box shots blocked',
-    x = '% of outside-the-box shots blocked',
-    y = NULL
-  )
+add_logo(
+  path_viz = path_tile,
+  path_logo = sprintf('%s/epl-logo-white.png', dir_proj),
+  logo_scale = 0.13,
+  idx_x = 0.01,
+  idx_y = 0.98,
+  adjust_y = FALSE
+)
 
 ## scatter ----
-
-all_props_outside_box <- props |> 
+all_oob_props <- oob_props |> 
   group_by(season_id, team_id, team_name) |> 
   mutate(
-    total_shots_conceded = sum(shots_conceded)
+    total_shots_conceded = sum(shots_conceded),
     shots_prop = shots_conceded / total_shots_conceded,
     total_blocked_prop = blocked_shots / total_shots_conceded
   ) |> 
   ungroup() |> 
-  filter(is_outside_box) |> 
-  select(-is_outside_box)
-all_props_outside_box |> arrange(desc(shots_conceded))
-all_props_outside_box |> filter(team_name == 'Man City')
+  filter(is_oob) |> 
+  select(-is_oob)
+all_oob_props |> arrange(desc(shots_conceded))
+all_oob_props |> filter(team_name == 'Man City')
 
-p_scatter <- all_props_outside_box |> 
+color_liv <- '#00B2A9' # '#c8102E'
+team_name_liv <- 'Liverpool'
+prior_oob_props_wo_liv <- all_oob_props |> filter(season_id != 2022, team_name != !!team_name_liv)
+latest_oob_props_wo_liv <- all_oob_props |> filter(season_id == 2022, team_name != !!team_name_liv)
+liv_oob_box_props <-  all_oob_props |> filter(team_name == !!team_name_liv)
+pal_names <- c('Liverpool', "Other '21/22 team", "Pre '21/22 team")
+pal <- setNames(c(color_liv, 'white', gray_grid_wv), pal_names)
+team_mapping <- xengagement::team_accounts_mapping |> 
+  select(
+    team_name = team_whoscored, url_logo_espn
+  )
+library(nflplotR)
+p_scatter <- all_oob_props |> 
   ggplot() +
-  aes(x = shots_prop, y = prop) +
+  aes(x = shots_prop, y = oob_box_prop) +
   geom_jitter(
-    data = props_outside_box |> filter(season_id != 2022),
-    color = gray_grid_wv
+    data = prior_oob_props_wo_liv,
+    size = 2,
+    aes(color = pal_names[3])
   ) +
-  geom_jitter(
-    data = props_outside_box |> filter(season_id == 2022, team_name != 'Liverpool'),
-    color = 'white'
-  ) +
-  ggrepel::geom_text_repel(
-    data = props_outside_box |> filter(season_id == 2022, team_name != 'Liverpool'),
-    family = 'Karla',
-    size = 12 / .pt,
-    color = 'white',
+  # geom_jitter(
+  #   data = latest_oob_props_wo_liv,
+  #   size = 3,
+  #   aes(
+  #     color = pal_names[2]
+  #   )
+  # ) +
+  # ggrepel::geom_text_repel(
+  #   data = latest_oob_props_wo_liv,
+  #   family = 'Karla',
+  #   size = 12 / .pt,
+  #   color = 'white',
+  #   aes(
+  #     color = pal_names[2],
+  #     label = team_name
+  #   )
+  # ) +
+  geom_from_path(
+    data = latest_oob_props_wo_liv |> inner_join(team_mapping),
     aes(
-      label = team_name
-    )
+      path = url_logo_espn,
+      width = 0.1
+    ),
+    alpha = 0.5
   ) +
   geom_jitter(
-    data = props_outside_box |> filter(team_name == 'Liverpool'),
+    data = liv_oob_box_props,
     width = 0.002,
     height = 0.002,
-    color = '#c8102E'
+    size = 3,
+    aes(color = !!team_name_liv)
   ) +
   ggrepel::geom_text_repel(
-    data = props_outside_box |> filter(team_name == 'Liverpool'),
+    data = liv_oob_box_props,
     family = 'Karla',
     fontface = 'bold',
     size = 12 / .pt,
-    color = '#c8102E',
+    color = color_liv,
+    force = 10,
     aes(
-      label = sprintf("%s '%s", team_name, str_sub(season_id, 3))
+      color = !!team_name_liv,
+      label = sprintf("%s '%s/%s", team_name, as.integer(str_sub(season_id, 3)) - 1, str_sub(season_id, 3))
     )
   ) +
   scale_x_continuous(labels = scales::percent) +
   scale_y_continuous(labels = scales::percent) +
+  scale_color_manual(
+    name = '',
+    values = pal
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(size = 4))
+  ) +
+  theme(
+    plot.title = ggtext::element_markdown(size = 16),
+    plot.subtitle = ggtext::element_markdown(size = 16),
+    legend.position = 'top',
+    legend.text = element_text(size = 12, color = 'white', face = 'bold')
+  ) +
   labs(
+    title = "<span style={color_liv}>Liverpool</span>not only block shots from outside-the-box at historically low rates,<br/>but they've also conceded a lower percentage of their shots from outside the box.",
+    subtitle = '2017/18 - 2021/22 Premier League',
     x = '% of Shots Conceded Outside of Box',
-    y = 'Blocked % of shots conceded outside of box'
+    tag = '**Viz**: Tony ElHabr',
+    caption = '<br/>',
+    y = lab_oob
   )
 p_scatter
-ggsave(p_scatter, filename = sprintf('%s/temp2.png', dir_proj), width = 8, height = 8)
+
+path_scatter <- sprintf('%s/oob_blocks_and_shots.png', dir_proj)
+ggsave(
+  p_scatter,
+  filename = path_scatter,
+  width = 10,
+  height = 9
+)
+
+add_logo(
+  path_viz = path_scatter,
+  path_logo = sprintf('%s/epl-logo-white.png', dir_proj),
+  logo_scale = 0.1,
+  idx_x = 0.01,
+  idx_y = 0.98,
+  adjust_y = FALSE
+)
 
