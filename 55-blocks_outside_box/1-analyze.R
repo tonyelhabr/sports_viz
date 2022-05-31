@@ -76,64 +76,6 @@ props_outside_box <- props |>
   ) |> 
   select(-is_outside_box)
 
-props_outside_box <- props |> 
-  # filter(season_id == 2022) |> 
-  group_by(season_id, team_id, team_name) |> 
-  mutate(
-    shots_prop = shots_conceded / sum(shots_conceded)
-  ) |> 
-  ungroup() |> 
-  filter(is_outside_box) |> 
-  # mutate(
-  #   across(team_name, fct_reorder, -prop)
-  # ) |> 
-  select(-is_outside_box)
-props_outside_box |> arrange(desc(shots_conceded))
-props_outside_box |> filter(team_name == 'Man City')
-props_outside_box |> 
-  ggplot() +
-  aes(x = shots_prop, y = prop) +
-  geom_jitter(
-    data = props_outside_box |> filter(season_id != 2022),
-    color = gray_grid_wv
-  ) +
-  geom_jitter(
-    data = props_outside_box |> filter(season_id == 2022, team_name != 'Liverpool'),
-    color = 'white'
-  ) +
-  ggrepel::geom_text_repel(
-    data = props_outside_box |> filter(season_id == 2022, team_name != 'Liverpool'),
-    family = 'Karla',
-    size = 12 / .pt,
-    color = 'white',
-    aes(
-      label = team_name
-    )
-  ) +
-  geom_jitter(
-    data = props_outside_box |> filter(team_name == 'Liverpool'),
-    width = 0.002,
-    height = 0.002,
-    color = '#c8102E'
-  ) +
-  ggrepel::geom_text_repel(
-    data = props_outside_box |> filter(team_name == 'Liverpool'),
-    family = 'Karla',
-    fontface = 'bold',
-    size = 12 / .pt,
-    color = '#c8102E',
-    aes(
-      label = sprintf("%s '%s", team_name, str_sub(season_id, 3))
-    )
-  ) +
-  scale_x_continuous(labels = scales::percent) +
-  scale_y_continuous(labels = scales::percent) +
-  labs(
-    x = '% of Shots Conceded Outside of Box',
-    y = 'Blocked % of shots conceded outside of box'
-  ) -> p2
-p2
-ggsave(p2, filename = sprintf('%s/temp2.png', dir_proj), width = 8, height = 8)
 size <- 0.05
 init <- props_outside_box |> 
   mutate(
@@ -306,3 +248,64 @@ props |>
     x = '% of outside-the-box shots blocked',
     y = NULL
   )
+
+## scatter ----
+
+all_props_outside_box <- props |> 
+  group_by(season_id, team_id, team_name) |> 
+  mutate(
+    total_shots_conceded = sum(shots_conceded)
+    shots_prop = shots_conceded / total_shots_conceded,
+    total_blocked_prop = blocked_shots / total_shots_conceded
+  ) |> 
+  ungroup() |> 
+  filter(is_outside_box) |> 
+  select(-is_outside_box)
+all_props_outside_box |> arrange(desc(shots_conceded))
+all_props_outside_box |> filter(team_name == 'Man City')
+
+p_scatter <- all_props_outside_box |> 
+  ggplot() +
+  aes(x = shots_prop, y = prop) +
+  geom_jitter(
+    data = props_outside_box |> filter(season_id != 2022),
+    color = gray_grid_wv
+  ) +
+  geom_jitter(
+    data = props_outside_box |> filter(season_id == 2022, team_name != 'Liverpool'),
+    color = 'white'
+  ) +
+  ggrepel::geom_text_repel(
+    data = props_outside_box |> filter(season_id == 2022, team_name != 'Liverpool'),
+    family = 'Karla',
+    size = 12 / .pt,
+    color = 'white',
+    aes(
+      label = team_name
+    )
+  ) +
+  geom_jitter(
+    data = props_outside_box |> filter(team_name == 'Liverpool'),
+    width = 0.002,
+    height = 0.002,
+    color = '#c8102E'
+  ) +
+  ggrepel::geom_text_repel(
+    data = props_outside_box |> filter(team_name == 'Liverpool'),
+    family = 'Karla',
+    fontface = 'bold',
+    size = 12 / .pt,
+    color = '#c8102E',
+    aes(
+      label = sprintf("%s '%s", team_name, str_sub(season_id, 3))
+    )
+  ) +
+  scale_x_continuous(labels = scales::percent) +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    x = '% of Shots Conceded Outside of Box',
+    y = 'Blocked % of shots conceded outside of box'
+  )
+p_scatter
+ggsave(p_scatter, filename = sprintf('%s/temp2.png', dir_proj), width = 8, height = 8)
+
