@@ -251,21 +251,21 @@ venue_capacities <- venues |>
 venue_capacities |> write_csv(path_venue_capacities, na = '')
 
 ## make a manual mapping with these
-venue_teams <- attendance |> 
-  group_by(team = home_team) |> 
-  summarize(
-    n = n()
-  ) |> 
-  ungroup() |> 
-  arrange(team)
-venue_teams |> write_csv(file.path(dir_proj, 'fbref_teams.csv'), na = '')
-
-importance_teams <- importance |> 
-  group_by(team = home_team) |> 
-  summarize(
-    n = n()
-  ) |> 
-  ungroup() |> 
-  arrange(team)
-importance_teams |> write_csv(file.path(dir_proj, '538_teams.csv'), na = '')
+# venue_teams <- attendance |> 
+#   group_by(team = home_team) |> 
+#   summarize(
+#     n = n()
+#   ) |> 
+#   ungroup() |> 
+#   arrange(team)
+# venue_teams |> write_csv(file.path(dir_proj, 'fbref_teams.csv'), na = '')
+# 
+# importance_teams <- importance |> 
+#   group_by(team = home_team) |> 
+#   summarize(
+#     n = n()
+#   ) |> 
+#   ungroup() |> 
+#   arrange(team)
+# importance_teams |> write_csv(file.path(dir_proj, '538_teams.csv'), na = '')
 
