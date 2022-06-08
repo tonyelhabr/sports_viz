@@ -6,6 +6,12 @@ git-ignored here.
 The projects are listed in reverse chronological order. A skipped number
 corresponds to an idea that I scraped.
 
+# 55. 2021/22 EPL Blocked Shots from Outside the Box
+
+![](55-blocks_outside_box/tiled_oob_blocks_w_logo.png "Percentage of outside-the-box shots blocked in 2021/22 Premier League")
+
+![](55-blocks_outside_box/oob_blocks_and_shots_w_logo.png "Liverpool not only block shots from outside-the-box at historically low rates, but they also conceded a lower percentage of their shots from outside the box, 2017/18 - 2021/22 Premier League")
+
 # 54. 2021/22 UCL Final Nice Dawgs
 
 ![](54-202122_ucl_final/nice_dawgs.png "That boy nice vs. He got that dawg in him plot for players on teams in UCL 2021/22 final")
