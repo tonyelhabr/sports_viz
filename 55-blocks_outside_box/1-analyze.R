@@ -2,16 +2,23 @@
 # https://medium.com/@chris.summersell/are-liverpool-breaking-a-sacred-defensive-code-8c5f806a4c41
 library(tidyverse)
 library(qs)
+library(extrafont)
+library(ggtext)
 library(ggsoccer)
+library(xengagement)
+library(nflplotR)
+library(ggrepel)
 
 dir_proj <- '55-blocks_outside_box'
-gray_wv <- rgb(24, 24, 24, maxColorValue = 255)
-gray_grid_wv <- rgb(64, 64, 64, maxColorValue = 255)
+blackish_background <- '#1c1c1c'
+gray_points <- '#4d4d4d'
+gray_text <- '#999999'
 
-extrafont::loadfonts(device = 'win', quiet = TRUE)
+font <- 'Titillium Web' ## Karla
+extrafont::loadfonts(quiet = TRUE)
 theme_set(theme_minimal())
 theme_update(
-  text = element_text(family = 'Karla'),
+  text = element_text(family = font),
   title = element_text(size = 20, color = 'white'),
   plot.title = ggtext::element_markdown(face = 'bold', size = 20, color = 'white'),
   plot.title.position = 'plot',
@@ -19,17 +26,17 @@ theme_update(
   axis.text = element_text(color = 'white', size = 14),
   axis.title = element_text(size = 14, color = 'white', face = 'bold', hjust = 0.99),
   axis.line = element_blank(),
-  panel.grid.major = element_line(color = gray_grid_wv),
-  panel.grid.minor = element_line(color = gray_grid_wv),
+  panel.grid.major = element_line(color = gray_points),
+  panel.grid.minor = element_line(color = gray_points),
   panel.grid.minor.x = element_blank(),
   panel.grid.minor.y = element_blank(),
   plot.margin = margin(10, 10, 10, 10),
-  plot.background = element_rect(fill = gray_wv, color = gray_wv),
+  plot.background = element_rect(fill = blackish_background, color = blackish_background),
   plot.caption = ggtext::element_markdown(color = 'white', hjust = 1, size = 10, face = 'italic'),
   plot.caption.position = 'plot',
   plot.tag = ggtext::element_markdown(size = 12, color = 'white', hjust = 0),
   plot.tag.position = c(0.01, 0.02),
-  panel.background = element_rect(fill = gray_wv, color = gray_wv)
+  panel.background = element_rect(fill = blackish_background, color = blackish_background)
 )
 
 df <- sprintf('%s/blocks_and_shots.qs', dir_proj) |> 
@@ -138,7 +145,7 @@ p_tile <- tiled_latest_oob_box_props |>
       ymax = ymax,
       fill = idx
     ),
-    color = gray_grid_wv,
+    color = gray_points,
     show.legend = FALSE
   ) +
   scale_fill_viridis_c(
@@ -197,92 +204,112 @@ all_oob_props <- oob_props |>
 all_oob_props |> arrange(desc(shots_conceded))
 all_oob_props |> filter(team_name == 'Man City')
 
-color_liv <- '#00B2A9' # '#c8102E'
-team_name_liv <- 'Liverpool'
-prior_oob_props_wo_liv <- all_oob_props |> filter(season_id != 2022, team_name != !!team_name_liv)
-latest_oob_props_wo_liv <- all_oob_props |> filter(season_id == 2022, team_name != !!team_name_liv)
-liv_oob_box_props <-  all_oob_props |> filter(team_name == !!team_name_liv)
-pal_names <- c('Liverpool', "Other '21/22 team", "Pre '21/22 team")
-pal <- setNames(c(color_liv, 'white', gray_grid_wv), pal_names)
 team_mapping <- xengagement::team_accounts_mapping |> 
   select(
     team_name = team_whoscored, url_logo_espn
   )
-library(nflplotR)
+
+color_blocks <- '#D76B89' # '#f05333'
+color_shots_conceded <- '#389E9C' # '#fcbb30'
+team_name_liv <- 'Liverpool'
+prior_oob_props_wo_liv <- all_oob_props |> filter(season_id != 2022, team_name != !!team_name_liv)
+latest_oob_props_wo_liv <- all_oob_props |> filter(season_id == 2022, team_name != !!team_name_liv)
+liv_oob_box_props <-  all_oob_props |> 
+  filter(team_name == !!team_name_liv) |> 
+  inner_join(team_mapping) |> 
+  mutate(
+    lab = sprintf("'%s/%s", as.integer(str_sub(season_id, 3)) - 1, str_sub(season_id, 3))
+  )
+set.seed(42)
+liv_oob_box_props$x <- liv_oob_box_props$shots_prop + runif(nrow(liv_oob_box_props), -0.005, 0.005)
+liv_oob_box_props$y <- liv_oob_box_props$oob_box_prop + runif(nrow(liv_oob_box_props), -0.005, 0.005)
+# pal <- setNames(c(color_liv, 'white', gray_points), pal_names)
+
+## https://cdn.theathletic.com/app/uploads/2022/05/27003604/offside_trap-2048x1707.png
+add_logos <- function(..., prior = TRUE) {
+  if(prior) {
+    df <- liv_oob_box_props |> 
+      filter(season_id != max(season_id))
+    a <- 0.4
+  } else {
+    df <- liv_oob_box_props |> 
+      filter(season_id == max(season_id))
+    a <- 0.99
+  }
+  list(
+    ...,
+    nflplotR::geom_from_path(
+      data = df,
+      aes(
+        x = x,
+        y = y,
+        path = url_logo_espn
+      ),
+      alpha = a,
+      width = 0.06
+    )
+  )
+}
+
+add_text <- function(..., prior = TRUE) {
+  if(prior) {
+    df <- liv_oob_box_props |> 
+      filter(season_id != max(season_id))
+    c <- gray_text
+    fs <- 10
+  } else {
+    df <- liv_oob_box_props |> 
+      filter(season_id == max(season_id))
+    c <- 'white'
+    fs <- 12
+  }
+  list(
+    ...,
+    geom_text(
+      data = df,
+      family = font,
+      fontface = 'bold',
+      size = fs / .pt,
+      color = c,
+      aes(
+        x = x,
+        y = y + 0.015,
+        label = lab
+      )
+    )
+  )
+}
+
 p_scatter <- all_oob_props |> 
   ggplot() +
   aes(x = shots_prop, y = oob_box_prop) +
-  geom_jitter(
+  geom_point(
     data = prior_oob_props_wo_liv,
     size = 2,
-    aes(color = pal_names[3])
+    color = gray_points
   ) +
-  # geom_jitter(
-  #   data = latest_oob_props_wo_liv,
-  #   size = 3,
-  #   aes(
-  #     color = pal_names[2]
-  #   )
-  # ) +
-  # ggrepel::geom_text_repel(
-  #   data = latest_oob_props_wo_liv,
-  #   family = 'Karla',
-  #   size = 12 / .pt,
-  #   color = 'white',
-  #   aes(
-  #     color = pal_names[2],
-  #     label = team_name
-  #   )
-  # ) +
-  geom_from_path(
-    data = latest_oob_props_wo_liv |> inner_join(team_mapping),
-    aes(
-      path = url_logo_espn,
-      width = 0.1
-    ),
-    alpha = 0.5
-  ) +
-  geom_jitter(
-    data = liv_oob_box_props,
-    width = 0.002,
-    height = 0.002,
-    size = 3,
-    aes(color = !!team_name_liv)
-  ) +
-  ggrepel::geom_text_repel(
-    data = liv_oob_box_props,
-    family = 'Karla',
-    fontface = 'bold',
-    size = 12 / .pt,
-    color = color_liv,
-    force = 10,
-    aes(
-      color = !!team_name_liv,
-      label = sprintf("%s '%s/%s", team_name, as.integer(str_sub(season_id, 3)) - 1, str_sub(season_id, 3))
-    )
-  ) +
+  add_logos(prior = TRUE) +
+  add_logos(prior = FALSE) +
+  add_text(prior = TRUE) +
+  add_text(prior = FALSE) +
   scale_x_continuous(labels = scales::percent) +
   scale_y_continuous(labels = scales::percent) +
-  scale_color_manual(
-    name = '',
-    values = pal
-  ) +
   guides(
     color = guide_legend(override.aes = list(size = 4))
   ) +
   theme(
     plot.title = ggtext::element_markdown(size = 16),
     plot.subtitle = ggtext::element_markdown(size = 16),
-    legend.position = 'top',
-    legend.text = element_text(size = 12, color = 'white', face = 'bold')
+    axis.title.x = ggtext::element_markdown(),
+    axis.title.y = ggtext::element_markdown()
   ) +
   labs(
-    title = "<span style={color_liv}>Liverpool</span>not only block shots from outside-the-box at historically low rates,<br/>but they've also conceded a lower percentage of their shots from outside the box.",
+    title = glue::glue("<img src='https://a.espncdn.com/i/teamlogos/soccer/500/364.png' width = '14' height = '14'> Liverpool not only <span style='color:{color_blocks}'>blocked shots from outside-the-box</span><br/>at historically low rates, but they also <span style='color:{color_shots_conceded}'>conceded a lower<br/>percentage of their shots from outside the box</span>"),
     subtitle = '2017/18 - 2021/22 Premier League',
-    x = '% of Shots Conceded Outside of Box',
+    x = glue::glue("<span style='color:{color_shots_conceded}'>% of Shots Conceded Outside of Box</span>"),
     tag = '**Viz**: Tony ElHabr',
     caption = '<br/>',
-    y = lab_oob
+    y = glue::glue("<span style='color:{color_blocks}'>{lab_oob}</span>")
   )
 p_scatter
 
@@ -290,8 +317,8 @@ path_scatter <- sprintf('%s/oob_blocks_and_shots.png', dir_proj)
 ggsave(
   p_scatter,
   filename = path_scatter,
-  width = 10,
-  height = 9
+  width = 7,
+  height = 7
 )
 
 add_logo(
