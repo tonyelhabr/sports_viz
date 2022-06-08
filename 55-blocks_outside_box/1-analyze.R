@@ -128,6 +128,7 @@ tilize <- function(df, size = 0.05, min_width = width / 2) {
 }
 
 tiled_latest_oob_box_props <- latest_oob_box_props |> tilize()
+
 lab_oob <- 'Blocked % of shots conceded outside of box'
 height <- 0.9
 p_tile <- tiled_latest_oob_box_props |> 
@@ -162,7 +163,17 @@ p_tile <- tiled_latest_oob_box_props |>
   scale_y_continuous(
     breaks = 20:1,
     expand = c(0.01, 0.01),
-    labels = latest_oob_box_props$team_name
+    labels = latest_oob_box_props |> 
+      inner_join(
+        team_mapping
+      ) |> 
+      mutate(
+        lab = sprintf("%s <img src='%s' width='14' height='14'>", team_name, url_logo_espn)
+      ) |> 
+      pull(lab)
+  ) +
+  theme(
+    axis.text.y = ggtext::element_markdown(margin = margin(r = -20))
   ) +
   labs(
     title = 'Percentage of outside-the-box shots blocked',
@@ -324,7 +335,7 @@ ggsave(
 add_logo(
   path_viz = path_scatter,
   path_logo = sprintf('%s/epl-logo-white.png', dir_proj),
-  logo_scale = 0.1,
+  logo_scale = 0.17,
   idx_x = 0.01,
   idx_y = 0.98,
   adjust_y = FALSE
