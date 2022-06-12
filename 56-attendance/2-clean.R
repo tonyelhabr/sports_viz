@@ -1,17 +1,14 @@
 
 library(tidyverse)
 library(qs)
-library(lubridate)
 
 dir_proj <- '56-attendance'
 path_attendance <- file.path(dir_proj, 'attendance.qs')
 path_importance <- file.path(dir_proj, 'importance.qs')
-path_team_logos <- file.path(dir_proj, 'team_logos.qs')
-path_venue_capacities <- file.path(dir_proj, 'venue_capacities.csv')
 path_team_mapping <- file.path(dir_proj, 'fbref_538_team_mapping.csv')
 
 ## outputs
-path_data <- file.path(dir_proj, 'data.qs')
+path_clean_data <- file.path(dir_proj, 'clean_data.qs')
 path_logos <- file.path(dir_proj, 'logos.qs')
 
 filter_dates <- function(df) {
@@ -26,15 +23,6 @@ importance <- path_importance |>
   filter_dates()
 team_logos <- path_team_logos |> qs::qread()
 
-venue_capacities <- path_venue_capacities |> 
-  read_csv(
-    col_types = cols(
-      venue = 'c', 
-      season = 'i',
-      max_attendance = 'i',
-      capacity = 'i'
-    )
-  )
 
 team_mapping <- path_team_mapping |> 
   read_csv(show_col_types = FALSE)
@@ -53,21 +41,10 @@ league_mapping <- tibble(
   league_abbrv = c('EPL', 'EFL', 'MLS', 'USL')
 )
 
-make_season_label <- function(season, is_pre_pandemic) {
-  case_when(
-    season == 2020 & is_pre_pandemic ~ '2020, Pre-Pandemic',
-    season == 2020 & !is_pre_pandemic ~ '2020, Post-Pandemic',
-    TRUE ~ as.character(season)
-  ) |> 
-    factor(levels = c('2018', '2019', '2020, Pre-Pandemic', '2020, Post-Pandemic', '2021', '2022'))
-}
-
-df <- attendance |> 
+init_df <- attendance |> 
   transmute(
     season,
     date,
-    across(wk, as.integer),
-    is_weekend = day %in% c('Sat', 'Sun'),
     league,
     home_team,
     away_team,
@@ -80,11 +57,6 @@ df <- attendance |>
     by = 'home_team'
   ) |>
   select(-home_team_stats) |> 
-  left_join(
-    venue_capacities |> 
-      select(venue, season, lat, long, capacity),
-    by = c('venue', 'season')
-  ) |> 
   inner_join(
     team_mapping |> 
       select(home_team = team_fbref, team_538),
@@ -118,18 +90,40 @@ df <- attendance |>
     by = c('date', 'league', 'home_team')
   ) |> 
   select(-league) |> 
-  rename(league = league_abbrv) |> 
-  ## TODO:
-  ## 1. Factor month?
-  ## 2. Add a is_second_half column (harder to calculate)
+  rename(league = league_abbrv)
+
+clean_df <- bind_rows(
+  init_df |>
+    transmute(
+      league,
+      season,
+      date,
+      team = home_team,
+      team_opp = away_team,
+      importance = home_importance,
+      importance_opp = away_importance,
+      attendance,
+      is_home = TRUE
+    ),
+  init_df |>
+    transmute(
+      league,
+      season,
+      date,
+      team = away_team,
+      team_opp = home_team,
+      importance = away_importance,
+      importance_opp = home_importance,
+      attendance,
+      is_home = FALSE
+    )
+) |> 
+  arrange(league, season, date, team) |> 
+  group_by(league, season, team) |> 
   mutate(
-    is_pre_pandemic = date <= lubridate::ymd('2020-03-15'),
-    is_post_pandemic = date <= lubridate::ymd('2021-07-01'),
-    season_label = make_season_label(season, is_pre_pandemic),
-    across(matches('importance$'), ~.x / 100),
-    importance = (home_importance + away_importance) / 2,
-    attendance_prop = attendance / capacity,
-    trunc_attendance_prop = ifelse(attendance_prop > 1, 1, attendance_prop)
-  )
-qs::qsave(df, path_data)
+    gw = row_number(date)
+  ) |> 
+  ungroup()
+
+qs::qsave(clean_df, path_clean_data)
 qs::qsave(logos, path_logos)

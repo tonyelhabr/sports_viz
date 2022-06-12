@@ -9,7 +9,8 @@ library(magick)
 library(patchwork)
 
 dir_proj <- '56-attendance'
-path_data <- file.path(dir_proj, 'data.qs')
+path_data <- file.path(dir_proj, 'model_data.qs')
+path_venue_capacities <- file.path(dir_proj, 'venue_capacities.csv')
 path_logos <- file.path(dir_proj, 'logos.qs')
 
 gray_wv <- rgb(24, 24, 24, maxColorValue = 255)
@@ -86,6 +87,16 @@ theme_update(
     )
 }
 
+
+venue_capacities <- path_venue_capacities |> 
+  read_csv(
+    col_types = cols(
+      venue = 'c', 
+      season = 'i',
+      max_attendance = 'i',
+      capacity = 'i'
+    )
+  )
 
 us_map <- map_data('state') |> as_tibble()
 us_border <- borders('usa', colour = gray_grid_wv)
