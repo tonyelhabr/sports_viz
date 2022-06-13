@@ -149,8 +149,9 @@ results <- params %>%
 attendance <- results %>% 
   unnest(data) |> 
   janitor::clean_names() |> 
+  filter(venue |> str_detect('Neutral Site', negate = TRUE)) |> 
   mutate(
-    across(venue, ~str_remove(.x, '\\s+(Neutral Site)')),
+    # across(venue, ~str_remove(.x, '\\s+\\(Neutral Site\\)')),
     across(
       attendance,
       ~case_when(
@@ -174,7 +175,6 @@ attendance <- results %>%
     venue
   ) |> 
   arrange(season, league, date, home_team)
-attendance |> filter(venue |> str_detect('Pratt')) |> distinct(venue)
 attendance |> qs::qsave(path_attendance)
 
 ## importance ----
@@ -219,15 +219,29 @@ importance <- matches_538 |>
 importance |> qs::qsave(path_importance)
 
 ## venues and capacities ----
+## TODO:
+## 1. Parse coordinates correctly
+## 2. Identify most-common team per venue to assist with debugging
+## 3. Potentially make coordinates and capacities a manual CSV?
+## 4. Make season NA by default in the venue_capacities.csv, fill in at model time.
 venues <- attendance |> 
-  filter(venue |> str_detect('[Nn]eutral', negate = TRUE)) |> 
   group_by(venue) |> 
   summarize(
     n = n(),
     max_attendance = max(attendance, na.rm = TRUE)
   ) |> 
   ungroup() |> 
+  left_join(
+    attendance |> 
+      count(venue, league, team = home_team, name = 'n_team') |> 
+      group_by(venue) |> 
+      slice_max(n_team, n = 1, with_ties = FALSE) |> 
+      ungroup(),
+    by = 'venue'
+  ) |> 
+  select(venue, league, team, n, n_team, max_attendance) |> 
   arrange(desc(max_attendance))
+# venues |> filter(n != n_team)
 
 .parse_coord <- function(page, xpath) {
   degree <- page |> 
@@ -236,9 +250,8 @@ venues <- attendance |>
   if(length(degree) == 0) {
     return(NA_integer_)
   }
-  integral <- degree |> str_remove('°.*$') |> as.integer()
-  decimal <- degree |> str_remove('^.*°') |> str_remove_all('[^0-9]') |> as.integer()
-  sprintf('%s.%s', integral, decimal) |> as.double()
+  parts <- str_split(degree, '[^0-9]')
+  sprintf('%s.%s', parts[1], parts[2] / 60 + parts[3] / 3600) |> as.double()
 }
 
 parse_coords <- function(info, page) {
@@ -361,8 +374,8 @@ manual_url_capacities <- c(
   'Dr. Mark & Cindy Lynn Soccer Stadium' = 'https://en.wikipedia.org/wiki/Dr._Mark_%26_Cindy_Lynn_Stadium'
 ) |> 
   imap_dfr(
-    ~possibly_manually_scrape_wiki_for_venue(.x, .y)
-    # ~slowly_manually_scrape_wiki_for_venue(.x, .y, overwrite = FALSE)
+    # ~possibly_manually_scrape_wiki_for_venue(.x, .y)
+    ~slowly_manually_scrape_wiki_for_venue(.x, .y, overwrite = TRUE)
   )
 
 wiki_capacities <- venues |> 
@@ -373,10 +386,9 @@ wiki_capacities <- venues |>
     c('', manual_url_capacities |> distinct(venue) |> pull(venue))
   ) %>%
   set_names(., .) %>%
-  # .[1:3] |> 
   map_dfr(
-    # slowly_search_and_scrape_wiki_for_venue, overwrite = T
-    possibly_search_and_scrape_wiki_for_venue
+    # possibly_search_and_scrape_wiki_for_venue
+    slowly_search_and_scrape_wiki_for_venue, overwrite = T
   )
 
 # unmatched_venues <- c(
@@ -398,18 +410,35 @@ corrected_capacities <- list(
   enframe('venue', 'capacity') |> 
   unnest(capacity)
 
+# changed_capacities <- list(
+#   'Highmark Stadium' = tibble(
+#     'season' = 2018:2022,
+#     'capacity' = c(3500, rep(5000, 4))
+#   ),
+#   'Nippert Stadium' = tibble(
+#     'season' = 2018:2022,
+#     'capacity' = c(rep(37978, 3), rep(40000, 2))
+#   ),
+#   'Phoenix Rising Soccer Complex' = tibble(
+#     'season' = 2018:2022,
+#     'capacity' = c(rep(6000, 3), rep(10000, 2))
+#   )
+# ) |> 
+#   enframe('venue', 'capacity') |> 
+#   unnest(capacity)
+
 changed_capacities <- list(
   'Highmark Stadium' = tibble(
-    'season' = 2018:2022,
-    'capacity' = c(3500, rep(5000, 4))
+    'season' = c(2018, 2019),
+    'capacity' = c(3500, 5000)
   ),
   'Nippert Stadium' = tibble(
-    'season' = 2018:2022,
-    'capacity' = c(rep(37978, 3), rep(40000, 2))
+    'season' = c(2018, 2021),
+    'capacity' = c(37978, 40000)
   ),
   'Phoenix Rising Soccer Complex' = tibble(
-    'season' = 2018:2022,
-    'capacity' = c(rep(6000, 3), rep(10000, 2))
+    'season' = c(2018, 2021),
+    'capacity' = c(6000, 10000)
   )
 ) |> 
   enframe('venue', 'capacity') |> 
@@ -435,7 +464,7 @@ manual_coords <- list(
   'Merlo Field' = c('lat' = 45.3428, 'long' = -122.4338), 
   'New York Stadium' = c('lat' = 53.4279, 'long' = -1.362),
   'Old Trafford' = c('lat' = 53.2747, 'long' = -2.1729),
-  'Papa Murphy's Park' = c('lat' = 38.3528, 'long' = -121.2617),
+  "Papa Murphy's Park" = c('lat' = 38.3528, 'long' = -121.2617),
   'Shawnee Mission District Stadium' = c('lat' = 39.021358, 'long' = -94.67113), 
   'WakeMed Soccer Park' = c('lat' = 35.471019, 'long' = -78.451838),
   'Wembley Stadium' = c('lat' = 51.556158, 'long' = 0.279607)
@@ -446,6 +475,10 @@ manual_coords <- list(
 venue_capacities <- venues |> 
   select(
     venue,
+    league,
+    team,
+    n,
+    n_team,
     max_attendance
   ) |> 
   mutate(
@@ -480,19 +513,23 @@ venue_capacities <- venues |>
   ) |> 
   select(-capacity2) |> 
   filter(venue != '', !is.na(venue)) |> 
-  crossing(
-    season = 2016L:2022L
-  ) |> 
+  # crossing(
+  #   season = 2016L:2022L
+  # ) |> 
   left_join(
     changed_capacities |> rename(capacity2 = capacity),
-    by = c('venue', 'season')
+    by = 'venue'
   ) |> 
   mutate(
     across(capacity, ~coalesce(capacity2, capacity))
   ) |> 
   select(-capacity2) |> 
   arrange(venue)
+venue_capacities |> filter(!is.na(season))
 venue_capacities |> write_csv(path_venue_capacities, na = '')
+
+venue_capacities |> 
+  filter(is.na(capacity))
 
 ## make a manual mapping with these
 # venue_teams <- attendance |> 
