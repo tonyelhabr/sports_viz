@@ -158,15 +158,17 @@ venue_capacities_compared <- latest_venue_capacities |>
   inner_join(league_mapping |> select(league = league_fbref, league_abbrv), by = 'league') |> 
   select(-league) |> 
   rename(league = league_abbrv) |> 
-  select(venue, league, team1 = team, capacity1 = capacity, n1 = n) |> 
+  select(venue, league, team1 = team, capacity1 = capacity, n1 = n, lat1 = lat, long1 = long) |> 
   full_join(
     venue_capacities2 |> 
-      select(venue, league, team2 = team, capacity2 = capacity, year_opened1 = year_opened, year_closed2 = year_closed),
+      select(venue, league, team2 = team, capacity2 = capacity, year_opened2 = year_opened, year_closed2 = year_closed, lat2 = lat, long2 = long),
     by = c('venue', 'league')
   ) |> 
   mutate(
     team = coalesce(team1, team2)
   ) |> 
   arrange(team) |> 
-  select(-team)
+  select(-team) |> 
+  select(venue, league, team1, team2, capacity1, capacity2, lat1, lat2, long1, long2, n1, year_opened2, year_closed2) |> 
+  mutate(which = case_when(is.na(team1) ~ "second", is.na(team2) ~ "first", TRUE ~ "both"), .before = 1)
 venue_capacities_compared |> write_csv(path_venue_capacities_compared, na = '')

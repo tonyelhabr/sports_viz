@@ -171,6 +171,8 @@ attendance <- results %>%
     day,
     home_team = home,
     away_team = away,
+    home_goals,
+    away_goals,
     attendance,
     venue
   ) |> 

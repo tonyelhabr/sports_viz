@@ -6,6 +6,7 @@ dir_proj <- '56-attendance'
 path_attendance <- file.path(dir_proj, 'attendance.qs')
 path_importance <- file.path(dir_proj, 'importance.qs')
 path_team_mapping <- file.path(dir_proj, 'fbref_538_team_mapping.csv')
+path_team_logos <- file.path(dir_proj, 'team_logos.qs')
 
 ## outputs
 path_clean_data <- file.path(dir_proj, 'clean_data.qs')
@@ -22,7 +23,6 @@ importance <- path_importance |>
   qs::qread() |> 
   filter_dates()
 team_logos <- path_team_logos |> qs::qread()
-
 
 team_mapping <- path_team_mapping |> 
   read_csv(show_col_types = FALSE)
@@ -42,12 +42,16 @@ league_mapping <- tibble(
 )
 
 init_df <- attendance |> 
+  ## only completed matches
+  filter(!is.na(home_goals)) |> 
   transmute(
     season,
     date,
     league,
     home_team,
     away_team,
+    home_goals,
+    away_goals,
     venue,
     attendance
   ) |> 
@@ -55,7 +59,7 @@ init_df <- attendance |>
     team_mapping |>
       select(home_team = team_fbref, home_team_stats = team_fbref_stats),
     by = 'home_team'
-  ) |>
+  ) |> 
   select(-home_team_stats) |> 
   inner_join(
     team_mapping |> 
@@ -92,14 +96,17 @@ init_df <- attendance |>
   select(-league) |> 
   rename(league = league_abbrv)
 
-clean_df <- bind_rows(
+stacked_df <- bind_rows(
   init_df |>
     transmute(
       league,
       season,
       date,
+      venue,
       team = home_team,
       team_opp = away_team,
+      goals = home_goals,
+      goals_opp = away_goals,
       importance = home_importance,
       importance_opp = away_importance,
       attendance,
@@ -110,8 +117,11 @@ clean_df <- bind_rows(
       league,
       season,
       date,
+      venue,
       team = away_team,
       team_opp = home_team,
+      goals = away_goals,
+      goals_opp = home_goals,
       importance = away_importance,
       importance_opp = home_importance,
       attendance,
@@ -119,11 +129,87 @@ clean_df <- bind_rows(
     )
 ) |> 
   arrange(league, season, date, team) |> 
+  mutate(
+    pts = case_when(
+      goals > goals_opp ~ 3L,
+      goals < goals_opp ~ 0L,
+      TRUE ~ 1L
+    )
+  ) |> 
   group_by(league, season, team) |> 
   mutate(
-    gw = row_number(date)
+    gw = row_number(date),
+    across(
+      c(goals, goals_opp, pts), list(cumu = cumsum)
+    )
+  ) |> 
+  ungroup() |> 
+  mutate(
+    gd_cumu = goals_cumu - goals_opp_cumu,
+    gd_cumu_per_game =  gd_cumu / gw
+  ) |> 
+  group_by(league, season) |> 
+  mutate(
+    gd_per_game_prnk = percent_rank(desc(gd_cumu_per_game)),
+    pts_per_game_prnk = percent_rank(desc(pts / gw))
+  ) |> 
+  ungroup() |> 
+  group_by(league, season, team) |> 
+  mutate(
+    across(
+      c(gd_per_game_prnk, pts_per_game_prnk),
+      list(
+        lag1 = ~dplyr::lag(.x, default = 0)
+      )
+    )
   ) |> 
   ungroup()
+
+stacked_opp_df <- stacked_df |> 
+  left_join(
+    stacked_df |> 
+      rename_with(
+        ~sprintf('%s_opp', .x), matches('^(gd|pts)_')
+      ) |> 
+      select(league, season, gw, venue, team, matches('^(gd|pts)_.*_opp$')),
+    by = c('league', 'season', 'gw', 'venue', 'team_opp' = 'team')
+  )
+
+n_gws_by_league_season <- stacked_opp_df |> 
+  group_by(league, season, team) |> 
+  slice_max(gw) |> 
+  ungroup() |> 
+  count(league, season, gw, sort = TRUE)
+
+## Montreal FC got some weird shit going on for 2022
+n_gws_majority_by_league_season <- n_gws_by_league_season |> 
+  group_by(league, season) |> 
+  mutate(prop = n / sum(n)) |> 
+  slice_max(n, n = 1, with_ties = FALSE) |> 
+  ungroup()
+
+clean_df <- stacked_df |> 
+  # rename_with(~str_remove(.x, '_prnk'), matches('_prnk_cumu$')) |> 
+  filter(!is.na(attendance)) |> 
+  filter(is_home) |> 
+  select(-is_home)
+
+stacked_df |> 
+  filter(season == 2021, league == 'MLS') |> 
+  filter(gw == 34) |> 
+  arrange(desc(importance))
+
+## exporting to sheet
+# init_df |>
+#   filter(league == 'MLS') |> 
+#   distinct(team_538 = home_team) |> 
+#   inner_join(
+#     team_mapping |> select(team_538, team_fbref)
+#   ) |> 
+#   arrange(team_538) |> 
+#   clipr::write_clip()
+# table <- worldfootballR::fotmob_get_league_tables(league_id = 130)
+# table |> distinct(name) |> arrange(name) |> clipr::write_clip()
 
 qs::qsave(clean_df, path_clean_data)
 qs::qsave(logos, path_logos)
