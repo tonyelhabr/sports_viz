@@ -14,12 +14,13 @@ dir_img <- file.path(dir_proj, 'img')
 dir.create(dir_data, showWarnings = FALSE)
 dir.create(dir_img, showWarnings = FALSE)
 
-## outputs
+## outputs ----
 path_attendance <- file.path(dir_proj, 'attendance.qs')
 path_importance <- file.path(dir_proj, 'importance.qs')
 path_team_logos <- file.path(dir_proj, 'team_logos.qs')
 path_venue_capacities <- file.path(dir_proj, 'venue_capacities.csv')
 
+## start ----
 params <- crossing(
   country = c('USA', 'ENG'),
   gender = 'M',
@@ -221,11 +222,6 @@ importance <- matches_538 |>
 importance |> qs::qsave(path_importance)
 
 ## venues and capacities ----
-## TODO:
-## 1. Parse coordinates correctly
-## 2. Identify most-common team per venue to assist with debugging
-## 3. Potentially make coordinates and capacities a manual CSV?
-## 4. Make season NA by default in the venue_capacities.csv, fill in at model time.
 venues <- attendance |> 
   group_by(venue) |> 
   summarize(
@@ -412,23 +408,6 @@ corrected_capacities <- list(
   enframe('venue', 'capacity') |> 
   unnest(capacity)
 
-# changed_capacities <- list(
-#   'Highmark Stadium' = tibble(
-#     'season' = 2018:2022,
-#     'capacity' = c(3500, rep(5000, 4))
-#   ),
-#   'Nippert Stadium' = tibble(
-#     'season' = 2018:2022,
-#     'capacity' = c(rep(37978, 3), rep(40000, 2))
-#   ),
-#   'Phoenix Rising Soccer Complex' = tibble(
-#     'season' = 2018:2022,
-#     'capacity' = c(rep(6000, 3), rep(10000, 2))
-#   )
-# ) |> 
-#   enframe('venue', 'capacity') |> 
-#   unnest(capacity)
-
 changed_capacities <- list(
   'Highmark Stadium' = tibble(
     'season' = c(2018, 2019),
@@ -445,14 +424,6 @@ changed_capacities <- list(
 ) |> 
   enframe('venue', 'capacity') |> 
   unnest(capacity)
-
-# attendance |> filter(venue == 'Nippert Stadium') |> distinct(season)
-# attendance |> filter(venue == 'Southwest University Park') |> select(home_team, away_team, season, attendance) |> arrange(desc(attendance))
-# venue_capacities |> filter(venue == 'Isotopes Park')
-# df |> 
-#   filter(league %in% 'USL') |> 
-#   filter(attendance > capacity) |> 
-#   count(venue, sort = T)
 
 manual_coords <- list(
   'American Legion Memorial Stadium' = c('lat' = 35.2182, 'long' = -80.8283), 
@@ -515,9 +486,6 @@ venue_capacities <- venues |>
   ) |> 
   select(-capacity2) |> 
   filter(venue != '', !is.na(venue)) |> 
-  # crossing(
-  #   season = 2016L:2022L
-  # ) |> 
   left_join(
     changed_capacities |> rename(capacity2 = capacity),
     by = 'venue'
@@ -527,27 +495,5 @@ venue_capacities <- venues |>
   ) |> 
   select(-capacity2) |> 
   arrange(venue)
-venue_capacities |> filter(!is.na(season))
+venue_capacities
 venue_capacities |> write_csv(path_venue_capacities, na = '')
-
-venue_capacities |> 
-  filter(is.na(capacity))
-
-## make a manual mapping with these
-# venue_teams <- attendance |> 
-#   group_by(team = home_team) |> 
-#   summarize(
-#     n = n()
-#   ) |> 
-#   ungroup() |> 
-#   arrange(team)
-# venue_teams |> write_csv(file.path(dir_proj, 'fbref_teams.csv'), na = '')
-# 
-# importance_teams <- importance |> 
-#   group_by(team = home_team) |> 
-#   summarize(
-#     n = n()
-#   ) |> 
-#   ungroup() |> 
-#   arrange(team)
-# importance_teams |> write_csv(file.path(dir_proj, '538_teams.csv'), na = '')
