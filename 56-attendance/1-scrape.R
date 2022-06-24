@@ -318,7 +318,7 @@ search_and_scrape_wiki_for_venue <- function(venue, overwrite = FALSE){
   
   path <- file.path(dir_data, sprintf('%s.qs', venue))
   if(file.exists(path) & !overwrite) {
-    cli::cli_inform(glue::glue('{Sys.time()}: Returning early for {venue}'))
+    cli::cli_text('Returning early for {venue}.')
     return(qs::qread(path))
   }
   
