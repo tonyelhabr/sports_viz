@@ -1,16 +1,15 @@
 
 library(tidyverse)
 library(qs)
+library(googlesheets4)
 
 dir_proj <- '56-attendance'
 path_attendance <- file.path(dir_proj, 'attendance.qs')
 path_importance <- file.path(dir_proj, 'importance.qs')
-path_team_mapping <- file.path(dir_proj, 'fbref_538_team_mapping.csv')
 path_team_logos <- file.path(dir_proj, 'team_logos.qs')
 
 ## outputs
 path_clean_data <- file.path(dir_proj, 'clean_data.qs')
-path_logos <- file.path(dir_proj, 'logos.qs')
 
 filter_dates <- function(df) {
   df |> 
@@ -24,16 +23,15 @@ importance <- path_importance |>
   filter_dates()
 team_logos <- path_team_logos |> qs::qread()
 
-team_mapping <- path_team_mapping |> 
-  read_csv(show_col_types = FALSE)
-
-logos <- team_mapping |>
-  left_join(
-    team_logos |>
-      select(team_fbref_stats = name, home_logo_path = path),
-    by = 'team_fbref_stats'
-  ) |> 
-  select(team = team_538, path = home_logo_path)
+team_mapping <-  read_sheet(ss = '1nIw1PgozYsb11W-QSzjgPlW-qrsJWLiPB8x6fTTMqiI') |> 
+  transmute(
+    rn = row_number(),
+    across(is_alternative_fbref, ~replace_na(.x, FALSE)),
+    team_538,
+    team_fbref,
+    team_fbref_stats,
+    team_fotmob
+  )
 
 league_mapping <- tibble(
   league_fbref = c('Premier League', 'EFL Championship', 'Major League Soccer', 'USL Championship'),
@@ -189,27 +187,8 @@ n_gws_majority_by_league_season <- n_gws_by_league_season |>
   ungroup()
 
 clean_df <- stacked_df |> 
-  # rename_with(~str_remove(.x, '_prnk'), matches('_prnk_cumu$')) |> 
   filter(!is.na(attendance)) |> 
   filter(is_home) |> 
   select(-is_home)
 
-stacked_df |> 
-  filter(season == 2021, league == 'MLS') |> 
-  filter(gw == 34) |> 
-  arrange(desc(importance))
-
-## exporting to sheet
-# init_df |>
-#   filter(league == 'MLS') |> 
-#   distinct(team_538 = home_team) |> 
-#   inner_join(
-#     team_mapping |> select(team_538, team_fbref)
-#   ) |> 
-#   arrange(team_538) |> 
-#   clipr::write_clip()
-# table <- worldfootballR::fotmob_get_league_tables(league_id = 130)
-# table |> distinct(name) |> arrange(name) |> clipr::write_clip()
-
 qs::qsave(clean_df, path_clean_data)
-qs::qsave(logos, path_logos)

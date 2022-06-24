@@ -7,11 +7,11 @@ library(gt)
 library(gtExtras)
 library(magick)
 library(patchwork)
+library(googlesheets4)
 
 dir_proj <- '56-attendance'
 path_data <- file.path(dir_proj, 'model_data.qs')
 path_venue_capacities <- file.path(dir_proj, 'venue_capacities.csv')
-path_logos <- file.path(dir_proj, 'logos.qs')
 
 gray_wv <- rgb(24, 24, 24, maxColorValue = 255)
 gray_grid_wv <- rgb(64, 64, 64, maxColorValue = 255)
@@ -87,6 +87,13 @@ theme_update(
     )
 }
 
+team_mapping <-  read_sheet(ss = '1nIw1PgozYsb11W-QSzjgPlW-qrsJWLiPB8x6fTTMqiI') |> 
+  transmute(
+    rn = row_number(),
+    across(is_alternative_fbref, ~replace_na(.x, FALSE)),
+    team_538,
+    team_fbref_stats
+  )
 
 venue_capacities <- path_venue_capacities |> 
   read_csv(
@@ -102,7 +109,6 @@ us_map <- map_data('state') |> as_tibble()
 us_border <- borders('usa', colour = gray_grid_wv)
 
 df <- path_data |> qs::qread()
-logos <- path_logos |> qs::qread()
 
 usl_teams <- df |> 
   filter(league == 'USL') |> 
@@ -236,7 +242,11 @@ generate_gt <- function(df) {
 ## Try this https://stackoverflow.com/questions/65835639/arrange-gt-tables-side-by-side-or-in-a-grid-or-table-of-tables, since it doesn't save with some shiny tag
 tbs <- usl_venues |> 
   inner_join(
-    logos,
+    team_mapping |> 
+      transmute(
+        team = team_538,
+        path = sprintf('%s/img/%s.png', dir_proj, team_fbref_stats)
+      ),
     by = 'team'
   ) |> 
   transmute(
