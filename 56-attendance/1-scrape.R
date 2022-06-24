@@ -45,11 +45,11 @@ scrape_team_urls <- function(country, gender, season_end_year, tier, overwrite =
   path <- file.path(dir_data, sprintf('team_urls-%s-%s-%s-%s.qs', country, gender, season_end_year, tier))
   suffix <- glue::glue('for `country = {country}`, `gender = "{gender}"`, `season_end_year = "{season_end_year}"`, `tier = "{tier}"`.')
   if(file.exists(path) & !overwrite) {
-    cli::cli_inform(glue::glue('{Sys.time()}: Returning early {suffix}'))
+    cli::cli_text('{Sys.time()}: Returning early {suffix}')
     return(qs::qread(path))
   }
   res <- possibly_get_team_urls(country, gender, season_end_year, tier)
-  cli::cli_inform(glue::glue('{Sys.time()}: Retrieved data {suffix}'))
+  cli::cli_text('{Sys.time()}: Retrieved data {suffix}')
   qs::qsave(res, path)
   res
 }
@@ -70,7 +70,7 @@ scrape_fbref_team_img <- function(url, name, overwrite = FALSE) {
   path <- file.path(dir_data, sprintf('fbref_team_img-%s.qs', name))
   suffix <- sprintf('for %s.', name)
   if(file.exists(path) & !overwrite) {
-    cli::cli_inform(glue::glue('{Sys.time()}: Returning early {suffix}'))
+    cli::cli_text('{Sys.time()}: Returning early {suffix}')
     return(qs::qread(path))
   }
   page <- rvest::read_html(url)
@@ -90,7 +90,7 @@ scrape_fbref_team_img <- function(url, name, overwrite = FALSE) {
     team = team,
     path = path_img
   )
-  cli::cli_inform(glue::glue('{Sys.time()}: Retrieved data {suffix}'))
+  cli::cli_text('{Sys.time()}: Retrieved data {suffix}')
   qs::qsave(res, path)
   res
 }
@@ -127,11 +127,11 @@ scrape_results <- function(country, gender, season_end_year, tier, overwrite = F
   path <- file.path(dir_data, sprintf('results-%s-%s-%s-%s.qs', country, gender, season_end_year, tier))
   suffix <- glue::glue('for `country = {country}`, `gender = "{gender}"`, `season_end_year = "{season_end_year}"`, `tier = "{tier}"`.')
   if(file.exists(path) & !overwrite) {
-    cli::cli_inform(glue::glue('{Sys.time()}: Returning early {suffix}'))
+    cli::cli_text('{Sys.time()}: Returning early {suffix}')
     return(qs::qread(path))
   }
   res <- possibly_get_match_results(country, gender, season_end_year, tier)
-  cli::cli_inform(glue::glue('{Sys.time()}: Retrieved data {suffix}'))
+  cli::cli_text('{Sys.time()}: Retrieved data {suffix}')
   qs::qsave(res, path)
   res
 }
@@ -239,7 +239,6 @@ venues <- attendance |>
   ) |> 
   select(venue, league, team, n, n_team, max_attendance) |> 
   arrange(desc(max_attendance))
-# venues |> filter(n != n_team)
 
 .parse_coord <- function(page, xpath) {
   degree <- page |> 
