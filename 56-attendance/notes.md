@@ -1,7 +1,6 @@
 ## TODO
 
--   Consolidate team mapping with xengagement team mapping
--   Check wiki capacities against fotmob's (wiki is still important for coords)
+[x] Consolidate team mapping with xengagement team mapping [x] Check wiki capacities against fotmob's (wiki is still important for coords) [ ] Add twitter user ids to mapping so that can pull number of followers
 
 ## Questions
 

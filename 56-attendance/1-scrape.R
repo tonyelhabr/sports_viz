@@ -1,4 +1,3 @@
-
 library(tidyverse)
 library(worldfootballR)
 library(glue)
@@ -7,6 +6,8 @@ library(qs)
 library(janitor)
 library(readr)
 library(lubridate)
+library(httr)
+library(googlesheets4)
 
 dir_proj <- '56-attendance'
 dir_data <- file.path(dir_proj, 'data')
@@ -18,7 +19,7 @@ dir.create(dir_img, showWarnings = FALSE)
 path_attendance <- file.path(dir_proj, 'attendance.qs')
 path_importance <- file.path(dir_proj, 'importance.qs')
 path_team_logos <- file.path(dir_proj, 'team_logos.qs')
-path_venue_capacities <- file.path(dir_proj, 'venue_capacities.csv')
+path_fbref_venue_capacities <- file.path(dir_proj, 'fbref_venue_capacities.csv')
 
 ## start ----
 params <- crossing(
@@ -154,6 +155,13 @@ attendance <- results %>%
   mutate(
     # across(venue, ~str_remove(.x, '\\s+\\(Neutral Site\\)')),
     across(
+      venue,
+      ~case_when(
+        home == 'Saint Louis' & venue == 'Toyota Stadium' ~ 'World Wide Technology Soccer Park',
+        TRUE ~ .x
+      )
+    )
+    across(
       attendance,
       ~case_when(
         venue == 'Al Lang Stadium' & date == lubridate::ymd('2022-03-26') ~ round(.x / 10),
@@ -221,7 +229,7 @@ importance <- matches_538 |>
   arrange(season, league, date, home_team) 
 importance |> qs::qsave(path_importance)
 
-## venues and capacities ----
+## fbref_venue_capacities ----
 venues <- attendance |> 
   group_by(venue) |> 
   summarize(
@@ -368,12 +376,19 @@ manual_url_capacities <- c(
   'Stamford Bridge' = 'https://en.wikipedia.org/wiki/Stamford_Bridge_(stadium)',
   'Pratt & Whitney Stadium at Rentschler Fi...' = 'https://en.wikipedia.org/wiki/Pratt_%26_Whitney_Stadium_at_Rentschler_Field',
   'The Valley' = 'https://en.wikipedia.org/wiki/The_Valley_(London)',
-  'Dr. Mark & Cindy Lynn Soccer Stadium' = 'https://en.wikipedia.org/wiki/Dr._Mark_%26_Cindy_Lynn_Stadium'
+  'Dr. Mark & Cindy Lynn Soccer Stadium' = 'https://en.wikipedia.org/wiki/Dr._Mark_%26_Cindy_Lynn_Stadium',
+  'Toyota Stadium' = 'https://en.wikipedia.org/wiki/World_Wide_Technology_Soccer_Park' ## same name as FC Dallas
 ) |> 
   imap_dfr(
-    # ~possibly_manually_scrape_wiki_for_venue(.x, .y)
-    ~slowly_manually_scrape_wiki_for_venue(.x, .y, overwrite = TRUE)
+    ~possibly_manually_scrape_wiki_for_venue(.x, .y)
+    # ~slowly_manually_scrape_wiki_for_venue(.x, .y, overwrite = TRUE)
   )
+
+manual_venues <- tibble(
+  venue = 'Toyota Stadium (Missouri)',
+  league = 'Major League Soccer',
+  team = 'Saint Louis'
+)
 
 wiki_capacities <- venues |> 
   filter(n > 1) |> 
@@ -384,8 +399,8 @@ wiki_capacities <- venues |>
   ) %>%
   set_names(., .) %>%
   map_dfr(
-    # possibly_search_and_scrape_wiki_for_venue
-    slowly_search_and_scrape_wiki_for_venue, overwrite = T
+    possibly_search_and_scrape_wiki_for_venue
+    # slowly_search_and_scrape_wiki_for_venue, overwrite = T
   )
 
 # unmatched_venues <- c(
@@ -444,7 +459,7 @@ manual_coords <- list(
   enframe('venue', 'coords') |>
   unnest_wider(coords)
 
-venue_capacities <- venues |> 
+fbref_venue_capacities <- venues |> 
   select(
     venue,
     league,
@@ -494,5 +509,226 @@ venue_capacities <- venues |>
   ) |> 
   select(-capacity2) |> 
   arrange(venue)
-venue_capacities
-venue_capacities |> write_csv(path_venue_capacities, na = '')
+fbref_venue_capacities
+# fbref_venue_capacities |> write_csv(path_fbref_venue_capacities, na = '')
+
+## fotmob venue capacities ----
+read_mapping <- function(sheet) {
+  read_sheet(ss = '1nIw1PgozYsb11W-QSzjgPlW-qrsJWLiPB8x6fTTMqiI', sheet = sheet)
+} 
+
+team_mapping <- read_mapping('teams')
+venue_mapping <- read_mapping('venues')
+venue_mapping |> 
+  mutate(rn = row_number()) |> 
+  inner_join(
+    team_mapping |> select(team_538, team_fbref),
+    by = 'team_fbref'
+  ) |> 
+  distinct() |> 
+  arrange(rn) |> 
+  relocate(team_538) |> 
+  select(team_538, venue_fbref, venue_fotmob) |> 
+  clipr::write_clip()
+
+venue_mapping |> 
+  group_by(team_fbref) |> 
+  filter(all(is.na(venue_fotmob)))
+
+fotmob_team_mapping <- team_mapping |> 
+  distinct(team = team_fotmob)
+
+fotmob_teams <- fotmob_get_league_tables(league_id = c(47, 48, 108, 130, 8972, 9296)) |> 
+  filter(table_type == 'all') |> 
+  distinct(league_id, team = name, id, team_page_url)
+
+fotmob_team_ids <- fotmob_team_mapping |> 
+  inner_join(fotmob_teams) |> 
+  arrange(league_id, team)
+
+unmatched_fotmob_team_ids <- fotmob_team_mapping |> 
+  anti_join(fotmob_teams) |> 
+  arrange(team)
+
+fotmob_build_id <- worldfootballR:::.fotmob_get_build_id()
+scrape_fotmob_capacity <- function(team_id, team, overwrite = FALSE) {
+  path <- file.path(dir_data, sprintf('fotmob_capacity-%s.qs', team))
+  if(file.exists(path) & !overwrite) {
+    cli::cli_text('Returning early for {team}.')
+    return(qs::qread(path))
+  }
+  
+  team_url <- sprintf(
+    'https://www.fotmob.com/_next/data/%s/teams/%s/overview/%s.json',
+    fotmob_build_id, team_id, str_replace_all(tolower(team), ' ', '-')
+  )
+  team_json <- team_url |> jsonlite::fromJSON()
+  team_element <- team_json$pageProps$initialState$team
+  team_id <- names(team_element)
+  
+  venue_element <- team_element[[team_id]]$data$venue
+  widget_element <- venue_element$widget
+  
+  stat_df <- venue_element$statPairs |>
+    as_tibble() |> 
+    pivot_wider(names_from = V1, values_from = V2) |> 
+    janitor::clean_names() |> 
+    mutate(
+      across(matches('capacity|opened'), parse_number)
+    )
+  
+  res <- tibble(
+    team_id = team_id,
+    team = team,
+    venue = widget_element$name,
+    lat = parse_number(widget_element$location[1]),
+    long = parse_number(widget_element$location[2]),
+    city = widget_element$city
+  ) |> 
+    bind_cols(stat_df)
+  
+  qs::qsave(res, path)
+  cli::cli_text('Returning data for {team}.')
+  res
+}
+
+possibly_scrape_fotmob_capacity <- possibly(scrape_fotmob_capacity, otherwise = tibble(), quiet = FALSE)
+slowly_scrape_fotmob_capacity <- slowly(possibly_scrape_fotmob_capacity)
+
+search_fotmob_capacity <- function(team, overwrite = FALSE) {
+  path <- file.path(dir_data, sprintf('fotmob_search_capacity-%s.qs', team))
+  if(file.exists(path) & !overwrite) {
+    cli::cli_text('Returning early for {team}.')
+    return(qs::qread(path))
+  }
+  
+  resp <- sprintf('https://apigw.fotmob.com/searchapi/suggest?term=%s', tolower(team)) |> 
+    URLencode() |> 
+    httr::GET()
+  
+  team_id <- resp |> 
+    httr::content() |> 
+    enframe() |> 
+    filter(name == 'teamSuggest') |> 
+    select(value) |> 
+    unnest(value) |> 
+    unnest_wider(value) |> 
+    select(options) |> 
+    unnest(options) |> 
+    unnest_wider(options) |> 
+    slice(1) |> 
+    pull(text) |> 
+    str_remove_all('(.*\\|)')
+  
+  res <- scrape_fotmob_capacity(team_id = team_id, team = team, overwrite = TRUE)
+  qs::qsave(res, path)
+  res
+}
+
+possibly_search_fotmob_capacity <- possibly(search_fotmob_capacity, otherwise = tibble(), quiet = FALSE)
+slowly_search_fotmob_capacity <- slowly(possibly_search_fotmob_capacity)
+
+fotmob_capacities <- setNames(fotmob_team_ids$id, fotmob_team_ids$team) |> 
+  imap_dfr(
+    ~possibly_scrape_fotmob_capacity(.x, .y)
+    # ~slowly_scrape_fotmob_capacity(.x, .y, overwrite = TRUE)
+  )
+
+searched_fotmob_capacities <- unmatched_fotmob_team_ids$team |> 
+  map_dfr(
+    ~possibly_search_fotmob_capacity(.x)
+    # ~slowly_search_fotmob_capacity(.x, overwrite = TRUE)
+  )
+
+fotmob_venue_capacities <- bind_rows(
+  fotmob_capacities,
+  searched_fotmob_capacities
+) |> 
+  arrange(team)
+
+fbref_venue_capacities <- read_csv(path_fbref_venue_capacities)
+
+# fotmob_venue_capacities |> 
+#   select(team_fotmob = team, venue_fotmob = venue, capacity_fotmob = capacity) |> 
+#   inner_join(
+#     team_mapping |> 
+#       select(team_fbref, team_fotmob)
+#   ) |> 
+#   inner_join(
+#     fbref_venue_capacities |> 
+#       select(team_fbref = team, venue_fbref = venue, capacity_wiki = capacity)
+#   )
+# 
+# unmatched_fotmob_venues <- fotmob_venue_capacities |> 
+#   distinct(venue, team_fotmob = team, capacity_fotmob = capacity) |> 
+#   anti_join(
+#     fbref_venue_capacities |> select(venue),
+#     by = 'venue'
+#   ) |> 
+#   arrange(team_fotmob)
+# 
+# unmatched_fbref_venues <- fbref_venue_capacities |> 
+#   distinct(venue, team_fbref = team, capacity_fbref = capacity) |> 
+#   anti_join(
+#     fotmob_venue_capacities |> select(venue),
+#     by = 'venue'
+#   ) |> 
+#   arrange(team_fbref)
+
+all_venue_capacites <- fotmob_venue_capacities |> 
+  distinct(venue, team_fotmob = team, capacity_fotmob = capacity, lat_fotmob = lat, long_fotmob = long) |> 
+  full_join(
+    fbref_venue_capacities |> 
+      distinct(venue, team_fbref = team, capacity_wiki = capacity, n, n_team, lat_fbref = lat, long_fbref = long)
+  ) |> 
+  select(team_fotmob, team_fbref, venue, capacity_fotmob, capacity_wiki, n, n_team) |> 
+  arrange(coalesce(team_fotmob, team_fbref))
+
+fbref_and_fotmob_venue_capacities <- bind_rows(
+  all_venue_capacites |> 
+    filter(!is.na(team_fotmob), !is.na(team_fbref)) |> 
+    transmute(team_fbref, venue_fbref = venue, venue_fotmob = venue),
+  all_venue_capacites |> 
+    filter(is.na(team_fotmob)) |> 
+    transmute(team_fbref, venue_fbref = venue),
+  all_venue_capacites |> 
+    filter(is.na(team_fbref)) |> 
+    select(-team_fbref) |> 
+    inner_join(
+      team_mapping |> select(team_fbref, team_fotmob),
+    ) |> 
+    transmute(team_fbref, venue_fotmob = venue)
+) |> 
+  distinct() |> 
+  inner_join(all_venue_capacites |> select(team_fbref, venue_fbref = venue, n, n_team)) |> 
+  inner_join(
+    team_mapping |> select(team_538, team_fbref)
+  ) |> 
+  relocate(team_538) |> 
+  arrange(team_538, coalesce(venue_fbref, venue_fotmob))
+fbref_and_fotmob_venue_capacities
+
+joined_mapping <- venue_mapping |> 
+  inner_join(
+    fbref_venue_capacities |> 
+      filter(is.na(season)) |> 
+      distinct(venue_fbref = venue, team_fbref = team, capacity_wiki = capacity, n, n_team, lat_fbref = lat, long_fbref = long)
+  ) |> 
+  left_join(
+    fotmob_venue_capacities |> 
+      distinct(venue_fotmob = venue, capacity_fotmob = capacity, lat_fotmob = lat, long_fotmob = long)
+  ) |> 
+  select(team_fbref, matches('venue'), matches('capacity'), matches('lat'), matches('long'), n, n_team)
+
+joined_mapping |> 
+  filter(team_fbref == 'Bethlehem')
+fbref_venue_capacities
+
+joined_mapping |> 
+  mutate(
+    has_fotmob = !is.na(venue_fotmob),
+    capacity_diff = capacity_fotmob - capacity_wiki,
+    .before = 1
+  ) |> 
+  filter(has_fotmob) |> 
+  arrange(desc(abs(capacity_diff)))
