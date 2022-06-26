@@ -519,21 +519,6 @@ read_mapping <- function(sheet) {
 
 team_mapping <- read_mapping('teams')
 venue_mapping <- read_mapping('venues')
-venue_mapping |> 
-  mutate(rn = row_number()) |> 
-  inner_join(
-    team_mapping |> select(team_538, team_fbref),
-    by = 'team_fbref'
-  ) |> 
-  distinct() |> 
-  arrange(rn) |> 
-  relocate(team_538) |> 
-  select(team_538, venue_fbref, venue_fotmob) |> 
-  clipr::write_clip()
-
-venue_mapping |> 
-  group_by(team_fbref) |> 
-  filter(all(is.na(venue_fotmob)))
 
 fotmob_team_mapping <- team_mapping |> 
   distinct(team = team_fotmob)
@@ -646,89 +631,4 @@ fotmob_venue_capacities <- bind_rows(
 ) |> 
   arrange(team)
 
-fbref_venue_capacities <- read_csv(path_fbref_venue_capacities)
 
-# fotmob_venue_capacities |> 
-#   select(team_fotmob = team, venue_fotmob = venue, capacity_fotmob = capacity) |> 
-#   inner_join(
-#     team_mapping |> 
-#       select(team_fbref, team_fotmob)
-#   ) |> 
-#   inner_join(
-#     fbref_venue_capacities |> 
-#       select(team_fbref = team, venue_fbref = venue, capacity_wiki = capacity)
-#   )
-# 
-# unmatched_fotmob_venues <- fotmob_venue_capacities |> 
-#   distinct(venue, team_fotmob = team, capacity_fotmob = capacity) |> 
-#   anti_join(
-#     fbref_venue_capacities |> select(venue),
-#     by = 'venue'
-#   ) |> 
-#   arrange(team_fotmob)
-# 
-# unmatched_fbref_venues <- fbref_venue_capacities |> 
-#   distinct(venue, team_fbref = team, capacity_fbref = capacity) |> 
-#   anti_join(
-#     fotmob_venue_capacities |> select(venue),
-#     by = 'venue'
-#   ) |> 
-#   arrange(team_fbref)
-
-all_venue_capacites <- fotmob_venue_capacities |> 
-  distinct(venue, team_fotmob = team, capacity_fotmob = capacity, lat_fotmob = lat, long_fotmob = long) |> 
-  full_join(
-    fbref_venue_capacities |> 
-      distinct(venue, team_fbref = team, capacity_wiki = capacity, n, n_team, lat_fbref = lat, long_fbref = long)
-  ) |> 
-  select(team_fotmob, team_fbref, venue, capacity_fotmob, capacity_wiki, n, n_team) |> 
-  arrange(coalesce(team_fotmob, team_fbref))
-
-fbref_and_fotmob_venue_capacities <- bind_rows(
-  all_venue_capacites |> 
-    filter(!is.na(team_fotmob), !is.na(team_fbref)) |> 
-    transmute(team_fbref, venue_fbref = venue, venue_fotmob = venue),
-  all_venue_capacites |> 
-    filter(is.na(team_fotmob)) |> 
-    transmute(team_fbref, venue_fbref = venue),
-  all_venue_capacites |> 
-    filter(is.na(team_fbref)) |> 
-    select(-team_fbref) |> 
-    inner_join(
-      team_mapping |> select(team_fbref, team_fotmob),
-    ) |> 
-    transmute(team_fbref, venue_fotmob = venue)
-) |> 
-  distinct() |> 
-  inner_join(all_venue_capacites |> select(team_fbref, venue_fbref = venue, n, n_team)) |> 
-  inner_join(
-    team_mapping |> select(team_538, team_fbref)
-  ) |> 
-  relocate(team_538) |> 
-  arrange(team_538, coalesce(venue_fbref, venue_fotmob))
-fbref_and_fotmob_venue_capacities
-
-joined_mapping <- venue_mapping |> 
-  inner_join(
-    fbref_venue_capacities |> 
-      filter(is.na(season)) |> 
-      distinct(venue_fbref = venue, team_fbref = team, capacity_wiki = capacity, n, n_team, lat_fbref = lat, long_fbref = long)
-  ) |> 
-  left_join(
-    fotmob_venue_capacities |> 
-      distinct(venue_fotmob = venue, capacity_fotmob = capacity, lat_fotmob = lat, long_fotmob = long)
-  ) |> 
-  select(team_fbref, matches('venue'), matches('capacity'), matches('lat'), matches('long'), n, n_team)
-
-joined_mapping |> 
-  filter(team_fbref == 'Bethlehem')
-fbref_venue_capacities
-
-joined_mapping |> 
-  mutate(
-    has_fotmob = !is.na(venue_fotmob),
-    capacity_diff = capacity_fotmob - capacity_wiki,
-    .before = 1
-  ) |> 
-  filter(has_fotmob) |> 
-  arrange(desc(abs(capacity_diff)))
