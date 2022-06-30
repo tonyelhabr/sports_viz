@@ -160,7 +160,7 @@ attendance <- results %>%
         home == 'Saint Louis' & venue == 'Toyota Stadium' ~ 'World Wide Technology Soccer Park',
         TRUE ~ .x
       )
-    )
+    ),
     across(
       attendance,
       ~case_when(
@@ -442,7 +442,7 @@ changed_capacities <- list(
 manual_coords <- list(
   'American Legion Memorial Stadium' = c('lat' = 35.2182, 'long' = -80.8283), 
   'Audi Field' = c('lat' = 38.869048, 'long' = -77.013001),
-  'Brentford Community Stadium' = c('lat' = 51.292697, 'long' = -0.171932),
+  'Brentford Community Stadium' = c('lat' = 51.49083, 'long' = -0.2886111),
   'City Stadium' = c('lat' = 37.549697, 'long' = -77.486781),
   'Fifth Third Bank Stadium' = c('lat' = 34.028967, 'long' = -84.567626), 
   'Goodman Stadium' = c('lat' = 40.3520, 'long' = -75.2119),
@@ -458,6 +458,19 @@ manual_coords <- list(
 ) |>
   enframe('venue', 'coords') |>
   unnest_wider(coords)
+
+fix_coord <- function(x) {
+  p0 <- round(x)
+  p1 <- as.integer(str_sub(round(x * 100), -2, -1))
+  p2 <- as.integer(str_sub(round(x * 10000), -2, -1))
+  p0 + p1 / 60 + p2 / 3600
+}
+
+manual_coords |> 
+  select(venue, lat) |> 
+  deframe() |> 
+  map_dbl(fix_coord)
+
 
 fbref_venue_capacities <- venues |> 
   select(
@@ -631,4 +644,21 @@ fotmob_venue_capacities <- bind_rows(
 ) |> 
   arrange(team)
 
+joined_mapping <- venue_mapping |> 
+  left_join(
+    fbref_venue_capacities |> 
+      filter(is.na(season)) |> 
+      distinct(venue_fbref = venue, team_fbref = team, capacity_wiki = capacity, n, n_team, lat_fbref = lat, long_fbref = long)
+  ) |> 
+  left_join(
+    fotmob_venue_capacities |> 
+      distinct(venue_fotmob = venue, capacity_fotmob = capacity, lat_fotmob = lat, long_fotmob = long)
+  ) |> 
+  select(team_538, matches('team'), matches('venue'), matches('capacity'), matches('lat'), matches('long'), n, n_team)
 
+joined_mapping |> 
+  transmute(team_538, venue_fbref, venue_fotmob, lat_fbref, lat_fotmob, diff_lat = lat_fbref - lat_fotmob) |> 
+  arrange(desc(abs(diff_lat)))
+joined_mapping |> 
+  transmute(team_538, venue_fbref, venue_fotmob, diff_long = long_fbref - long_fotmob) |> 
+  arrange(desc(abs(diff_long)))
