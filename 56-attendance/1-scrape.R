@@ -19,7 +19,7 @@ dir.create(dir_img, showWarnings = FALSE)
 path_attendance <- file.path(dir_proj, 'attendance.qs')
 path_importance <- file.path(dir_proj, 'importance.qs')
 path_team_logos <- file.path(dir_proj, 'team_logos.qs')
-path_fbref_venue_capacities <- file.path(dir_proj, 'fbref_venue_capacities.csv')
+path_venue_capacities <- file.path(dir_proj, 'venue_capacities.qs')
 
 ## start ----
 params <- crossing(
@@ -230,22 +230,22 @@ importance <- matches_538 |>
 importance |> qs::qsave(path_importance)
 
 ## fbref_venue_capacities ----
-venues <- attendance |> 
+fbref_venues <- attendance |> 
   group_by(venue) |> 
   summarize(
-    n = n(),
+    n_matches = n(),
     max_attendance = max(attendance, na.rm = TRUE)
   ) |> 
   ungroup() |> 
   left_join(
     attendance |> 
-      count(venue, league, team = home_team, name = 'n_team') |> 
+      count(venue, team = home_team, name = 'n_matches_team') |> 
       group_by(venue) |> 
-      slice_max(n_team, n = 1, with_ties = FALSE) |> 
+      slice_max(n_matches_team, n = 1, with_ties = FALSE) |> 
       ungroup(),
     by = 'venue'
   ) |> 
-  select(venue, league, team, n, n_team, max_attendance) |> 
+  select(venue, team, n_matches, n_matches_team, max_attendance) |> 
   arrange(desc(max_attendance))
 
 .parse_coord <- function(page, xpath) {
@@ -367,7 +367,7 @@ manually_scrape_wiki_for_venue <- function(url, name, overwrite = FALSE) {
 possibly_manually_scrape_wiki_for_venue <- possibly(manually_scrape_wiki_for_venue, otherwise = tibble(), quiet = FALSE)
 slowly_manually_scrape_wiki_for_venue <- slowly(possibly_manually_scrape_wiki_for_venue)
 
-manual_url_capacities <- c(
+manual_wiki_url_capacities <- c(
   'City Stadium' = 'https://en.wikipedia.org/wiki/City_Stadium_(Richmond)',
   'Olympic Stadium' = 'https://en.wikipedia.org/wiki/Olympic_Stadium_(Montreal)',
   'Laney College Field' = 'https://en.wikipedia.org/wiki/Laney_College_Football_Stadium',
@@ -384,18 +384,18 @@ manual_url_capacities <- c(
     # ~slowly_manually_scrape_wiki_for_venue(.x, .y, overwrite = TRUE)
   )
 
-manual_venues <- tibble(
+manual_wiki_venues <- tibble(
   venue = 'Toyota Stadium (Missouri)',
-  league = 'Major League Soccer',
+  # league = 'Major League Soccer',
   team = 'Saint Louis'
 )
 
-wiki_capacities <- venues |> 
-  filter(n > 1) |> 
+wiki_capacities <- fbref_venues |> 
+  filter(n_matches > 1) |> 
   pull(venue) |> 
   unique() |> 
   setdiff(
-    c('', manual_url_capacities |> distinct(venue) |> pull(venue))
+    c('', manual_wiki_url_capacities |> distinct(venue) |> pull(venue))
   ) %>%
   set_names(., .) %>%
   map_dfr(
@@ -408,7 +408,7 @@ wiki_capacities <- venues |>
 #   'Navy-Marine Corps Memorial Stadium', ## 1 DC United match
 #   'Lamport Stadium', ## 1 Toronto FC II match
 #   'StubHub Center Track & Field Stadium', ## 1 LA Galaxy match
-#   'Capelli Sport Stadium', ## 1 N Caolina match
+#   'Capelli Sport Stadium', ## 1 n_matches Caolina match
 #   'ESPN Wide World of Sports Complex', ## used for MLS covid ball
 #   'Las Positas College Turf Field', ## 5 Oakland matches in 2021
 #   'FIU Soccer Stadium' ## 3 Miami FC matches in 2021
@@ -439,7 +439,7 @@ changed_capacities <- list(
   enframe('venue', 'capacity') |> 
   unnest(capacity)
 
-manual_coords <- list(
+manual_wiki_coords <- list(
   'American Legion Memorial Stadium' = c('lat' = 35.2182, 'long' = -80.8283), 
   'Audi Field' = c('lat' = 38.869048, 'long' = -77.013001),
   'Brentford Community Stadium' = c('lat' = 51.49083, 'long' = -0.2886111),
@@ -459,26 +459,26 @@ manual_coords <- list(
   enframe('venue', 'coords') |>
   unnest_wider(coords)
 
-fix_coord <- function(x) {
-  p0 <- round(x)
-  p1 <- as.integer(str_sub(round(x * 100), -2, -1))
-  p2 <- as.integer(str_sub(round(x * 10000), -2, -1))
-  p0 + p1 / 60 + p2 / 3600
-}
+# fix_coord <- function(x) {
+#   p0 <- round(x)
+#   p1 <- as.integer(str_sub(round(x * 100), -2, -1))
+#   p2 <- as.integer(str_sub(round(x * 10000), -2, -1))
+#   p0 + p1 / 60 + p2 / 3600
+# }
+# 
+# manual_wiki_coords |> 
+#   select(venue, lat) |> 
+#   deframe() |> 
+#   map_dbl(fix_coord)
 
-manual_coords |> 
-  select(venue, lat) |> 
-  deframe() |> 
-  map_dbl(fix_coord)
 
-
-fbref_venue_capacities <- venues |> 
+fbref_venue_capacities <- fbref_venues |> 
   select(
     venue,
-    league,
+    # league,
     team,
-    n,
-    n_team,
+    n_matches,
+    n_matches_team,
     max_attendance
   ) |> 
   mutate(
@@ -490,12 +490,12 @@ fbref_venue_capacities <- venues |>
   left_join(
     bind_rows(
       wiki_capacities,
-      manual_url_capacities
+      manual_wiki_url_capacities
     ),
     by = 'venue'
   ) |> 
   left_join(
-    manual_coords |> 
+    manual_wiki_coords |> 
       rename(lat2 = lat, long2 = long),
     by = 'venue'
   ) |> 
@@ -523,7 +523,6 @@ fbref_venue_capacities <- venues |>
   select(-capacity2) |> 
   arrange(venue)
 fbref_venue_capacities
-# fbref_venue_capacities |> write_csv(path_fbref_venue_capacities, na = '')
 
 ## fotmob venue capacities ----
 read_mapping <- function(sheet) {
@@ -644,21 +643,62 @@ fotmob_venue_capacities <- bind_rows(
 ) |> 
   arrange(team)
 
-joined_mapping <- venue_mapping |> 
+joined_venue_mapping <- venue_mapping |> 
+  # filter(venue_fbref |> str_detect('Coolray')) |> 
   left_join(
     fbref_venue_capacities |> 
       filter(is.na(season)) |> 
-      distinct(venue_fbref = venue, team_fbref = team, capacity_wiki = capacity, n, n_team, lat_fbref = lat, long_fbref = long)
+      distinct(venue_fbref = venue, team_fbref = team, capacity_wiki = capacity, lat_wiki = lat, long_wiki = long) |> 
+      left_join(
+        fbref_venue_capacities |>
+          filter(is.na(season)) |>
+          group_by(team) |>
+          slice_max(n_matches, n = 1, with_ties = FALSE) |>
+          ungroup() |>
+          transmute(venue_fbref = venue, team_fbref = team, is_primary = TRUE),
+        by = c('venue_fbref', 'team_fbref')
+      ),
+    by = 'venue_fbref'
+  ) |> 
+  left_join(
+    fbref_venue_capacities |> 
+      filter(!is.na(season)) |> 
+      distinct(season, venue_fbref = venue, capacity_wiki_season = capacity), 
+    by = 'venue_fbref'
+  ) |> 
+  left_join(
+    fbref_venue_capacities |> 
+      mutate(prop_matches_team = n_matches_team / n_matches) |> 
+      distinct(venue_fbref = venue, team_fbref = team, n_matches, prop_matches_team),
+    by = c('venue_fbref', 'team_fbref')
   ) |> 
   left_join(
     fotmob_venue_capacities |> 
-      distinct(venue_fotmob = venue, capacity_fotmob = capacity, lat_fotmob = lat, long_fotmob = long)
+      distinct(venue_fotmob = venue, capacity_fotmob = capacity, lat_fotmob = lat, long_fotmob = long, opened),
+    by = 'venue_fotmob'
   ) |> 
-  select(team_538, matches('team'), matches('venue'), matches('capacity'), matches('lat'), matches('long'), n, n_team)
-
-joined_mapping |> 
-  transmute(team_538, venue_fbref, venue_fotmob, lat_fbref, lat_fotmob, diff_lat = lat_fbref - lat_fotmob) |> 
-  arrange(desc(abs(diff_lat)))
-joined_mapping |> 
-  transmute(team_538, venue_fbref, venue_fotmob, diff_long = long_fbref - long_fotmob) |> 
-  arrange(desc(abs(diff_long)))
+  transmute(
+    season,
+    team_538,
+    venue_fbref,
+    venue_fotmob,
+    lat = coalesce(lat_fotmob, lat_wiki),
+    long = coalesce(long_fotmob, long_wiki),
+    capacity = coalesce(capacity_wiki_season, capacity_fotmob, capacity_wiki),
+    opened,
+    n_matches,
+    prop_matches_team,
+    is_primary = ifelse(
+      !is.na(season),
+      NA,
+      coalesce(is_primary, FALSE)
+    ),
+    coord_source = ifelse(!is.na(lat_fotmob), 'fotmob', 'wiki'),
+    capacity_source = case_when(
+      !is.na(season) ~ 'wiki',
+      capacity == capacity_fotmob ~ 'fotmob',
+      TRUE ~ 'wiki'
+    )
+  )
+joined_venue_mapping |> arrange(prop_matches_team)
+qs::qsave(joined_venue_mapping, path_venue_capacities)
