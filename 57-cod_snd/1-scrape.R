@@ -229,72 +229,101 @@ records <- clean_matches |>
   ungroup() |> 
   mutate(
     win_series = max_cumu_w == 6L
-  )
-
-n_records <- records |> 
-  group_by(pre_cumu_w, pre_cumu_l) |> 
-  summarize(
-    n = n(),
-    win_prop = sum(win_series) / n
   ) |> 
-  ungroup()
+  inner_join(
+    clean_matches |> 
+      filter(round == 1L) |> 
+      distinct(year, sheet, match, team, starts_as_offense = is_offense), 
+    by = c('year', 'sheet', 'match', 'team')
+  )
+records
 
-n_records |> 
+summarize_records <- function(records, ...) {
+  records |> 
+    group_by(pre_cumu_w, pre_cumu_l, ...) |> 
+    summarize(
+      n = n(),
+      across(c(is_win, win_series), sum)
+    ) |> 
+    ungroup() |> 
+    mutate(
+      win_prop = is_win / n,
+      win_series_prop = win_series / n
+    )
+}
+
+common_heatmap_layers <- function(...) {
+  list(
+    ...,
+    guides(
+      fill = 'none'
+    ),
+    scale_x_continuous(
+      labels = 0:5,
+      breaks = seq(.5, 5.5, by = 1),
+      expand = c(0, 0)
+    ),
+    scale_y_continuous(
+      labels = 0:5,
+      breaks = seq(.5, 5.5, by = 1),
+      expand = c(0, 0)
+    ),
+    theme(
+      panel.grid.major = element_blank(),
+      axis.title = element_text(hjust = 0.5),
+      plot.title = ggtext::element_markdown(hjust = 0.5),
+      axis.text = element_text(size = 16, face = 'bold')
+    ),
+    labs(
+      caption = 'CDL SnD Major and Weekly Matches, 2020 - present',
+      tag = '**Viz**: @TonyElHabr | **Data**: @IOUTurtle',
+      x = "Offensive Team's # of Pre-Round Wins",
+      y = "Defensive Team's # of Pre-Round Wins"
+    )
+  )
+}
+
+n_records <- records |> summarize_records()
+
+p_offensive_match_win_prop <- n_records |> 
   ggplot() +
-  aes(x = pre_cumu_w, y = pre_cumu_l) +
-  geom_tile(
+  common_heatmap_layers() +
+  geom_rect(
+    color = blackish_background,
     alpha = 0.8,
-    aes(fill = win_prop)
+    aes(
+      fill = win_series_prop,
+      xmin = pre_cumu_w, 
+      ymin = pre_cumu_l,
+      xmax = pre_cumu_w + 1,
+      ymax = pre_cumu_l + 1
+    )
   ) +
-  scale_fill_viridis_c() +
   geom_text(
-    aes(label = sprintf('%s\n(%s)', scales::percent(win_prop, accuracy = 0.1), scales::comma(n)))
-  )
-
-init_n_records_side <- records |> 
-  group_by(pre_cumu_w, pre_cumu_l, is_offense) |> 
-  summarize(
-    n = n(),
-    across(c(is_win, win_series), sum)
-  ) |> 
-  ungroup() |> 
-  mutate(
-    win_prop = is_win / n,
-    win_series_prop = win_series / n
-  )
-
-## Does this make sense?
-n_records_side <- bind_rows(
-  init_n_records_side,
-  init_n_records_side |> 
-    filter(pre_cumu_w != pre_cumu_l) |> 
-    rename(pre_cumu_w1 = pre_cumu_w, pre_cumu_w = pre_cumu_l) |> 
-    rename(pre_cumu_l = pre_cumu_w1)
-) |> 
-  group_by(pre_cumu_w, pre_cumu_l, is_offense) |> 
-  summarize(
-    across(c(n, is_win, win_series), sum)
-  ) |> 
-  ungroup() |> 
-  mutate(
-    win_prop = is_win / n,
-    win_series_prop = win_series / n
-  )
-
-n_records_side |> 
-  ggplot() +
-  aes(x = pre_cumu_w, y = pre_cumu_l) +
-  geom_tile(
-    alpha = 0.8,
-    aes(fill = win_prop)
+    family = font,
+    color = 'white',
+    size = 12 / .pt,
+    fontface = 'bold',
+    aes(
+      x = pre_cumu_w + 0.5, 
+      y = pre_cumu_l + 0.5,
+      label = sprintf('%s\n(%s/%s)', scales::percent(win_series_prop, accuracy = 1), scales::comma(win_series), scales::comma(n))
+    )
   ) +
-  scale_fill_viridis_c() +
-  geom_text(
-    aes(label = sprintf('%s\n(%s)', scales::percent(win_prop, accuracy = 0.1), scales::comma(n)))
-  ) +
-  facet_wrap(~is_offense)
+  labs(
+    title = 'Offensive Match Win %'
+  )
+p_offensive_match_win_prop
 
-offense_round_win_prop <- init_n_records_side |> 
+ggsave(
+  p_offensive_match_win_prop,
+  filename = file.path(dir_proj, 'offensive_match_win_prop.png'),
+  width = 8,
+  height = 8
+)
+
+n_records_side <- records |> summarize_records(is_offense)
+offense_round_win_prop <- n_records_side |> 
   filter(is_offense) |> 
   mutate(
     diff_prop = win_prop - 0.5
@@ -304,9 +333,8 @@ max_diff_prop <- max(abs(offense_round_win_prop$diff_prop))
 
 p_offensive_round_win_prop <- offense_round_win_prop |> 
   ggplot() +
-  aes(x = pre_cumu_w, y = pre_cumu_l) +
+  common_heatmap_layers() +
   geom_rect(
-    # alpha = 0.8,
     color = blackish_background,
     aes(
       fill = win_prop,
@@ -316,51 +344,26 @@ p_offensive_round_win_prop <- offense_round_win_prop |>
       ymax = pre_cumu_l + 1
     )
   ) +
-  scale_fill_gradient2(
-    low = '#af8dc3',
-    high = '#7fbf7b',
-    # mid = '#f7f7f7',
-    mid = 'white',
-    midpoint = 0.5,
-    limits = c(0.5 - max_diff_prop, 0.5 + max_diff_prop)
-  ) +
   geom_text(
     family = font,
     color = blackish_background,
-    size = 14 / .pt,
+    size = 12 / .pt,
     fontface = 'bold',
     aes(
       x = pre_cumu_w + 0.5, 
       y = pre_cumu_l + 0.5,
-      label = sprintf('%s\n(%s)', scales::percent(win_prop, accuracy = 1), scales::comma(n))
+      label = sprintf('%s\n(%s/%s)', scales::percent(win_prop, accuracy = 1), scales::comma(is_win), scales::comma(n))
     )
   ) +
-  guides(
-    fill = 'none'
-  ) +
-  scale_x_continuous(
-    labels = 0:5,
-    breaks = seq(.5, 5.5, by = 1),
-    expand = c(0, 0)
-  ) +
-  scale_y_continuous(
-    labels = 0:5,
-    breaks = seq(.5, 5.5, by = 1),
-    expand = c(0, 0)
-  ) +
-  theme(
-    panel.grid.major = element_blank(),
-    axis.title = element_text(hjust = 0.5),
-    plot.title = ggtext::element_markdown(hjust = 0.5),
-    axis.text = element_text(size = 16, face = 'bold'),
-    plot.tag.position = c(0.01, 0.01),
+  scale_fill_gradient2(
+    low = '#af8dc3',
+    high = '#7fbf7b',
+    mid = 'white',
+    midpoint = 0.5,
+    limits = c(0.5 - max_diff_prop, 0.5 + max_diff_prop)
   ) +
   labs(
-    title = 'Offensive Round Win %',
-    caption = 'CDL SnD Major and Weekly Matches, 2020 - present',
-    tag = '**Viz**: @TonyElHabr | **Data**: @IOUTurtle',
-    x = "Offensive Team's # of Pre-Round Wins",
-    y = "Defensive Team's # of Pre-Round Wins"
+    title = 'Offensive Round Win %'
   )
 p_offensive_round_win_prop
 
@@ -370,14 +373,3 @@ ggsave(
   width = 8,
   height = 8
 )
-
-records |> 
-  group_by(map, is_offense) |> 
-  summarize(
-    n = n(),
-    win_prop = sum(win_series) / n
-  ) |> 
-  ungroup() |> 
-  filter(is_offense) |> 
-  arrange(desc(win_prop))
-
