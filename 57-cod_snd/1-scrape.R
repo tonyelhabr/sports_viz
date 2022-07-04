@@ -228,7 +228,7 @@ records <- clean_matches |>
   ) |> 
   ungroup() |> 
   mutate(
-    win_series = max_cumu_w == 6L
+    win_match = max_cumu_w == 6L
   ) |> 
   inner_join(
     clean_matches |> 
@@ -243,12 +243,12 @@ summarize_records <- function(records, ...) {
     group_by(pre_cumu_w, pre_cumu_l, ...) |> 
     summarize(
       n = n(),
-      across(c(is_win, win_series), sum)
+      across(c(is_win, win_match), sum)
     ) |> 
     ungroup() |> 
     mutate(
-      win_prop = is_win / n,
-      win_series_prop = win_series / n
+      win_round_prop = is_win / n,
+      win_match_prop = win_match / n
     )
 }
 
@@ -266,7 +266,13 @@ common_heatmap_layers <- function(...) {
     scale_y_continuous(
       labels = 0:5,
       breaks = seq(.5, 5.5, by = 1),
-      expand = c(0, 0)
+      expand = c(0, 0),
+      sec.axis = sec_axis(
+        trans = I, 
+        name = ' ', 
+        breaks = seq(0.5, 5.5, by = 1), 
+        labels = rep('', 6)
+      )
     ),
     theme(
       panel.grid.major = element_blank(),
@@ -292,7 +298,7 @@ p_offensive_match_win_prop <- n_records |>
     color = blackish_background,
     alpha = 0.8,
     aes(
-      fill = win_series_prop,
+      fill = win_match_prop,
       xmin = pre_cumu_w, 
       ymin = pre_cumu_l,
       xmax = pre_cumu_w + 1,
@@ -307,7 +313,7 @@ p_offensive_match_win_prop <- n_records |>
     aes(
       x = pre_cumu_w + 0.5, 
       y = pre_cumu_l + 0.5,
-      label = sprintf('%s\n(%s/%s)', scales::percent(win_series_prop, accuracy = 1), scales::comma(win_series), scales::comma(n))
+      label = sprintf('%s\n(%s/%s)', scales::percent(win_match_prop, accuracy = 1), scales::comma(win_match), scales::comma(n))
     )
   ) +
   labs(
@@ -326,18 +332,17 @@ n_records_side <- records |> summarize_records(is_offense)
 offense_round_win_prop <- n_records_side |> 
   filter(is_offense) |> 
   mutate(
-    diff_prop = win_prop - 0.5
+    diff_win_round_prop = win_round_prop - 0.5
   )
 
-max_diff_prop <- max(abs(offense_round_win_prop$diff_prop))
-
+max_diff_win_round_prop <- max(abs(offense_round_win_prop$diff_win_round_prop))
 p_offensive_round_win_prop <- offense_round_win_prop |> 
   ggplot() +
   common_heatmap_layers() +
   geom_rect(
     color = blackish_background,
     aes(
-      fill = win_prop,
+      fill = win_round_prop,
       xmin = pre_cumu_w, 
       ymin = pre_cumu_l,
       xmax = pre_cumu_w + 1,
@@ -352,7 +357,7 @@ p_offensive_round_win_prop <- offense_round_win_prop |>
     aes(
       x = pre_cumu_w + 0.5, 
       y = pre_cumu_l + 0.5,
-      label = sprintf('%s\n(%s/%s)', scales::percent(win_prop, accuracy = 1), scales::comma(is_win), scales::comma(n))
+      label = sprintf('%s\n(%s/%s)', scales::percent(win_round_prop, accuracy = 1), scales::comma(is_win), scales::comma(n))
     )
   ) +
   scale_fill_gradient2(
@@ -360,7 +365,7 @@ p_offensive_round_win_prop <- offense_round_win_prop |>
     high = '#7fbf7b',
     mid = 'white',
     midpoint = 0.5,
-    limits = c(0.5 - max_diff_prop, 0.5 + max_diff_prop)
+    limits = c(0.5 - max_diff_win_round_prop, 0.5 + max_diff_win_round_prop)
   ) +
   labs(
     title = 'Offensive Round Win %'
@@ -373,3 +378,72 @@ ggsave(
   width = 8,
   height = 8
 )
+
+e_match_win_prop <- crossing(
+  pre_cumu_w = 0:5,
+  pre_cumu_l = 0:5
+) |> 
+  mutate(
+    n_remain_max = 11 - (pre_cumu_w + pre_cumu_l),
+    n_remain_w = 6 - pre_cumu_w,
+    e_win_match_prop = map2_dbl(n_remain_w, n_remain_max, ~sum(dbinom(..1:..2, ..2, 0.5)))
+  )
+
+e_offensive_match_win_prop <- offense_round_win_prop |> 
+  inner_join(
+    e_match_win_prop,
+    by = c('pre_cumu_w', 'pre_cumu_l')
+  ) |> 
+  mutate(
+    diff_win_match_prop = win_match_prop - e_win_match_prop
+  )
+
+max_diff_win_match_prop <- max(abs(e_offensive_match_win_prop$diff_win_match_prop))
+
+p_e_offensive_match_win_prop <- e_offensive_match_win_prop |> 
+  ggplot() +
+  common_heatmap_layers() +
+  geom_rect(
+    color = blackish_background,
+    alpha = 0.8,
+    aes(
+      fill = diff_win_match_prop,
+      xmin = pre_cumu_w, 
+      ymin = pre_cumu_l,
+      xmax = pre_cumu_w + 1,
+      ymax = pre_cumu_l + 1
+    )
+  ) +
+  geom_text(
+    family = font,
+    # color = 'white',
+    color = blackish_background,
+    size = 12 / .pt,
+    fontface = 'bold',
+    aes(
+      x = pre_cumu_w + 0.5, 
+      y = pre_cumu_l + 0.5,
+      label = sprintf('%+.1f%%\n(%s)', round(100 * diff_win_match_prop, 1), scales::comma(n))
+    )
+  ) +
+  scale_fill_gradient2(
+    low = '#d8b365',
+    high = '#5ab4ac',
+    # low = '#e9a3c9',
+    # high = '#a1d76a',
+    mid = 'white',
+    midpoint = 0,
+    limits = c(0 - max_diff_win_match_prop, 0 + max_diff_win_match_prop)
+  ) +
+  labs(
+    title = 'Actual Offensive Match Win % - Expected Offensive Match Win %'
+  )
+p_e_offensive_match_win_prop
+
+ggsave(
+  p_e_offensive_match_win_prop,
+  filename = file.path(dir_proj, 'e_offensive_match_win_prop.png'),
+  width = 8,
+  height = 8
+)
+
