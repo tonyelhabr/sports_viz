@@ -166,7 +166,7 @@ read_snd_sheet <- function(year, sheet, overwrite = FALSE) {
       map,
       round,
       is_offense = side == 'O',
-      is_win = coalesce(w == '1', FALSE),
+      win_round = coalesce(w == '1', FALSE),
       plant
     )
   
@@ -180,7 +180,7 @@ read_snd_sheet <- function(year, sheet, overwrite = FALSE) {
 
 matches <- sheets |> 
   mutate(
-    data = map2(year, sheet, read_snd_sheet)
+    data = map2(year, sheet, read_snd_sheet, overwrite = TRUE)
   ) |> 
   unnest(data)
 
@@ -191,7 +191,7 @@ fixed_rounds <- tibble(
   round = c(rep(11L, 4), rep(9L, 2)),
   team = c('Guerrillas', 'Surge', 'Empire', 'Huntsmen', 'Empire', 'Rokkr'),
   is_offense = c(TRUE, FALSE, FALSE, TRUE, FALSE, TRUE),
-  is_win = c(TRUE,FALSE,TRUE,FALSE,TRUE,FALSE),
+  win_round = c(TRUE,FALSE,TRUE,FALSE,TRUE,FALSE),
   plant = c(NA_character_,NA_character_,'A','A',NA_character_,NA_character_),
   map = c(rep('Arklov Peak', 4), rep('St. Petrograd', 2))
 )
@@ -220,20 +220,34 @@ clean_matches <- matches |>
 records <- clean_matches |> 
   group_by(year, sheet, match, team) |> 
   mutate(
-    cumu_w = cumsum(is_win),
+    cumu_w = cumsum(win_round),
     cumu_l = round - cumu_w,
     pre_cumu_w = lag(cumu_w, default = 0L),
     pre_cumu_l = lag(cumu_l, default = 0L),
+    won_prior_round = lag(win_round, default = NA),
     max_cumu_w = max(cumu_w)
   ) |> 
   ungroup() |> 
-  mutate(
-    win_match = max_cumu_w == 6L
-  ) |> 
   inner_join(
     clean_matches |> 
       filter(round == 1L) |> 
       distinct(year, sheet, match, team, starts_as_offense = is_offense), 
+    by = c('year', 'sheet', 'match', 'team')
+  ) |> 
+  inner_join(
+    clean_matches |> 
+      group_by(year, sheet, match, team) |> 
+      slice_max(round, n = 1, with_ties = FALSE) |> 
+      ungroup() |> 
+      transmute(
+        year, 
+        sheet, 
+        match, 
+        team,
+        win_match = win_round,
+        is_offense_last_round = is_offense,
+        n_rounds = round
+      ), 
     by = c('year', 'sheet', 'match', 'team')
   )
 records
@@ -243,11 +257,11 @@ summarize_records <- function(records, ...) {
     group_by(pre_cumu_w, pre_cumu_l, ...) |> 
     summarize(
       n = n(),
-      across(c(is_win, win_match), sum)
+      across(c(win_round, win_match), sum)
     ) |> 
     ungroup() |> 
     mutate(
-      win_round_prop = is_win / n,
+      win_round_prop = win_round / n,
       win_match_prop = win_match / n
     )
 }
@@ -289,8 +303,9 @@ common_heatmap_layers <- function(...) {
   )
 }
 
+## match win %, given round state ---
+## need to split this out by who is offense in order to not have a symmetric heatmap
 n_records <- records |> summarize_records()
-
 p_offensive_match_win_prop <- n_records |> 
   ggplot() +
   common_heatmap_layers() +
@@ -313,7 +328,11 @@ p_offensive_match_win_prop <- n_records |>
     aes(
       x = pre_cumu_w + 0.5, 
       y = pre_cumu_l + 0.5,
-      label = sprintf('%s\n(%s/%s)', scales::percent(win_match_prop, accuracy = 1), scales::comma(win_match), scales::comma(n))
+      label = sprintf(
+        '%s\n(%s/%s)', 
+        scales::percent(win_match_prop, accuracy = 1), 
+        scales::comma(win_match), scales::comma(n)
+      )
     )
   ) +
   labs(
@@ -328,6 +347,7 @@ ggsave(
   height = 8
 )
 
+## round win %, given round state ---
 n_records_side <- records |> summarize_records(is_offense)
 offense_round_win_prop <- n_records_side |> 
   filter(is_offense) |> 
@@ -357,7 +377,7 @@ p_offensive_round_win_prop <- offense_round_win_prop |>
     aes(
       x = pre_cumu_w + 0.5, 
       y = pre_cumu_l + 0.5,
-      label = sprintf('%s\n(%s/%s)', scales::percent(win_round_prop, accuracy = 1), scales::comma(is_win), scales::comma(n))
+      label = sprintf('%s\n(%s/%s)', scales::percent(win_round_prop, accuracy = 1), scales::comma(win_round), scales::comma(n))
     )
   ) +
   scale_fill_gradient2(
@@ -379,6 +399,7 @@ ggsave(
   height = 8
 )
 
+## actual match win % vs. expected match win %, given round state ---
 e_match_win_prop <- crossing(
   pre_cumu_w = 0:5,
   pre_cumu_l = 0:5
@@ -399,7 +420,6 @@ e_offensive_match_win_prop <- offense_round_win_prop |>
   )
 
 max_diff_win_match_prop <- max(abs(e_offensive_match_win_prop$diff_win_match_prop))
-
 p_e_offensive_match_win_prop <- e_offensive_match_win_prop |> 
   ggplot() +
   common_heatmap_layers() +
@@ -447,3 +467,124 @@ ggsave(
   height = 8
 )
 
+## todo: streaks ----
+n_records_won_prior_round <- records |> summarize_records(won_prior_round)
+n_records_won_prior_round |> 
+  filter(!is.na(won_prior_round)) |> 
+  # filter(pre_cumu_w == pre_cumu_l) |> 
+  transmute(
+    pre_cumu_w,
+    pre_cumu_l,
+    across(won_prior_round, ~ifelse(.x, 'won_prior_round', 'lost_prior_round')),
+    win_round
+  ) |> 
+  pivot_wider(
+    names_from = won_prior_round,
+    values_from = win_round,
+    values_fill = 0L
+  ) |> 
+  mutate(
+    win_round = won_prior_round / (lost_prior_round + won_prior_round)
+  ) |> 
+  arrange(desc(win_round))
+
+records |> 
+  filter(!is.na(won_prior_round)) |> 
+  filter(win_match) |> 
+  # filter(n_rounds >= 10) |> 
+  filter(round == 11) |> 
+  count(n_rounds, win_match, win_round, won_prior_round, is_offense) |> 
+  group_by(n_rounds, won_prior_round) |> 
+  mutate(
+    prop = n / sum(n)
+  ) |> 
+  ungroup()
+
+## actual outcomes vs expected ----
+w_probs <- dbinom(6, 6:11, 0.5)
+l_probs <- dbinom(0:5, 6:11, 0.5)
+all_probs <- sum(w_probs, l_probs)
+match_round_probs <- tibble(
+  n_rounds = rep(6L:11L, times = 2),
+  win_match = rep(c(TRUE, FALSE), each = 6),
+  e_prop = c(w_probs, l_probs) / all_probs
+)
+
+records |> 
+  count(win_match, n_rounds, sort = TRUE) |> 
+  mutate(
+    prop = n / sum(n)
+  ) |> 
+  inner_join(
+    match_round_probs,
+    by = c('n_rounds', 'win_match')
+  ) |> 
+  mutate(
+    diff_prop = prop - e_prop
+  ) |> 
+  filter(win_match) |>
+  arrange(desc(abs(diff_prop)))
+
+records |> 
+  count(win_match, n_rounds, is_offense_last_round, sort = TRUE) |> 
+  mutate(
+    prop = n / sum(n)
+  ) |> 
+  inner_join(
+    match_round_probs |> mutate(across(e_prop, ~0.5 * .x)),
+    by = c('n_rounds', 'win_match')
+  ) |> 
+  mutate(
+    diff_prop = prop - e_prop
+  ) |> 
+  filter(win_match) |>
+  arrange(desc(abs(diff_prop)))
+
+## most frequent round playout ----
+round_seqs <- records |> 
+  transmute(year, sheet, match, team, round, across(win_round, as.integer)) |> 
+  pivot_wider(
+    names_from = round,
+    values_from = win_round,
+    names_prefix = 'r'
+  ) |> 
+  group_by(across(starts_with('r'))) |> 
+  count(sort = TRUE) |> 
+  ungroup()
+round_seqs
+total_matches <- sum(round_seqs$n)
+37 / total_matches
+dbinom(6, 6, 0.5)
+round_seqs |> 
+  filter(!is.na(r11)) |> 
+  select(r9:n) |> 
+  group_by(across(starts_with('r'))) |> 
+  summarize(
+    across(n, sum)
+  ) |> 
+  ungroup() |> 
+  filter(r9 == 1L) |> 
+  mutate(prop = n / sum(n))
+
+records |> 
+  filter(pre_cumu_w == 5, pre_cumu_l == 3) |> 
+  count(n_rounds, win_match) |> 
+  mutate(prop = n / sum(n))
+dbinom(3, 3, 0.5)
+
+records |> 
+  filter(pre_cumu_w == 5, pre_cumu_l == 3) |> 
+  count(n_rounds, win_match, is_offense) |> 
+  group_by(is_offense) |> 
+  mutate(prop = n / sum(n)) |> 
+  ungroup()
+dbinom(3, 3, 0.5)
+prop.test(
+  
+)
+
+records |> 
+  filter(pre_cumu_w == 5, pre_cumu_l == 4) |> 
+  count(n_rounds, win_match) |> 
+  mutate(prop = n / sum(n))
+dbinom(2, 2, 0.5)
