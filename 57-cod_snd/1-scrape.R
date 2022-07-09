@@ -12,10 +12,10 @@ dir.create(dir_data, showWarnings = FALSE)
 sheets <- list(
   '2022' = crossing(
     s = c(1, 2, 3, 4),
-    raw_matches = c(1, 2, 3, 4)
+    raw_series = c(1, 2, 3, 4)
   ) |> 
     mutate(
-      label = sprintf('S%d %s', s, ifelse(raw_matches == 4, 'Major', sprintf('Wk%d', raw_matches)))
+      label = sprintf('S%d %s', s, ifelse(raw_series == 4, 'Major', sprintf('Wk%d', raw_series)))
     ) |> 
     pull(label) %>%
     .[1:14],
@@ -23,10 +23,10 @@ sheets <- list(
     'Champs', 
     crossing(
       s = c(1, 2, 3, 4, 5),
-      raw_matches = c(1, 2, 3, 4)
+      raw_series = c(1, 2, 3, 4)
     ) |> 
       mutate(
-        label = sprintf('S%d %s', s, ifelse(raw_matches == 4, 'Major', sprintf('HS%d', raw_matches)))
+        label = sprintf('S%d %s', s, ifelse(raw_series == 4, 'Major', sprintf('HS%d', raw_series)))
       ) |> 
       pull(label)
   ),
@@ -83,7 +83,7 @@ read_snd_sheet <- function(year, sheet, overwrite = FALSE) {
   
   col_types <- paste0(rep('c', times), collapse = '')
   
-  raw_matches <- read_sheet(
+  raw_series <- read_sheet(
     ss = ss,
     sheet = sheet,
     range = range,
@@ -91,25 +91,25 @@ read_snd_sheet <- function(year, sheet, overwrite = FALSE) {
     col_types = col_types
   )
   
-  raw_matches$match <- rep(1:28, each = 5)
+  raw_series$series <- rep(1:28, each = 5)
   
-  first_na_grp <- raw_matches |> 
-    group_by(match) |> 
+  first_na_grp <- raw_series |> 
+    group_by(series) |> 
     filter(row_number() == 2) |> 
     ungroup() |> 
     filter(is.na(team)) |> 
-    pull(match) |> 
+    pull(series) |> 
     min()
   
-  matches <- raw_matches |> 
-    filter(match < !!first_na_grp) |> 
-    relocate(match) |> 
-    group_by(match) |> 
+  series <- raw_series |> 
+    filter(series < !!first_na_grp) |> 
+    relocate(series) |> 
+    group_by(series) |> 
     mutate(rn = row_number() - 1L, .before = 1) |> 
     filter(rn %in% c(1L, 2L)) |> 
     ungroup()
   
-  long_matches <- matches |> 
+  long_series <- series |> 
     pivot_longer(
       -c(rn:team)
     ) |> 
@@ -122,16 +122,16 @@ read_snd_sheet <- function(year, sheet, overwrite = FALSE) {
       names_from = label,
       values_from = value
     ) |> 
-    arrange(match, round, rn) |> 
-    group_by(match, map, round) |> 
+    arrange(series, round, rn) |> 
+    group_by(series, map, round) |> 
     filter(
       any(!is.na(side)) | any(!is.na(w)) | any(!is.na(plant))
     ) |> 
     ungroup()
   
-  res <- long_matches |> 
+  res <- long_series |> 
     transmute(
-      match,
+      series,
       team,
       map,
       round,
@@ -141,23 +141,23 @@ read_snd_sheet <- function(year, sheet, overwrite = FALSE) {
     )
   
   if(year != '2020') {
-    res$earned_fb <- coalesce(long_matches$fb == 'X', FALSE)
+    res$earned_fb <- coalesce(long_series$fb == 'X', FALSE)
   }
   
   qs::qsave(res, path)
   res
 }
 
-raw_matches <- sheets |> 
+raw_series <- sheets |> 
   mutate(
-    data = map2(year, sheet, read_snd_sheet, overwrite = FALSE)
+    data = map2(year, sheet, read_snd_sheet, overwrite = T)
   ) |> 
   unnest(data)
 
 fixed_rounds <- tibble(
   year = rep(2020L, 6),
   sheet = c(rep('LON_SnD', 4), rep('LA_SnD', 2)),
-  match = c(rep(8L, 2), rep(17L, 2), rep(15L, 2)),
+  series = c(rep(8L, 2), rep(17L, 2), rep(15L, 2)),
   round = c(rep(11L, 4), rep(9L, 2)),
   team = c('Guerrillas', 'Surge', 'Empire', 'Huntsmen', 'Empire', 'Rokkr'),
   is_offense = c(TRUE, FALSE, FALSE, TRUE, FALSE, TRUE),
@@ -166,11 +166,11 @@ fixed_rounds <- tibble(
   map = c(rep('Arklov Peak', 4), rep('St. Petrograd', 2))
 )
 
-matches <- raw_matches |> 
+series <- raw_series |> 
   anti_join(
     fixed_rounds |> 
-      distinct(year, sheet, match, team, round), 
-    by = c('year', 'sheet', 'match', 'team', 'round')
+      distinct(year, sheet, series, team, round), 
+    by = c('year', 'sheet', 'series', 'team', 'round')
   ) |> 
   bind_rows(
     fixed_rounds |> 
@@ -185,10 +185,10 @@ matches <- raw_matches |>
       ~ifelse(.x == 'Arklov PeaK', 'Arklov Peak', .x)
     )
   ) |> 
-  arrange(event, match, round, team)
+  arrange(event, series, round, team)
 
-rounds <- matches |> 
-  group_by(year, sheet, match, team) |> 
+rounds <- series |> 
+  group_by(year, sheet, series, team) |> 
   mutate(
     cumu_w = cumsum(win_round),
     cumu_l = round - cumu_w,
@@ -199,26 +199,26 @@ rounds <- matches |>
   ) |> 
   ungroup() |> 
   inner_join(
-    matches |> 
+    series |> 
       filter(round == 1L) |> 
-      distinct(year, sheet, match, team, starts_as_offense = is_offense), 
-    by = c('year', 'sheet', 'match', 'team')
+      distinct(year, sheet, series, team, starts_as_offense = is_offense), 
+    by = c('year', 'sheet', 'series', 'team')
   ) |> 
   inner_join(
-    matches |> 
-      group_by(year, sheet, match, team) |> 
+    series |> 
+      group_by(year, sheet, series, team) |> 
       slice_max(round, n = 1, with_ties = FALSE) |> 
       ungroup() |> 
       transmute(
         year, 
         sheet, 
-        match, 
+        series, 
         team,
-        win_match = win_round,
+        win_series = win_round,
         is_offense_last_round = is_offense,
         n_rounds = round
       ), 
-    by = c('year', 'sheet', 'match', 'team')
+    by = c('year', 'sheet', 'series', 'team')
   )
 rounds
 qs::qsave(rounds, file.path(dir_proj, 'cod_rounds.qs'))

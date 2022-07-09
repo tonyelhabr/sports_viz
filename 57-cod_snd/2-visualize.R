@@ -25,6 +25,7 @@ theme_update(
   panel.grid.minor = element_line(color = gray_points),
   panel.grid.minor.x = element_blank(),
   panel.grid.minor.y = element_blank(),
+  strip.text = element_text(color = 'white', size = 16, face = 'bold'),
   plot.margin = margin(10, 10, 10, 10),
   plot.background = element_rect(fill = blackish_background, color = blackish_background),
   plot.caption = element_text(size = 12, color = 'white', hjust = 1),
@@ -38,7 +39,7 @@ theme_update(
 game_mapping <- c(
   '2022' = 'Vanguard',
   '2021' = 'Cold War',
-  '2020' = 'MW2 2020'
+  '2020' = 'MW'
 )
 
 rounds <- qs::qread(file.path(dir_proj, 'cod_rounds.qs')) |> 
@@ -47,7 +48,7 @@ rounds <- qs::qread(file.path(dir_proj, 'cod_rounds.qs')) |>
     .before = 1
   )
 
-## offensive win % ----
+## offensive win % in "neutral" rounds (1 and 2) ----
 calculate_offensive_round_win_prop <- function(df) {
   df |> 
     count(year, game, map, is_offense, win_round) |> 
@@ -66,42 +67,177 @@ calculate_offensive_round_win_prop <- function(df) {
     arrange(desc(win_round_prop))
 }
 
+devtools::source_url('https://raw.githubusercontent.com/dgrtwo/splittestr/master/R/vectorized-prop-test.R')
 summarize_offensive_round_win_prop <- function(.round) {
-
+  
   specified_round <- rounds |> 
     filter(round == .round) |> 
     calculate_offensive_round_win_prop()
-
+  
   other_rounds <- rounds |> 
     filter(round != .round) |> 
     calculate_offensive_round_win_prop()
   
-  post_rounds <- rounds |> 
-    filter(round > .round) |> 
-    calculate_offensive_round_win_prop()
-  
-  list(
-    specified_round,
-    other_rounds |> rename_with(~sprintf('other_%s', .x), -c(year, game, map)),
-    post_rounds |> rename_with(~sprintf('post_%s', .x), -c(year, game, map))
-  ) |> 
-    reduce(inner_join, by = c('year', 'game', 'map'))
+  specified_round |> 
+    inner_join(
+      other_rounds |> rename_with(~sprintf('other_%s', .x), -c(year, game, map)),
+      by = c('year', 'game', 'map')
+    ) |> 
+    mutate(round = .round, .after = 'map') |> 
+    arrange(desc(win_round_prop)) |> 
+    mutate(
+      prop_test = vectorized_prop_test(rounds_won, total_rounds, other_rounds_won, other_total_rounds),
+      p_value = prop_test$p.value
+    ) |> 
+    arrange(p_value)
 }
+
 offensive_win_r1_prop <- summarize_offensive_round_win_prop(1)
 offensive_win_r2_prop <- summarize_offensive_round_win_prop(2)
-devtools::source_url('https://raw.githubusercontent.com/dgrtwo/splittestr/master/R/vectorized-prop-test.R')
-# list(
-#   offensive_win_any_round_prop,
-#   offensive_win_r1_prop |> rename(n_r1 = n, prop_r1 = prop),
-#   offensive_win_r2_prop |> rename(n_r2 = n, prop_r2 = prop)
-# ) |> 
-#   reduce(inner_join) |> 
-#   mutate(
-#     prop_r1_diff = prop_r1 - prop,
-#     prop_r2_diff = prop_r2 - prop
-#   ) |> 
-#   arrange(desc(abs(prop_r1_diff)))
 
+## comparing round playouts vs expected if each side has a pre-series win expectation of 50% ----
+prior_clinching_round_win_prop <- rounds |> 
+  filter(round == (n_rounds - 1L)) |> 
+  count(n_rounds, win_series, won_prior_round = win_round) |> 
+  mutate(
+    across(win_series, ~ifelse(.x, 'win', 'loss'))
+  ) |> 
+  pivot_wider(
+    names_from = win_series,
+    values_from = n,
+    values_fill = 0L
+  ) |> 
+  filter(won_prior_round) |> 
+  select(-won_prior_round) |> 
+  mutate(
+    win_series_prop = win / (win + loss),
+    e_win_series_prop = (6L - 1L) / (n_rounds - 1L)
+  )
+
+n_rounds_max <- 11
+n_sims <- 10000
+set.seed(42)
+w <- sample(c(0, 1), size = n_rounds_max * n_sims, replace = TRUE)
+m <- matrix(w, nrow = n_sims, ncol = n_rounds_max)
+# data.frame(x)
+df <- as_tibble(m)
+names(df) <- sprintf('%d', 1:n_rounds_max)
+df$i <- 1:nrow(df)
+
+sim_rounds <- tibble(
+  i = rep(1:n_sims, each = n_rounds_max),
+  r = rep(1:n_sims, times = n_rounds_max),
+  w = w
+) |> 
+  group_by(i) |> 
+  mutate(
+    cumu_w = cumsum(w),
+    cumu_l = cumsum(w == 0)
+  ) |> 
+  ungroup() |> 
+  mutate(
+    cumu_wl_max = ifelse(cumu_w > cumu_l, cumu_w, cumu_l)
+  ) |> 
+  filter(cumu_wl_max <= 6)
+
+sim_rounds <- df |> 
+  pivot_longer(
+    -i,
+    names_to = 'r',
+    values_to = 'w'
+  ) |> 
+  mutate(
+    across(r, as.integer)
+  ) |> 
+  group_by(i) |> 
+  mutate(
+    cumu_w = cumsum(w),
+    cumu_l = cumsum(w == 0)
+  ) |> 
+  ungroup() |> 
+  mutate(
+    cumu_wl_max = ifelse(cumu_w > cumu_l, cumu_w, cumu_l)
+  ) |> 
+  filter(cumu_wl_max <= 6)
+
+sim_rounds_to_drop <- anti_join(
+  sim_rounds |> 
+    filter(cumu_wl_max == 6L),
+  sim_rounds |> 
+    filter(cumu_wl_max == 6L) |> 
+    group_by(i) |> 
+    slice_min(r, n = 1) |> 
+    ungroup()
+)
+
+sim_rounds <- sim_rounds |> 
+  anti_join(
+    sim_rounds_to_drop
+  )
+
+# sim_rounds |> 
+#   group_by(i) |> 
+#   summarize(
+#     cumu_w = max(cumu_w),
+#     cumu_l = max(cumu_l),
+#     ws = paste0(w, collapse = '')
+#   ) |> 
+#   unite(
+#     record, cumu_w, cumu_l, sep = '-'
+#   ) |> 
+#   count(record, ws, sort = TRUE) |> 
+#   mutate(prop = n / sum(n))
+
+## always from offensive perspective
+e_records <- sim_rounds |> 
+  inner_join(
+    sim_rounds |> 
+      filter(cumu_wl_max == 6) |> 
+      mutate(
+        zeros_win = cumu_l == cumu_wl_max
+      ) |> 
+      select(i, zeros_win)
+  ) |> 
+  mutate(
+    across(w, ~ifelse(zeros_win, abs(1 - .x), .x))
+  ) |> 
+  group_by(i) |> 
+  summarize(
+    cumu_w = max(cumu_w),
+    cumu_l = max(cumu_l),
+    ws = paste0(w, collapse = '')
+  ) |> 
+  ungroup() |> 
+  mutate(
+    wins = ifelse(cumu_w == 6, cumu_w, cumu_l),
+    losses = ifelse(cumu_w == 6, cumu_l, cumu_w)
+  ) |> 
+  unite(
+    record, wins, losses, sep = '-'
+  ) |> 
+  count(record, ws, sort = TRUE) |> 
+  mutate(prop = n / sum(n))
+
+rounds |> 
+  filter(win_series) |> 
+  mutate(across(win_round, as.integer)) |> 
+  group_by(year, event, series) |> 
+  summarize(
+    wins = max(cumu_w),
+    losses = max(cumu_l),
+    ws = paste0(win_round, collapse = '')
+  ) |> 
+  ungroup() |> 
+  unite(
+    record, wins, losses, sep = '-'
+  ) |> 
+  count(record, ws, sort = TRUE) |> 
+  mutate(prop = n / sum(n))
+
+## when are b2b rounds most commmon? ----
+## probably should only lookup to round 6
+
+## use round state instead of actual round?
 
 ## match win %, given round state ---
 summarize_rounds <- function(rounds, ...) {
@@ -147,7 +283,7 @@ common_heatmap_layers <- function(...) {
       axis.text = element_text(size = 16, face = 'bold')
     ),
     labs(
-      caption = 'CDL SnD Major and Weekly raw_matches, 2020 - present',
+      caption = 'CDL SnD Major and Weekly matches, 2020 - present',
       tag = '**Viz**: @TonyElHabr | **Data**: @IOUTurtle',
       x = "Offensive Team's # of Pre-Round Wins",
       y = "Defensive Team's # of Pre-Round Wins"
@@ -155,9 +291,11 @@ common_heatmap_layers <- function(...) {
   )
 }
 
-## need to split this out by who is offense in order to not have a symmetric heatmap
-n_rounds <- rounds |> summarize_rounds()
-p_offensive_match_win_prop <- n_rounds |> 
+n_rounds_side <- rounds |> summarize_rounds(is_offense)
+p_match_win_prop <- n_rounds_side |> 
+  mutate(
+    facet_label = ifelse(is_offense, 'Offense Match Win %', 'Defense Match Win %')
+  ) |> 
   ggplot() +
   common_heatmap_layers() +
   geom_rect(
@@ -187,15 +325,19 @@ p_offensive_match_win_prop <- n_rounds |>
     )
   ) +
   labs(
-    title = 'Offensive Match Win %'
-  )
-p_offensive_match_win_prop
+    title = 'Which side goes on to win the match?'
+  ) +
+  theme(
+    strip.text = element_text(color = 'white', size = 16, face = 'bold')
+  ) +
+  facet_wrap(~facet_label, scales = 'fixed')
+p_match_win_prop
 
 ggsave(
-  p_offensive_match_win_prop,
-  filename = file.path(dir_proj, 'offensive_match_win_prop.png'),
-  width = 8,
-  height = 8
+  p_match_win_prop,
+  filename = file.path(dir_proj, 'match_win_prop.png'),
+  width = 14,
+  height = 7
 )
 
 ## round win %, given round state ---
