@@ -150,7 +150,7 @@ read_snd_sheet <- function(year, sheet, overwrite = FALSE) {
 
 raw_series <- sheets |> 
   mutate(
-    data = map2(year, sheet, read_snd_sheet, overwrite = T)
+    data = map2(year, sheet, read_snd_sheet, overwrite = F)
   ) |> 
   unnest(data)
 
@@ -187,6 +187,12 @@ series <- raw_series |>
   ) |> 
   arrange(event, series, round, team)
 
+game_mapping <- c(
+  '2022' = 'Vanguard',
+  '2021' = 'Cold War',
+  '2020' = 'MW'
+)
+
 rounds <- series |> 
   group_by(year, sheet, series, team) |> 
   mutate(
@@ -219,6 +225,10 @@ rounds <- series |>
         n_rounds = round
       ), 
     by = c('year', 'sheet', 'series', 'team')
+  ) |> 
+  mutate(
+    game = game_mapping[as.character(year)],
+    .before = 1
   )
 rounds
 qs::qsave(rounds, file.path(dir_proj, 'cod_rounds.qs'))

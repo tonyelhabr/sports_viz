@@ -5,6 +5,7 @@ library(scales)
 library(extrafont)
 library(ggtext)
 
+dir_proj <- '57-cod_snd'
 blackish_background <- '#1c1c1c'
 gray_points <- '#4d4d4d'
 gray_text <- '#999999'
@@ -35,6 +36,9 @@ theme_update(
   panel.background = element_rect(fill = blackish_background, color = blackish_background)
 )
 # update_geom_defaults('text', list(colour = 'white', font = font))
+update_geom_defaults('text', list(family = font, size = 10 / .pt, fontface = 'bold'))
+update_geom_defaults('point', list(color = 'white'))
+update_geom_defaults('segment', list(color = 'white'))
 
 game_mapping <- c(
   '2022' = 'Vanguard',
@@ -47,6 +51,8 @@ rounds <- qs::qread(file.path(dir_proj, 'cod_rounds.qs')) |>
     game = game_mapping[as.character(year)],
     .before = 1
   )
+
+## general offensive win % ---
 
 ## offensive win % in "neutral" rounds (1 and 2) ----
 calculate_offensive_round_win_prop <- function(df) {
@@ -92,8 +98,75 @@ summarize_offensive_round_win_prop <- function(.round) {
     arrange(p_value)
 }
 
-offensive_win_r1_prop <- summarize_offensive_round_win_prop(1)
-offensive_win_r2_prop <- summarize_offensive_round_win_prop(2)
+offensive_win_r1_prop <- summarize_offensive_round_win_prop(1)|> 
+  mutate(
+    diff_prop = win_round_prop - other_win_round_prop,
+    dir = factor(sign(diff_prop)),
+    is_significant = p_value < 0.05,
+    label = sprintf('%s - %s (%s)', map, game, year)
+  )
+# offensive_win_r2_prop <- summarize_offensive_round_win_prop(2)
+# offensive_win_r1_prop |> 
+#   ggplot() +
+#   aes(x = win_round_prop, y = p_value) +
+#   geom_point(aes(size = total_rounds))
+
+x1_label <- 'Post-Round 1\nOffensive Win%'
+x2_label <- 'Round 1\nOffensive Win%'
+p_offensive_win_r1_prop <- offensive_win_r1_prop |> 
+  ggplot() +
+  geom_segment(
+    show.legend = FALSE,
+    aes(
+      x = !!x1_label,
+      xend = !!x2_label,
+      y = other_win_round_prop,
+      yend = win_round_prop,
+      color = dir,
+      group = label
+    )
+  ) +
+  geom_vline(
+    data = data.frame(),
+    aes(xintercept = c(1, 2)), 
+    color = gray_points
+  ) +
+  geom_text(
+    aes(x = x1_label, y = other_win_round_prop, label = label),
+    color = 'white',
+    size = 11 / .pt,
+    hjust = 1, 
+    nudge_x = -0.01,
+    lineheight = 0.875
+  ) +
+  geom_text(
+    aes(x = x2_label, y = win_round_prop, label = label),
+    color = 'white',
+    size = 11 / .pt,
+    hjust = 0, 
+    nudge_x = 0.01,
+    lineheight = 0.875
+  ) +
+  scale_x_discrete(
+    position = 'top'
+  ) +
+  scale_color_manual(
+    name = NULL,
+    values = c(
+      `-1` = 'yellow',
+      `1` = 'cyan'
+    )
+  ) +
+  theme(
+    panel.grid.major = element_blank(),
+    axis.text.x = element_text(size = 12, face = 'bold'),
+    axis.text.y = element_blank()
+  ) +
+  labs(
+    x = NULL,
+    y = NULL
+  )
+p_offensive_win_r1_prop
 
 ## comparing round playouts vs expected if each side has a pre-series win expectation of 50% ----
 prior_clinching_round_win_prop <- rounds |> 
