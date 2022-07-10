@@ -1,0 +1,95 @@
+---
+title: "Tactical Round-Based Games"
+author: "Tony ElHabr"
+format:
+  revealjs:
+    incremental: false
+execute: 
+  include: false
+  echo: false
+---
+
+```{r}
+#| label: setup
+library(dplyr)
+library(tibble)
+library(qs)
+library(scales)
+
+dir_proj <- '57-cod_snd'
+
+rounds <- qs::qread(file.path('cod_rounds.qs'))
+```
+
+## What?
+
+-   Call of Duty League (CDL)
+    -   Search and Destroy
+-   Valorant Pro League
+    -   Plant/Defuse
+
+## How do you win SnD?
+
+Several ways to win a round:
+
+1.  One team eliminate all members of the other team prior to a bomb plant.
+2.  The offensive team wins if they eliminate all members of the defensive team after a bomb plant.
+3.  The defensive team wins if they defuse the bomb after a bomb plant.[^1]
+4.  The defensive team wins if the offensive team does not make a plant by the time the round timer ends.
+
+[^1]: Often the defensive team will try to eliminate all offensive team members prior to making the defuse, but in some cases, they may try to "ninja" defuse.
+
+## Data set
+
+```{r}
+#| label: descriptive-cod-snd-stats
+n_series <- rounds |> 
+  distinct(year, sheet, series) |> 
+  nrow() |> 
+  scales::comma()
+
+n_rounds <- rounds |> 
+  distinct(year, sheet, series, round) |> 
+  nrow() |> 
+  scales::comma()
+
+offensive_win_pct <- rounds |> 
+  filter(is_offense) |> 
+  count(win_round) |> 
+  mutate(prop = n / sum(n)) |> 
+  filter(win_round) |> 
+  pull(prop) |> 
+  scales::percent(accuracy = 1)
+
+plant_pct <- rounds |>
+  filter(is_offense) |> 
+  count(makes_plant = !is.na(plant)) |> 
+  mutate(prop = n / sum(n)) |> 
+  filter(makes_plant) |> 
+  pull(prop) |> 
+  scales::percent(accuracy = 1)
+
+offensive_plant_and_win_pct <- rounds |> 
+  filter(is_offense, !is.na(plant)) |> 
+  count(win_round) |> 
+  mutate(prop = n / sum(n)) |> 
+  filter(win_round) |> 
+  pull(prop) |> 
+  scales::percent(accuracy = 1)
+
+offensive_first_blood_win_pct <- rounds |> 
+  filter(!is.na(earned_fb)) |> 
+  filter(earned_fb) |> 
+  count(win_round) |> 
+  mutate(prop = n / sum(n)) |> 
+  filter(win_round) |> 
+  pull(prop) |> 
+  scales::percent(accuracy = 1)
+```
+
+-   Total series: **`r n_series`**
+-   Total rounds: **`r n_rounds`**
+-   Offensive win %: **`r offensive_win_pct`**
+-   Offensive sides plant %: **`r plant_pct`**
+-   Win % when planting: **`r offensive_plant_and_win_pct[['TRUE']]`**
+-   Win % when earning first blood: **`r offensive_first_blood_win_pct`**
