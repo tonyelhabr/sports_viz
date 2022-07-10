@@ -115,40 +115,15 @@ prior_clinching_round_win_prop <- rounds |>
   )
 
 n_rounds_max <- 11
-n_sims <- 10000
+n_sims <- 100000
 set.seed(42)
 w <- sample(c(0, 1), size = n_rounds_max * n_sims, replace = TRUE)
-m <- matrix(w, nrow = n_sims, ncol = n_rounds_max)
-# data.frame(x)
-df <- as_tibble(m)
-names(df) <- sprintf('%d', 1:n_rounds_max)
-df$i <- 1:nrow(df)
 
 sim_rounds <- tibble(
   i = rep(1:n_sims, each = n_rounds_max),
   r = rep(1:n_sims, times = n_rounds_max),
   w = w
 ) |> 
-  group_by(i) |> 
-  mutate(
-    cumu_w = cumsum(w),
-    cumu_l = cumsum(w == 0)
-  ) |> 
-  ungroup() |> 
-  mutate(
-    cumu_wl_max = ifelse(cumu_w > cumu_l, cumu_w, cumu_l)
-  ) |> 
-  filter(cumu_wl_max <= 6)
-
-sim_rounds <- df |> 
-  pivot_longer(
-    -i,
-    names_to = 'r',
-    values_to = 'w'
-  ) |> 
-  mutate(
-    across(r, as.integer)
-  ) |> 
   group_by(i) |> 
   mutate(
     cumu_w = cumsum(w),
@@ -189,7 +164,7 @@ sim_rounds <- sim_rounds |>
 #   mutate(prop = n / sum(n))
 
 ## always from offensive perspective
-e_records <- sim_rounds |> 
+e_series_streaks <- sim_rounds |> 
   inner_join(
     sim_rounds |> 
       filter(cumu_wl_max == 6) |> 
@@ -218,7 +193,7 @@ e_records <- sim_rounds |>
   count(record, ws, sort = TRUE) |> 
   mutate(prop = n / sum(n))
 
-rounds |> 
+actual_series_streaks <- rounds |> 
   filter(win_series) |> 
   mutate(across(win_round, as.integer)) |> 
   group_by(year, event, series) |> 
@@ -234,10 +209,99 @@ rounds |>
   count(record, ws, sort = TRUE) |> 
   mutate(prop = n / sum(n))
 
-## when are b2b rounds most commmon? ----
-## probably should only lookup to round 6
+series_streaks <- full_join(
+  actual_series_streaks |> 
+    rename_with(~sprintf('%s_actual', .x), c(n, prop)),
+  e_series_streaks |> 
+    rename_with(~sprintf('%s_expected', .x), c(n, prop))
+) |> 
+  mutate(
+    prop_diff = prop_actual - prop_expected
+  ) |> 
+  arrange(desc(abs(prop_diff)))
+series_streaks |> filter(is.na(n_actual))
 
-## use round state instead of actual round?
+## 6-0, 6-1, and some combos of 6-5 occur more often than expected
+series_streaks |> 
+  filter(!is.na(n_actual)) |> 
+  mutate(total_actual = sum(n_actual)) |> 
+  mutate(
+    p = vectorized_prop_test(n_actual, total_actual, n_expected, !!n_sims)
+  ) |> 
+  select(-total_actual) |> 
+  arrange(p$p.value)
+
+## 6-0 and 6-1 occur more often than expected
+series_outcomes <- full_join(
+  actual_series_streaks |> 
+    group_by(record) |> 
+    summarize(
+      across(n, sum)
+    ) |> 
+    mutate(prop = n / sum(n)) |> 
+    rename_with(~sprintf('%s_actual', .x), c(n, prop)),
+  e_series_streaks |> 
+    group_by(record) |> 
+    summarize(
+      across(n, sum)
+    ) |> 
+    mutate(prop = n / sum(n)) |> 
+    rename_with(~sprintf('%s_expected', .x), c(n, prop))
+) |> 
+  mutate(
+    prop_diff = prop_actual - prop_expected
+  ) |> 
+  arrange(desc(abs(prop_diff))) |> 
+  mutate(total_actual = sum(n_actual)) |> 
+  mutate(
+    p = vectorized_prop_test(n_actual, total_actual, n_expected, !!n_sims)
+  ) |> 
+  select(-total_actual) |> 
+  arrange(p$p.value)
+
+## when are b2b rounds most commmon? ----
+## note: probably should only lookup to round 6
+
+summarize_b2b_round_wins <- function(df, ...) {
+  df |> 
+    arrange(year, sheet, series, team, round) |> 
+    group_by(year, sheet, series, team) |> 
+    mutate(
+      b2b_round_wins = win_round & lag(win_round)
+    ) |> 
+    ungroup() |> 
+    filter(round > 1L) |> 
+    count(..., round, b2b_round_wins) |> 
+    group_by(..., round) |> 
+    mutate(total = sum(n), prop = n / total) |> 
+    ungroup() |> 
+    filter(b2b_round_wins) |> 
+    select(-b2b_round_wins)
+}
+
+## when do teams win b2b rounds most often?
+## nothing interesting
+rounds |>
+  filter(n_rounds > 6L) |> 
+  summarize_b2b_round_wins()
+
+## now accounting for number of rounds that end up being played...
+## seems like there is interesting behavior in the last round, regardless `n_rounds`
+rounds |> 
+  filter(n_rounds > 6L) |> 
+  summarize_b2b_round_wins(n_rounds)
+
+## now accounting for number of rounds that end up being played AND series winners...
+rounds |> 
+  filter(win_series, n_rounds > 6L) |> 
+  summarize_b2b_round_wins(n_rounds)
+
+## and the losers...
+rounds |> 
+  filter(!win_series) |> 
+  summarize_b2b_round_wins(n_rounds)
+
+## todo: use round state instead of actual round?
 
 ## match win %, given round state ---
 summarize_rounds <- function(rounds, ...) {
@@ -571,10 +635,6 @@ rounds |>
   group_by(is_offense) |> 
   mutate(prop = n / sum(n)) |> 
   ungroup()
-dbinom(3, 3, 0.5)
-prop.test(
-  
-)
 
 rounds |> 
   filter(pre_cumu_w == 5, pre_cumu_l == 4) |> 
