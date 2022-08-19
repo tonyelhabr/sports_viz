@@ -9,12 +9,6 @@ library(ggplot2)
 library(ggtext)
 library(tibble)
 
-## for image downloads
-library(purrr)
-library(rvest)
-library(cli)
-library(qs)
-
 dir_proj <- '58-loss_tweets'
 dir_data <- file.path(dir_proj, 'data')
 
@@ -46,48 +40,6 @@ theme_update(
   plot.tag.position = c(0.01, 0.02),
   panel.background = element_rect(fill = blackish_background, color = blackish_background)
 )
-
-dir_img <- file.path(dir_proj, 'img')
-dir.create(dir_img)
-scrape_fbref_player_img <- function(url, name, overwrite = FALSE) {
-  path_img <- file.path(dir_img, sprintf('%s.png', name))
-  path <- file.path(dir_data, sprintf('fbref_img-%s.qs', name))
-  suffix <- sprintf('for %s.', name)
-  if(file.exists(path) & !overwrite) {
-    cli::cli_text('{Sys.time()}: Returning early {suffix}')
-    return(qs::qread(path))
-  }
-  Sys.sleep(5)
-  page <- rvest::read_html(url)
-  img_url <- page |> 
-    rvest::html_element(xpath = '//*[@id="meta"]/div[1]/img') |>
-    rvest::html_attr('src')
-  if(!file.exists(path_img)) {
-    download.file(img_url, destfile = path_img, mode = 'wb', quiet = TRUE)
-  }
-  res <- tibble(
-    url = url,
-    img_url = img_url,
-    player = name,
-    path = path_img
-  )
-  cli::cli_text('{Sys.time()}: Retrieved data {suffix}')
-  qs::qsave(res, path)
-  res
-}
-
-player_urls <- c(
-  'Ronaldo' = 'https://fbref.com/en/players/dea698d9/Cristiano-Ronaldo',
-  'Fernandes' = 'https://fbref.com/en/players/507c7bdf/Bruno-Fernandes',
-  'McTominay' = 'https://fbref.com/en/players/d93c2511/Scott-McTominay',
-  'Fred' = 'https://fbref.com/en/players/b853e0ad/Fred',
-  'Telles' = 'https://fbref.com/en/players/e73c9bb2/Alex-Telles',
-  'Rashford' = 'https://fbref.com/en/players/a1d5bd30/Marcus-Rashford',
-  'Elanga' = 'https://fbref.com/en/players/2fba6108/Anthony-Elanga',
-  'Wan-Bissaka' = 'https://fbref.com/en/players/9e525177/Aaron-Wan-Bissaka',
-  'Dalot' = 'https://fbref.com/en/players/d9565625/Diogo-Dalot'
-) |> 
-  imap_dfr(scrape_fbref_player_img)
 
 manu_color <- '#DA291C'
 matches <- file.path(dir_data, 'manu_matches.csv') |> read_csv()
@@ -131,31 +83,6 @@ player_counts <- bind_rows(
     grp = tidytext::reorder_within(player, n, outcome)
   )
 
-# wd <- fs::path_wd()
-# player_urls$path |> 
-#   map(
-#     ~file.rename(.x, str_replace(.x, 'png', 'jpg'))
-#   )
-# 
-# y_labels <- player_counts %>% 
-#   distinct(grp, player) |> 
-#   left_join(
-#     player_urls |> across(path, ~str_replace(.x, 'png', 'jpg')),
-#     by = 'player'
-#   ) |> 
-#   mutate(
-#     across(path, ~str_replace(.x, 'png', 'jpg')),
-#     # lab = glue::glue("<img src={path} width='40' height='40'/>"),
-#     # lab = sprintf(
-#     #   '%s%s',
-#     #   player,
-#     #   ifelse(
-#     #     !is.na(url), 
-#     #     glue::glue("   <img src={path} width='30' height='30'/>"),
-#     #     ''
-#     #   )
-#     # )
-#   )
 y_labels <- player_counts %>% distinct(grp, lab = player)
 
 x_lvls <- seq(2, 10, by = 2)
