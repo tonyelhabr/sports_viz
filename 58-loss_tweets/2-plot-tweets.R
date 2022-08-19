@@ -120,9 +120,9 @@ p <- player_counts |>
   ggplot() +
   aes(area = n, label = lab, fill = n) +
   scale_fill_gradient2(
-    low = colorspace::lighten(manu_color, 0.5),
-    mid = colorspace::lighten(manu_color, 0),
-    high = colorspace::darken(manu_color, 0.5)
+    low = colorspace::lighten(manu_color, 0.75),
+    mid = manu_color,
+    high = colorspace::darken(manu_color, 0.75)
   ) +
   guides(fill = 'none') +
   geom_treemap() +
@@ -152,6 +152,26 @@ ggsave(
   filename = path,
   width = 7,
   height = 7
+)
+
+add_logo(
+  path_viz = path,
+  path_logo = sprintf('%s/bruno-fernandes.png', dir_proj),
+  path_suffix = '',
+  delete = FALSE,
+  logo_scale = 0.25,
+  idx_x = 0.235,
+  idx_y = 0.23
+)
+
+add_logo(
+  path_viz = path,
+  path_logo = sprintf('%s/cr7.png', dir_proj),
+  path_suffix = '',
+  delete = FALSE,
+  logo_scale = 0.15,
+  idx_x = 0.8,
+  idx_y = 0.16
 )
 
 add_logo(
