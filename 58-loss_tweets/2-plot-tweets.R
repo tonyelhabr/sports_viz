@@ -22,7 +22,7 @@ theme_set(theme_minimal())
 theme_update(
   text = element_text(family = font),
   title = element_text(size = 20, color = 'white'),
-  plot.title = ggtext::element_markdown(face = 'bold', size = 20, color = 'white'),
+  plot.title = ggtext::element_markdown(face = 'bold', size = 16, color = 'white'),
   plot.title.position = 'plot',
   plot.subtitle = ggtext::element_markdown(size = 16, color = '#f1f1f1'),
   axis.text = element_text(color = 'white', size = 14),
@@ -90,7 +90,6 @@ p <- player_counts |>
   ggplot() +
   aes(x = n, y = grp) +
   geom_col(
-    # alpha = 0.8,
     fill = manu_color
   ) +
   scale_x_continuous(
@@ -101,7 +100,6 @@ p <- player_counts |>
   facet_wrap(~outcome, scales = 'free_y') +
   theme(
     strip.text = element_text(size = 14, color = 'white', face = 'bold', hjust = 0),
-    axis.text.y = ggtext::element_markdown(),
     panel.grid.major.y = element_blank()
   ) +
   labs(
@@ -114,12 +112,46 @@ p <- player_counts |>
   )
 p
 
+library(treemapify)
+p <- player_counts |> 
+  mutate(
+    lab = ifelse(n == 1, player, sprintf('%s (%d)', player, n))
+  ) |> 
+  ggplot() +
+  aes(area = n, label = lab, fill = n) +
+  scale_fill_gradient2(
+    low = colorspace::lighten(manu_color, 0.5),
+    mid = colorspace::lighten(manu_color, 0),
+    high = colorspace::darken(manu_color, 0.5)
+  ) +
+  guides(fill = 'none') +
+  geom_treemap() +
+  geom_treemap_text(
+    # grow = TRUE, 
+    reflow = TRUE, 
+    colour = 'white',
+    family = font
+  ) +
+  facet_wrap(~outcome) +
+  theme(
+    strip.text = element_text(size = 14, color = 'white', face = 'bold', hjust = 0)
+  ) +
+  labs(
+    title = glue::glue('Appearances in end-of-match @<span style="color:{manu_color}">ManUtd</span> tweets'),
+    subtitle = '2021/22 Premier League',
+    tag = '**Viz**: Tony ElHabr',
+    caption = '<br/>',
+    y = NULL,
+    x = NULL
+  )
+p
+
 path <- file.path(dir_proj, 'manu_tweets.png')
 ggsave(
   p,
   filename = path,
-  width = 10,
-  height = 8
+  width = 7,
+  height = 7
 )
 
 add_logo(
