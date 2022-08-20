@@ -8,6 +8,7 @@ library(extrafont)
 library(ggplot2)
 library(ggtext)
 library(tibble)
+library(treemapify)
 
 dir_proj <- '58-loss_tweets'
 dir_data <- file.path(dir_proj, 'data')
@@ -49,8 +50,9 @@ manu_tweets <- file.path(dir_proj, 'manu_tweets.csv') |>
     matches,
     by = 'date'
   )
+
 outcome_lvls <- c('Win', 'Draw or Loss')
-init_player_counts <- manu_tweets |> 
+separated_player_counts <- manu_tweets |> 
   mutate(
     outcome = ifelse(result != 'W', outcome_lvls[[2]], outcome_lvls[[1]])
   ) |> 
@@ -60,7 +62,13 @@ init_player_counts <- manu_tweets |>
   ) |> 
   mutate(
     across(players, ~str_remove(.x, '^.*\\s+'))
-  ) |> 
+  )
+
+separated_player_counts |> 
+  count(date, outcome) |> 
+  count(outcome, n1 = n == 1)
+
+init_player_counts <- separated_player_counts |> 
   count(outcome, player = players, sort = TRUE)
 
 n_players_appearing_only_once <- init_player_counts |> 
@@ -85,34 +93,6 @@ player_counts <- bind_rows(
 
 y_labels <- player_counts %>% distinct(grp, lab = player)
 
-x_lvls <- seq(2, 10, by = 2)
-p <- player_counts |> 
-  ggplot() +
-  aes(x = n, y = grp) +
-  geom_col(
-    fill = manu_color
-  ) +
-  scale_x_continuous(
-    breaks = x_lvls,
-    labels = as.character(x_lvls)
-  ) +
-  scale_y_discrete(name = '', labels = y_labels %>% select(grp, lab) %>% deframe()) +
-  facet_wrap(~outcome, scales = 'free_y') +
-  theme(
-    strip.text = element_text(size = 14, color = 'white', face = 'bold', hjust = 0),
-    panel.grid.major.y = element_blank()
-  ) +
-  labs(
-    title = glue::glue('Appearances in end-of-match @<span style="color:{manu_color}">ManUtd</span> score tweets'),
-    subtitle = '2021/22 Premier League',
-    tag = '**Viz**: Tony ElHabr',
-    caption = '<br/>',
-    y = NULL,
-    x = '# of matches'
-  )
-p
-
-library(treemapify)
 p <- player_counts |> 
   mutate(
     lab = ifelse(n == 1, player, sprintf('%s (%d)', player, n))
@@ -140,7 +120,7 @@ p <- player_counts |>
     title = glue::glue('Appearances in end-of-match @<span style="color:{manu_color}">ManUtd</span> tweets'),
     subtitle = '2021/22 Premier League',
     tag = '**Viz**: Tony ElHabr',
-    caption = '<br/>',
+    caption = 'Multiple players shown in 11 of 16 tweets after wins,<br/>and just 1 of 22 tweets after losses or draws.',
     y = NULL,
     x = NULL
   )
