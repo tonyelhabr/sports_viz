@@ -1,6 +1,9 @@
 
 library(tidyverse)
 library(qs)
+library(parallel)
+library(future)
+library(furrr)
 
 dir_proj <- '59-xg_xpoints'
 understat_permuted_xg <- file.path(dir_proj, 'understat_permuted_xg.qs') |> qs::qread()
@@ -100,17 +103,19 @@ joined_xpts_by_season <- table |>
   )
 joined_xpts_by_season
 
-calculate_prob_of_season_placing <- function(xpts_by_match, team, season) {
-  xpts_by_match <- understat_xpts_by_match
-  team <- 'Leicester City'
-  season <- 2020
-  str_season <- sprintf('%s/%s', season, season + 1)
+calculate_prob_of_season_placing <- function(xpts_by_match, season, team, seed = 42, n_sims = 1000) {
+  # xpts_by_match <- understat_xpts_by_match
+  # team <- 'Leicester City'
+  # season <- '2020/2021'
+  message(
+    sprintf('%s, %s', season, team)
+  )
   
   matches <- xpts_by_match |> 
-    filter(season == !!str_season) |> 
+    filter(season == !!season) |> 
     filter(team == !!team)
   
-  probs <- matches |> 
+  probs <- xpts_by_match |> 
     select(match_id, starts_with('prob')) |> 
     rename_with(~str_remove(.x, '^prob_'), -match_id) |> 
     pivot_longer(
@@ -118,24 +123,26 @@ calculate_prob_of_season_placing <- function(xpts_by_match, team, season) {
       names_to = 'result',
       values_to = 'prob'
     )
-
+  
   ## This is too big of a sample space
   # crossing(!!!imap(set_names(matches$match_id), ~c('lose', 'draw', 'win')))
-
+  
+  withr::local_seed(seed)
   sims <- imap_dfr(
-    set_names(1:1000),
+    set_names(1:n_sims),
     ~{
       probs |> 
         group_by(match_id) |> 
         slice_sample(n = 1, weight_by = prob) |> 
         ungroup() |>
         mutate(
-          sim_idx = !!.y,
+          sim_idx = as.integer(!!.y),
           .before = 1
         )
     }
   )
-  agg_sims <- sims |> 
+  
+  agg <- sims |> 
     mutate(
       pts = case_when(
         result == 'win' ~ 3L,
@@ -149,48 +156,124 @@ calculate_prob_of_season_placing <- function(xpts_by_match, team, season) {
     ) |> 
     ungroup()
   
-  agg_sims |> 
-    count(pts > 66)
+  prop <- agg |> 
+    count(sim_pts = pts) |> 
+    mutate(i = row_number(sim_pts), prop = n / sum(n))
   
-  n_sims <- 10000
-  n_matches_per_season <- 38
-  set.seed(42)
-  results <- sample(c('lose', 'draw', 'win'), size = n_matches_per_season * n_sims, replace = TRUE)
-  m <- matrix(results, nrow = n_sims, ncol = n_matches_per_season)
-  df <- as_tibble(m)
-  names(df) <- sprintf('%d', 1:n_matches_per_season)
-  df$i <- 1:nrow(df)
-  
-  sim_matches <- tibble(
-    sim_idx = rep(1:n_sims, each = n_matches_per_season),
-    match_idx = rep(1:n_sims, times = n_matches_per_season),
-    result = results
-  ) |> 
+  prop_table <- prop |> 
     left_join(
-      matches |> 
-        transmute(match_idx = row_number(), match_id),
-      by = 'match_idx'
-    ) |> 
-    left_join(
-      probs,
-      by = c('match_id', 'result')
+      table |> filter(team != !!team, season == !!season),
+      by = character()
     )
   
-  agg_sims <- sim_matches |> 
-    mutate(
-      pts = case_when(
-        result == 'win' ~ 3L,
-        result == 'lose' ~ 1L,
-        TRUE ~ 0L
-      )
+  equal_pts <- prop_table |> 
+    filter(sim_pts == pts)
+  
+  n_equal <- nrow(equal_pts)
+  equal_pts_ranks <- if (n_equal > 0) {
+    equal_pts |> 
+      group_by(i, sim_pts) |> 
+      slice_sample(n = 1) |>  
+      ungroup() |> 
+      select(i, sim_pts, sim_rank = rank)
+  } else {
+    tibble()
+  }
+  
+  more_pts <- prop_table |> 
+    anti_join(
+      equal_pts |> select(i),
+      by = 'i'
     ) |> 
-    group_by(sim_idx) |> 
-    summarize(
-      across(pts, sum)
-    ) |> 
-    ungroup()
-  agg_sims |> 
-    count(pts >= 66L)
+    filter(sim_pts > pts)
+  
+  n_more <- nrow(more_pts)
+  more_pts_ranks <- if (n_more > 0) {
+    more_pts |> 
+      group_by(i) |> 
+      slice_min(rank, n = 1, with_ties = FALSE) |> 
+      ungroup() |> 
+      transmute(i, sim_pts, sim_rank = rank - 1)
+  } else {
+    tibble()
+  }
+  
+  less_pts_ranks <- if ((n_equal + n_more) == nrow(prop)) {
+    tibble()
+  } else {
+    actual_rank <- table |> 
+      filter(team == !!team, season == !!season) |> 
+      pull(rank)
     
+    max_rank <- 20
+    if (actual_rank == 20) {
+      max_rank <- 19
+    }
+    
+    prop_table |> 
+      filter(sim_pts < pts) |> 
+      filter(rank == !!max_rank) |> 
+      distinct(i, sim_pts, sim_rank = rank)
+  }
+  
+  bind_rows(
+    more_pts_ranks,
+    equal_pts_ranks,
+    less_pts_ranks
+  ) |> 
+    inner_join(
+      prop,
+      by = c('i', 'sim_pts')
+    ) |> 
+    arrange(i) |> 
+    group_by(sim_rank) |> 
+    summarize(
+      across(sim_pts, list(min = min, max = max)),
+      across(c(n, prop), sum)
+    )
+  
 }
+
+n_cores <- parallel::detectCores()
+cores_for_parallel <- ceiling(n_cores * 1/2)
+future::plan(
+  future::multisession,
+  workers = cores_for_parallel
+)
+
+nested_sim_placings <- joined_xpts_by_season |> 
+  distinct(team, season) |> 
+  mutate(
+    sims = furrr::future_map2(
+      season, team, 
+      ~calculate_prob_of_season_placing(
+        understat_xpts_by_match, 
+        season = ..1, 
+        team = ..2,
+        n_sims = 10
+      ),
+      .options = furrr::furrr_options(seed = 42)
+    )
+  )
+future::plan(future::sequential)
+
+sim_placings <- nested_sim_placings |> 
+  unnest(sims) |> 
+  arrange(season, team, desc(sim_rank)) |> 
+  group_by(season, team) |> 
+  mutate(
+    inv_cumu_prop = cumsum(prop)
+  ) |> 
+  arrange(season, team, sim_rank) |> 
+  group_by(season, team) |> 
+  mutate(
+    cumu_prop = cumsum(prop),
+    .before = inv_cumu_prop
+  ) |> 
+  ungroup() |> 
+  left_join(
+    table,
+    by = c('season', 'team')
+  )
+qs::qsave(sim_placings, file.path(dir_proj, 'sim_placings.qs'))
 

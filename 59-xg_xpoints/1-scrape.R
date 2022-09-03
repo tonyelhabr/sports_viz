@@ -5,6 +5,7 @@ library(qs)
 
 dir_proj <- '59-xg_xpoints'
 team_mapping <- file.path(dir_proj, 'team_mapping.csv') |> read_csv()
+
 compute_goal_prob <- function(df){
   
   prob_idx <- rep(0, nrow(df))
@@ -139,7 +140,6 @@ fotmob_permuted_xg <- fotmob_shots |>
   rename_teams('fotmob') |>
   postprocess_permuted_xg()
 qs::qsave(fotmob_permuted_xg, file.path(dir_proj, 'fotmob_permuted_xg.qs'))
-
 
 match_results <- 2020:2021 |> 
   map_dfr(~understat_league_match_results('EPL', .x)) |> 
