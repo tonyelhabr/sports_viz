@@ -1,4 +1,5 @@
 library(tidyverse)
+library(gdata)
 library(qs)
 library(parallel)
 library(future)
@@ -10,12 +11,12 @@ fotmob_permuted_xg <- file.path(dir_proj, 'fotmob_permuted_xg.qs') |> qs::qread(
 raw_understat_xpts_by_match <- file.path(dir_proj, 'raw_understat_xpts_by_match.qs') |> qs::qread()
 table <- file.path(dir_proj, 'table.qs') |> qs::qread()
 
-summarize_pivoted_permuted_xg <- function(df) {
-  outer_prod <- outer(df$value_away, df$value_home)
+summarize_pivoted_permuted_xg <- function(prob_away, prob_home) {
+  outer_prod <- outer(prob_away, prob_home)
   p_draw <- sum(diag(outer_prod), na.rm = TRUE)
   p_home <- sum(gdata::upperTriangle(outer_prod), na.rm = TRUE)
   p_away <- sum(gdata::lowerTriangle(outer_prod), na.rm = TRUE)
-  tibble(
+  list(
     draw = p_draw,
     home = p_home,
     away = p_away
@@ -25,35 +26,36 @@ summarize_pivoted_permuted_xg <- function(df) {
 summarize_permuted_xg_by_match <- function(df) {
   pivoted <- df |>
     transmute(
-      season,
       match_id,
+      season,
       date,
       g,
       is_home = ifelse(is_home, 'home', 'away'),
-      value,
-      cumprob
+      prob
     ) |>
     pivot_wider(
-      names_from = c(is_home),
-      values_from = c(value, cumprob),
-      values_fill = list(value = 0L)
-    ) |> 
-    mutate(
-      draw = value_away * value_home
+      names_from = is_home,
+      names_prefix = 'prob_',
+      values_from = prob,
+      values_fill = 0L
     )
   
   pivoted |> 
-    select(season, match_id, date, value_away, value_home) |>
-    left_join(
+    select(match_id, season, date, prob_away, prob_home) |>
+    group_by(match_id, season, date) |> 
+    summarize(
+      across(starts_with('prob_'), ~list(.x))
+    ) |> 
+    ungroup() |> 
+    inner_join(
       df |> distinct(match_id, team, opponent, is_home),
       by = 'match_id'
     ) |> 
-    nest(data = c(value_home, value_away)) |> 
     mutate(
-      prob = map(data, summarize_pivoted_permuted_xg)
+      prob = map2(prob_away, prob_home, summarize_pivoted_permuted_xg)
     ) |> 
-    select(-data) |> 
-    unnest(prob, names_sep = '_') |> 
+    select(-starts_with('prob_')) |> 
+    unnest_wider(prob, names_sep = '_') |> 
     mutate(
       prob_win = ifelse(is_home, prob_home, prob_away),
       prob_lose = ifelse(is_home, prob_away, prob_home),
@@ -62,11 +64,8 @@ summarize_permuted_xg_by_match <- function(df) {
     select(-c(prob_home, prob_away))
 }
 
-understat_xpts_by_match <- understat_permuted_xg |> 
-  summarize_permuted_xg_by_match()
-
-fotmob_xpts_by_match <- fotmob_permuted_xg |> 
-  summarize_permuted_xg_by_match()
+understat_xpts_by_match <- understat_permuted_xg |> summarize_permuted_xg_by_match()
+fotmob_xpts_by_match <- fotmob_permuted_xg |> summarize_permuted_xg_by_match()
 
 aggregate_xpts_by_season <- function(df) {
   df |> 
@@ -84,11 +83,8 @@ aggregate_xpts_by_season <- function(df) {
     arrange(season, desc(xpts))
 }
 
-understat_xpts_by_season <- understat_xpts_by_match |> 
-  aggregate_xpts_by_season()
-
-fotmob_xpts_by_season <- fotmob_xpts_by_match |> 
-  aggregate_xpts_by_season()
+understat_xpts_by_season <- understat_xpts_by_match |> aggregate_xpts_by_season()
+fotmob_xpts_by_season <- fotmob_xpts_by_match |> aggregate_xpts_by_season()
 
 ## all seasons for modeling baselines with xgd and xpts
 ## verified pts from this source matches up with those from table. we should use the data from table wherever possible
@@ -130,7 +126,7 @@ qs::qsave(xpts_by_season, file.path(dir_proj, 'xpts_by_season.qs'))
 
 ## sim ----
 ## This is too big of a sample space
-# crossing(!!!imap(set_names(matches$match_id), ~c('lose', 'draw', 'win')))
+# crossing(!!!imap(set_names(unique(understat_xpts_by_match$match_id)), ~c('lose', 'draw', 'win')))
 init_probs <- understat_xpts_by_match |> 
   select(team, season, match_id, starts_with('prob')) |> 
   rename_with(~str_remove(.x, '^prob_'), starts_with('prob')) |> 

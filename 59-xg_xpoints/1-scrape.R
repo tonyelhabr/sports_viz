@@ -1,4 +1,4 @@
-library(worldfootballR)
+library(worldfootballR)  ## version: 0.5.12.5000
 library(tidyverse)
 library(lubridate)
 library(qs)
@@ -31,24 +31,53 @@ rename_teams <- function(df, src) {
     select(-c(home_team, away_team)) 
 }
 
-summarize_permuted_xg <- function(df) {
-  pre |> 
-    select(-miss) |> 
-    group_by(across(c(everything(), -make))) |> 
-    summarize(n = n(), across(make, ~list(.x))) |> 
+permute_xg <- function(xg) {
+  n <- length(xg)
+  x <- seq.int(0, n)
+  poibin::dpoibin(x, xg)
+}
+
+calculate_permuted_xg <- function(df) {
+  df |> 
+    group_by(across(c(everything(), -xg))) |> 
+    summarize(across(xg, ~list(.x))) |> 
     mutate(
-      prob = map2(make, n, ~poibin::dpoibin(0:(..2), ..1))
+      prob = map(xg, ~permute_xg(.x))
     ) |> 
-    select(-c(n, make)) |> 
+    select(-c(xg)) |> 
     unnest(cols = c(prob)) |> 
     group_by(across(-c(prob))) |>
     mutate(
-      cumu_prob = cumsum(prob),
+      # cumu_prob = cumsum(prob),
       g = row_number() - 1L
     ) |>
     ungroup() |> 
     arrange(match_id, is_home, g)
 }
+
+## understat ----
+understat_shots <- load_understat_league_shots(league = 'EPL') |> 
+  as_tibble() |> 
+  janitor::clean_names() |> 
+  filter(season < 2022) |> 
+  mutate(
+    across(season, ~sprintf('%s/%s', .x, .x + 1)),
+    across(date, lubridate::date)
+  )
+
+understat_permuted_xg <- understat_shots |>
+  transmute(
+    match_id,
+    season,
+    date,
+    home_team,
+    away_team,
+    is_home = h_a == 'h',
+    xg = x_g
+  ) |>
+  rename_teams('understat') |> 
+  calculate_permuted_xg()
+qs::qsave(understat_permuted_xg, file.path(dir_proj, 'understat_permuted_xg.qs'))
 
 ## understat, xpts by match ----
 init_understat_xpts_by_match <- 2014:2021 |> 
@@ -98,33 +127,6 @@ raw_understat_xpts_by_match <- clean_understat_xpts_by_match |>
   )
 qs::qsave(raw_understat_xpts_by_match, file.path(dir_proj, 'raw_understat_xpts_by_match.qs'))
 
-## understat ----
-understat_shots <- load_understat_league_shots(league = 'EPL') |> 
-  as_tibble() |> 
-  janitor::clean_names() |> 
-  # filter(season >= 2020, season <= 2021) |> 
-  mutate(
-    across(season, ~sprintf('%s/%s', .x, .x + 1)),
-    across(date, lubridate::date)
-  )
-
-understat_permuted_xg <- understat_shots |>
-  filter(match_id == first(match_id)) |> 
-  transmute(
-    season,
-    match_id,
-    date,
-    home_team,
-    away_team,
-    ## home_away used in 2022 season... this is a bug with worldfootballR pre-saved data
-    is_home = coalesce(h_a == 'h', home_away == 'h'),
-    make = x_g, 
-    miss = 1 - make
-  ) |>
-  rename_teams('understat') |> 
-  summarize_permuted_xg()
-qs::qsave(understat_permuted_xg, file.path(dir_proj, 'understat_permuted_xg.qs'))
-
 ## fotmob ----
 season_date_ranges <- understat_shots |> 
   group_by(season) |> 
@@ -160,17 +162,16 @@ fotmob_shots <- init_fotmob_shots |>
 
 fotmob_permuted_xg <- fotmob_shots |> 
   transmute(
-    season,
     match_id,
+    season,
     date,
     home_team,
     away_team,
     is_home = team_id == home_team_id,
-    make = expected_goals, 
-    miss = 1 - make
+    xg = coalesce(expected_goals, 0)
   ) |>
   rename_teams('fotmob') |>
-  summarize_permuted_xg()
+  calculate_permuted_xg()
 qs::qsave(fotmob_permuted_xg, file.path(dir_proj, 'fotmob_permuted_xg.qs'))
 
 ## table ----
