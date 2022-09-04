@@ -154,7 +154,7 @@ diagnose_xpts_by_match <- function(src, result) {
   
   list(
     calib = calib,
-    bs = bs,
+    mse = mse,
     bss = bss
   )
 }
@@ -177,11 +177,39 @@ calib <- diagnostics |>
     across(result, ~ifelse(.x == 'w', 'Win', 'Draw'))
   )
 
-tonythemes::theme_set_tony()
-calib |> 
-  mutate(
-    across(result, ~ifelse(.x == 'w', 'Win', 'Draw'))
-  ) |> 
+blackish_background <- '#1c1c1c'
+gray_points <- '#4d4d4d'
+gray_text <- '#999999'
+
+font <- 'Karla'
+extrafont::loadfonts(quiet = TRUE)
+theme_set(theme_minimal())
+theme_update(
+  text = element_text(family = font),
+  title = element_text(size = 20, color = 'white'),
+  plot.title = ggtext::element_markdown(face = 'bold', size = 16, color = 'white'),
+  plot.title.position = 'plot',
+  plot.subtitle = ggtext::element_markdown(size = 14, color = '#f1f1f1'),
+  axis.text = element_text(color = 'white', size = 14),
+  axis.title = element_text(size = 14, color = 'white', face = 'bold', hjust = 0.99),
+  axis.line = element_blank(),
+  legend.text = element_text(size = 14, color = 'white'),
+  legend.position = 'top',
+  panel.grid.major = element_line(color = gray_points),
+  panel.grid.minor = element_line(color = gray_points),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  plot.margin = margin(10, 10, 10, 10),
+  plot.background = element_rect(fill = blackish_background, color = blackish_background),
+  plot.caption = element_text(color = 'white', hjust = 1, size = 10, face = 'italic'),
+  plot.caption.position = 'plot',
+  # plot.tag = ggtext::element_markdown(size = 14, color = 'white', hjust = 0),
+  # plot.tag.position = c(0.01, 0.02),
+  panel.background = element_rect(fill = blackish_background, color = blackish_background)
+)
+# update_geom_defaults('text', list(family = font, size = 12 / .pt, fontface = 'bold'))
+
+p_calib <- calib |> 
   ggplot() +
   aes(x = .prob, y = actual, color = src) +
   geom_point(
@@ -195,26 +223,35 @@ calib |>
       ymin = ci_lower, 
       ymax = ci_upper
     ), 
+    # color = gray_points,
     position = position_dodge(width = 0.05),
     # position = 'dodge',
     width = 0.025
   ) +
-  geom_abline(slope = 1, intercept = 0) +
+  geom_abline(slope = 1, intercept = 0, color = 'white') +
   scale_x_continuous(labels = scales::percent, limits = c(-0.025, 1.025)) +
   scale_y_continuous(labels = scales::percent, limits = c(-0.025, 1.025)) +
   facet_wrap(~result) +
-  theme(legend.position = 'top') +
   guides(
     color = guide_legend('Source', override.aes = list(size = 3)),
     size = guide_legend('Sample size')
   ) +
   labs(
     title = 'Calibration of implied match outcome probabilities',
-    subtitle = 'Understat\'s xG is slightly better calibrated than fotmob\'s',
+    subtitle = '2021/22 - 2021/22 English Premier League',
     x = 'Probability',
     y = 'Actual Proportion',
-    caption = 'Error bars represent a 95% posterior credible interval for the\nmean predicted chance using a beta-binomial conjugate (i.e. Jeffreys\' Prior).\nLoss calibration is redundant with win calibration.'
+    caption = 'Error bars represent a 95% posterior credible interval for the mean predicted chance using a beta-binomial conjugate (i.e. Jeffreys\' Prior).\nLoss calibration is redundant with win calibration.'
   )
+p_calib
+path_calib <- file.path(dir_proj, 'calib.png')
+
+ggsave(
+  p_calib,
+  filename = path_calib,
+  width = 10,
+  height = 7.5
+)
 
 ## by season ----
 aggregate_xpts_by_season <- function(df) {
