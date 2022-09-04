@@ -67,6 +67,137 @@ summarize_permuted_xg_by_match <- function(df) {
 understat_xpts_by_match <- understat_permuted_xg |> summarize_permuted_xg_by_match()
 fotmob_xpts_by_match <- fotmob_permuted_xg |> summarize_permuted_xg_by_match()
 
+## match calib ----
+xpts_by_match <- raw_understat_xpts_by_match |> 
+  select(season, date, team, result, pts) |> 
+  inner_join(
+    understat_xpts_by_match |> 
+      select(season, date, team, starts_with('prob_'), xpts) |> 
+      rename_with(~sprintf('%s_understat', .x), c(starts_with('prob_'), xpts)),
+    by = c('season', 'date', 'team')
+  ) |> 
+  inner_join(
+    fotmob_xpts_by_match |> 
+      select(season, date, team, starts_with('prob_'), xpts) |> 
+      rename_with(~sprintf('%s_fotmob', .x), c(starts_with('prob_'), xpts)),
+    by = c('season', 'date', 'team')
+  )
+
+cor(xpts_by_match$prob_draw_fotmob, xpts_by_match$prob_draw_understat)
+cor(xpts_by_match$prob_win_fotmob, xpts_by_match$prob_win_understat)
+cor(xpts_by_match$prob_lose_fotmob, xpts_by_match$prob_lose_understat)
+
+source(file.path(dir_proj, 'diagnostic_helpers.R'))
+result_props <- xpts_by_match |> 
+  count(result) |> 
+  mutate(prop = n / sum(n))
+
+diagnose_xpts_by_match <- function(src, result) {
+  # src <- 'understat'
+  # result <- 'l'
+  result_name <- switch(
+    result,
+    'w' = 'win',
+    'l' = 'lose',
+    'd' = 'draw'
+  )
+  
+  col <- sprintf('prob_%s_%s', result_name, src)
+  
+  df <- xpts_by_match |> 
+    mutate(
+      result = ifelse(result == !!result, 1L, 0L) |> factor()
+    )
+
+  fit <- parsnip::logistic_reg() |> 
+    parsnip::fit_xy(
+      x = df |> select(.data[[col]]),
+      y = df |> pull(result)
+    )
+  
+  probs <- df |> 
+    transmute(
+      season,
+      team,
+      result,
+      .prob = predict(fit, df, type = 'prob')$.pred_1
+    )
+
+  calib <- probs |> 
+    compute_calibration_table(result, .prob)
+  
+  mse <- probs |> 
+    mse(
+      truth = result, 
+      estimate = .prob,
+      event_level = 'second'
+    ) |> 
+    pull(.estimate)
+  
+  ref_prob <- result_props |> 
+    filter(result == !!result) |> 
+    pull(prop)
+
+  bss <- probs |> 
+    mutate(.ref_prob = !!ref_prob) |> 
+    brier_skill_score(
+      truth = result,
+      estimate = .prob,
+      ref_estimate = .ref_prob,
+      event_level = 'second'
+    ) |> 
+    pull(.estimate)
+  
+  list(
+    calib = calib,
+    bs = bs,
+    bss = bss
+  )
+}
+
+diagnostics <- crossing(
+  result = c('w', 'd'),
+  src = c('understat', 'fotmob')
+) |> 
+  mutate(
+    diagnostics = map2(src, result, diagnose_xpts_by_match)
+  ) |> 
+  unnest_wider(diagnostics)
+
+calib <- diagnostics |> 
+  select(result, src, calib) |> 
+  unnest_longer(calib) |> 
+  unnest_wider(calib)
+calib |> 
+  ggplot() +
+  aes(x = .prob, y = actual, color = src) +
+  geom_point(
+    aes(size = n),
+    position = position_dodge(width = 0.05)
+    # position = 'dodge'
+  ) +
+  geom_errorbar(
+    data = calib |> filter(n >= 10),
+    aes(
+      ymin = ci_lower, 
+      ymax = ci_upper
+    ), 
+    position = position_dodge(width = 0.05),
+    # position = 'dodge',
+    width = 0.025
+  ) +
+  geom_abline(slope = 1, intercept = 0) +
+  facet_wrap(~result) +
+  lims(
+    x = c(-0.025, 1.025),
+    y = c(-0.025, 1.025)
+  ) +
+  labs(
+    x = 'Probability',
+    y = 'Actual Proportion'
+  )
+
+## by season ----
 aggregate_xpts_by_season <- function(df) {
   df |> 
     group_by(season, team) |> 
