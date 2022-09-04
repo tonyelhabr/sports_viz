@@ -7,32 +7,6 @@ library(poibin)
 dir_proj <- '59-xg_xpoints'
 team_mapping <- file.path(dir_proj, 'team_mapping.csv') |> read_csv()
 
-compute_goal_prob <- function(df){
-  
-  prob_idx <- rep(0, nrow(df))
-  for (i in 1:nrow(df)) {
-    if (i == 1){
-      prob_idx[i] <- df[i, 2]
-      prob_idx[i+1] <- df[i, 1]
-    } else if(i == 2) {
-      prob_idx[i+1] <- df[i, 1]*prob_idx[i]
-      prob_idx[i] <- df[i, 2]*prob_idx[i] + df[i, 1]*prob_idx[i-1]
-      prob_idx[1] <- df[i, 2]*prob_idx[1]
-    } else {
-      prob_idx[i+1] <- df[i, 1]*prob_idx[i]
-      prob_idx[i] <- df[i, 2]*prob_idx[i] + df[i, 1]*prob_idx[i-1]
-      for (j  in 1:(i-2)){
-        prob_idx[i-j] <- df[i, 2]*prob_idx[i-j] + df[i, 1]*prob_idx[i-j-1]
-      }
-      prob_idx[1] <- df[i, 2]*prob_idx[1]
-    }
-  }
-  prob_idx |> 
-    unlist() |> 
-    as_tibble() |> 
-    mutate(cumprob = cumsum(value))
-}
-
 rename_teams <- function(df, src) {
   team_src <- sprintf('team_%s', src)
   df |> 
@@ -57,15 +31,21 @@ rename_teams <- function(df, src) {
     select(-c(home_team, away_team)) 
 }
 
-postprocess_permuted_xg <- function(df) {
-  df |> 
-    nest(data = c(make, miss)) |>
+summarize_permuted_xg <- function(df) {
+  pre |> 
+    select(-miss) |> 
+    group_by(across(c(everything(), -make))) |> 
+    summarize(n = n(), across(make, ~list(.x))) |> 
     mutate(
-      data = map(data, compute_goal_prob)
+      prob = map2(make, n, ~poibin::dpoibin(0:(..2), ..1))
     ) |> 
-    unnest(cols = c(data)) |> 
-    group_by(across(-c(value, cumprob))) |>
-    mutate(g = row_number() - 1L) |>
+    select(-c(n, make)) |> 
+    unnest(cols = c(prob)) |> 
+    group_by(across(-c(prob))) |>
+    mutate(
+      cumu_prob = cumsum(prob),
+      g = row_number() - 1L
+    ) |>
     ungroup() |> 
     arrange(match_id, is_home, g)
 }
@@ -129,6 +109,7 @@ understat_shots <- load_understat_league_shots(league = 'EPL') |>
   )
 
 understat_permuted_xg <- understat_shots |>
+  filter(match_id == first(match_id)) |> 
   transmute(
     season,
     match_id,
@@ -141,7 +122,7 @@ understat_permuted_xg <- understat_shots |>
     miss = 1 - make
   ) |>
   rename_teams('understat') |> 
-  postprocess_permuted_xg()
+  summarize_permuted_xg()
 qs::qsave(understat_permuted_xg, file.path(dir_proj, 'understat_permuted_xg.qs'))
 
 ## fotmob ----
@@ -189,7 +170,7 @@ fotmob_permuted_xg <- fotmob_shots |>
     miss = 1 - make
   ) |>
   rename_teams('fotmob') |>
-  postprocess_permuted_xg()
+  summarize_permuted_xg()
 qs::qsave(fotmob_permuted_xg, file.path(dir_proj, 'fotmob_permuted_xg.qs'))
 
 ## table ----
