@@ -87,10 +87,13 @@ cor(xpts_by_match$prob_draw_fotmob, xpts_by_match$prob_draw_understat)
 cor(xpts_by_match$prob_win_fotmob, xpts_by_match$prob_win_understat)
 cor(xpts_by_match$prob_lose_fotmob, xpts_by_match$prob_lose_understat)
 
-source(file.path(dir_proj, 'diagnostic_helpers.R'))
 result_props <- xpts_by_match |> 
   count(result) |> 
   mutate(prop = n / sum(n))
+
+compute_mse <- function(truth, estimate) {
+  mean((truth - estimate)^2)
+}
 
 diagnose_xpts_by_match <- function(src, result) {
   # src <- 'understat'
@@ -120,33 +123,34 @@ diagnose_xpts_by_match <- function(src, result) {
       season,
       team,
       result,
+      result_num = as.numeric(result) - 1,
       .prob = predict(fit, df, type = 'prob')$.pred_1
     )
 
-  calib <- probs |> 
-    compute_calibration_table(result, .prob)
-  
-  mse <- probs |> 
-    mse(
-      truth = result, 
-      estimate = .prob,
-      event_level = 'second'
+  n_buckets <- 20
+  alpha <- 0.05
+  calib <- probs |>
+    mutate(
+      across(.prob, ~round(.x * n_buckets) / n_buckets)
+    ) |>
+    group_by(.prob) |>
+    summarize(
+      ## Jeffrey's prior
+      ci_lower = qbeta(alpha / 2, sum(result_num) + 0.5, n() - sum(result_num) + 0.5),
+      ci_upper = qbeta(1 - alpha / 2, sum(result_num) + 0.5, n() - sum(result_num) + 0.5),
+      actual = sum(result_num) / n(),
+      n = n()
     ) |> 
-    pull(.estimate)
-  
+    ungroup()
+
+  mse <- compute_mse(probs$result_num, probs$.prob)
+
   ref_prob <- result_props |> 
     filter(result == !!result) |> 
     pull(prop)
-
-  bss <- probs |> 
-    mutate(.ref_prob = !!ref_prob) |> 
-    brier_skill_score(
-      truth = result,
-      estimate = .prob,
-      ref_estimate = .ref_prob,
-      event_level = 'second'
-    ) |> 
-    pull(.estimate)
+  
+  ref_mse <- compute_mse(probs$result_num, ref_prob)
+  bss <- 1 - (mse / ref_mse)
   
   list(
     calib = calib,
@@ -163,12 +167,21 @@ diagnostics <- crossing(
     diagnostics = map2(src, result, diagnose_xpts_by_match)
   ) |> 
   unnest_wider(diagnostics)
+diagnostics
 
 calib <- diagnostics |> 
   select(result, src, calib) |> 
   unnest_longer(calib) |> 
-  unnest_wider(calib)
+  unnest_wider(calib) |> 
+  mutate(
+    across(result, ~ifelse(.x == 'w', 'Win', 'Draw'))
+  )
+
+tonythemes::theme_set_tony()
 calib |> 
+  mutate(
+    across(result, ~ifelse(.x == 'w', 'Win', 'Draw'))
+  ) |> 
   ggplot() +
   aes(x = .prob, y = actual, color = src) +
   geom_point(
@@ -177,7 +190,7 @@ calib |>
     # position = 'dodge'
   ) +
   geom_errorbar(
-    data = calib |> filter(n >= 10),
+    # data = calib |> filter(n >= 10),
     aes(
       ymin = ci_lower, 
       ymax = ci_upper
@@ -187,14 +200,20 @@ calib |>
     width = 0.025
   ) +
   geom_abline(slope = 1, intercept = 0) +
+  scale_x_continuous(labels = scales::percent, limits = c(-0.025, 1.025)) +
+  scale_y_continuous(labels = scales::percent, limits = c(-0.025, 1.025)) +
   facet_wrap(~result) +
-  lims(
-    x = c(-0.025, 1.025),
-    y = c(-0.025, 1.025)
+  theme(legend.position = 'top') +
+  guides(
+    color = guide_legend('Source', override.aes = list(size = 3)),
+    size = guide_legend('Sample size')
   ) +
   labs(
+    title = 'Calibration of implied match outcome probabilities',
+    subtitle = 'Understat\'s xG is slightly better calibrated than fotmob\'s',
     x = 'Probability',
-    y = 'Actual Proportion'
+    y = 'Actual Proportion',
+    caption = 'Error bars represent a 95% posterior credible interval for the\nmean predicted chance using a beta-binomial conjugate (i.e. Jeffreys\' Prior).\nLoss calibration is redundant with win calibration.'
   )
 
 ## by season ----
