@@ -2,6 +2,7 @@ library(worldfootballR)
 library(tidyverse)
 library(lubridate)
 library(qs)
+library(poibin)
 
 dir_proj <- '59-xg_xpoints'
 team_mapping <- file.path(dir_proj, 'team_mapping.csv') |> read_csv()
