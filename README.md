@@ -6,6 +6,16 @@ git-ignored here.
 The projects are listed in reverse chronological order. A skipped number
 corresponds to an idea that I scraped.
 
+# 59. Expected Points Deep Dive
+
+![](59-xg_xpoints/calib.png "Calibration of implied match outcome probabilities, 2021/22 - 2021/22 English Premier League")
+
+![](59-xg_xpoints/unexpected.png "Which teams had the most unexpected placings? 2014/15 - 2021/22 English Premier League")
+
+# 58. Manchester United Loss Tweets
+
+![](58-loss_tweets/manu_tweets_w_logo.png "Player appearances in end-of-match tweets, Manchester United, 2021/22 Premier League")
+
 # 55. 2021/22 EPL Blocked Shots from Outside the Box
 
 ![](55-blocks_outside_box/tiled_oob_blocks_w_logo.png "Percentage of outside-the-box shots blocked in 2021/22 Premier League")
@@ -106,7 +116,7 @@ block represents 90 minutes played by new players on a given team,
 facets are for each team, and blocks are colored by
 position](42-202122_new_players/202122_epl_new_players_w_logo.png "Which squads have had the largest influx of new players this season?")
 
-# 41. #USMNT popularity growth drivers
+# 41. \#USMNT popularity growth drivers
 
 ![venn diagram showing mutual follows of @watke\_, @TedLasso, and @USMNT
 on
@@ -122,7 +132,7 @@ matches](40-xg_overperformance/overperformance_w_kane_lukaku.png "When do elite 
 over their past 50
 matches](40-xg_overperformance/underperformance_w_werner.png "What does significant xG under-performance look like?")
 
-# 38. Football #viz Twitter
+# 38. Football \#viz Twitter
 
 ![venn diagram showing about 50 twiter accounts who post soccer viz,
 grouped by following, frequency of tweets, and frequency of
