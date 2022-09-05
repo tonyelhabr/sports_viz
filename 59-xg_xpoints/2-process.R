@@ -4,6 +4,7 @@ library(qs)
 library(parallel)
 library(future)
 library(furrr)
+library(nnet)
 
 dir_proj <- '59-xg_xpoints'
 understat_permuted_xg <- file.path(dir_proj, 'understat_permuted_xg.qs') |> qs::qread()
@@ -81,13 +82,18 @@ xpts_by_match <- raw_understat_xpts_by_match |>
       select(season, date, team, starts_with('prob_'), xpts) |> 
       rename_with(~sprintf('%s_fotmob', .x), c(starts_with('prob_'), xpts)),
     by = c('season', 'date', 'team')
+  ) |> 
+  mutate(
+    across(result, ~factor(.x, levels = c('l', 'd', 'w')))
   )
 
-cor(xpts_by_match$prob_draw_fotmob, xpts_by_match$prob_draw_understat)
-cor(xpts_by_match$prob_win_fotmob, xpts_by_match$prob_win_understat)
-cor(xpts_by_match$prob_lose_fotmob, xpts_by_match$prob_lose_understat)
+cor_draw <- cor(xpts_by_match$prob_draw_fotmob, xpts_by_match$prob_draw_understat)
+cor_win <- cor(xpts_by_match$prob_win_fotmob, xpts_by_match$prob_win_understat)
+cor_lose <- cor(xpts_by_match$prob_lose_fotmob, xpts_by_match$prob_lose_understat)
+round(c(cor_draw, cor_win, cor_lose), 3)
 
 result_props <- xpts_by_match |> 
+  distinct()
   count(result) |> 
   mutate(prop = n / sum(n))
 
@@ -95,9 +101,7 @@ compute_mse <- function(truth, estimate) {
   mean((truth - estimate)^2)
 }
 
-diagnose_xpts_by_match <- function(src, result) {
-  # src <- 'understat'
-  # result <- 'l'
+diagnose_prob_by_match <- function(src, result) {
   result_name <- switch(
     result,
     'w' = 'win',
@@ -164,7 +168,7 @@ diagnostics <- crossing(
   src = c('understat', 'fotmob')
 ) |> 
   mutate(
-    diagnostics = map2(src, result, diagnose_xpts_by_match)
+    diagnostics = map2(src, result, diagnose_prob_by_match)
   ) |> 
   unnest_wider(diagnostics)
 diagnostics
@@ -252,6 +256,74 @@ ggsave(
   width = 10,
   height = 7.5
 )
+
+compute_rmse <- function(truth, estimate) {
+  sqrt(mean((truth - estimate)^2))
+}
+
+compute_xpts_by_match_rmse <- function(src) {
+
+  col <- sprintf('xpts_%s', src)
+  fit <- lm(xpts_by_match$pts ~ xpts_by_match[[col]])
+  
+  pred <- predict(fit)
+  
+  compute_rmse(xpts_by_match$pts, pred)
+}
+
+rmses_xpts_by_match <- c('understat', 'fotmob') |> 
+  set_names() |> 
+  map_dbl(compute_xpts_by_match_rmse)
+rmses_xpts_by_match
+
+compute_implied_xpts_by_match_rmse <- function(src) {
+  col_win <- sprintf('prob_win_%s', src)
+  col_draw <- sprintf('prob_draw_%s', src)
+  
+  df <- xpts_by_match |> 
+    mutate(
+      win = ifelse(result == 'w', 1L, 0L) |> factor(),
+      draw = ifelse(result == 'd', 1L, 0L) |> factor()
+    )
+  
+  fit_win <- glm(
+    df$win ~ df[[col_win]],
+    family = 'binomial'
+  )
+  
+  fit_draw <- glm(
+    df$draw ~ df[[col_draw]],
+    family = 'binomial'
+  )
+  
+  prob_win <- predict(fit_win, type = 'response')
+  prob_draw <- predict(fit_draw, type = 'response')
+  xpts <- 3 * prob_win + 1 * prob_draw
+  
+  compute_rmse(df$pts, xpts)
+}
+
+rmses_implied_xpts_by_match <- c('understat', 'fotmob') |> 
+  set_names() |> 
+  map_dbl(compute_implied_xpts_by_match_rmse)
+round(rmses_implied_xpts_by_match, 2)
+
+diagnose_implied_xpts_by_match <- function(src) {
+
+  df <- xpts_by_match |> 
+    mutate(across(result, ~factor(.x, levels = c('l', 'd', 'w'))))
+  fit <- nnet::multinom(result ~ prob_win + prob_draw, xpts_by_match)
+  probs <- predict(fit, type = 'probs') |> as_tibble()
+  xpts <- 3 * probs[, 'w'] + 1 * probs[, 'd']
+  
+  compute_rmse(df$pts, xpts)
+}
+
+rmses_implied_xpts_by_match <- c('understat', 'fotmob') |> 
+  set_names() |> 
+  map_dbl(compute_implied_xpts_by_match_rmse)
+round(rmses_implied_xpts_by_match, 2)
+
 
 ## by season ----
 aggregate_xpts_by_season <- function(df) {
