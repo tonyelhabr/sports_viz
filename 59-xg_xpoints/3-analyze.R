@@ -7,15 +7,39 @@ raw_understat_xpts_by_season <- file.path(dir_proj, 'raw_understat_xpts_by_seaso
 table <- file.path(dir_proj, 'table.qs') |> qs::qread()
 
 ## what were the most unlikely placings? ----
-slice_top_sim_placings <- function(which = c('top', 'bottom'), .n = 10) {
-  col <- switch(
-    which,
-    'top' = 'cumu_prop',
-    'bottom' = 'inv_cumu_prop'
+understat_sim_placings_with_actual_ranks <- understat_sim_placings |> 
+  inner_join(
+    table |> select(season, team, actual_pts = pts, actual_rank = rank),
+    by = c('season', 'team')
+  ) |> 
+  inner_join(
+    raw_understat_xpts_by_season |> select(season, team, raw_xpts = xpts, xgd),
+    by = c('season', 'team')
+  ) |> 
+  select(
+    season,
+    team,
+    actual_rank,
+    xrank,
+    actual_pts,
+    xpts = pts_mean,
+    raw_xpts,
+    xgd,
+    cumu_prop
   )
-  understat_sim_placings |> 
-    filter(rank == actual_rank) |> 
-    slice_min(.data[[col]], n = .n, with_ties = FALSE) |> 
+
+slice_top_sim_placings <- function(which) {
+  
+  slice_f <- switch(
+    which,
+    'top' = dplyr::slice_min,
+    'bottom' = dplyr::slice_max
+  )
+  
+  understat_sim_placings_with_actual_ranks |> 
+    filter(xrank == actual_rank) |> 
+    slice_f(cumu_prop, n = 10, with_ties = FALSE) |> 
+    select(-xrank) |> 
     mutate(
       which = !!which,
       .before = 1
