@@ -5,6 +5,9 @@ library(parallel)
 library(future)
 library(furrr)
 library(nnet)
+library(ggplot2)
+library(extrafont)
+library(scales)
 
 dir_proj <- '59-xg_xpoints'
 understat_permuted_xg <- file.path(dir_proj, 'understat_permuted_xg.qs') |> qs::qread()
@@ -93,7 +96,6 @@ cor_lose <- cor(xpts_by_match$prob_lose_fotmob, xpts_by_match$prob_lose_understa
 round(c(cor_draw, cor_win, cor_lose), 3)
 
 result_props <- xpts_by_match |> 
-  distinct()
   count(result) |> 
   mutate(prop = n / sum(n))
 
@@ -102,35 +104,29 @@ compute_mse <- function(truth, estimate) {
 }
 
 diagnose_prob_by_match <- function(src, result) {
+  
+  df <- xpts_by_match |> 
+    mutate(
+      result = ifelse(result == !!result, 1L, 0L) |> factor()
+    )
+  
   result_name <- switch(
     result,
     'w' = 'win',
     'l' = 'lose',
     'd' = 'draw'
   )
-  
   col <- sprintf('prob_%s_%s', result_name, src)
-  
-  df <- xpts_by_match |> 
-    mutate(
-      result = ifelse(result == !!result, 1L, 0L) |> factor()
-    )
 
-  fit <- parsnip::logistic_reg() |> 
-    parsnip::fit_xy(
-      x = df |> select(.data[[col]]),
-      y = df |> pull(result)
-    )
+  fit <- glm(
+    df$result ~ df[[col]],
+    family = 'binomial'
+  )
   
-  probs <- df |> 
-    transmute(
-      season,
-      team,
-      result,
-      result_num = as.numeric(result) - 1,
-      .prob = predict(fit, df, type = 'prob')$.pred_1
-    )
-
+  probs <- tibble(
+    result_num = as.numeric(df$result) - 1,
+    .prob = unname(predict(fit, type = 'response'))
+  )
   n_buckets <- 20
   alpha <- 0.05
   calib <- probs |>
@@ -191,9 +187,9 @@ theme_set(theme_minimal())
 theme_update(
   text = element_text(family = font),
   title = element_text(size = 20, color = 'white'),
-  plot.title = ggtext::element_markdown(face = 'bold', size = 16, color = 'white'),
+  plot.title = element_text(face = 'bold', size = 16, color = 'white'),
   plot.title.position = 'plot',
-  plot.subtitle = ggtext::element_markdown(size = 14, color = '#f1f1f1'),
+  plot.subtitle = element_text(size = 14, color = '#f1f1f1'),
   axis.text = element_text(color = 'white', size = 14),
   axis.title = element_text(size = 14, color = 'white', face = 'bold', hjust = 0.99),
   axis.line = element_blank(),
@@ -204,6 +200,7 @@ theme_update(
   panel.grid.minor.x = element_blank(),
   panel.grid.minor.y = element_blank(),
   plot.margin = margin(10, 10, 10, 10),
+  strip.text = element_text(size = 14, color = 'white', face = 'bold', hjust = 0),
   plot.background = element_rect(fill = blackish_background, color = blackish_background),
   plot.caption = element_text(color = 'white', hjust = 1, size = 10, face = 'italic'),
   plot.caption.position = 'plot',
@@ -211,7 +208,7 @@ theme_update(
   # plot.tag.position = c(0.01, 0.02),
   panel.background = element_rect(fill = blackish_background, color = blackish_background)
 )
-# update_geom_defaults('text', list(family = font, size = 12 / .pt, fontface = 'bold'))
+update_geom_defaults('point', list(color = 'white'))
 
 p_calib <- calib |> 
   ggplot() +
@@ -308,15 +305,18 @@ rmses_implied_xpts_by_match <- c('understat', 'fotmob') |>
   map_dbl(compute_implied_xpts_by_match_rmse)
 round(rmses_implied_xpts_by_match, 2)
 
-diagnose_implied_xpts_by_match <- function(src) {
+compute_implied_xpts_by_match_rmse <- function(src) {
 
-  df <- xpts_by_match |> 
-    mutate(across(result, ~factor(.x, levels = c('l', 'd', 'w'))))
-  fit <- nnet::multinom(result ~ prob_win + prob_draw, xpts_by_match)
+  col_win <- sprintf('prob_win_%s', src)
+  col_draw <- sprintf('prob_draw_%s', src)
+  fit <- nnet::multinom(
+    xpts_by_match$result ~ xpts_by_match[[col_win]] + xpts_by_match[[col_draw]],
+    trace = FALSE
+  )
   probs <- predict(fit, type = 'probs') |> as_tibble()
-  xpts <- 3 * probs[, 'w'] + 1 * probs[, 'd']
+  xpts <- 3 * probs$w + 1 * probs$d
   
-  compute_rmse(df$pts, xpts)
+  compute_rmse(xpts_by_match$pts, xpts)
 }
 
 rmses_implied_xpts_by_match <- c('understat', 'fotmob') |> 
@@ -386,7 +386,7 @@ qs::qsave(xpts_by_season, file.path(dir_proj, 'xpts_by_season.qs'))
 ## sim ----
 ## This is too big of a sample space
 # crossing(!!!imap(set_names(unique(understat_xpts_by_match$match_id)), ~c('lose', 'draw', 'win')))
-init_probs <- understat_xpts_by_match |> 
+init_understat_probs_by_match <- understat_xpts_by_match |> 
   select(team, season, match_id, starts_with('prob')) |> 
   rename_with(~str_remove(.x, '^prob_'), starts_with('prob')) |> 
   pivot_longer(
@@ -395,20 +395,20 @@ init_probs <- understat_xpts_by_match |>
     values_to = 'prob'
   )
 
-guaranteed_losses <- init_probs |> 
-  group_by(team, season, match_id) |> 
+understat_guaranteed_losses <- init_understat_probs_by_match |> 
+  group_by(team, match_id) |> 
   filter(all(prob == 0)) |> 
   ungroup() |> 
   filter(result == 'lose') |> 
   mutate(prob = 1)
 
-probs <- init_probs |> 
+understat_probs_by_match <- init_understat_probs_by_match |> 
   anti_join(
-    guaranteed_losses |> select(team, season, match_id, result),
-    by = c('team', 'season', 'match_id', 'result')
+    understat_guaranteed_losses |> select(team, match_id, result),
+    by = c('team', 'match_id', 'result')
   ) |> 
   bind_rows(
-    guaranteed_losses
+    understat_guaranteed_losses
   )
 
 n_cores <- parallel::detectCores()
@@ -423,7 +423,7 @@ n_sims <- 10000
 sim_pts <- furrr::future_imap_dfr(
   set_names(1:n_sims),
   ~{
-    probs |> 
+    understat_probs_by_match |> 
       group_by(team, season, match_id) |> 
       slice_sample(n = 1, weight_by = prob) |> 
       ungroup() |>
@@ -453,9 +453,10 @@ sim_pts <- furrr::future_imap_dfr(
 )
 
 future::plan(future::sequential)
+qs::qsave(understat_sim_pts_by_season, file.path(dir_proj, 'understat_sim_pts_by_season.qs'))
 
-sim_placings <- sim_pts |> 
-  group_by(season, team, rank) |> 
+understat_sim_placings <- understat_sim_pts_by_season |> 
+  group_by(season, team, xrank = rank) |> 
   summarize(
     n = n(),
     across(pts, list(min = min, mean = mean, max = max))
@@ -466,21 +467,11 @@ sim_placings <- sim_pts |>
     prop = n / sum(n)
   ) |> 
   ungroup() |> 
-  arrange(season, team, desc(rank)) |> 
+  arrange(season, team, xrank) |> 
   group_by(season, team) |> 
   mutate(
-    inv_cumu_prop = cumsum(prop)
+    cumu_prop = cumsum(prop)
   ) |> 
-  arrange(season, team, rank) |> 
-  group_by(season, team) |> 
-  mutate(
-    cumu_prop = cumsum(prop),
-    .before = inv_cumu_prop
-  ) |> 
-  ungroup() |> 
-  left_join(
-    table |> select(season, team, actual_pts = pts, actual_rank = rank),
-    by = c('season', 'team')
-  )
-qs::qsave(sim_placings, file.path(dir_proj, 'sim_placings.qs'))
+  ungroup()
+qs::qsave(understat_sim_placings, file.path(dir_proj, 'understat_sim_placings.qs'))
 
