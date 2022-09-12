@@ -146,9 +146,10 @@ raw_map_img <- '999-dev/ascent.png' |> image_read()
 map_img_info <- raw_map_img |> image_info()
 map_img <- raw_map_img |> 
   image_fx(
-    expression = paste0(0.25, '*a'), 
+    expression = paste0(0.5, '*a'),
     channel = 'alpha'
-  )
+  ) |>
+  image_quantize(colorspace = 'gray')
 
 optic_liquid_m3_coords <- optic_liquid_match_details_m3 |> 
   pluck('locations') |> 
