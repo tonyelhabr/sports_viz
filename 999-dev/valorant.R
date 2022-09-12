@@ -3,6 +3,8 @@ library(tidyverse)
 library(httr)
 library(jsonlite)
 library(janitor)
+library(magick)
+library(ggpath)
 
 get_ribgg <- function(x, ...) {
   sprintf('https://backend-prod.rib.gg/v1/%s', x) |> 
@@ -131,11 +133,22 @@ optic_liquid_match_details
 
 optic_liquid_match_details_m3 <- optic_liquid_match_details |> pluck(3)
 
-library(magick)
-library(ggpath)
+optic_liquid_match_details_m3 |> 
+  pluck('locations') |> 
+  summarize(
+    across(
+      c(location_x, location_y),
+      list(min = min, max = max)
+    )
+  )
 
-map_png_path <- '999-dev/ascent.png'
-map_png_path2 <- '999-dev/Ascent_contour.png'
+raw_map_img <- '999-dev/ascent.png' |> image_read()
+map_img_info <- raw_map_img |> image_info()
+map_img <- raw_map_img |> 
+  image_fx(
+    expression = paste0(0.25, '*a'), 
+    channel = 'alpha'
+  )
 
 optic_liquid_m3_coords <- optic_liquid_match_details_m3 |> 
   pluck('locations') |> 
@@ -145,40 +158,40 @@ optic_liquid_m3_coords <- optic_liquid_match_details_m3 |>
   ) |> 
   mutate(
     round_sec = round(round_time_millis / 1000, 0)
-    # round_sec_remaining = round(((100 * 1000) - round_time_millis) / 1000, 1)
   ) |> 
-  filter(round_number == 1) |> 
-  filter(round_sec == min(round_sec)) |> 
-  mutate(
-    # across(location_x, ~.x - 53.5),
-    # across(location_y, ~-.x + 12)
-    across(location_y, ~-.x)
-  )
+  filter(round_number == 2) |> 
+  filter(round_sec == 28)
 
-p <- optic_liquid_m3_coords |> 
+
+optic_liquid_m3_coords |> 
   ggplot() +
-  aes(x = location_x, y = location_y) +
+  aes(x = location_x, y = -location_y) +
+  annotation_raster(
+    map_img,
+    xmin = -Inf,
+    xmax = Inf,
+    ymin = -Inf,
+    ymax = Inf
+  ) +
+  scale_x_continuous(
+    limits = c(0, map_img_info$width),
+    expand = c(0, 0)
+  ) +
+  scale_y_continuous(
+    limits = c(-map_img_info$height, 0),
+    expand = c(0, 0)
+  ) +
   geom_point(
-    aes(color = team_name)
+    aes(color = team_short_name)
   ) +
   ggrepel::geom_text_repel(
     aes(label = ign)
   ) +
-  geom_from_path(
-    inherit.aes = FALSE,
-    data = data.frame(),
-    alpha = 0.5,
-    hjust = 0,
-    vjust = 1,
-    aes(x = 0, y = 0, path = map_png_path2)
+  guides(
+    fill = guide_legend('', override.aes = list(size = 3))
   ) +
-  coord_cartesian(
-    xlim = c(+53.5, 955+53.5),
-    ylim = c(-1025, 12),
-    expand = FALSE
-  ) +
-  # facet_wrap(~round_sec,scales = 'fixed') +
+  theme_void() +
   theme(
     legend.position = 'top'
   )
-p
+
