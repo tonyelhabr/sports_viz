@@ -4,132 +4,132 @@ library(httr)
 library(jsonlite)
 library(janitor)
 
+get_ribgg <- function(x, ...) {
+  sprintf('https://backend-prod.rib.gg/v1/%s', x) |> 
+    GET(...) |> 
+    content(as = 'text') |> 
+    fromJSON()
+}
+
+prettify_df <- function(df) {
+  df |> 
+    as_tibble() |> 
+    clean_names()
+}
+
+prettify_nested_dfs <- function(x) {
+  
+  is_list <- is.list(x)
+  if (!is_list) {
+    return(x)
+  }
+  
+  is_df <- is.data.frame(x)
+  if (is_df) {
+    ## TODO: Check if has any nested columns and then recurse if so
+    return(prettify_df(x))
+  }
+  
+  res <- list()
+  for(nm in names(x)) {
+    pretty_nm <- make_clean_names(nm)
+    el <- x[[nm]]
+    # if (is.data.frame(el)) {
+    if (is.list(el)) {
+      if (is.data.frame(el)) {
+        el <- el |> prettify_df()
+      }
+      res[[pretty_nm]] <- el
+      ## TODO: Something recursive?
+    } else {
+      res[[pretty_nm]] <- x[[nm]]
+    }
+  }
+  res
+}
+
+get_ribgg_data <- function(...) {
+  get_ribgg(...) |> 
+    pluck('data') |> 
+    prettify_df()
+}
+
+get_nested_ribgg_data <- function(...) {
+  get_ribgg(...) |> 
+    prettify_nested_dfs()
+}
+
 get_all_teams <- memoise::memoise({
   function() {
-    resp <- GET('https://backend-prod.rib.gg/v1/teams/all')
-    resp |> 
-      content(as = 'text') |> 
-      fromJSON() |> 
-      as_tibble() |> 
-      clean_names()
+    get_ribgg('teams/all') |> 
+      prettify_df()
   }
 })
 
-all_teams <- get_all_teams()
-all_teams
+get_player <- function(player_id) {
+  sprintf('players/%s', player_id) |> 
+    get_nested_ribgg_data()
+}
 
 get_completed_events <- function(q, n = 50) {
-  resp <- sprintf('https://backend-prod.rib.gg/v1/events?query=%s&sort=startDate&sortAscending=false&hasSeries=true&take=%s', URLencode(q), n) |> 
-    GET()
-  res <- resp |> 
-    content(as = 'text') |> 
-    fromJSON()
-  res$data |> 
-    as_tibble() |> 
-    clean_names()
+  sprintf('events?query=%s&sort=startDate&sortAscending=false&hasSeries=true&take=%s', URLencode(q), n) |> 
+    get_ribgg_data()
 }
-
-vct_events <- get_completed_events('VALORANT Champions 2022')
-vct_events
 
 get_completed_series <- function(event_id, n = 50) {
-  resp <- sprintf('https://backend-prod.rib.gg/v1/series?take=%s&eventIds[]=%s&completed=true', n, event_id) |> 
-    GET()
-  res <- resp |> 
-    content(as = 'text') |> 
-    fromJSON()
-  res$data |> 
-    as_tibble() |> 
-    clean_names()
+  sprintf('series?take=%s&eventIds[]=%s&completed=true', n, event_id) |> 
+    get_ribgg_data()
 }
-
-vct_series <- get_completed_series(vct_events$id[1])
-vct_series
 
 get_matches <- function(series_id) {
-  resp <- sprintf('https://backend-prod.rib.gg/v1/series/%s', series_id) |> 
-    GET()
-  
-  res <- resp |> 
-    content(as = 'text') |> 
-    fromJSON()
-  
-  for(nm in names(res)) {
-    el <- res[[nm]]
-    if (is.data.frame(el)) {
-      res[[nm]] <- el |> 
-        as_tibble() |> 
-        clean_names()
-    }
-  }
-  res
+  sprintf('series/%s', series_id) |> get_nested_ribgg_data()
 }
 
-get_player <- function(player_id) {
-  resp <- sprintf('https://backend-prod.rib.gg/v1/players/%s', player_id) |> 
-    GET()
-  
-  res <- resp |> 
-    content(as = 'text') |> 
-    fromJSON()
-  
-  for(nm in names(res)) {
-    el <- res[[nm]]
-    if (is.data.frame(el)) {
-      res[[nm]] <- el |> 
-        as_tibble() |> 
-        clean_names()
-    }
-  }
-  
-  res
+get_match_details <- function(match_id) {
+  sprintf('matches/%s/details', match_id) |> get_nested_ribgg_data()
 }
 
-vct_matches <- get_matches(vct_series$id[2])
-vct_matches$matches
+all_teams <- get_all_teams()
 
-vct_players <- vct_matches$playerStats |> 
+# vct_events <- get_completed_events('VALORANT Champions 2022')
+vct_champs_playoffs_events <- get_completed_events('VALORANT Champions 2022 Playoffs') |> 
+  filter(name == 'VALORANT Champions 2022 - Playoffs')
+
+vct_champs_playoffs_series <- get_completed_series(vct_champs_playoffs_events$id) |> 
+  unnest_wider(c(team1, team2), names_sep = '_') |> 
+  clean_names()
+
+optic_liquid_series <- vct_champs_playoffs_series |> 
+  filter(team1_short_name == 'OPTC', team2_short_name == 'TL')
+
+optic_liquid_matches <- get_matches(optic_liquid_series$id)
+
+optic_liquid_players <- optic_liquid_matches$player_stats |> 
   distinct(player_id) |> 
   mutate(
     data = map(player_id, get_player)
   )
 
-vct_player_names <- vct_players |> 
+optic_liquid_player_names <- optic_liquid_players |> 
   hoist(
     data,
     'ign',
-    'first_name' = 'firstName',
-    'last_name' = 'lastName',
+    'first_name',
+    'last_name',
     'team_id' = list('team', 'id'),
-    'team_name' = list('team', 'name')
+    'team_short_name' = list('team', 'shortName')
   ) |>
   select(-data) |>
   mutate(
     across(c(first_name, last_name), str_squish)
   )
-  
-get_match_details <- function(match_id) {
-  resp <- sprintf('https://backend-prod.rib.gg/v1/matches/%s/details', match_id) |> 
-    GET()
-  
-  res <- resp |> 
-    content(as = 'text') |> 
-    jsonlite::fromJSON()
-  
-  for(nm in names(res)) {
-    el <- res[[nm]]
-    if (is.data.frame(el)) {
-      res[[nm]] <- el |> 
-        as_tibble() |> 
-        clean_names()
-    }
-  }
-  
-  res
-}
 
-vct_match_details <- get_match_details(vct_matches$matches$id[3])
-vct_match_details$locations
+optic_liquid_match_details <- optic_liquid_matches$matches$id |> 
+  set_names() |> 
+  map(get_match_details)
+optic_liquid_match_details
+
+optic_liquid_match_details_m3 <- optic_liquid_match_details |> pluck(3)
 
 library(magick)
 library(ggpath)
@@ -137,10 +137,10 @@ library(ggpath)
 map_png_path <- '999-dev/ascent.png'
 map_png_path2 <- '999-dev/Ascent_contour.png'
 
-df <- vct_match_details |> 
+optic_liquid_m3_coords <- optic_liquid_match_details_m3 |> 
   pluck('locations') |> 
   inner_join(
-    vct_player_names |> select(player_id, ign, team_name),
+    optic_liquid_player_names |> select(player_id, ign, team_short_name),
     by = 'player_id'
   ) |> 
   mutate(
@@ -155,7 +155,7 @@ df <- vct_match_details |>
     across(location_y, ~-.x)
   )
 
-p <- df |> 
+p <- optic_liquid_m3_coords |> 
   ggplot() +
   aes(x = location_x, y = location_y) +
   geom_point(
