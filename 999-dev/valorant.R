@@ -21,14 +21,35 @@ prettify_df <- function(df) {
 
 prettify_nested_dfs <- function(x) {
   
-  is_list <- is.list(x)
-  if (!is_list) {
+  if (isFALSE(is.list(x))) {
     return(x)
   }
   
   is_df <- is.data.frame(x)
-  if (is_df) {
-    ## TODO: Check if has any nested columns and then recurse if so
+  if (isTRUE(is.data.frame(x))) {
+    
+    clss <- purrr::map(x, class)
+    clss_w_df <- clss |> purrr::keep(~any(.x == 'data.frame'))
+    
+    if (length(clss_w_df) > 0) {
+      cols <- names(clss_w_df)
+      for(col in cols) {
+        x[[col]] <- prettify_nested_dfs(col)
+      }
+    }
+    
+    # clss <- purrr::map(x, class)
+    # clss_w_lst <- clss |> purrr::keep(~any(.x == 'list'))
+    # 
+    # if (length(clss_w_lst) > 0) {
+    #   cols <- names(clss_w_lst)
+    #   for(col in cols) {
+    #     x[[col]] <- prettify_nested_dfs(col)
+    #   }
+    # }
+    
+    x <- prettify_nested_dfs(x)
+    
     return(prettify_df(x))
   }
   
@@ -49,6 +70,14 @@ prettify_nested_dfs <- function(x) {
   }
   res
 }
+
+df <- tibble(
+  a = 1,
+  bad = 'c',
+  dIck = tibble(abcDef = 'ghi', jK = 'lmn', op = tibble(q = 'rstuv', wX = 'y')),
+  z = list('a' = 2, 'b' = 3)
+)
+prettify_nested_dfs(df)
 
 get_ribgg_data <- function(...) {
   get_ribgg(...) |> 
