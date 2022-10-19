@@ -47,8 +47,8 @@ league_id_mapping <- tibble(
   country = rep(country_abbs, 2),
   tier = c(rep('1st', length(country_abbs)), rep('2nd', length(country_abbs))),
   league_name = c(
-    c('English Premier League', 'Ligue 1', 'Bundesliga', 'Serie A', 'La Liga', 'MLS'),
-    c('EFL Championship', 'Ligue 2', 'Bundesliga 2', 'Serie B', 'La Liga 2', 'USL')
+    c('Premier League', 'Ligue 1', 'Bundesliga', 'Serie A', 'La Liga', 'MLS'),
+    c('Championship', 'Ligue 2', 'Bundesliga 2', 'Serie B', 'La Liga 2', 'USL')
   ),
   logo_file = c(
     c('epl', 'ligue-1', 'bundesliga', 'serie-a', 'la-liga', 'mls'),
@@ -141,23 +141,6 @@ words <- card_events |>
 word_counts <- words |> 
   count(league_name, word, sort = TRUE)
 
-word_tfidf <- word_counts |> 
-  tidytext::bind_tf_idf(term = word, document = league_name, n = n) |> 
-  arrange(desc(tf_idf))
-
-word_tfidf |> 
-  filter(word %in% names(interesting_stems))
-word_tfidf |> 
-  filter(word == 'foul')
-
-words |> 
-  filter(lead(word) == 'foul') |> 
-  count(league_id, word, sort = TRUE) |> 
-  head(20)
-
-stem_counts <- words |> 
-  count(stem, sort = TRUE)
-
 ns <- tickers |> 
   group_by(league_id) |> 
   summarize(
@@ -178,7 +161,98 @@ interesting_stems <- list(
   'conduct' = 'conduct'
 )
 
-quantify_frequency <- function(stems) {
+.gt_theme_538 <- function(data, ...) {
+  data %>%
+    # gt::opt_all_caps() |> 
+    gt::opt_table_font(
+      font = list(
+        gt::google_font('Lato'),
+        gt::default_fonts()
+      )
+    ) %>%
+    gt::tab_style(
+      style = gt::cell_borders(
+        sides = 'bottom', color = 'transparent', weight = gt::px(3)
+      ),
+      locations = gt::cells_body(
+        columns = everything(),
+        # This is a relatively sneaky way of changing the bottom border
+        # Regardless of data size
+        rows = nrow(data$`_data`)
+      )
+    )  %>% 
+    gt::tab_options(
+      column_labels.background.color = 'white',
+      heading.border.bottom.style = 'none',
+      table.border.top.width = gt::px(3),
+      table.border.top.style = 'none',
+      table.border.bottom.style = 'none',
+      column_labels.font.weight = 'bold', # 'normal',
+      column_labels.border.top.style = 'none',
+      column_labels.border.bottom.width = gt::px(2),
+      column_labels.border.bottom.color = 'black',
+      row_group.border.top.style = 'none',
+      row_group.border.top.color = 'black',
+      row_group.border.bottom.width = gt::px(1),
+      row_group.border.bottom.color = 'white',
+      stub.border.color = 'white',
+      stub.border.width = gt::px(0),
+      data_row.padding = gt::px(3),
+      source_notes.font.size = 12,
+      source_notes.border.lr.style = 'none',
+      # table.font.size = 12, # 15
+      heading.align = 'left',
+      
+      # column_labels.font.size = 12,
+      ...
+    )
+}
+
+.gt_theme_5382 <- function(data, ...) {
+  data |>
+    opt_table_font(
+      font = list(
+        google_font('Lato'),
+        default_fonts()
+      )
+    ) |>
+    tab_style(
+      style = cell_borders(
+        sides = 'bottom', color = 'transparent', weight = px(3)
+      ),
+      locations = cells_column_labels(
+        columns = everything()
+      )
+    ) |> 
+    tab_options(
+      column_labels.background.color = 'white',
+      heading.border.bottom.style = 'none',
+      table.border.top.width = px(3),
+      table.border.top.style = 'none',
+      column_labels.font.weight = 'bold',
+      column_labels.border.top.style = 'none',
+      column_labels.border.bottom.width = px(2),
+      column_labels.border.bottom.color = 'black',
+      stub.border.color = 'white',
+      stub.border.width = px(0),
+      data_row.padding = px(0),
+      source_notes.font.size = 10,
+      source_notes.border.lr.style = 'none',
+      table.font.size = 14,
+      heading.title.font.size = 16,
+      heading.subtitle.font.size = 14,
+      heading.align = 'left',
+      heading.title.font.weight = 'italic',
+      footnotes.font.size = 10,
+      footnotes.padding = px(0),
+      row_group.padding = px(3),
+      row_group.border.bottom.color = 'black',
+      table.border.bottom.style = 'none',
+      ...
+    )
+}
+
+quantify_frequency <- function(stems, label = stems[1]) {
   interesting_stems <- words |> 
     filter(stem %in% stems) |> 
     distinct(idx, league_id, stem)
@@ -200,37 +274,38 @@ quantify_frequency <- function(stems) {
     ) |> 
     mutate(
       cards_per_match = n_cards / n_matches,
-      interesting_cards_per_card = n_interesting / n_cards,
-      rnk = row_number(desc(interesting_cards_per_card))
+      interesting_cards_per_match = n_interesting / n_matches,
+      prop = interesting_cards_per_match / cards_per_match,
+      rnk = row_number(desc(interesting_cards_per_match))
     ) |> 
     inner_join(
       league_id_mapping,
       by = 'league_id'
     ) |> 
     relocate(league_id, country, tier) |> 
-    arrange(-interesting_cards_per_card)
-
-  df |> 
-    inner_join(
-      league_id_mapping,
-      by = c('')
-    )
+    arrange(-interesting_cards_per_match)
+  
+  col_label <- glue::glue('<i>With "{label}"<br/>in description</i>')
+  tb <- df |> 
     transmute(
       rnk,
-      country,
-      tier,
-      league_name
+      path = file.path(dir_proj, 'logos', sprintf('%s.png', logo_file)),
+      league_name,
       cards_per_match,
-      interesting_cards_per_card
-    )
+      across(
+        interesting_cards_per_match,
+        ~ifelse(round(.x, 2) == 0, '<=0.01', round(.x, 2))
+      ),
+      prop
+    ) |> 
     gt::gt() |> 
     gt::cols_label(
-      rn = '#',
+      rnk = '#',
       path = 'League',
       league_name = ' ',
-      venue = 'Venue',
-      capacity = 'Cap.',
-      trunc_attendance_prop = '%'
+      interesting_cards_per_match = gt::html(col_label),
+      cards_per_match = 'Total',
+      prop = '%'
     ) |> 
     .gt_theme_538() |> 
     gt::text_transform(
@@ -241,7 +316,41 @@ quantify_frequency <- function(stems) {
           height = 25
         )
       }
-    ) 
+    ) |>
+    gt::tab_spanner(
+      columns = c(interesting_cards_per_match, cards_per_match),
+      label = 'Cards per match'
+    ) |> 
+    gt::cols_align(
+      columns = path,
+      align = 'center'
+    ) |> 
+    gt::cols_align(
+      columns = interesting_cards_per_match,
+      align = 'right'
+    ) |> 
+    gt::fmt_number(
+      columns = cards_per_match,
+      decimals = 1
+    ) |>
+    gt::fmt_percent(
+      columns = prop,
+      decimals = 2
+    ) |> 
+    gt::cols_width(
+      interesting_cards_per_match ~ px(105),
+      cards_per_match ~ px(100),
+      prop ~ px(100)
+    )
+  # tb
+  
+  gt::gtsave(
+    tb,
+    # vwidth = 500,
+    # zoom = 1.5,
+    filename = file.path(dir_proj, sprintf('%s.png', label))
+  )
+  invisible(gt)
 }
 
 quantify_frequency(c('hand'))
