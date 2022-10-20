@@ -6,6 +6,14 @@ git-ignored here.
 The projects are listed in reverse chronological order. A skipped number
 corresponds to an idea that I scraped.
 
+# 60. Card Descriptions
+
+![](60-card_reasons/handball.png)
+
+![](60-card_reasons/bad.png)
+
+![](60-card_reasons/violent.png)
+
 # 59. Expected Points Deep Dive
 
 ![](59-xg_xpoints/calib.png "Calibration of implied match outcome probabilities, 2021/22 - 2021/22 English Premier League")
