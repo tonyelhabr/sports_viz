@@ -148,28 +148,15 @@ ns <- tickers |>
     n_cards = sum(incident_code %in% card_incident_codes)
   )
 
-interesting_stems <- list(
-  'foul',
-  'tackle',
-  # 'ground',
-  'celebration' = 'celebr',
-  'excessive' = 'excess',
-  'dissent' = 'dissent',
-  'clumsy' = c('clumsi', 'clumsili'),
-  'timewasting' = c('wast', 'timewast'),
-  'violent' = 'violent',
-  'conduct' = 'conduct'
-)
-
 .gt_theme_538 <- function(data, ...) {
-  data %>%
+  data |>
     # gt::opt_all_caps() |> 
     gt::opt_table_font(
       font = list(
-        gt::google_font('Lato'),
+        gt::google_font('Karla'),
         gt::default_fonts()
       )
-    ) %>%
+    ) |>
     gt::tab_style(
       style = gt::cell_borders(
         sides = 'bottom', color = 'transparent', weight = gt::px(3)
@@ -180,14 +167,14 @@ interesting_stems <- list(
         # Regardless of data size
         rows = nrow(data$`_data`)
       )
-    )  %>% 
+    )  |> 
     gt::tab_options(
       column_labels.background.color = 'white',
       heading.border.bottom.style = 'none',
       table.border.top.width = gt::px(3),
       table.border.top.style = 'none',
       table.border.bottom.style = 'none',
-      column_labels.font.weight = 'bold', # 'normal',
+      column_labels.font.weight = 'normal',
       column_labels.border.top.style = 'none',
       column_labels.border.bottom.width = gt::px(2),
       column_labels.border.bottom.color = 'black',
@@ -198,63 +185,19 @@ interesting_stems <- list(
       stub.border.color = 'white',
       stub.border.width = gt::px(0),
       data_row.padding = gt::px(3),
-      source_notes.font.size = 12,
-      source_notes.border.lr.style = 'none',
-      # table.font.size = 12, # 15
-      heading.align = 'left',
-      
-      # column_labels.font.size = 12,
-      ...
-    )
-}
-
-.gt_theme_5382 <- function(data, ...) {
-  data |>
-    opt_table_font(
-      font = list(
-        google_font('Lato'),
-        default_fonts()
-      )
-    ) |>
-    tab_style(
-      style = cell_borders(
-        sides = 'bottom', color = 'transparent', weight = px(3)
-      ),
-      locations = cells_column_labels(
-        columns = everything()
-      )
-    ) |> 
-    tab_options(
-      column_labels.background.color = 'white',
-      heading.border.bottom.style = 'none',
-      table.border.top.width = px(3),
-      table.border.top.style = 'none',
-      column_labels.font.weight = 'bold',
-      column_labels.border.top.style = 'none',
-      column_labels.border.bottom.width = px(2),
-      column_labels.border.bottom.color = 'black',
-      stub.border.color = 'white',
-      stub.border.width = px(0),
-      data_row.padding = px(0),
       source_notes.font.size = 10,
       source_notes.border.lr.style = 'none',
-      table.font.size = 14,
-      heading.title.font.size = 16,
-      heading.subtitle.font.size = 14,
+      table.font.size = 12, # 15
       heading.align = 'left',
-      heading.title.font.weight = 'italic',
-      footnotes.font.size = 10,
-      footnotes.padding = px(0),
-      row_group.padding = px(3),
-      row_group.border.bottom.color = 'black',
-      table.border.bottom.style = 'none',
+      
+      column_labels.font.size = 12,
       ...
     )
 }
 
-quantify_frequency <- function(stems, label = stems[1]) {
+plot_frequency <- function(.stems, .label = .stems[1], title = NULL, subtitle = NULL, palette = 'ggsci::red_material') {
   interesting_stems <- words |> 
-    filter(stem %in% stems) |> 
+    filter(stem %in% .stems) |> 
     distinct(idx, league_id, stem)
   
   interesting_ns <- tickers |> 
@@ -276,7 +219,7 @@ quantify_frequency <- function(stems, label = stems[1]) {
       cards_per_match = n_cards / n_matches,
       interesting_cards_per_match = n_interesting / n_matches,
       prop = interesting_cards_per_match / cards_per_match,
-      rnk = row_number(desc(interesting_cards_per_match))
+      rnk = row_number(desc(prop))
     ) |> 
     inner_join(
       league_id_mapping,
@@ -285,31 +228,54 @@ quantify_frequency <- function(stems, label = stems[1]) {
     relocate(league_id, country, tier) |> 
     arrange(-interesting_cards_per_match)
   
-  col_label <- glue::glue('<i>With "{label}"<br/>in description</i>')
+  file_suffix <- glue::glue_collapse(.label, sep = '_')
+  .label <- glue::glue_collapse(.label, sep = '", "', last = '" or "')
+  col_label <- glue::glue('With <b>"{.label}"</b><br/>in description')
+  
+  interesting_decimals <- ifelse(max(df$interesting_cards_per_match) > 1, 1, 2)
+  prop_decimals <- ifelse(max(df$prop) > 0.1, 1, 2)
+
   tb <- df |> 
     transmute(
       rnk,
       path = file.path(dir_proj, 'logos', sprintf('%s.png', logo_file)),
-      league_name,
+      country, tier, league_name,
       cards_per_match,
       across(
         interesting_cards_per_match,
-        ~ifelse(round(.x, 2) == 0, '<=0.01', round(.x, 2))
+        ~ifelse(
+          round(.x, interesting_decimals) == 0, 
+          sprintf('<0.%s1', ifelse(interesting_decimals == 2, '0', '')), 
+          round(.x, interesting_decimals)
+        )
       ),
       prop
     ) |> 
+    arrange(rnk) |> 
     gt::gt() |> 
     gt::cols_label(
       rnk = '#',
       path = 'League',
-      league_name = ' ',
+      country = ' ',
       interesting_cards_per_match = gt::html(col_label),
       cards_per_match = 'Total',
-      prop = '%'
+      prop = ' '
     ) |> 
     .gt_theme_538() |> 
+    gt::cols_merge(
+      columns = c(country, tier, league_name)
+    ) |> 
+    text_transform(
+      locations = gt::cells_body(columns = country),
+      fn = function(x) {
+        country <- word(x, 1)
+        tier <- word(x, 2)
+        league_name <- str_remove(x, sprintf('%s %s', country, tier))
+        glue::glue("{league_name} <span style='font-size:0.7em; color:#777'>{country}, {tier}</span>")
+      }
+    ) |> 
     gt::text_transform(
-      locations = gt::cells_body('path'),
+      locations = gt::cells_body(columns = path),
       fn = function(x) {
         gt::local_image(
           filename = x,
@@ -335,37 +301,58 @@ quantify_frequency <- function(stems, label = stems[1]) {
     ) |>
     gt::fmt_percent(
       columns = prop,
-      decimals = 2
+      decimals = prop_decimals
     ) |> 
-    gt::cols_width(
-      interesting_cards_per_match ~ px(105),
-      cards_per_match ~ px(100),
-      prop ~ px(100)
+    # gt::cols_width(
+    #   # interesting_cards_per_match ~ px(150),
+    #   #cards_per_match ~ px(75),
+    #   prop ~ px(75)
+    # ) |> 
+    gt::tab_source_note(
+      source_note = gt::html('<i><b>Data</b>: Matches since beginning of 2020/21 seasons. (2021 seasons for U.S. leagues.)</i>')
+    ) |> 
+    gt::tab_header(
+      title = gt::md(glue::glue('**{title}**')),
+      subtitle = gt::md(glue::glue('Frequency of "**{.label}**" in text descriptions of yellow and red cards in match news feed.'))
+    ) |> 
+    gtExtras::gt_color_rows(
+      columns = prop,
+      palette = palette
     )
-  # tb
+  
+  n_row <- nrow(df)
+  # vwidth <- ifelse(n_row == 12, 480, 400)
   
   gt::gtsave(
     tb,
-    # vwidth = 500,
-    # zoom = 1.5,
-    filename = file.path(dir_proj, sprintf('%s.png', label))
+    vwidth = 450,
+    zoom = 2,
+    filename = file.path(dir_proj, sprintf('%s.png', file_suffix))
   )
-  invisible(gt)
+  invisible(tb)
 }
 
-quantify_frequency(c('hand'))
-quantify_frequency(c('foul'))
-# quantify_frequency(c('tackle'))
-quantify_frequency(c('challeng'))
-quantify_frequency(c('late'))
-quantify_frequency(c('ground'))
-quantify_frequency(c('celebr'))
-quantify_frequency(c('excess'))
-quantify_frequency(c('dissent'))
-quantify_frequency(c('clumsi', 'clumsili'))
-quantify_frequency(c('wast', 'timewast'))
-quantify_frequency(c('conduct'))
-quantify_frequency(c('violent'))
+plot_frequency(
+  'hand', 
+  title = "If you aren't cheating, you aren't trying", 
+  palette = 'ggsci::amber_material'
+)
+plot_frequency(
+  'violent', 
+  title = 'USL? More like UFC', 
+  palette = 'ggsci::pink_material'
+)
+plot_frequency(
+  'bad',
+  title = 'Tier 2 leagues got that dawg in them', 
+  palette = 'ggsci::cyan_material'
+)
+plot_frequency(
+  c('wast', 'timewast'), 
+  'timewasting', 
+  title = 'EPL = premier drama',
+  palette = 'ggsci::purple_material'
+)
 
 ## new ----
 elapsed_times <- tickers |> 
