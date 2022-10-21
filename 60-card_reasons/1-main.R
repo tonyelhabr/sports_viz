@@ -149,7 +149,7 @@ ns <- tickers |>
   data |>
     gt::opt_table_font(
       font = list(
-        gt::google_font('Karla'),
+        gt::google_font('Titillium Web'),
         gt::default_fonts()
       )
     ) |>
@@ -180,13 +180,16 @@ ns <- tickers |>
       row_group.border.bottom.color = 'white',
       stub.border.color = 'white',
       stub.border.width = gt::px(0),
-      data_row.padding = gt::px(3),
+      data_row.padding = gt::px(0), # gt::px(0)
       source_notes.font.size = 10,
       source_notes.border.lr.style = 'none',
       table.font.size = 12, # 15
       heading.align = 'left',
       
       column_labels.font.size = 12,
+      heading.padding = gt::px(0),
+      column_labels.padding = gt::px(0),
+      
       ...
     )
 }
@@ -297,7 +300,7 @@ plot_frequency <- function(.stems, .label = .stems[1], title = NULL, subtitle = 
       decimals = prop_decimals
     ) |> 
     gt::tab_source_note(
-      source_note = gt::html('<i><b>Data</b>: Matches since beginning of 2020/21 seasons. (2021 seasons for U.S. leagues.)</i>')
+      source_note = gt::html('<i><b>Data</b>: Matches since beginning of 2020/21 season. (2021 season for U.S. leagues.)</i>')
     ) |> 
     gt::tab_header(
       title = gt::md(glue::glue('**{title}**')),
@@ -318,8 +321,13 @@ plot_frequency <- function(.stems, .label = .stems[1], title = NULL, subtitle = 
 }
 
 plot_frequency(
+  'late', 
+  title = "Cheap shots", 
+  palette = 'ggsci::green_material'
+)
+plot_frequency(
   'hand', 
-  title = "If you aren't cheating, you aren't trying", 
+  title = "If you ain't cheating, you ain't trying", 
   palette = 'ggsci::amber_material'
 )
 plot_frequency(
