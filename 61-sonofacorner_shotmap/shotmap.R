@@ -38,11 +38,11 @@ hex_xy <- base_hex_xy |>
     isoy_bottom = list((x + y) / 2),
     isox_top = list(isox_bottom),
     isoy_top = list(isoy_bottom + !!hex_width),
-    isox = list(c(isox_bottom[c(2, 1, 4)], isox_top[c(4, 3, 2)])),
-    isoy = list(c(isoy_bottom[c(2, 1, 4)], isoy_top[c(4, 3, 2)]))
+    edge_x = list(c(isox_bottom[c(2, 1, 4)], isox_top[c(4, 3, 2)])),
+    edge_y = list(c(isoy_bottom[c(2, 1, 4)], isoy_top[c(4, 3, 2)]))
   )  |>
   ungroup() |>
-  unnest(c(isox, isoy)) |>
+  unnest(c(edge_x, edge_y)) |>
   select(-matches('iso[xy]_'), -c(x, y)) |>
   inner_join(
     base_hex_xy,
@@ -127,6 +127,7 @@ base <- df |>
   ggplot() +
   aes(x = x, y = y) +
   facet_wrap(~player_name,  scales = 'fixed') +
+  ## Plot hexes first so that they in the background
   geom_hex(
     aes(x = x, y = y, fill = ..density.., group = player_name),
     bins = c(24, 24),
@@ -136,19 +137,19 @@ base <- df |>
   ggsoccer::annotate_pitch(
     dimensions = ggsoccer::pitch_international,
     colour = 'black',
-    fill = NA  # sandpaper_background_color
+    fill = NA
   ) +
   coord_flip(
     ylim = c(0, pitch_width),
-    xlim = c(x_buffer + pitch_length / 2, pitch_length + 3) ## x buffer to cut off half line, 5 for median distance label
+    xlim = c(x_buffer + pitch_length / 2, pitch_length + 3) ## x buffer to cut off half line, 3 for room for median distance label
   ) +
   theme_minimal() +
   theme(
     text = element_text(family = font),
     title = element_text(color = 'black'),
-    plot.title = ggtext::element_markdown(size = 40, face = 'bold', hjust = 0.5),
+    plot.title = element_text(size = 40, face = 'bold', hjust = 0.5),
     plot.title.position = 'plot',
-    plot.subtitle = ggtext::element_markdown(size = 14, color = '#4E616C', hjust = 0.5),
+    plot.subtitle = element_text(size = 14, color = '#4E616C', hjust = 0.5),
     plot.margin = margin(20, 20, 20, 20),
     plot.background = element_rect(fill = sandpaper_background_color, color = sandpaper_background_color),
     panel.background = element_rect(fill = sandpaper_background_color, color = sandpaper_background_color),
@@ -157,7 +158,7 @@ base <- df |>
     axis.text = element_blank(),
     panel.grid.major = element_blank(),
     panel.grid.minor = element_blank(),
-    panel.spacing.y = unit(2, 'lines')
+    panel.spacing.y = unit(2, 'lines') ## more spacing between facet rows
   ) +
   labs(
     title = "LIGA MIX'S TOP SHOOTERS",
@@ -165,11 +166,12 @@ base <- df |>
     y = NULL,
     x = NULL
   ) +
+  ## 4 stat label hexes
   ggpattern::geom_polygon_pattern(
     data = hex_xy,
     aes(
-      x = isox + x,
-      y = isoy + y,
+      x = edge_x + x,
+      y = edge_y + y,
       group = stat
     ),
     fill = sandpaper_background_color,
@@ -182,15 +184,17 @@ base <- df |>
     colour = 'black',
     size = 1
   ) +
+  ## the 4 stat labels
   geom_text(
-    # fontface = 'bold',
     family = font,
     size = 11 / .pt,
     vjust = 0.5,
     hjust = 0.5,
     data = base_hex_xy,
+    ## - 2 to move below the hex
     aes(x = x - !!hex_width - 2, y = y + !!hex_width, label = stat)
   ) +
+  ## the 4 stat label values
   geom_text(
     inherit.aes = FALSE,
     fontface = 'bold',
@@ -252,6 +256,7 @@ base <- df |>
     )
   )
 
+## Need to rescale the hex fills to be relative to each player
 gb_base <- ggplot_build(base)
 gb_base$data[[1]] <- gb_base$data[[1]] |> 
   group_by(PANEL) |> 
@@ -260,11 +265,13 @@ gb_base$data[[1]] <- gb_base$data[[1]] |>
     max_rn = max(rn)
   ) |> 
   ungroup() |> 
+  ## colors are first, middle, and last from sonofacorner
   mutate(
     fill = map2_chr(rn, max_rn, ~colorRampPalette(c('#d0d6d4', '#91b1af', '#287271'))(..2)[[..1]])
   )
 gt_base <- ggplot_gtable(gb_base)
 
+## Add team logos to facet strip text
 ## Reference: https://github.com/ajreinhard/data-viz/blob/master/ggplot/plot_SB.R
 grob_strip_index <- which(sapply(gt_base$grob, function(x) x$name) == 'strip')
 facet_ids <- sapply(grob_strip_index, function(grb) {
@@ -298,6 +305,7 @@ for (i in 1:length(facet_ids)) {
   tot_tree <- grid::grobTree(lab, img)
   gt_base$grobs[[grob_strip_index[i]]] <- tot_tree
 }
+
 polished <- cowplot::ggdraw(gt_base)
 
 ggsave(

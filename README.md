@@ -6,9 +6,13 @@ git-ignored here.
 The projects are listed in reverse chronological order. A skipped number
 corresponds to an idea that I scraped.
 
+# 61. Liga MX Shotmap
+
+![](61-sonofacorner_shotmap/liga-mx.png)
+
 # 60. Card Descriptions
 
-![](60-card_reasons/handball.png)
+![](60-card_reasons/hand.png)
 
 ![](60-card_reasons/bad.png)
 
