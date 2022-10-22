@@ -321,11 +321,6 @@ plot_frequency <- function(.stems, .label = .stems[1], title = NULL, subtitle = 
 }
 
 plot_frequency(
-  'late', 
-  title = "Cheap shots", 
-  palette = 'ggsci::green_material'
-)
-plot_frequency(
   'hand', 
   title = "If you ain't cheating, you ain't trying", 
   palette = 'ggsci::amber_material'
@@ -343,6 +338,6 @@ plot_frequency(
 plot_frequency(
   c('wast', 'timewast'), 
   'timewasting', 
-  title = 'EPL = premier drama',
+  title = 'EPL referees = low tolerance for BS',
   palette = 'ggsci::purple_material'
 )
