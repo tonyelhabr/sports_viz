@@ -10,6 +10,7 @@ library(magick)
 library(ggforce)
 library(tidyverse)
 
+dir_proj <- '61-sonofacorner_shotmap'
 sandpaper_background_color <- '#EFE9E6'
 gray_points <- '#4d4d4d'
 gray_text <- '#999999'
@@ -324,28 +325,17 @@ for (i in 1:length(facet_id)) {
   bw_img <- magick::image_quantize(raw_img, colorspace = 'gray')
   img <- grid::rasterGrob(
     x = unit(0.9, 'npc'),
-    vp = grid::viewport(height = 1.2, width = 1.2)
+    vp = grid::viewport(height = 1, width = 1)
   )
   tot_tree <- grid::grobTree(lab, img)
-  # grid.draw(tot_tree)
   p_bld$grobs[[grob_strip_index[i]]] <- tot_tree
 }
 p2 <- cowplot::ggdraw(p_bld)
-p2
-
-r <- (pitch_length - (x_buffer + pitch_length / 2)) / pitch_width
-w <- 16
-ggsave(
-  filename = 'temp.png',
-  width = w,
-  height = (2 / 3) * r * w,
-  units = 'in'
-)
 
 ggsave(
-  filename = 'temp2.png',
-  width = 16,
-  height = 8,
-  dpi = 600,
+  plot = p2,
+  filename = file.path(dir_proj, 'liga-mx.png'),
+  width = 14,
+  height = 7,
   units = 'in'
 )
