@@ -34,12 +34,12 @@ hex_xy <- base_hex_xy |>
   mutate(
     x = list(c(0, 0, !!hex_width, !!hex_width)),
     y = list(c(0, !!hex_width, !!hex_width, 0)),
-    isox_bottom = list(x - y),
-    isoy_bottom = list((x + y) / 2),
-    isox_top = list(isox_bottom),
-    isoy_top = list(isoy_bottom + !!hex_width),
-    edge_x = list(c(isox_bottom[c(2, 1, 4)], isox_top[c(4, 3, 2)])),
-    edge_y = list(c(isoy_bottom[c(2, 1, 4)], isoy_top[c(4, 3, 2)]))
+    edge_x_bottom = list(x - y),
+    edge_y_bottom = list((x + y) / 2),
+    edge_x_top = list(edge_x_bottom),
+    edge_y_top = list(edge_y_bottom + !!hex_width),
+    edge_x = list(c(edge_x_bottom[c(2, 1, 4)], edge_x_top[c(4, 3, 2)])),
+    edge_y = list(c(edge_y_bottom[c(2, 1, 4)], edge_y_top[c(4, 3, 2)]))
   )  |>
   ungroup() |>
   unnest(c(edge_x, edge_y)) |>
@@ -48,6 +48,39 @@ hex_xy <- base_hex_xy |>
     base_hex_xy,
     by = 'stat'
   )
+hex_xy |> 
+  group_by(stat) |> 
+  mutate(
+    rn = factor(row_number()),
+    lag_edge_x = lag(edge_x),
+    lag_edge_y = lag(edge_y)
+  ) |> 
+  ungroup() |> 
+  ggplot() +
+  # geom_polygon(
+  #   aes(
+  #     x = x + edge_x,
+  #     y = y + edge_y,
+  #     group = stat,
+  #     color = rn
+  #   ),
+  #   size = 3,
+  #   fill = NA
+  # ) +
+  geom_segment(
+    aes(
+      x = x + lag_edge_x,
+      y = y + lag_edge_y,
+      xend = x + edge_x,
+      yend = y + edge_y,
+      group = stat,
+      color = rn
+    ),
+    arrow = arw,
+    size = 3,
+    fill = NA
+  )
+    
 
 players_of_interest <- c(
   'Andre-Pierre Gignac',
@@ -63,7 +96,6 @@ df <- read_csv('https://raw.githubusercontent.com/sonofacorner/soc-viz-of-the-we
   transmute(
     player_name = playerName,
     team_id = teamId,
-    team_name = teamName,
     x, y,
     xG,
     goal = ifelse(eventType == 'Goal', 1L, 0L)
@@ -117,9 +149,11 @@ agg_xy <- agg |>
 
 team_logos <- df |> 
   distinct(player_name, team_id) |> 
-  mutate(
+  transmute(
+    player_name,
     team_logo_url = sprintf('https://images.fotmob.com/image_resources/logo/teamlogo/%s.png', team_id)
-  )
+  ) |> 
+  deframe()
 
 arw <- arrow(length = unit(3, 'pt'), type = 'closed')
 
@@ -280,9 +314,7 @@ facet_ids <- sapply(grob_strip_index, function(grb) {
 
 for (i in 1:length(facet_ids)) {
   player_name <- facet_ids[i]
-  team_logo_url <- team_logos |> 
-    filter(player_name == !!player_name) |> 
-    pull(team_logo_url)
+  team_logo_url <- team_logos[[player_name]]
   
   lab <- grid::textGrob(
     player_name,
