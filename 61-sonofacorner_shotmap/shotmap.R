@@ -1,6 +1,6 @@
 ## Reference: https://twitter.com/sonofacorner/status/1581956939151380481
 ## Reference: https://github.com/sonofacorner/soc-viz-of-the-week/blob/main/10172022/10172022.ipynb
-library(ggplot2)
+library(tidyverse)
 library(ggsoccer)
 library(extrafont)
 library(ggpattern)
@@ -8,34 +8,11 @@ library(grid)
 library(cowplot)
 library(magick)
 library(ggforce)
-library(tidyverse)
 
 dir_proj <- '61-sonofacorner_shotmap'
 sandpaper_background_color <- '#EFE9E6'
-gray_points <- '#4d4d4d'
-gray_text <- '#999999'
 font <- 'Titillium Web'
 extrafont::loadfonts(quiet = TRUE)
-
-pal <- c(
-  '#d0d6d4',
-  '#c5d0cd',
-  '#bbcac7',
-  '#b0c3c1',
-  '#a6bdbb',
-  '#9bb7b5',
-  '#91b1af',
-  '#86aaa8',
-  '#7ca4a2',
-  '#719e9c',
-  '#679896',
-  '#5c9190',
-  '#528b8a',
-  '#478583',
-  '#3d7f7d',
-  '#327877',
-  '#287271'
-)
 
 pitch_length <- ggsoccer::pitch_international$length
 pitch_width <- ggsoccer::pitch_international$width
@@ -48,7 +25,6 @@ stats <- c('goals', 'xG', 'shots', 'xG/shot')
 ## Reference: https://github.com/gkaramanis/tidytuesday/blob/master/2020/2020-week36/crops.R
 base_hex_xy <- tibble(
   stat = stats,
-  # final_y = (54 * 0:3 * 14) - (hex_width / 2),
   x = 7 + x_buffer + half_pitch_length,
   y = c(11, 23, 42, 54) - (hex_width / 2)
 )
@@ -150,10 +126,17 @@ arw <- arrow(length = unit(3, 'pt'), type = 'closed')
 base <- df |> 
   ggplot() +
   aes(x = x, y = y) +
+  facet_wrap(~player_name,  scales = 'fixed') +
+  geom_hex(
+    aes(x = x, y = y, fill = ..density.., group = player_name),
+    bins = c(24, 24),
+    binwidth = c(pitch_length / 12, pitch_width / 24),
+    show.legend = FALSE
+  ) +
   ggsoccer::annotate_pitch(
     dimensions = ggsoccer::pitch_international,
     colour = 'black',
-    fill = sandpaper_background_color
+    fill = NA  # sandpaper_background_color
   ) +
   coord_flip(
     ylim = c(0, pitch_width),
@@ -162,11 +145,11 @@ base <- df |>
   theme_minimal() +
   theme(
     text = element_text(family = font),
-    title = element_text(size = 20, color = 'black'),
-    plot.title = ggtext::element_markdown(size = 18, face = 'bold', hjust = 0.5),
+    title = element_text(color = 'black'),
+    plot.title = ggtext::element_markdown(size = 40, face = 'bold', hjust = 0.5),
     plot.title.position = 'plot',
     plot.subtitle = ggtext::element_markdown(size = 14, color = '#4E616C', hjust = 0.5),
-    plot.margin = margin(30, 30, 30, 30),
+    plot.margin = margin(20, 20, 20, 20),
     plot.background = element_rect(fill = sandpaper_background_color, color = sandpaper_background_color),
     panel.background = element_rect(fill = sandpaper_background_color, color = sandpaper_background_color),
     strip.text = element_text(size = 14, color = 'black', face = 'bold'),
@@ -182,38 +165,27 @@ base <- df |>
     y = NULL,
     x = NULL
   ) +
-  # ggpattern::geom_polygon_pattern(
-  #   data = hex_xy,
-  #   aes(
-  #     x = isox + x,
-  #     y = isoy + y, 
-  #     group = stat
-  #   ),
-  #   fill = sandpaper_background_color,
-  #   pattern_shape = 20,
-  #   pattern_density = 0.8,
-  #   pattern_alpha = 0.2,
-  #   pattern_spacing = 0.01,
-  #   pattern_size = 0.1,
-  #   pattern = 'pch',
-  #   colour = 'black',
-  #   size = 1.5
-  # ) +
-  geom_polygon(
-  data = hex_xy,
-  aes(
-    x = isox + x,
-    y = isoy + y,
-    group = stat
-  ),
-  fill = sandpaper_background_color,
-  color = 'black',
-  size = 1.5
-) +
+  ggpattern::geom_polygon_pattern(
+    data = hex_xy,
+    aes(
+      x = isox + x,
+      y = isoy + y,
+      group = stat
+    ),
+    fill = sandpaper_background_color,
+    pattern_shape = 20,
+    pattern_density = 0.7,
+    pattern_alpha = 0.2,
+    pattern_spacing = 0.01,
+    pattern_size = 0.05,
+    pattern = 'pch',
+    colour = 'black',
+    size = 1
+  ) +
   geom_text(
     # fontface = 'bold',
     family = font,
-    size = 12 / .pt,
+    size = 11 / .pt,
     vjust = 0.5,
     hjust = 0.5,
     data = base_hex_xy,
@@ -246,7 +218,7 @@ base <- df |>
   geom_text(
     hjust = 1,
     color = 'red',
-    size = 9 / .pt,
+    size = 8 / .pt,
     family = font,
     data = agg |> select(player_name, median_x_yards),
     aes(
@@ -259,7 +231,7 @@ base <- df |>
     inherit.aes = FALSE,
     hjust = 0,
     color = 'red',
-    size = 9 / .pt,
+    size = 8 / .pt,
     family = font,
     data = agg |> select(player_name),
     aes(
@@ -278,34 +250,29 @@ base <- df |>
       xend = pitch_length + 3,
       yend = half_pitch_width - median_x_yards + 3
     )
-  ) +
-  facet_wrap(
-    ~player_name, 
-    scales = 'fixed'
   )
-base
 
-p <- base +
-  # geom_hex(
-  #   aes(x = x, y = y, fill = ..density.., group = player_name),
-  #   show.legend = FALSE
-  # ) +
-  # scale_fill_binned(pal) +
-  geom_point(
-    # aes(x = -(pitch_length - x), y = y)
-    aes(x = x, y = y)
+gb_base <- ggplot_build(base)
+gb_base$data[[1]] <- gb_base$data[[1]] |> 
+  group_by(PANEL) |> 
+  mutate(
+    rn = dense_rank(count),
+    max_rn = max(rn)
+  ) |> 
+  ungroup() |> 
+  mutate(
+    fill = map2_chr(rn, max_rn, ~colorRampPalette(c('#d0d6d4', '#91b1af', '#287271'))(..2)[[..1]])
   )
-p
+gt_base <- ggplot_gtable(gb_base)
 
 ## Reference: https://github.com/ajreinhard/data-viz/blob/master/ggplot/plot_SB.R
-p_bld <- ggplot_gtable(ggplot_build(p))
-grob_strip_index <- which(sapply(p_bld$grob, function(x) x$name) == 'strip')
-facet_id <- sapply(grob_strip_index, function(grb) {
-  p_bld$grobs[[grb]]$grobs[[1]]$children[[2]]$children[[1]]$label
+grob_strip_index <- which(sapply(gt_base$grob, function(x) x$name) == 'strip')
+facet_ids <- sapply(grob_strip_index, function(grb) {
+  gt_base$grobs[[grb]]$grobs[[1]]$children[[2]]$children[[1]]$label
 })
 
-for (i in 1:length(facet_id)) {
-  player_name <- facet_id[i]
+for (i in 1:length(facet_ids)) {
+  player_name <- facet_ids[i]
   team_logo_url <- team_logos |> 
     filter(player_name == !!player_name) |> 
     pull(team_logo_url)
@@ -324,18 +291,19 @@ for (i in 1:length(facet_id)) {
   raw_img <- magick::image_read(team_logo_url)
   bw_img <- magick::image_quantize(raw_img, colorspace = 'gray')
   img <- grid::rasterGrob(
+    image = bw_img,
     x = unit(0.9, 'npc'),
     vp = grid::viewport(height = 1, width = 1)
   )
   tot_tree <- grid::grobTree(lab, img)
-  p_bld$grobs[[grob_strip_index[i]]] <- tot_tree
+  gt_base$grobs[[grob_strip_index[i]]] <- tot_tree
 }
-p2 <- cowplot::ggdraw(p_bld)
+polished <- cowplot::ggdraw(gt_base)
 
 ggsave(
-  plot = p2,
+  plot = polished,
   filename = file.path(dir_proj, 'liga-mx.png'),
   width = 14,
-  height = 7,
+  height = 8,
   units = 'in'
 )
