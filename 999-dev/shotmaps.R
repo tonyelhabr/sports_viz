@@ -1,13 +1,16 @@
-## https://twitter.com/sonofacorner/status/1581956939151380481
-## https://github.com/sonofacorner/soc-viz-of-the-week/blob/main/10172022/10172022.ipynb
+## Reference: https://twitter.com/sonofacorner/status/1581956939151380481
+## Reference: https://github.com/sonofacorner/soc-viz-of-the-week/blob/main/10172022/10172022.ipynb
 library(ggplot2)
 library(ggsoccer)
 library(extrafont)
 library(ggpattern)
+library(grid)
+library(cowplot)
+library(magick)
+library(ggforce)
 library(tidyverse)
-library(janitor)
 
-blackish_background <- '#1c1c1c'
+sandpaper_background_color <- '#EFE9E6'
 gray_points <- '#4d4d4d'
 gray_text <- '#999999'
 font <- 'Titillium Web'
@@ -34,16 +37,22 @@ pal <- c(
 )
 
 pitch_length <- ggsoccer::pitch_international$length
-pitch_width <- pitch_width
+pitch_width <- ggsoccer::pitch_international$width
+half_pitch_length <- pitch_length / 2
+half_pitch_width <- pitch_width / 2
 
 x_buffer <- 8.5
 hex_width <- 4
-## https://github.com/gkaramanis/tidytuesday/blob/master/2020/2020-week36/crops.R
-hexs <- tibble(
-  entity = c('goals', 'xG', 'shots', 'xG/shot'),
-  # final_y = (54 * 0:3 * 14) - (hex_width / 2)
-  final_y = c(11, 23, 42, 54) - (hex_width / 2)
-) |> 
+stats <- c('goals', 'xG', 'shots', 'xG/shot')
+## Reference: https://github.com/gkaramanis/tidytuesday/blob/master/2020/2020-week36/crops.R
+base_hex_xy <- tibble(
+  stat = stats,
+  # final_y = (54 * 0:3 * 14) - (hex_width / 2),
+  x = 7 + x_buffer + half_pitch_length,
+  y = c(11, 23, 42, 54) - (hex_width / 2)
+)
+
+hex_xy <- base_hex_xy |> 
   rowwise() |>
   mutate(
     x = list(c(0, 0, !!hex_width, !!hex_width)),
@@ -58,58 +67,108 @@ hexs <- tibble(
   ungroup() |>
   unnest(c(isox, isoy)) |>
   select(-matches('iso[xy]_'), -c(x, y)) |>
-  rename(
-    y = final_y
-  ) |> 
-  mutate(
-    x = 5 + x_buffer + pitch_length / 2
-  ) |>
-  group_by(entity) |>
-  mutate(label_y = max(isoy)) |>
-  ungroup()
+  inner_join(
+    base_hex_xy,
+    by = 'stat'
+  )
 
 players_of_interest <- c(
-  'Andre-Pierre Gignac' # ,
-  # 'Juan Dinenno',
-  # 'Ernesto Vega',
-  # 'Nicolás Ibánez',
-  # 'Harold Preciado',
-  # 'Leonardo Fernandez'
+  'Andre-Pierre Gignac',
+  'Juan Dinenno',
+  'Ernesto Vega',
+  'Nicolás Ibánez',
+  'Harold Preciado',
+  'Leonardo Fernandez'
 )
 
-
-df <- read_csv('https://raw.githubusercontent.com/sonofacorner/soc-viz-of-the-week/main/10172022/data/10172022.csv', col_select = -1) |> 
-  janitor::clean_names() |> 
+df <- read_csv('https://raw.githubusercontent.com/sonofacorner/soc-viz-of-the-week/main/10172022/data/10172022.csv') |> 
+  filter(situation != 'Penalty', !isOwnGoal) |> 
+  transmute(
+    player_name = playerName,
+    team_id = teamId,
+    team_name = teamName,
+    x, y,
+    xG,
+    goal = ifelse(eventType == 'Goal', 1L, 0L)
+  ) |> 
   filter(
     player_name %in% players_of_interest
   ) |> 
   mutate(
-    across(player_name, ~ordered(.x, levels = players_of_interest)),
-    across(y ~ifelse(.x > 34, 34 - (y - 34), 34 + (34 - y)))
+    across(player_name, ~ordered(toupper(.x), levels = toupper(players_of_interest))),
+    ## reflect about the middle of the goal
+    across(
+      y, 
+      ~ifelse(
+        .x > half_pitch_width, 
+        half_pitch_width - (.x - half_pitch_width), 
+        half_pitch_width + (half_pitch_width - .x))
+    )
   )
 
-base <- ggplot(df) +
+agg <- df |> 
+  group_by(player_name) |> 
+  summarize(
+    shots = n(),
+    xG = sum(xG),
+    goals = sum(goal),
+    median_x_yards = (18 / 16.5) * (105 - median(x))
+  ) |> 
+  ungroup() |> 
+  mutate(
+    `xG/shot` = xG / shots
+  )
+
+agg_xy <- agg |> 
+  pivot_longer(
+    -c(player_name),
+    names_to = 'stat',
+    values_to = 'value'
+  ) |> 
+  filter(stat %in% !!stats) |> 
+  mutate(
+    value_lab = ifelse(
+      stat %in% c('shots', 'goals'),
+      value,
+      sprintf('%.2f', value)
+    )
+  ) |> 
+  inner_join(
+    base_hex_xy,
+    by = 'stat'
+  )
+
+team_logos <- df |> 
+  distinct(player_name, team_id) |> 
+  mutate(
+    team_logo_url = sprintf('https://images.fotmob.com/image_resources/logo/teamlogo/%s.png', team_id)
+  )
+
+arw <- arrow(length = unit(3, 'pt'), type = 'closed')
+
+base <- df |> 
+  ggplot() +
   aes(x = x, y = y) +
   ggsoccer::annotate_pitch(
     dimensions = ggsoccer::pitch_international,
-    colour = gray_text,
-    fill = blackish_background
+    colour = 'black',
+    fill = sandpaper_background_color
   ) +
   coord_flip(
-    ylim = c(0, pitch_width), 
-    xlim = c(x_buffer + pitch_length / 2, pitch_length)
+    ylim = c(0, pitch_width),
+    xlim = c(x_buffer + pitch_length / 2, pitch_length + 3) ## x buffer to cut off half line, 5 for median distance label
   ) +
   theme_minimal() +
   theme(
     text = element_text(family = font),
-    title = element_text(size = 20, color = 'white'),
-    plot.title = ggtext::element_markdown(size = 18, color = 'white', face = 'bold', hjust = 0.5),
+    title = element_text(size = 20, color = 'black'),
+    plot.title = ggtext::element_markdown(size = 18, face = 'bold', hjust = 0.5),
     plot.title.position = 'plot',
-    plot.subtitle = ggtext::element_markdown(size = 14, color = '#f1f1f1', hjust = 0.5),
+    plot.subtitle = ggtext::element_markdown(size = 14, color = '#4E616C', hjust = 0.5),
     plot.margin = margin(30, 30, 30, 30),
-    plot.background = element_rect(fill = blackish_background, color = blackish_background),
-    panel.background = element_rect(fill = blackish_background, color = blackish_background),
-    strip.text = element_text(size = 14, color = 'white', face = 'bold'),
+    plot.background = element_rect(fill = sandpaper_background_color, color = sandpaper_background_color),
+    panel.background = element_rect(fill = sandpaper_background_color, color = sandpaper_background_color),
+    strip.text = element_text(size = 14, color = 'black', face = 'bold'),
     axis.ticks = element_blank(),
     axis.text = element_blank(),
     panel.grid.major = element_blank(),
@@ -122,27 +181,108 @@ base <- ggplot(df) +
     y = NULL,
     x = NULL
   ) +
-  ggpattern::geom_polygon_pattern(
-    data = hexs,
+  # ggpattern::geom_polygon_pattern(
+  #   data = hex_xy,
+  #   aes(
+  #     x = isox + x,
+  #     y = isoy + y, 
+  #     group = stat
+  #   ),
+  #   fill = sandpaper_background_color,
+  #   pattern_shape = 20,
+  #   pattern_density = 0.8,
+  #   pattern_alpha = 0.2,
+  #   pattern_spacing = 0.01,
+  #   pattern_size = 0.1,
+  #   pattern = 'pch',
+  #   colour = 'black',
+  #   size = 1.5
+  # ) +
+  geom_polygon(
+  data = hex_xy,
+  aes(
+    x = isox + x,
+    y = isoy + y,
+    group = stat
+  ),
+  fill = sandpaper_background_color,
+  color = 'black',
+  size = 1.5
+) +
+  geom_text(
+    # fontface = 'bold',
+    family = font,
+    size = 12 / .pt,
+    vjust = 0.5,
+    hjust = 0.5,
+    data = base_hex_xy,
+    aes(x = x - !!hex_width - 2, y = y + !!hex_width, label = stat)
+  ) +
+  geom_text(
+    inherit.aes = FALSE,
+    fontface = 'bold',
+    family = font,
+    size = 12 / .pt,
+    vjust = 0.5,
+    hjust = 0.5,
+    data = agg_xy,
+    aes(x = x, y = y + !!hex_width, label = value_lab)
+  ) +
+  ggforce::geom_arc(
+    inherit.aes = FALSE,
+    color = 'red',
+    linetype = '31',
+    size = 1,
+    data = agg |> select(player_name, median_x_yards),
     aes(
-      x = isox + x,
-      y = isoy + y, 
-      group = entity
-    ),
-    fill = blackish_background,
-    pattern_shape = 21,
-    pattern_density = 0.6,
-    pattern_alpha = 0.5,
-    pattern_spacing = 0.015,
-    pattern = 'pch',
-    colour = gray_text
+      x0 = pitch_length, 
+      y0 = half_pitch_width, 
+      r = median_x_yards, 
+      start = pi,
+      end = 2 * pi
+    )
+  ) +
+  geom_text(
+    hjust = 1,
+    color = 'red',
+    size = 9 / .pt,
+    family = font,
+    data = agg |> select(player_name, median_x_yards),
+    aes(
+      x = pitch_length + 3,
+      y = half_pitch_width - median_x_yards,
+      label = sprintf('%.1f yds.', median_x_yards)
+    )
+  ) +
+  geom_text(
+    inherit.aes = FALSE,
+    hjust = 0,
+    color = 'red',
+    size = 9 / .pt,
+    family = font,
+    data = agg |> select(player_name),
+    aes(
+      x = pitch_length + 3,
+      y = half_pitch_width + 6,
+      label = 'median distance'
+    )
+  ) +
+  geom_segment(
+    color = 'red',
+    data = agg |> select(player_name, median_x_yards),
+    arrow = arw,
+    aes(
+      x = pitch_length + 3,
+      y = half_pitch_width,
+      xend = pitch_length + 3,
+      yend = half_pitch_width - median_x_yards + 3
+    )
+  ) +
+  facet_wrap(
+    ~player_name, 
+    scales = 'fixed'
   )
 base
-
-21 -> 34 + 13
-45 -> 34 - 11
-
-
 
 p <- base +
   # geom_hex(
@@ -151,13 +291,47 @@ p <- base +
   # ) +
   # scale_fill_binned(pal) +
   geom_point(
-    color = 'white',
     # aes(x = -(pitch_length - x), y = y)
     aes(x = x, y = y)
-  ) +
-  facet_wrap(~player_name, scales = 'fixed', labeller = labeller(.default = toupper))
+  )
 p
 
+## Reference: https://github.com/ajreinhard/data-viz/blob/master/ggplot/plot_SB.R
+p_bld <- ggplot_gtable(ggplot_build(p))
+grob_strip_index <- which(sapply(p_bld$grob, function(x) x$name) == 'strip')
+facet_id <- sapply(grob_strip_index, function(grb) {
+  p_bld$grobs[[grb]]$grobs[[1]]$children[[2]]$children[[1]]$label
+})
+
+for (i in 1:length(facet_id)) {
+  player_name <- facet_id[i]
+  team_logo_url <- team_logos |> 
+    filter(player_name == !!player_name) |> 
+    pull(team_logo_url)
+  
+  lab <- grid::textGrob(
+    player_name,
+    gp = grid::gpar(
+      col = 'black',
+      fontfamily = font,
+      fontface = 'bold',
+      fontsize = 11
+    ),
+    hjust = 0.5
+  )
+  
+  raw_img <- magick::image_read(team_logo_url)
+  bw_img <- magick::image_quantize(raw_img, colorspace = 'gray')
+  img <- grid::rasterGrob(
+    x = unit(0.9, 'npc'),
+    vp = grid::viewport(height = 1.2, width = 1.2)
+  )
+  tot_tree <- grid::grobTree(lab, img)
+  # grid.draw(tot_tree)
+  p_bld$grobs[[grob_strip_index[i]]] <- tot_tree
+}
+p2 <- cowplot::ggdraw(p_bld)
+p2
 
 r <- (pitch_length - (x_buffer + pitch_length / 2)) / pitch_width
 w <- 16
@@ -167,15 +341,11 @@ ggsave(
   height = (2 / 3) * r * w,
   units = 'in'
 )
+
 ggsave(
   filename = 'temp2.png',
-  width = 24,
-  height = 12,
+  width = 16,
+  height = 8,
   dpi = 600,
   units = 'in'
-)
-nflplotR::ggpreview(
-  width = 4,
-  height = r2 * w,
-  units = 'cm'
 )
