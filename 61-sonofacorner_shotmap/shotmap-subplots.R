@@ -152,6 +152,7 @@ plot_player <- function(player_name) {
       plot.title.position = 'plot',
       plot.margin = margin(10, 10, 10, 10),
       plot.background = element_rect(fill = sandpaper_background_color, color = sandpaper_background_color),
+      panel.background = element_rect(fill = sandpaper_background_color, color = sandpaper_background_color),
       axis.ticks = element_blank(),
       axis.text = element_blank(),
       panel.grid.major = element_blank(),
@@ -265,15 +266,14 @@ plot_player <- function(player_name) {
   plot_temp_file <- tempfile(fileext = '.png')
   ggsave(
     plot = base,
-    filename = temp_file,
+    filename = plot_temp_file,
     width = 6 / 1.25,
     height = 4 / 1.25
   )
   
   path_res <- add_logo(
-    path_viz = temp_file,
+    path_viz = plot_temp_file,
     path_logo = logo_temp_file,
-    # path_suffix = '',
     delete = TRUE,
     logo_scale = 0.1,
     adjust_y = FALSE,
@@ -291,7 +291,7 @@ subplots <- toupper(players_of_interest) |>
 
 p <- patchwork::wrap_plots(subplots, ncol = 3, byrow = FALSE) +
   patchwork::plot_annotation(
-    title = "LIGA MIX'S TOP SHOOTERS",
+    title = "LIGA MX'S TOP SHOOTERS",
     subtitle = "Non-penalty shot bins for Liga MX's top 6 shooters | Apertura 2022/2023 | viz by @sonofacorner, inspired by @jonollington",
     theme = theme(
       text = element_text(family = font),
@@ -299,12 +299,11 @@ p <- patchwork::wrap_plots(subplots, ncol = 3, byrow = FALSE) +
       plot.title = ggtext::element_markdown(face = 'bold', size = 40, hjust = 0.5),
       plot.title.position = 'plot',
       plot.subtitle = element_text(size = 14, color = '#4E616C', hjust = 0.5),
-      plot.margin = margin(20, 20, 20, 20),
-      plot.background = element_rect(fill = sandpaper_background_color, color = sandpaper_background_color),
-      panel.background = element_rect(fill = sandpaper_background_color, color = sandpaper_background_color)
+      plot.margin = margin(10, 0, 0, 0),
+      plot.background = element_rect(fill = sandpaper_background_color, color = sandpaper_background_color)
     )
   )
-
+p
 ggsave(
   plot = p,
   filename = file.path(dir_proj, 'liga-mx-subplots.png'),

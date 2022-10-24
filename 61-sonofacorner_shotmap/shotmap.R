@@ -80,7 +80,7 @@ hex_xy |>
     size = 3,
     fill = NA
   )
-    
+
 
 players_of_interest <- c(
   'Andre-Pierre Gignac',
@@ -195,7 +195,7 @@ base <- df |>
     panel.spacing.y = unit(2, 'lines') ## more spacing between facet rows
   ) +
   labs(
-    title = "LIGA MIX'S TOP SHOOTERS",
+    title = "LIGA MX'S TOP SHOOTERS",
     subtitle = "Non-penalty shot bins for Liga MX's top 6 shooters | Apertura 2022/2023 | viz by @sonofacorner, inspired by @jonollington",
     y = NULL,
     x = NULL
@@ -301,7 +301,7 @@ gb_base$data[[1]] <- gb_base$data[[1]] |>
   ungroup() |> 
   ## colors are first, middle, and last from sonofacorner
   mutate(
-    fill = map2_chr(rn, max_rn, ~colorRampPalette(c('#d0d6d4', '#91b1af', '#287271'))(..2)[[..1]])
+    fill = map2_chr(rn, max_rn, ~colorRampPalette(c('#d0d6d4', '#287271'))(..2)[[..1]])
   )
 gt_base <- ggplot_gtable(gb_base)
 
