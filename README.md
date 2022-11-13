@@ -6,17 +6,21 @@ git-ignored here.
 The projects are listed in reverse chronological order. A skipped number
 corresponds to an idea that I scraped.
 
+# 62. 2022 USL Championship Finals Preview
+
+![](62-safc/usl_2022_finals_preview_w_logo.png "2022 USL Championship Final Preview")
+
 # 61. Liga MX Shotmap
 
-![](61-sonofacorner_shotmap/liga-mx.png)
+![](61-sonofacorner_shotmap/liga-mx.png "Non-penalty shot bins for Liga MX's top 6 shooters")
 
 # 60. Card Descriptions
 
-![](60-card_reasons/hand.png)
+![](60-card_reasons/hand.png "Frequency of 'hand' in text descriptions of yellow and red cards in match news feed for tier 1 and 2 leagues in England, Spain, France, Germany, Italy, and the US.")
 
-![](60-card_reasons/bad.png)
+![](60-card_reasons/bad.png "Frequency of 'bad' in text descriptions of yellow and red cards in match news feed for tier 1 and 2 leagues in England, Spain, France, Germany, Italy, and the US.")
 
-![](60-card_reasons/violent.png)
+![](60-card_reasons/violent.png "Frequency of 'violent' in text descriptions of yellow and red cards in match news feed for tier 1 and 2 leagues in England, Spain, France, Germany, Italy, and the US.")
 
 # 59. Expected Points Deep Dive
 
