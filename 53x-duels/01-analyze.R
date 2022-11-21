@@ -3,7 +3,7 @@ library(qs)
 library(ebbr)
 library(yardstick)
 library(broom)
-dir_proj <- '53-duels'
+dir_proj <- '53x-duels'
 
 source(file.path(dir_proj, 'helpers.R'))
 init_duels <- file.path(dir_proj, 'duels.qs') |> 
@@ -262,9 +262,26 @@ do_model <- function(df, option) {
 }
 
 aerial_res <- duels |> filter(is_aerial) |> do_model(option = 'B')
-aerial_res$pitch_plot
+aerial_res$pitch_plot +
+  labs(
+    title = 'Probability of winning an aerial duel'
+  )
+ggsave(
+  filename = file.path(dir_proj, 'areal_duel_xw.png'),
+  width = 8,
+  height = 6
+)
 ground_res <- duels |> filter(!is_aerial) |> do_model(option = 'G')
-ground_res$pitch_plot
+ground_res$pitch_plot +
+  labs(
+    title = 'Probability of winning a ground duel'
+  )
+ggsave(
+  filename = file.path(dir_proj, 'areal_duel_xw.png'),
+  width = 8,
+  height = 6
+)
+
 duels_xw <- bind_rows(aerial_res$probs, ground_res$probs)
 
 ## final ----

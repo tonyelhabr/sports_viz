@@ -238,37 +238,39 @@ brier_skill_score.data.frame <- function(data, truth, estimate, ref_estimate, na
 }
 
 ## plot ----
-gray_wv <- rgb(24, 24, 24, maxColorValue = 255)
-gray_grid_wv <- rgb(64, 64, 64, maxColorValue = 255)
+blackish_background <- '#1c1c1c'
+gray_points <- '#4d4d4d'
+gray_text <- '#f1f1f1'
 
-extrafont::loadfonts(device = 'win', quiet = TRUE)
+font <- 'Titillium Web'
+extrafont::loadfonts(quiet = TRUE)
 theme_set(theme_minimal())
 theme_update(
-  text = element_text(family = 'Karla', color = 'white'),
-  title = element_text('Karla', size = 14, color = 'white'),
-  plot.title = ggtext::element_markdown('Karla', face = 'bold', size = 24, color = 'white'),
+  text = element_text(family = font),
+  title = element_text(size = 16, color = 'white'),
+  plot.title = element_text(face = 'bold', size = 16, color = 'white', hjust = 0.5),
   plot.title.position = 'plot',
-  plot.subtitle = element_text('Karla', size = 18, color = '#f1f1f1'),
-  axis.text = element_text('Karla', color = 'white', size = 14),
-  axis.title = element_text('Karla', size = 14, color = 'white', face = 'bold', hjust = 0.99),
+  plot.subtitle = element_text(size = 16, color = '#f1f1f1'),
+  axis.text = element_text(color = 'white', size = 14),
+  axis.title = element_text(size = 16, color = 'white', face = 'bold', hjust = 0.99),
   axis.line = element_blank(),
-  panel.grid.major = element_line(color = gray_grid_wv),
-  panel.grid.minor = element_line(color = gray_grid_wv),
+  panel.grid.major = element_line(color = gray_points),
+  panel.grid.minor = element_line(color = gray_points),
   panel.grid.minor.x = element_blank(),
   panel.grid.minor.y = element_blank(),
   plot.margin = margin(10, 10, 10, 10),
-  plot.background = element_rect(fill = gray_wv, color = gray_wv),
-  plot.caption = element_text('Karla', color = 'white', hjust = 1, size = 11, face = 'italic'),
+  strip.text = element_text(size = 14, color = 'white', face = 'bold', hjust = 0.5),
+  plot.background = element_rect(fill = blackish_background, color = blackish_background),
+  plot.caption = element_text(color = 'white', hjust = 1, size = 10, face = 'italic'),
   plot.caption.position = 'plot',
-  plot.tag = ggtext::element_markdown('Karla', size = 12, color = 'white', hjust = 0),
-  plot.tag.position = c(0.01, 0.01),
-  legend.text = element_text('Karla', size = 14),
-  legend.title = element_text('Karla', size = 14, face = 'bold'),
+  plot.tag = ggtext::element_markdown(size = 14, color = 'white', hjust = 0),
+  plot.tag.position = c(0.01, 0.02),
+  legend.text = element_text(font, size = 14, color = 'white', face = 'bold'),
+  legend.title = element_text(font, size = 14, face = 'bold'),
   legend.position = 'top',
-  strip.text = element_text('Karla', color = 'white', face = 'bold', size = 14, hjust = 0),
-  panel.background = element_rect(fill = gray_wv, color = gray_wv)
+  panel.background = element_rect(fill = blackish_background, color = blackish_background)
 )
-update_geom_defaults('text', list(family = 'Karla', size = 4, fontface = 'bold'))
+update_geom_defaults('text', list(family = font, size = 12 / .pt, fontface = 'bold', color = 'white'))
 update_geom_defaults('point', list(color = 'white'))
 
 pts <- function(x) {
@@ -288,6 +290,8 @@ pts <- function(x) {
   origin_y = 0
 )
 
+gray_wv <- rgb(24, 24, 24, maxColorValue = 255)
+gray_grid_wv <- rgb(64, 64, 64, maxColorValue = 255)
 common_gg <- function(...) {
   x_lab <- 105 / 2
   y_lab <- -3
@@ -307,17 +311,17 @@ common_gg <- function(...) {
       xend = x_lab + (lab_width / 2),
       yend = y_lab,
       arrow = arrow(length = unit(0.02, 'npc'), type = 'closed'),
-      colour = gray_grid_wv
+      colour = gray_text
     ),
     annotate(
       'text',
-      family = 'Karla',
-      size = pts(14),
+      family = font,
+      size = 14 / .pt,
       x = x_lab,
       y = y_lab - 1,
       label = 'Direction of play',
       vjust = 1.5,
-      colour = gray_grid_wv
+      colour = gray_text
     ),
     # coord_flip(ylim = c(0, 68), xlim = c(105, 0)),
     theme(

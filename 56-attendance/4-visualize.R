@@ -10,8 +10,8 @@ library(patchwork)
 library(googlesheets4)
 
 dir_proj <- '56-attendance'
-path_data <- file.path(dir_proj, 'model_data.qs')
-path_venue_capacities <- file.path(dir_proj, 'venue_capacities.csv')
+path_data <- file.path(dir_proj, 'clean_data.qs')
+path_venue_capacities <- file.path(dir_proj, 'venue_capacities.qs')
 
 gray_wv <- rgb(24, 24, 24, maxColorValue = 255)
 gray_grid_wv <- rgb(64, 64, 64, maxColorValue = 255)
@@ -95,16 +95,7 @@ team_mapping <-  read_sheet(ss = '1nIw1PgozYsb11W-QSzjgPlW-qrsJWLiPB8x6fTTMqiI')
     team_fbref_stats
   )
 
-venue_capacities <- path_venue_capacities |> 
-  read_csv(
-    col_types = cols(
-      venue = 'c', 
-      season = 'i',
-      max_attendance = 'i',
-      capacity = 'i'
-    )
-  )
-
+venue_capacities <- path_venue_capacities |> qs::qread()
 us_map <- map_data('state') |> as_tibble()
 us_border <- borders('usa', colour = gray_grid_wv)
 
@@ -114,7 +105,7 @@ usl_teams <- df |>
   filter(league == 'USL') |> 
   group_by(
     season, 
-    team = home_team,
+    team,
     venue, lat, long, capacity
   ) |> 
   summarize(
