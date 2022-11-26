@@ -91,9 +91,11 @@ if (!file.exists(matches_path)) {
   
   matches <- tibble(
     date = map_pluck_results_chr('Date') |> ymd_hms() |> date(),
-    results_id = map_pluck_results_chr('Properties', 'IdIFES') |> as.integer(),
+    result_id = map_pluck_results_chr('Properties', 'IdIFES') |> as.integer(),
     home_ioc = map_pluck_results_chr('Home', 'IdCountry'),
-    away_ioc = map_pluck_results_chr('Away', 'IdCountry')
+    away_ioc = map_pluck_results_chr('Away', 'IdCountry'),
+    home_score = map_pluck_results_chr('HomeTeamScore') |> as.integer(),
+    away_score = map_pluck_results_chr('AwayTeamScore') |> as.integer()
   )
   qs::qsave(matches, matches_path)
 } else {
@@ -109,29 +111,163 @@ country_mapping <- countrycode::codelist |>
     )
   )
 
-matches |> 
-  distinct(ioc = home_ioc) |> 
-  anti_join(
-    country_mapping
-  )
-
 agg_heights_with_ioc <- agg_heights |> 
   inner_join(country_mapping, by = 'country')
 
-matches |> 
-  filter(!is.na(home_ioc)) |> 
+double_matches <- bind_rows(
+  matches |> transmute(date, result_id, side = 'home', team_ioc = home_ioc, opp_ioc = away_ioc, team_score = home_score, opp_score = away_score),
+  matches |> transmute(date, result_id, side = 'away', team_ioc = away_ioc, opp_ioc = home_ioc, team_score = away_score, opp_score = home_score)
+)
+
+df <- double_matches |> 
+  filter(!is.na(team_ioc)) |> 
   inner_join(
     agg_heights_with_ioc |> 
-      select(home_country = country, home_ioc = ioc, home_inches_mean = total_inches),
-    by = 'home_ioc'
+      select(team_country = country, team_ioc = ioc, team_inches_mean = total_inches),
+    by = 'team_ioc'
   ) |> 
   inner_join(
     agg_heights_with_ioc |> 
-      select(away_country = country, away_ioc = ioc, away_inches_mean = total_inches),
-    by = 'away_ioc'
+      select(opp_country = country, opp_ioc = ioc, opp_inches_mean = total_inches),
+    by = 'opp_ioc'
   ) |> 
   mutate(
-    d = home_inches_mean - away_inches_mean
+    outcome = case_when(
+      is.na(team_score) ~ '?',
+      team_score > opp_score ~ 'W',
+      team_score < opp_score ~ 'L',
+      team_score == opp_score ~ 'D'
+    ),
+    diff_inches_mean = team_inches_mean - opp_inches_mean
   ) |> 
-  arrange(desc(abs(d)))
+  arrange(diff_inches_mean)
+df
 
+logo_path <- function(x) {
+  file.path(dir_proj, 'flags', sprintf('%s.png', x))
+}
+
+.gt_theme_538 <- function(data, ...) {
+  data |>
+    opt_table_font(
+      font = list(
+        google_font('Titillium Web'),
+        default_fonts()
+      )
+    ) |>
+    tab_style(
+      style = cell_borders(
+        sides = "top", color = "black", weight = px(0)
+      ),
+      locations = gt::cells_column_labels(
+        columns = gt::everything()
+      )
+    ) |>
+    tab_style(
+      style = cell_borders(
+        sides = "bottom", color = "black", weight = px(1)
+      ),
+      locations = cells_row_groups()
+    ) |>
+    tab_options(
+      column_labels.background.color = "white",
+      heading.border.bottom.style = "none",
+      table.border.top.width = px(3),
+      table.border.top.style = "none", # transparent
+      table.border.bottom.style = "none",
+      column_labels.font.weight = "normal",
+      column_labels.border.top.style = "none",
+      column_labels.border.bottom.width = px(2),
+      column_labels.border.bottom.color = "black",
+      row_group.border.top.style = "none",
+      row_group.border.top.color = "black",
+      row_group.border.bottom.width = px(1),
+      row_group.border.bottom.color = "white",
+      stub.border.color = "white",
+      stub.border.width = px(0),
+      data_row.padding = px(3),
+      source_notes.font.size = 12,
+      source_notes.border.lr.style = "none",
+      table.font.size = 14,
+      heading.title.font.size = 16,
+      heading.subtitle.font.size = 14,
+      heading.align = "left",
+      ...
+    ) %>%
+    opt_css(
+      "tbody tr:last-child {
+    border-bottom: 2px solid #ffffff00;
+      }
+    ",
+    add = TRUE
+    )
+     
+}
+
+tb <- df |> 
+  slice_min(diff_inches_mean, n = 10, with_ties = FALSE) |> 
+  transmute(
+    date,
+    team_logo = logo_path(team_country),
+    team_country,
+    opp_logo = logo_path(opp_country),
+    opp_country,
+    team_inches_mean,
+    opp_inches_mean,
+    diff_inches_mean,
+    outcome
+  ) |> 
+  gt::gt() |> 
+  .gt_theme_538() |> 
+  # gtExtras::gt_theme_538() |> 
+  gt::cols_label(
+    date = "Date",
+    team_logo = " ",
+    team_country = "Team",
+    opp_logo = " ",
+    opp_country = "Opponent",
+    team_inches_mean = "Team",
+    opp_inches_mean = "Opp.",
+    diff_inches_mean = gt::md("**Diff.**"),
+    outcome = "Outcome"
+  ) |>
+  gt::tab_spanner(
+    columns = c(team_inches_mean, opp_inches_mean),
+    label = "Avg. Height (cm)"
+  ) |>
+  # gt::tab_style(
+  #   locations = gt::cells_column_labels(),
+  #   style = list(
+  #     'padding-bottom: 0px; padding-top: 0px; padding-left: 5px; padding-right: 5px'
+  #   )
+  # ) |> 
+  gt::fmt_number(
+    columns = ends_with("inches_mean"),
+    decimals = 1
+  ) |> 
+  gt::cols_align(
+    columns = outcome,
+    align = 'center'
+  ) |> 
+  gt::text_transform(
+    locations = gt::cells_body(columns = c(team_logo, opp_logo)),
+    fn = function(x) {
+      gt::local_image(
+        filename = x,
+        height = 25
+      )
+    }
+  ) |> 
+  tab_header(
+    title = md('**Short kings vs. Tall bois**'),
+    subtitle = md("*Who's winning when at a height disadvantage?*")
+  ) |> 
+  tab_source_note(
+    source_note = md('***Data**: Fifa*')
+  )
+tb
+
+gtsave(
+  tb,
+  filename = file.path(dir_proj, 'avg_player_height.png')
+)
