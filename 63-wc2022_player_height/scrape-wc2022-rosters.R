@@ -119,33 +119,10 @@ double_matches <- bind_rows(
   matches |> transmute(date, result_id, side = 'away', team_ioc = away_ioc, opp_ioc = home_ioc, team_score = away_score, opp_score = home_score)
 )
 
-df <- double_matches |> 
-  filter(!is.na(team_ioc)) |> 
-  inner_join(
-    agg_heights_with_ioc |> 
-      select(team_country = country, team_ioc = ioc, team_inches_mean = total_inches),
-    by = 'team_ioc'
-  ) |> 
-  inner_join(
-    agg_heights_with_ioc |> 
-      select(opp_country = country, opp_ioc = ioc, opp_inches_mean = total_inches),
-    by = 'opp_ioc'
-  ) |> 
-  mutate(
-    outcome = case_when(
-      is.na(team_score) ~ '?',
-      team_score > opp_score ~ 'W',
-      team_score < opp_score ~ 'L',
-      team_score == opp_score ~ 'D'
-    ),
-    diff_inches_mean = team_inches_mean - opp_inches_mean
-  ) |> 
-  arrange(diff_inches_mean)
-df
-
 logo_path <- function(x) {
   file.path(dir_proj, 'flags', sprintf('%s.png', x))
 }
+
 
 .gt_theme_538 <- function(data, ...) {
   data |>
@@ -193,7 +170,7 @@ logo_path <- function(x) {
       heading.subtitle.font.size = 14,
       heading.align = "left",
       ...
-    ) %>%
+    ) |>
     opt_css(
       "tbody tr:last-child {
     border-bottom: 2px solid #ffffff00;
@@ -201,17 +178,42 @@ logo_path <- function(x) {
     ",
     add = TRUE
     )
-     
 }
+
+
+df <- double_matches |> 
+  filter(!is.na(team_ioc)) |> 
+  inner_join(
+    agg_heights_with_ioc |> 
+      select(team_country = country, team_ioc = ioc, team_inches_mean = total_inches),
+    by = 'team_ioc'
+  ) |> 
+  inner_join(
+    agg_heights_with_ioc |> 
+      select(opp_country = country, opp_ioc = ioc, opp_inches_mean = total_inches),
+    by = 'opp_ioc'
+  ) |> 
+  mutate(
+    outcome = case_when(
+      is.na(team_score) ~ NA_character_, #  'question',
+      team_score > opp_score ~ 'W', #  'check-square',
+      team_score < opp_score ~ 'L', # 'square-xmark',
+      team_score == opp_score ~  'D' # flag'
+    ),
+    diff_inches_mean = team_inches_mean - opp_inches_mean
+  ) |> 
+  arrange(diff_inches_mean)
+df
 
 tb <- df |> 
   slice_min(diff_inches_mean, n = 10, with_ties = FALSE) |> 
   transmute(
     date,
-    team_logo = logo_path(team_country),
     team_country,
-    opp_logo = logo_path(opp_country),
+    team_logo = logo_path(team_country),
     opp_country,
+    opp_logo = logo_path(opp_country),
+
     team_inches_mean,
     opp_inches_mean,
     diff_inches_mean,
@@ -219,21 +221,20 @@ tb <- df |>
   ) |> 
   gt::gt() |> 
   .gt_theme_538() |> 
-  # gtExtras::gt_theme_538() |> 
   gt::cols_label(
-    date = "Date",
-    team_logo = " ",
-    team_country = "Team",
-    opp_logo = " ",
-    opp_country = "Opponent",
-    team_inches_mean = "Team",
-    opp_inches_mean = "Opp.",
-    diff_inches_mean = gt::md("**Diff.**"),
-    outcome = "Outcome"
+    date = 'Date',
+    team_country = 'Team',
+    team_logo = ' ',
+    opp_country = 'Opponent',
+    opp_logo = ' ',
+    team_inches_mean = 'Team',
+    opp_inches_mean = 'Opp.',
+    diff_inches_mean = gt::md('**Diff.**'),
+    outcome = 'Outcome'
   ) |>
   gt::tab_spanner(
     columns = c(team_inches_mean, opp_inches_mean),
-    label = "Avg. Height (cm)"
+    label = 'Avg. Height (in.)'
   ) |>
   # gt::tab_style(
   #   locations = gt::cells_column_labels(),
@@ -244,6 +245,26 @@ tb <- df |>
   gt::fmt_number(
     columns = ends_with("inches_mean"),
     decimals = 1
+  ) |> 
+  gt::cols_align(
+    columns = date,
+    align = 'left'
+  ) |> 
+  text_transform(
+    locations = cells_body(columns = outcome), 
+    fn = function(x) {
+      color <- case_when(
+        x == 'W' ~ 'green',
+        x == 'L' ~ 'red',
+        x == 'D' ~ 'black',
+        TRUE ~ 'white'
+      )
+      sprintf(
+        '<span style="color:%s"><b>%s</b></span>',
+        color,
+        x
+      )
+    }
   ) |> 
   gt::cols_align(
     columns = outcome,
@@ -259,11 +280,11 @@ tb <- df |>
     }
   ) |> 
   tab_header(
-    title = md('**Short kings vs. Tall bois**'),
-    subtitle = md("*Who's winning when at a height disadvantage?*")
+    title = md('**Short kings vs. Tall boys**'),
+    subtitle = md("*Which matchups have the biggest height mismatches?*")
   ) |> 
   tab_source_note(
-    source_note = md('***Data**: Fifa*')
+    source_note = md('***Data**: ESPN. **Updated**: 2022-11-26.*')
   )
 tb
 
