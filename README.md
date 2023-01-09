@@ -6,6 +6,14 @@ git-ignored here.
 The projects are listed in reverse chronological order. A skipped number
 corresponds to an idea that I scraped.
 
+# 64. Comparison of FBRef’s new and old data providers
+
+![](64-fbref_xg_sources/fbref_xg_sources.png "FBRef non-penalty xG - goals for Big 5 European leagues")
+
+# 63. 2022 World Cup Height Mismatches
+
+![](63-wc2022_player_height/avg_player_height.png "Short kings vs. Tall boys")
+
 # 62. 2022 USL Championship Finals Preview
 
 ![](62-safc/usl_2022_finals_preview_w_logo.png "2022 USL Championship Final Preview")
@@ -434,29 +442,29 @@ Chart](01-nba_seed_p/nba_seed_p.png "2020 NBA Western Conference League Restart 
 
 # Future Ideas
 
--   In which sport is the leading team most likely to further their lead
-    near the end of the game due to an opposition error,
-    overly-aggressive tactics by the opposition, etc.? (End of game
-    depends on the sport. Ideally, we could use a win probability model
-    to help identify end-of-game context, although it would still need
-    some adjustment.) Extension: In which sport are gamblers most likely
-    to lose/win due to a back-door cover?
+- In which sport is the leading team most likely to further their lead
+  near the end of the game due to an opposition error, overly-aggressive
+  tactics by the opposition, etc.? (End of game depends on the sport.
+  Ideally, we could use a win probability model to help identify
+  end-of-game context, although it would still need some adjustment.)
+  Extension: In which sport are gamblers most likely to lose/win due to
+  a back-door cover?
 
--   Decision tree to filter down players in a sport to just one player
-    who has achieved a very specific set of career totals/averages
-    (i.e. [inspiration](https://twitter.com/JacobEGoldstein/status/1296570734047686658))
+- Decision tree to filter down players in a sport to just one player who
+  has achieved a very specific set of career totals/averages
+  (i.e. [inspiration](https://twitter.com/JacobEGoldstein/status/1296570734047686658))
 
--   Minutes played by new players
-    ([inspiration](https://twitter.com/reinhurdler/status/1438172361790996490?s=20))
+- Minutes played by new players
+  ([inspiration](https://twitter.com/reinhurdler/status/1438172361790996490?s=20))
 
--   Playing time in career at current team sonar
-    ([inspiration](https://twitter.com/reinhurdler/status/1432841015858188288?s=20))
+- Playing time in career at current team sonar
+  ([inspiration](https://twitter.com/reinhurdler/status/1432841015858188288?s=20))
 
--   Which positions is it ok to have a weak spot at?
-    ([inspiration](https://theathletic.com/2832130/2021/09/19/in-which-positions-can-a-team-have-a-glaring-weakness-but-still-win-the-premier-league-title/))
+- Which positions is it ok to have a weak spot at?
+  ([inspiration](https://theathletic.com/2832130/2021/09/19/in-which-positions-can-a-team-have-a-glaring-weakness-but-still-win-the-premier-league-title/))
 
--   Do coaches sub-off players with yellow cards at a higher rate than
-    they would otherwise?
+- Do coaches sub-off players with yellow cards at a higher rate than
+  they would otherwise?
 
--   Liverpool’s shots conceded (outside the penalty area) vs. shots
-    blocked in 2021/22
+- Liverpool’s shots conceded (outside the penalty area) vs. shots
+  blocked in 2021/22
