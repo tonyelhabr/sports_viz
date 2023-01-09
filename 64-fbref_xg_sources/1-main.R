@@ -8,9 +8,7 @@ library(sysfonts)
 library(showtext)
 library(ragg)
 
-dir_proj <- '63-fbref_xg_sources'
-dir_data <- file.path(dir_proj, 'data')
-path_opta <- file.path(dir_data, 'big5_team_shooting_opta.rds')
+dir_proj <- '64-fbref_xg_sources'
 
 font <- 'Titillium Web'
 sysfonts::font_add_google(font, font)
@@ -44,13 +42,14 @@ theme_update(
 # update_geom_defaults('text', list(color = 'white', size = 12 / .pt))
 
 aggregate_team_xg_stats_by_season <- function(source) {
-  path <- switch(
+  suffix <- switch(
     source,
-    'sb' = url('https://github.com/JaseZiv/worldfootballR_data/blob/master/data/fb_big5_advanced_statsbomb/big5_team_shooting.rds?raw=true'),
-    'opta' = path_opta
+    'sb' = 'blob/master/data/fb_big5_advanced_statsbomb/big5_team_shooting.rds?raw=true',
+    'opta' = 'releases/download/fb_big5_advanced_season_stats/big5_team_shooting.rds'
   )
   
-  df <- path |>
+  df <- sprintf('https://github.com/JaseZiv/worldfootballR_data/%s', suffix) |>
+    url() |> 
     readRDS() |>
     filter(
       Team_or_Opponent == 'team',
