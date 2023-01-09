@@ -1,19 +1,26 @@
 library(purrr)
 library(dplyr)
 library(ggplot2)
-library(extrafont)
 library(ggtext)
 library(glue)
 library(ggfx)
+library(sysfonts)
+library(showtext)
+library(ragg)
 
 dir_proj <- '63-fbref_xg_sources'
 dir_data <- file.path(dir_proj, 'data')
 path_opta <- file.path(dir_data, 'big5_team_shooting_opta.rds')
 
-blackish_background <- '#1c1c1c'
-  
 font <- 'Titillium Web'
-extrafont::loadfonts(quiet = TRUE)
+sysfonts::font_add_google(font, font)
+sysfonts::font_add('fb', 'Font Awesome 6 Brands-Regular-400.otf')
+showtext::showtext_auto()
+showtext::showtext_opts(dpi = 300)
+
+blackish_background <- '#1c1c1c'
+
+# extrafont::loadfonts(quiet = TRUE)
 theme_set(theme_minimal())
 theme_update(
   text = element_text(family = font),
@@ -29,9 +36,8 @@ theme_update(
   panel.grid.minor.x = element_blank(),
   panel.grid.minor.y = element_blank(),
   plot.margin = margin(10, 10, 10, 10),
-  # strip.text = element_text(size = 14, color = 'white', face = 'bold', hjust = 0.5),
   plot.background = element_rect(fill = blackish_background, color = blackish_background),
-  plot.caption = ggtext::element_markdown(color = 'white', hjust = 0, size = 14),
+  plot.caption = element_text(color = 'white', hjust = 0, size = 10, face = 'plain'),
   plot.caption.position = 'plot',
   panel.background = element_rect(fill = blackish_background, color = blackish_background)
 )
@@ -98,12 +104,12 @@ p <- xg_stats_by_season |>
     aes(yintercept = 0),
     color = 'white'
   ) +
-  ggblur::geom_point_blur(
-    aes(color = source),
-    size = 5 * .stroke
-  ) +
   geom_line(
     aes(color = source)
+  ) +
+  ggblur::geom_point_blur(
+    aes(color = source),
+    size = 4.5 * .stroke
   ) +
   guides(
     color = 'none'
@@ -145,18 +151,22 @@ p <- xg_stats_by_season |>
   ) +
   scale_x_continuous(
     breaks = x_values,
-    labels = sprintf('%s/%s', x_values, substr(x_values + 1, 3, 4))
+    labels = sprintf('%s/%s', x_values - 1, substr(x_values, 3, 4))
   ) +
   theme(
     plot.subtitle = ggtext::element_markdown(),
     axis.text.y = element_blank(),
     axis.ticks.y = element_blank(),
-    panel.grid.major.y = element_blank()
+    panel.grid.major.y = element_blank(),
+    plot.caption = ggtext::element_markdown(),
+    plot.tag = ggtext::element_markdown(size = 14, color = 'white', hjust = 1),
+    plot.tag.position = c(0.99, 0.01)
   ) +
   labs(
     title = 'FBRef non-penalty xG - goals for Big 5 European leagues',
     subtitle = glue::glue('Comparison of <b><span style=color:{source_colors["Old"]}>old</span></b> and <b><span style=color:{source_colors["New"]}>new</span></b> data providers'),
-    caption = '**Viz**: @TonyElHabr',
+    caption = glue::glue('On Oct. 25, 2022, FBRef announced that it was changing data providers.<br/>This plot illustrates data provided by their <span style=color:{source_colors["Old"]}>old</span> provider (snapshotted before Oct. 25, 2022)<br/>compared to their <span style=color:{source_colors["New"]}>new</span> provider for seasons prior to 2022/23.<br/><br/>xG minus goals tells us something about the quality of each provider\'s xG model.<br/>A difference of 0 is ideal.'),
+    tag = '<span style="font-family:fb";">&#xf099;</span> @TonyElHabr',
     x = 'Season',
     y = 'non-penalty xG - goals'
   )
@@ -164,7 +174,10 @@ p
 
 ggsave(
   p,
+  device = ragg::agg_png,
+  res = 300,
   filename = file.path(dir_proj, 'fbref_xg_sources.png'),
-  width = 8,
-  height = 8
+  width = 2400,
+  height = 2400,
+  units = 'px'
 )
