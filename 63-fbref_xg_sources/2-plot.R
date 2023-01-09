@@ -158,14 +158,14 @@ p <- xg_stats_by_season |>
     axis.text.y = element_blank(),
     axis.ticks.y = element_blank(),
     panel.grid.major.y = element_blank(),
-    plot.caption = ggtext::element_markdown(),
+    plot.caption = ggtext::element_markdown(lineheight = 1.2),
     plot.tag = ggtext::element_markdown(size = 14, color = 'white', hjust = 1),
     plot.tag.position = c(0.99, 0.01)
   ) +
   labs(
     title = 'FBRef non-penalty xG - goals for Big 5 European leagues',
     subtitle = glue::glue('Comparison of <b><span style=color:{source_colors["Old"]}>old</span></b> and <b><span style=color:{source_colors["New"]}>new</span></b> data providers'),
-    caption = glue::glue('On Oct. 25, 2022, FBRef announced that it was changing data providers.<br/>This plot illustrates data provided by their <span style=color:{source_colors["Old"]}>old</span> provider (snapshotted before Oct. 25, 2022)<br/>compared to their <span style=color:{source_colors["New"]}>new</span> provider for seasons prior to 2022/23.<br/><br/>xG minus goals tells us something about the quality of each provider\'s xG model.<br/>A difference of 0 is ideal.'),
+    caption = glue::glue('On Oct. 25, 2022, FBRef announced that it was changing data providers.<br/>Comparing \"xG minus goals\" from the <span style=color:{source_colors["Old"]}>old</span> provider (snapshotted before Oct. 25)<br/>to the same data from their <span style=color:{source_colors["New"]}>new</span> provider tells us something<br/>about the quality of each provider\'s xG model. A difference of 0 is ideal.'),
     tag = '<span style="font-family:fb";">&#xf099;</span> @TonyElHabr',
     x = 'Season',
     y = 'non-penalty xG - goals'
