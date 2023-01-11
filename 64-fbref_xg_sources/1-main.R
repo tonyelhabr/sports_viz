@@ -172,12 +172,25 @@ p <- xg_stats_by_season |>
   )
 p
 
+path <- file.path(dir_proj, 'fbref_xg_sources.png')
 ggsave(
   p,
   device = ragg::agg_png,
   res = 300,
-  filename = file.path(dir_proj, 'fbref_xg_sources.png'),
+  filename = path,
   width = 2400,
   height = 2400,
   units = 'px'
+)
+
+library(stringr)
+add_logo(
+  path,
+  path_logo = file.path(dir_proj, 'neymar.jpeg'),
+  delete = FALSE,
+  idx_x = 0.35,
+  idx_y = 0.42,
+  logo_scale = 0.2,
+  adjust_x = FALSE,
+  adjust_y = FALSE
 )
