@@ -43,7 +43,7 @@ add_logo <-
     res <-
       magick::image_write(
         viz,
-        path_viz %>% str_replace(rgx_ext, sprintf('%s.%s', path_suffix, ext))
+        path_viz %>% stringr::str_replace(rgx_ext, sprintf('%s.%s', path_suffix, ext))
       )
     res
     

@@ -163,12 +163,12 @@ p <- xg_stats_by_season |>
     plot.tag.position = c(0.99, 0.01)
   ) +
   labs(
-    title = 'FBRef non-penalty xG - goals for Big 5 European leagues',
+    title = 'FBref non-penalty goals - xG for Big 5 European leagues',
     subtitle = glue::glue('Comparison of <b><span style=color:{source_colors["Old"]}>old</span></b> and <b><span style=color:{source_colors["New"]}>new</span></b> data providers'),
-    caption = glue::glue('On Oct. 25, 2022, FBRef announced that it was changing data providers.<br/>Comparing \"xG minus goals\" from the <span style=color:{source_colors["Old"]}>old</span> provider (snapshotted before Oct. 25)<br/>to the same data from their <span style=color:{source_colors["New"]}>new</span> provider tells us something<br/>about the quality of each provider\'s xG model. A difference of 0 is ideal.'),
+    caption = glue::glue('On Oct. 25, 2022, FBref announced that it was changing data providers.<br/>Comparing \"xG minus goals\" from the <b><span style=color:{source_colors["Old"]}>old</span></b> provider (snapshotted before Oct. 25)<br/>to the same data from their <b><span style=color:{source_colors["New"]}>new</span></b> provider tells us about the quality of each model.<br/>A difference of 0 is ideal. A negative difference indicates under-prediction.'),
     tag = '<span style="font-family:fb";">&#xf099;</span> @TonyElHabr',
     x = 'Season',
-    y = 'non-penalty xG - goals'
+    y = 'non-penalty goals - xG'
   )
 p
 
@@ -183,11 +183,9 @@ ggsave(
   units = 'px'
 )
 
-library(stringr)
 add_logo(
   path,
   path_logo = file.path(dir_proj, 'neymar.jpeg'),
-  delete = FALSE,
   idx_x = 0.35,
   idx_y = 0.42,
   logo_scale = 0.2,
