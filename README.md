@@ -6,9 +6,9 @@ git-ignored here.
 The projects are listed in reverse chronological order. A skipped number
 corresponds to an idea that I scraped.
 
-# 64. Comparison of FBRef’s new and old data providers
+# 64. Comparison of FBref’s new and old data providers
 
-![](64-fbref_xg_sources/fbref_xg_sources.png "FBRef non-penalty xG - goals for Big 5 European leagues")
+![](64-fbref_xg_sources/fbref_xg_sources_w_logo.png "FBRef non-penalty goals - xG for Big 5 European leagues")
 
 # 63. 2022 World Cup Height Mismatches
 
