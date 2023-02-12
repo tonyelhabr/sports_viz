@@ -4,6 +4,7 @@ library(purrr)
 library(tibble)
 library(readr)
 library(dplyr)
+library(stringr)
 
 proj_dir <- '65-opta_xg_calib'
 data_dir <- file.path(proj_dir, 'data')
@@ -46,7 +47,7 @@ retrieve_league_players <- function(url) {
   tibble(
     player = text[idx],
     team = text[idx + 2],
-    link = paste0('https://fbref.com/', hrefs[idx])
+    url = paste0('https://fbref.com/', hrefs[idx])
   )
 }
 
@@ -76,9 +77,7 @@ league_players <- 2017:2022 |>
         season_start_year = as.integer(.x),
         .before = 1
       )
-  ) |> 
-  filter(str_detect(link, 'players', negate = TRUE)) |> 
-  distinct(player_url = link)
+  )
 
 retrieve_player_meta <- function(url) {
   page <- read_html(url)
@@ -106,22 +105,30 @@ possibly_retrieve_and_save_players_meta <- possibly(
  quiet = FALSE
 )
 
-players_meta <- league_players$player_url |> 
+players_meta <- league_players |> 
+  pull(url) |> 
+  unique() |> 
   map_dfr(
     ~{
       res <- possibly_retrieve_and_save_players_meta(.x)
       tibble(text = res) |> 
         mutate(
-          player_url = .x,
+          url = .x,
           .before = 1
         )
     }
   )
+
 players_meta |>
-  filter(stringr::str_detect(text, '???'))
-  tidyr::separate(
-    text,
-    c('x1', 'x2', 'x3'),
-    sep = ':'
-  )
-  
+  filter(str_detect(text, 'Footed')) |> 
+  transmute(
+    url,
+    foot = tolower(str_remove(text, '.*Footed[:] '))
+  ) |> 
+  inner_join(
+    league_players |> distinct(player, url),
+    by = 'url',
+    multiple = 'all'
+  ) |> 
+  arrange(player) |> 
+  write_rds(file.path(data_dir, 'footedness.rds'))
