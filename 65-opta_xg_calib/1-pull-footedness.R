@@ -33,17 +33,16 @@ generate_league_url <- function(season_start_year) {
 }
 
 retrieve_league_players <- function(url) {
-  # url <- league_urls[1]
   page <- read_html_live(url)
   cells <- page |>
     html_elements('tbody') |> 
     pluck(3) |> 
     html_elements('tr > td > a')
-  stats <- html_attr(cells, 'data-stat')
   hrefs <- html_attr(cells, 'href')
   text <- html_text2(cells)
   stopifnot(length(hrefs) == length(text))
-  idx <- seq(1, length(cells), by = 4)
+  urls <- hrefs |> str_subset("players") |> str_subset("summary", negate = TRUE)
+  idx <- str_which(hrefs, 'players(?!(.*summary))')
   tibble(
     player = text[idx],
     team = text[idx + 2],
@@ -78,6 +77,7 @@ league_players <- 2017:2022 |>
         .before = 1
       )
   ) |> 
+  filter(str_detect(link, 'players', negate = TRUE)) |> 
   distinct(player_url = link)
 
 retrieve_player_meta <- function(url) {
