@@ -5,13 +5,12 @@ library(stringr)
 library(tidyr)
 
 match_shooting <- load_fb_match_shooting(
-  country = 'ENG', #A c('ENG', 'ESP'),
+  country = 'ENG', # c('ENG', 'ESP'),
   tier = '1st',
   gender = 'M'
 )
 
 shots <- match_shooting |> 
-  # janitor::clean_names() |> 
   transmute(
     # match_url = MatchURL,
     country = Country,
