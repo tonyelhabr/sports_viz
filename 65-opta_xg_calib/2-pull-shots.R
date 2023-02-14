@@ -17,7 +17,10 @@ match_shooting <- read_rds(match_shooting_path)
 shots <- match_shooting |> 
   transmute(
     # match_url = MatchURL,
+    group,
     country = Country,
+    gender = Gender,
+    tier = Tier,
     season = Season_End_Year,
     date = ymd(Date),
     half = Match_Half,
@@ -41,10 +44,11 @@ shots <- match_shooting |>
     by = join_by(player)
   ) |> 
   mutate(
-    is_true_open_play = notes == '',
+    is_true_open_play = notes == '' & !is_penalty,
     is_from_deflection = str_detect(notes, 'Deflected'),
     is_from_volley = str_detect(notes, 'Volley'),
     is_free_kick = notes == 'Free kick',
+    is_open_play = !is_free_kick & !is_penalty,
     is_primary_foot = case_when(
       is.na(body_part) ~ NA,
       !(body_part %in% sprintf('%s Foot', c('Left', 'Right'))) ~ NA,

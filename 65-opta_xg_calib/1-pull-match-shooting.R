@@ -50,6 +50,8 @@ match_shooting <- params |>
           gender = ..3,
           season_end_year = first_season_end_year:2022L
         )
+        res$Tier <- ..2
+        res
       }
     )
   ) |> 
