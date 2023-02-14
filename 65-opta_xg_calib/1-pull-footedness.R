@@ -56,9 +56,9 @@ insistently_retrieve_league_players <- insistently(
   quiet = FALSE
 )
 
-retrieve_and_save_league_players <- function(season) {
+retrieve_and_save_league_players <- function(country = 'ENG', tier = '1st', gender = 'M', season) {
   url <- generate_league_url(season)
-  path <- file.path(footedness_data_dir, sprintf('ENG-1st-M-%s.rds', season))
+  path <- file.path(footedness_data_dir, sprintf('%s-%s-%s-%s.rds', country, tier, gender, season))
   if (file.exists(path)) {
     message(sprintf('Reading in from "%s".', path))
     return(read_rds(path))
@@ -72,7 +72,9 @@ retrieve_and_save_league_players <- function(season) {
 
 league_players <- 2017:2022 |> 
   map_dfr(
-    ~retrieve_and_save_league_players(.x) |>
+    ~retrieve_and_save_league_players(
+      .x
+    ) |>
       mutate(
         season_start_year = as.integer(.x),
         .before = 1
