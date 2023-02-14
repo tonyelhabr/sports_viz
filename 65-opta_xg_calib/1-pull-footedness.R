@@ -1,10 +1,11 @@
+library(readr)
+library(dplyr)
+library(stringr)
+library(tidyr)
 library(rvest)
 library(xml2)
 library(purrr)
 library(tibble)
-library(readr)
-library(dplyr)
-library(stringr)
 
 proj_dir <- '65-opta_xg_calib'
 data_dir <- file.path(proj_dir, 'data')
@@ -13,25 +14,44 @@ players_meta_data_dir <- file.path(data_dir, 'players', 'meta')
 dir.create(footedness_data_dir, recursive = TRUE, showWarnings = FALSE)
 dir.create(players_meta_data_dir, recursive = TRUE, showWarnings = FALSE)
 
-generate_league_url <- function(season_start_year) {
-  if (season_start_year == 2022) {
-    first_sep <- ''
-    second_sep <- ''
-    season_str <- ''
-  } else {
-    first_sep <- '/'
-    second_sep = '-'
-    season_str <- sprintf('%04d-%04d', season_start_year, season_start_year + 1)
-  }
-  
-  sprintf(
-    'https://fbref.com/en/comps/9/%s%sstats/%s%sPremier-League-Stats',
-    season_str, 
-    first_sep,
-    season_str,
-    second_sep
+source(file.path(proj_dir, 'params.R'))
+all_competitions <- read_csv('https://raw.githubusercontent.com/JaseZiv/worldfootballR_data/master/raw-data/all_leages_and_cups/all_competitions.csv')
+
+league_urls <- all_competitions |> 
+  filter(str_detect(.data[['competition_type']], 'Leagues')) |> 
+  inner_join(
+    params |> 
+      mutate(
+        first_season_end_year = ifelse(group == 'big5', 2018L, 2019L),
+        last_season_end_year = 2022L,
+        n = 1L + last_season_end_year - first_season_end_year
+      ) |> 
+      uncount(n) |> 
+      group_by(group, country, tier, gender) |> 
+      mutate(
+        season_end_year = first_season_end_year + row_number() - 1L
+      ) |> 
+      ungroup() |> 
+      select(
+        group,
+        country,
+        tier,
+        gender,
+        season_end_year
+      ),
+    by = join_by(country, gender, tier, season_end_year)
+  ) |> 
+  distinct(
+    group,
+    country,
+    tier,
+    gender,
+    season_end_year,
+    url = seasons_urls
+  ) |> 
+  mutate(
+    url = sprintf('%s/stats/%s', dirname(url), basename(url))
   )
-}
 
 retrieve_league_players <- function(url) {
   page <- read_html_live(url)
@@ -53,33 +73,54 @@ retrieve_league_players <- function(url) {
 
 insistently_retrieve_league_players <- insistently(
   retrieve_league_players, 
+  rate = rate_backoff(max_times = 3, pause_min = 3)
   quiet = FALSE
 )
 
-retrieve_and_save_league_players <- function(country = 'ENG', tier = '1st', gender = 'M', season) {
-  url <- generate_league_url(season)
-  path <- file.path(footedness_data_dir, sprintf('%s-%s-%s-%s.rds', country, tier, gender, season))
+possibly_insistently_retrieve_league_players <- possibly(
+  insistently_retrieve_league_players,
+  otherwise = tibble(),
+  quiet = FALSE
+)
+
+retrieve_and_save_league_players <- function(url, country, tier, gender, season_end_year) {
+  path <- file.path(footedness_data_dir, sprintf('%s-%s-%s-%s.rds', country, tier, gender, season_end_year))
   if (file.exists(path)) {
     message(sprintf('Reading in from "%s".', path))
     return(read_rds(path))
   }
   message(sprintf('Collecting data at "%s".', url))
   
-  res <- insistently_retrieve_league_players(url)
+  res <- possibly_insistently_retrieve_league_players(url)
   write_rds(res, path)
   res
 }
 
-league_players <- 2017:2022 |> 
-  map_dfr(
-    ~retrieve_and_save_league_players(
-      .x
-    ) |>
-      mutate(
-        season_start_year = as.integer(.x),
-        .before = 1
-      )
+league_players <- league_urls |> 
+  mutate(
+    player = pmap(
+      list(
+        url, 
+        country, 
+        tier, 
+        gender, 
+        season_end_year
+      ),
+      ~{
+        retrieve_and_save_league_players(
+          url = ..1, 
+          country = ..2, 
+          tier = ..3, 
+          gender = ..4, 
+          season_end_year = ..5 
+        )
+      }
+    )
   )
+
+league_players |> 
+  unnest(player, names_sep = '_') |> 
+  write_rds(file.path(data_dir, 'footedness_players.rds'))
 
 retrieve_player_meta <- function(url) {
   page <- read_html(url)
@@ -87,6 +128,12 @@ retrieve_player_meta <- function(url) {
     html_elements('#meta > div > p') |> 
     html_text2()
 }
+
+possibly_retrieve_player_meta <- possibly(
+  retrieve_player_meta,
+  quiet = FALSE,
+  otherwise = character()
+)
 
 retrieve_and_save_players_meta <- function(url) {
   path <- file.path(players_meta_data_dir, paste0(basename(dirname(url)), '.txt'))
@@ -96,23 +143,19 @@ retrieve_and_save_players_meta <- function(url) {
   }
   message(sprintf('Collecting data at "%s".', url))
   Sys.sleep(3)
-  res <- retrieve_player_meta(url)
+  res <- possibly_retrieve_player_meta(url)
   write_lines(res, path)
   res
 }
 
-possibly_retrieve_and_save_players_meta <- possibly(
- retrieve_and_save_players_meta,
- otherwise = character(),
- quiet = FALSE
-)
-
 players_meta <- league_players |> 
+  select(player) |> 
+  unnest(player) |> 
   pull(url) |> 
   unique() |> 
   map_dfr(
     ~{
-      res <- possibly_retrieve_and_save_players_meta(.x)
+      res <- retrieve_and_save_players_meta(.x)
       tibble(text = res) |> 
         mutate(
           url = .x,

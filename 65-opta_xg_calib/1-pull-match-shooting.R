@@ -5,31 +5,7 @@ library(readr)
 
 proj_dir <- '65-opta_xg_calib'
 data_dir <- file.path(proj_dir, 'data')
-
-params <- bind_rows(
-  'big5' = list(
-    country = c('ENG', 'ESP', 'FRA', 'GER', 'ITA'),
-    tier = '1st',
-    gender = 'M'
-  ),
-  'other_1st_M' = list(
-    country = c('POR', 'NED', 'BRA', 'MEX', 'USA'),
-    tier = '1st',
-    gender = 'M'
-  ),
-  '1st_F' = list(
-    country = c('ENG', 'USA', 'ESP'),
-    tier = '1st',
-    gender = 'F'
-  ),
-  '2nd_M' = list(
-    country = c('ENG'),
-    tier = '2nd',
-    gender = 'M'
-  ),
-  .id = 'group'
-)
-
+source(file.path(proj_dir, 'params.R'))
 match_shooting <- params |> 
   group_by(group, tier, gender) |> 
   summarize(countries = list(country)) |> 
