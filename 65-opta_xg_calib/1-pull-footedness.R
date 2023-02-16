@@ -73,7 +73,7 @@ retrieve_league_players <- function(url) {
 
 insistently_retrieve_league_players <- insistently(
   retrieve_league_players, 
-  rate = rate_backoff(max_times = 3, pause_min = 3)
+  # rate = rate_backoff(max_times = 3, pause_min = 3),
   quiet = FALSE
 )
 
@@ -138,7 +138,7 @@ possibly_retrieve_player_meta <- possibly(
 retrieve_and_save_players_meta <- function(url) {
   path <- file.path(players_meta_data_dir, paste0(basename(dirname(url)), '.txt'))
   if (file.exists(path)) {
-    message(sprintf('Reading in from "%s".', path))
+    # message(sprintf('Reading in from "%s".', path))
     return(read_lines(path))
   }
   message(sprintf('Collecting data at "%s".', url))
@@ -148,17 +148,36 @@ retrieve_and_save_players_meta <- function(url) {
   res
 }
 
-players_meta <- league_players |> 
+player_urls <- league_players |> 
   select(player) |> 
   unnest(player) |> 
   pull(url) |> 
-  unique() |> 
+  unique()
+length(player_urls)
+
+## TODO: Finish running once 429 errors are joever
+# players_meta <- player_urls |> 
+#   map_dfr(
+#     ~{
+#       res <- retrieve_and_save_players_meta(.x)
+#       tibble(text = res) |> 
+#         mutate(
+#           url = .x,
+#           .before = 1
+#         )
+#     }
+#   )
+
+players_meta <- fs::dir_ls(
+  players_meta_data_dir,
+  regexp = 'txt$'
+) |> 
   map_dfr(
     ~{
-      res <- retrieve_and_save_players_meta(.x)
+      res <- read_lines(.x)
       tibble(text = res) |> 
         mutate(
-          url = .x,
+          player_id = tools::file_path_sans_ext(basename(.x)),
           .before = 1
         )
     }
@@ -167,12 +186,29 @@ players_meta <- league_players |>
 players_meta |>
   filter(str_detect(text, 'Footed')) |> 
   transmute(
-    url,
+    player_id,
     foot = tolower(str_remove(text, '.*Footed[:] '))
   ) |> 
   inner_join(
-    league_players |> distinct(player, url),
-    by = 'url',
+    league_players |> 
+      select(
+        country, 
+        tier, 
+        gender, 
+        season_end_year,
+        player
+      ) |> 
+      unnest(player) |> 
+      distinct(
+        country, 
+        tier, 
+        gender, 
+        season_end_year,
+        player,
+        player_id = basename(dirname(url)),
+        url
+      ),
+    by = join_by(player_id),
     multiple = 'all'
   ) |> 
   arrange(player) |> 

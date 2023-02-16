@@ -2,10 +2,12 @@ library(dplyr)
 library(purrr)
 library(worldfootballR)
 library(readr)
+library(tidyr)
 
 proj_dir <- '65-opta_xg_calib'
 data_dir <- file.path(proj_dir, 'data')
 source(file.path(proj_dir, 'params.R'))
+
 match_shooting <- params |> 
   group_by(group, tier, gender) |> 
   summarize(countries = list(country)) |> 
