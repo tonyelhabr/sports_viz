@@ -156,17 +156,17 @@ player_urls <- league_players |>
 length(player_urls)
 
 ## TODO: Finish running once 429 errors are joever
-# players_meta <- player_urls |> 
-#   map_dfr(
-#     ~{
-#       res <- retrieve_and_save_players_meta(.x)
-#       tibble(text = res) |> 
-#         mutate(
-#           url = .x,
-#           .before = 1
-#         )
-#     }
-#   )
+players_meta <- player_urls |>
+  map_dfr(
+    ~{
+      res <- retrieve_and_save_players_meta(.x)
+      tibble(text = res) |>
+        mutate(
+          url = .x,
+          .before = 1
+        )
+    }
+  )
 
 players_meta <- fs::dir_ls(
   players_meta_data_dir,
@@ -186,7 +186,7 @@ players_meta <- fs::dir_ls(
 players_meta |>
   filter(str_detect(text, 'Footed')) |> 
   transmute(
-    player_id,
+    player_id = basename(dirname(url)),
     foot = tolower(str_remove(text, '.*Footed[:] '))
   ) |> 
   inner_join(
