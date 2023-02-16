@@ -82,3 +82,32 @@ big5_shooting_agg <- match_shooting |>
     npg_npxg_d = npg - npxg
   ) |> 
   arrange(season_end_year, country, team)
+
+pivot_shots_longer <- function(df) {
+  df |>
+    pivot_longer(
+      -c(season_end_year, country, team),
+      names_to = 'stat',
+      values_to = 'value'
+    )
+}
+
+combined <- bind_rows(
+  big5_shooting |> mutate(source = 'raw'),
+  big5_shooting_agg |> mutate(source = 'agg')
+) |>
+  pivot_longer(
+    -c(season_end_year, country, team, source),
+    names_to = 'stat',
+    values_to = 'value'
+  ) |> 
+  pivot_wider(
+    names_from = source,
+    values_from = value
+  ) |> 
+  group_by(stat) |> 
+  mutate(
+    raw_rescaled = scales::rescale(raw, to = c(0, 1)),
+    agg_rescaled = scales::rescale(agg, to = c(0, 1))
+  )
+combined |> arrange(desc(raw_rescaled))
