@@ -1,6 +1,9 @@
+library(worldfootballR)
 library(dplyr)
 library(readr)
-library(worldfootballR)
+library(stringr)
+library(tidyr)
+library(scales)
 
 proj_dir <- '65-opta_xg_calib'
 data_dir <- file.path(proj_dir, 'data')
@@ -83,15 +86,6 @@ big5_shooting_agg <- match_shooting |>
   ) |> 
   arrange(season_end_year, country, team)
 
-pivot_shots_longer <- function(df) {
-  df |>
-    pivot_longer(
-      -c(season_end_year, country, team),
-      names_to = 'stat',
-      values_to = 'value'
-    )
-}
-
 combined <- bind_rows(
   big5_shooting |> mutate(source = 'raw'),
   big5_shooting_agg |> mutate(source = 'agg')
@@ -105,9 +99,11 @@ combined <- bind_rows(
     names_from = source,
     values_from = value
   ) |> 
-  group_by(stat) |> 
-  mutate(
-    raw_rescaled = scales::rescale(raw, to = c(0, 1)),
-    agg_rescaled = scales::rescale(agg, to = c(0, 1))
-  )
-combined |> arrange(desc(raw_rescaled))
+  ## comparison function shows that the highest values by state have the biggest differences.
+  ##   this is not problematic since we know that those should have the biggest differences.
+  # group_by(stat) |> 
+  # mutate(
+  #   z = comparison_function(new = agg, old = raw)
+  # ) |> 
+  # ungroup()
+  arrange(season_end_year, country, team, stat, desc(raw))
