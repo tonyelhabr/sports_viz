@@ -26,31 +26,6 @@ npxg_by <- function(shots, ...) {
     arrange(desc(abs(drate)))
 }
 
-shots |> 
-  filter(
-    country == 'ENG',
-    tier == '1st',
-    gender == 'M'
-  ) |> 
-  mutate(
-    g = as.character(is_goal) == 'yes'
-  ) |> 
-  group_by(season_end_year, team) |> 
-  summarize(
-    n_shots = n(),
-    npxg = sum(ifelse(is_penalty, 0, 1) * xg, na.rm = TRUE),
-    xg = sum(xg, na.rm = TRUE),
-    npg = sum(ifelse(is_penalty, 0, 1) & g),
-    g = sum(g)
-  ) |> 
-  ungroup() |> 
-  mutate(
-    d = xg - g,
-    npd = npxg - npg
-  ) |> 
-  filter(season_end_year == 2021) |> 
-  arrange(desc(g))
-
 npxg_by_season <- shots |>
   npxg_by(season_end_year)
 
@@ -103,10 +78,96 @@ npxg_by_free_kick <- shots |>
   filter(group == 'big5') |> 
   npxg_by(is_free_kick)
 
+## bss ----
+np_shots <- shots |> 
+  filter(!is_penalty, !is.na(xg))
+
+goal_rate <- np_shots |> 
+  count(is_goal) |> 
+  mutate(prop = n / sum(n)) |> 
+  filter(is_goal == 'yes') |> 
+  pull(prop)
+
+goal_rate_bs <- np_shots |> 
+  brier_score(
+    truth = is_goal,
+    estimate = !!goal_rate,
+    event_level = 'second'
+  ) |> 
+  pull(.estimate)
+
+xg_bs <- np_shots |> 
+  brier_score(
+    truth = is_goal,
+    estimate = xg,
+    event_level = 'second'
+  ) |> 
+  pull(.estimate)
+
+# xg_bss <- np_shots |>
+#   brier_skill_score(
+#     truth = is_goal,
+#     estimate = xg,
+#     ref_estimate = !!goal_rate,
+#     event_level = 'second'
+#   ) |>
+#   pull(.estimate)
+# xg_bss
+xg_bss <- 1 - (xg_bs / goal_rate_bs)
+
+np_shots |> 
+  group_by(is_primary_foot, primary_foot) |> 
+  brier_skill_score(
+    truth = is_goal,
+    estimate = xg,
+    ref_estimate = !!goal_rate,
+    event_level = 'second'
+  ) |> 
+  select(is_primary_foot, primary_foot, foot_bs = .estimate)
+
+bs_by_foot <- np_shots |> 
+  group_by(is_big5 = group == 'big5', is_primary_foot, primary_foot) |> 
+  brier_score(
+    truth = is_goal,
+    estimate = xg,
+    event_level = 'second'
+  ) |> 
+  select(is_big5, is_primary_foot, primary_foot, foot_bs = .estimate) |> 
+  mutate(
+    goal_rate_foot_bss = 1 - (foot_bs / !!goal_rate_bs),
+    xg_foot_bss = 1 - (foot_bs / !!xg_bs)
+  ) |> 
+  filter(!is.na(is_primary_foot)) |> 
+  arrange(goal_rate_foot_bss)
+
+## custom cal plot ----
+xg_breaks <- c(seq(0, 0.1, by = 0.01), 0.15, 0.2, 0.3, 0.5, 1)
+library(ggplot2)
+np_shots |> 
+  mutate(
+    bucket = cut(xg, xg_breaks, include.lowest = TRUE)
+  ) |> 
+  make_calibration_table(
+    estimate = bucket,
+    truth = is_goal,
+    event_level = 'second'
+  ) |> 
+  mutate(
+    estimate = !!xg_breaks[1:(length(xg_breaks)-1)],
+    across(estimate, ~(.x + lead(.x, n = 1L, default = 1L)) / 2)
+  ) |> 
+  make_calibration_plot(
+    estimate = estimate,
+    truth = is_goal
+  ) +
+  coord_cartesian(xlim = c(0, 1), ylim = c(0, 1))
+
+
+
+## cal plot ----
 set.seed(42)
-shots_sample <- shots |> slice_sample(n = 50000)
+shots_sample <- np_shots |> slice_sample(n = 50000)
 shots_sample |> 
-  filter(!is_penalty) |> 
   cal_plot_windowed(
     truth = is_goal,
     estimate = xg,
@@ -116,32 +177,16 @@ shots_sample |>
   )
 
 shots_sample |> 
-  filter(!is_penalty) |> 
   cal_plot_breaks(
     truth = is_goal,
     estimate = xg,
-    num_breaks = 20,
+    num_breaks = 19,
     conf_level = 0.95,
     event_level = 'second'
   )
 
-source(file.path(proj_dir, 'helpers.R'))
-shots_sample |> 
-  filter(!is_penalty) |>
-  make_calibration_table(
-    truth = is_goal,
-    estimate = xg,
-    # db,
-    width = 0.05,
-    event_level = 'second'
-  ) |> 
-  make_calibration_plot(
-    truth = xg,
-    estimate = is_goal
-  )
-
-shots |> 
-  filter(!is_penalty) |> 
+res <- shots_sample |> 
+  filter(!is.na(is_primary_foot), primary_foot != 'both') |> 
   cal_plot_breaks(
     truth = is_goal,
     estimate = xg,
@@ -150,17 +195,7 @@ shots |>
     conf_level = 0.95,
     event_level = 'second'
   )
-
-shots |> 
-  mutate(
-    db = cut(distance, breaks = c(0, 7, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32, Inf))
-  ) |> 
-  cal_plot_breaks(
-    truth = is_goal,
-    estimate = xg,
-    group = db,
-    num_breaks = 20,
-    conf_level = 0.95,
-    event_level = 'second'
-  )
-
+gb <- ggplot_build(res)
+gb$plot$data
+gb$data[[1]]
+length(gb$data)
