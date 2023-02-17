@@ -4,31 +4,15 @@ is_0_or_1 <- function(v) {
   all(as.integer(x) %in% c(0L, 1L))
 }
 
-#' Make a calibration table
-#'
-#' @importFrom stats qbeta
-#' @importFrom rlang ensym arg_match abort :=
-#' @importFrom dplyr across group_by mutate summarize n
-#'
-#' @param data The data, including columns corresponding to `truth` and `estimate`.
-#' @param truth The binary target variable. Should be a factor.
-#' @param estimate The estimateability variable. Returned as a discrete variable.
-#' @param ... Variables to group on
-#' @param width The size of the groups.
-#' @param alpha The percentile offset that is divided by 2 and subtracted/added to 5th and 95th percentiles for the beta distribution used for calculating Jeffrey's credible intervals. The default of 0.05 translates to 0.025 for `shape1` and 0.975 for `shape2` for `qbeta`.
-#' @param event_level A single string. Either `"first"` or `"second"` to specify which level of `truth` to consider as the "event".
-#' @return A `tibble` with columns for the `truth` (returned as numeric) and `estimate` (returned as a discrete variable), as well as `ci_lower` and `ci_upper` variables (corresponding to Jeffrey's credible intervals). `actual`, which is the actual frequency of `truth`, and `n`, the number of observations (by group, if `...` is not empty)
 make_calibration_table <- function(
     data, 
     truth, 
     estimate,
     ...,
-    width = 0.05, 
     alpha = 0.05, 
     event_level = c('first', 'second')
 ) {
-  
-  stopifnot('`width` should be less than 1' = width < 1)
+
   event_level <- rlang::arg_match(event_level)
   truth_sym <- rlang::ensym(truth)
   estimate_sym <- rlang::ensym(estimate)
@@ -90,11 +74,7 @@ make_calibration_table <- function(
     )
   }
   
-  n_buckets <- round(1 / width)
   data |>
-    dplyr::mutate(
-      dplyr::across(.data[[estimate_sym]], ~round(.x * n_buckets) / n_buckets)
-    ) |>
     dplyr::group_by(.data[[estimate_sym]], ...) |>
     dplyr::summarize(
       n = dplyr::n(),
@@ -106,16 +86,6 @@ make_calibration_table <- function(
     dplyr::ungroup()
 }
 
-
-#' Make a calibration plot
-#'
-#' @param data the data, which should truthably be the result from `compute_calibration_table`
-#' @param truth,actual,ci_lower,ci_upper,n columns in `data`
-#' @inheritDotParams compute_calibration_table
-#' @param ... additional expressions to pass to `filter`
-#'
-#' @return the plot
-#' @export
 make_calibration_plot <- function(data, truth, estimate, ..., ci_lower = 'ci_lower', ci_upper = 'ci_upper', n = 'n') {
   
   facet_vars <- ggplot2::vars(...)
@@ -123,12 +93,10 @@ make_calibration_plot <- function(data, truth, estimate, ..., ci_lower = 'ci_low
   p <- data |>
     ggplot2::ggplot(
       ggplot2::aes(
-        x = !!rlang::ensym(truth), 
-        y = !!rlang::ensym(estimate)
+        x = !!rlang::ensym(estimate), 
+        y = !!rlang::ensym(truth)
       )
-    )
-  
-  p <- p +
+    ) +
     ggplot2::geom_point(
       ggplot2::aes(
         size = !!rlang::ensym(n)
@@ -160,4 +128,150 @@ make_calibration_plot <- function(data, truth, estimate, ..., ci_lower = 'ci_low
     p <- p + ggplot2::facet_wrap(facet_vars)
   }
   p
+}
+
+mse <- function(data, ...) {
+  UseMethod('mse')
+}
+
+mse <- yardstick::new_numeric_metric(mse, direction = 'minimize')
+
+mse_vec <- function(truth, estimate, na_rm = TRUE, ...) {
+  mse_impl <- function(truth, estimate) {
+    mean((truth - estimate)^2)
+  }
+  
+  yardstick::metric_vec_template(
+    metric_impl = mse_impl,
+    truth = truth,
+    estimate = estimate,
+    na_rm = na_rm,
+    cls = 'numeric',
+    ...
+  )
+}
+
+mse.data.frame <- function(data, truth, estimate, na_rm = TRUE, ...) {
+  yardstick::metric_summarizer(
+    metric_nm = 'mse',
+    metric_fn = mse_vec,
+    data = data,
+    truth = !!enquo(truth),
+    estimate = !!enquo(estimate),
+    na_rm = na_rm,
+    ...
+  )
+}
+
+brier_score <- function(data, ...) {
+  UseMethod('brier_score')
+}
+
+brier_score <- yardstick::new_prob_metric(brier_score, direction = 'minimize')
+
+brier_score_vec <- function(truth, estimate, na_rm = TRUE, event_level, ...) {
+  
+  brier_score_impl <- function(truth, estimate, event_level, ...) {
+    truth <- 1 - (as.numeric(truth) - 1)
+    
+    if (event_level == 'second') {
+      truth <- 1 - truth
+    }
+
+    mean((truth - estimate)^2)
+  }
+  
+  if (length(estimate) == 1) {
+    estimate <- rep(estimate, length(truth))
+  }
+  
+  yardstick::metric_vec_template(
+    metric_impl = brier_score_impl,
+    truth = truth,
+    estimate = estimate,
+    na_rm = na_rm,
+    cls = c('factor', 'numeric'),
+    estimator = 'binary',
+    event_level = event_level,
+    ...
+  )
+}
+
+brier_score.data.frame <- function(data, truth, estimate, na_rm = TRUE, event_level = 'first', ...) {
+  yardstick::metric_summarizer(
+    metric_nm = 'brier_score',
+    metric_fn = brier_score_vec,
+    data = data,
+    truth = !!rlang::enquo(truth),
+    estimate = !!rlang::enquo(estimate),
+    na_rm = na_rm,
+    event_level = event_level,
+    ...
+  )
+}
+
+brier_skill_score <- function(data, ...) {
+  UseMethod('brier_skill_score')
+}
+
+brier_skill_score <- yardstick::new_prob_metric(brier_skill_score, direction = 'maximize')
+
+brier_skill_score_vec <- function(truth, estimate, ref_estimate, na_rm = TRUE, event_level, ...) {
+  
+  brier_skill_score_impl <- function(truth, estimate, ref_estimate, event_level, ...) {
+    truth_quo <- rlang::enquo(truth)
+    
+    estimate_bs <- brier_score_vec(
+      truth = truth,
+      estimate = estimate,
+      na_rm = na_rm,
+      event_level = event_level,
+      ...
+    )
+    
+    ref_bs <- brier_score_vec(
+      truth = truth,
+      estimate = ref_estimate,
+      na_rm = na_rm,
+      event_level = event_level,
+      ...
+    )
+    
+    1 - (estimate_bs / ref_bs)
+  }
+  
+  if (length(estimate) == 1) {
+    estimate <- rep(estimate, length(truth))
+  }
+  
+  if (length(ref_estimate) == 1) {
+    ref_estimate <- rep(ref_estimate, length(truth))
+  }
+  
+  yardstick::metric_vec_template(
+    metric_impl = brier_skill_score_impl,
+    truth = truth,
+    estimate = estimate,
+    ref_estimate = ref_estimate,
+    cls = c('factor', 'numeric'),
+    estimator = 'binary',
+    event_level = event_level,
+    ...
+  )
+}
+
+brier_skill_score.data.frame <- function(data, truth, estimate, ref_estimate, na_rm = TRUE, event_level = 'first', ...) {
+  yardstick::metric_summarizer(
+    metric_nm = 'brier_skill_score',
+    metric_fn = brier_skill_score_vec,
+    data = data,
+    truth = !!rlang::enquo(truth),
+    estimate = !!rlang::enquo(estimate),
+    na_rm = na_rm,
+    event_level = event_level,
+    metric_fn_options = list(
+      ref_estimate = rlang::enquo(ref_estimate)
+    ),
+    ...
+  )
 }
