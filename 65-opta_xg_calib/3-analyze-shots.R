@@ -191,102 +191,41 @@ res <- shots_sample |>
     truth = is_goal,
     estimate = xg,
     group = is_primary_foot,
-    num_breaks = 10,
+    num_breaks = 20,
     conf_level = 0.95,
     event_level = 'second'
   )
-gb <- ggplot_build(res)
-gb$plot$data
 res$data
 
-process_cut <- function(.data, truth, estimate, cuts, lev, conf_level) {
-  truth <- rlang::enquo(truth)
-  estimate <- rlang::enquo(estimate)
-  
-  cuts %>%
-    purrr::transpose() %>%
-    purrr::map_df(
-      ~ {
-        .data |>
-          dplyr::filter(
-            !!estimate >= !!.x$lower_cut & !!estimate <= !!.x$upper_cut
-          ) |>
-          probably:::process_midpoint(
-            truth = !!truth,
-            estimate = !!estimate,
-            level = lev,
-            conf_level = conf_level
-          ) |>
-          dplyr::mutate(
-            lower_bound = .x$lower_cut,
-            upper_bound = .x$upper_cut,
-            predicted_midpoint = .x$lower_cut + ((.x$upper_cut - .x$lower_cut) / 2),
-            .before = 1
-          )
-      }
-    )
-}
-
-make_cal_table <- function(
-    .data,
-    truth = NULL,
-    estimate = NULL,
+debugonce(ggplot2::cut_number)
+shots_sample |> 
+  filter(!is.na(is_primary_foot), primary_foot != 'both') |> 
+  # pull(xg) |> 
+  # ggplot2::cut_width(width = 0.1)
+  # ggplot2::cut_interval(n = 10)
+  # mutate(
+  #   xg = xg + rnorm(n(), mean = 0, sd = 0.01)
+  # ) |> 
+  group_by(is_primary_foot, primary_foot) |> 
+  make_cal_table(
+    truth = is_goal,
+    estimate = xg,
     cut_fn = ggplot2::cut_width,
-    cut_args = list(
-      width = 0.1
-    ),
-    conf_level = 0.90,
-    event_level = c('first', 'second')
-) {
-  truth <- rlang::enquo(truth)
-  estimate <- rlang::enquo(estimate)
-  event_level <- rlang::arg_match(event_level)
-  # assert_truth_two_levels(.data, !!truth)
-  
-  side <- rlang::exec(
-    cut_fn, 
-    !!!append(
-      list(x = dplyr::pull(.data, !!estimate)),
-      cut_args
-    )
-  )
-  
-  ## https://stackoverflow.com/questions/32356108/get-lower-and-upper-bounds-from-cut-as-numeric-values
-  lvls <- levels(side)
-  pattern <- '(\\(|\\[)(-*[0-9]+\\.*[0-9]*),(-*[0-9]+\\.*[0-9]*)(\\)|\\])'
-  cuts <- list(
-    lower_cut = as.numeric(gsub(pattern, '\\2', lvls)),
-    upper_cut = as.numeric(gsub(pattern, '\\3', lvls))
-  )
-  
-  lev <- ifelse(event_level == 'first', 1, 2)
-  process_cut(
-    .data = .data,
-    truth = !!truth,
-    estimate = !!estimate,
-    cuts = cuts,
-    lev = lev,
-    conf_level = conf_level
-  )
-}
-
-make_cal_table(
-  segment_logistic,
-  Class,
-  .pred_good
-)
-
-cal_plot_breaks(
-  segment_logistic,
-  Class,
-  .pred_good
-) |> 
-  purrr::pluck('data')
-
-make_cal_table(
-  segment_logistic,
-  Class,
-  .pred_good,
-  cut_fn = ggplot2::cut_width,
-  cut_args = list(width = 1 / 10)
-)
+    cut_args = list(width = 0.05),
+    event_level = 'second'
+  ) |> 
+  ungroup() |> 
+  ggplot() +
+  aes(x = predicted_midpoint, y = event_rate) +
+  geom_abline(linetype = 2) +
+  geom_line() +
+  geom_point(
+    show.legend = FALSE,
+    aes(size = sqrt(total))
+  ) +
+  geom_ribbon(
+    color = '#ffffff00',
+    alpha = 0.08,
+    aes(ymin = lower, ymax = upper)
+  ) +
+  facet_wrap(is_primary_foot~primary_foot)
