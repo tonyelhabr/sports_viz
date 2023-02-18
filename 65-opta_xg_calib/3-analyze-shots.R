@@ -1,6 +1,7 @@
 library(readr)
 library(dplyr)
 library(probably)
+library(ggplot2)
 packageVersion('probably')
 
 proj_dir <- '65-opta_xg_calib'
@@ -141,8 +142,7 @@ bs_by_foot <- np_shots |>
   arrange(goal_rate_foot_bss)
 
 ## custom cal plot ----
-xg_breaks <- c(seq(0, 0.1, by = 0.01), 0.15, 0.2, 0.3, 0.5, 1)
-library(ggplot2)
+
 np_shots |> 
   mutate(
     bucket = cut(xg, xg_breaks, include.lowest = TRUE)
@@ -200,12 +200,6 @@ res$data
 debugonce(ggplot2::cut_number)
 shots_sample |> 
   filter(!is.na(is_primary_foot), primary_foot != 'both') |> 
-  # pull(xg) |> 
-  # ggplot2::cut_width(width = 0.1)
-  # ggplot2::cut_interval(n = 10)
-  # mutate(
-  #   xg = xg + rnorm(n(), mean = 0, sd = 0.01)
-  # ) |> 
   group_by(is_primary_foot, primary_foot) |> 
   make_cal_table(
     truth = is_goal,
