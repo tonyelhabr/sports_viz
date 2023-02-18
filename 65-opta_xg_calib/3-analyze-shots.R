@@ -191,11 +191,102 @@ res <- shots_sample |>
     truth = is_goal,
     estimate = xg,
     group = is_primary_foot,
-    num_breaks = 20,
+    num_breaks = 10,
     conf_level = 0.95,
     event_level = 'second'
   )
 gb <- ggplot_build(res)
 gb$plot$data
-gb$data[[1]]
-length(gb$data)
+res$data
+
+process_cut <- function(.data, truth, estimate, cuts, lev, conf_level) {
+  truth <- rlang::enquo(truth)
+  estimate <- rlang::enquo(estimate)
+  
+  cuts %>%
+    purrr::transpose() %>%
+    purrr::map_df(
+      ~ {
+        .data |>
+          dplyr::filter(
+            !!estimate >= !!.x$lower_cut & !!estimate <= !!.x$upper_cut
+          ) |>
+          probably:::process_midpoint(
+            truth = !!truth,
+            estimate = !!estimate,
+            level = lev,
+            conf_level = conf_level
+          ) |>
+          dplyr::mutate(
+            lower_bound = .x$lower_cut,
+            upper_bound = .x$upper_cut,
+            predicted_midpoint = .x$lower_cut + ((.x$upper_cut - .x$lower_cut) / 2),
+            .before = 1
+          )
+      }
+    )
+}
+
+make_cal_table <- function(
+    .data,
+    truth = NULL,
+    estimate = NULL,
+    cut_fn = ggplot2::cut_width,
+    cut_args = list(
+      width = 0.1
+    ),
+    conf_level = 0.90,
+    event_level = c('first', 'second')
+) {
+  truth <- rlang::enquo(truth)
+  estimate <- rlang::enquo(estimate)
+  event_level <- rlang::arg_match(event_level)
+  # assert_truth_two_levels(.data, !!truth)
+  
+  side <- rlang::exec(
+    cut_fn, 
+    !!!append(
+      list(x = dplyr::pull(.data, !!estimate)),
+      cut_args
+    )
+  )
+  
+  ## https://stackoverflow.com/questions/32356108/get-lower-and-upper-bounds-from-cut-as-numeric-values
+  lvls <- levels(side)
+  pattern <- '(\\(|\\[)(-*[0-9]+\\.*[0-9]*),(-*[0-9]+\\.*[0-9]*)(\\)|\\])'
+  cuts <- list(
+    lower_cut = as.numeric(gsub(pattern, '\\2', lvls)),
+    upper_cut = as.numeric(gsub(pattern, '\\3', lvls))
+  )
+  
+  lev <- ifelse(event_level == 'first', 1, 2)
+  process_cut(
+    .data = .data,
+    truth = !!truth,
+    estimate = !!estimate,
+    cuts = cuts,
+    lev = lev,
+    conf_level = conf_level
+  )
+}
+
+make_cal_table(
+  segment_logistic,
+  Class,
+  .pred_good
+)
+
+cal_plot_breaks(
+  segment_logistic,
+  Class,
+  .pred_good
+) |> 
+  purrr::pluck('data')
+
+make_cal_table(
+  segment_logistic,
+  Class,
+  .pred_good,
+  cut_fn = ggplot2::cut_width,
+  cut_args = list(width = 1 / 10)
+)
