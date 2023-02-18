@@ -10,7 +10,8 @@ params <- dplyr::bind_rows(
     gender = 'M'
   ),
   '1st_F' = list(
-    country = c('ENG', 'USA', 'ESP'),
+    ## ESP only starts in season_end_year = 2023
+    country = c('ENG', 'USA'),
     tier = '1st',
     gender = 'F'
   ),

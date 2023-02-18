@@ -36,3 +36,22 @@ match_shooting <- params |>
   select(group, data) |> 
   unnest(data)
 write_rds(match_shooting, file.path(data_dir, 'match_shooting.rds'))
+
+params_check <- params |> 
+  crossing(
+    season_end_year = 2018L:2022L
+  ) |> 
+  filter(
+    !(group != 'big5' & season_end_year == 2018L)
+  ) |> 
+  full_join(
+    match_shooting |> 
+      count(
+        group, 
+        country = Country, 
+        gender = Gender,
+        season_end_year = Season_End_Year
+      ),
+    by = join_by(group, country, gender, season_end_year)
+  ) |> 
+  filter(is.na(n))
