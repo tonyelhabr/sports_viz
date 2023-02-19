@@ -123,7 +123,7 @@ updated_shots <- inner_join(
       Tier = tier
     ) |> 
     clean_match_shooting() |> 
-    select(,
+    select(
       match_url, 
       half,
       minute,

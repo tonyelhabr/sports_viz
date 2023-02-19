@@ -1,37 +1,61 @@
-library(readr)
-library(dplyr)
-library(probably)
-library(ggplot2)
+suppressPackageStartupMessages({
+  library(readr)
+  library(dplyr)
+  library(stringr)
+  library(forcats)
+  library(tidyr)
+  library(scales)
+  library(knitr)
+})
 
 proj_dir <- '65-opta_xg_calib'
 data_dir <- file.path(proj_dir, 'data')
-clean_shotss_compare_path <- file.path(data_dir, 'clean_updated_shots.rds')
+clean_updated_shots_path <- file.path(data_dir, 'clean_updated_shots.rds')
+# clean_updated_shots_path <- 'c:/users/antho/documents/projects/sports_viz/65-opta_xg_calib/data/clean_updated_shots.rds'
+updated_np_shots <- read_rds(clean_updated_shots_path) |> 
+  filter(!is_penalty) 
 
-updated_shots <- read_rds(clean_updated_shots_path)
-
-compare_by <- function(updated_shots, ...) {
-  updated_shots |> 
-    filter(!is_penalty) |> 
+compare_by <- function(shots, ...) {
+  shots |> 
     group_by(...) |> 
     summarize(
       n_shots = n(),
+      n_same_npxg = sum(round(old_xg, 2) == round(new_xg, 2), na.rm = TRUE),
+      n_old_npxg_is_higher = sum(round(old_xg, 2) > round(new_xg, 2), na.rm = TRUE),
       new_npxg = sum(new_xg, na.rm = TRUE),
-      old_npxg = sum(old_xg, na.rm = TRUE),
-      npg = sum(as.character(is_goal) == 'yes')
+      old_npxg = sum(old_xg, na.rm = TRUE)
     ) |> 
     ungroup() |> 
-    mutate(
-      d = new_npxg - old_npxg,
-      drate = d / n_shots
+    transmute(
+      ...,
+      n_shots,
+      n_same_npxg,
+      n_diff_npxg = n_shots - n_same_npxg,
+      n_old_npxg_is_higher,
+      n_new_npxg_is_higher = n_diff_npxg - n_old_npxg_is_higher,
+      prop_diff_npxg = n_diff_npxg / n_shots,
+      prop_old_npxg_is_higher = n_old_npxg_is_higher / n_diff_npxg
     ) |> 
-    arrange(desc(abs(drate)))
+    arrange(desc(n_shots))
 }
 
-baseline_drate <- updated_shots |> compare_by() |> pull(drate)
+updated_np_shots |>
+  compare_by() |> 
+  glimpse()
 
-tidy_updated_shots <- updated_shots |> 
+meta_updated_shots_cols <- c(
+  'country',
+  'date',
+  'half',
+  'minute',
+  'team',
+  'player'
+)
+
+discretized_updated_np_shots <- updated_np_shots |> 
   select(
-    is_penalty,
+    all_of(meta_updated_shots_cols),
+    
     new_xg,
     old_xg,
     is_goal,
@@ -39,11 +63,10 @@ tidy_updated_shots <- updated_shots |>
     country,
     distance,
     sca1,
-    primary_foot,
+    body_part,
     is_from_deflection,
     is_from_volley,
     is_free_kick,
-    is_open_play,
     is_primary_foot
   ) |> 
   mutate(
@@ -67,199 +90,47 @@ tidy_updated_shots <- updated_shots |>
         tolower() |> 
         factor()
     ),
-    # country,
     across(
       c(
         is_from_deflection,
         is_from_volley,
         is_free_kick,
-        is_open_play,
         is_primary_foot
       ),
       ~ifelse(.x, 'yes', 'no') |> 
         factor()
     ),
     across(
-      c(is_primary_foot, primary_foot, sca1, distance), 
+      c(is_primary_foot, body_part, sca1, distance), 
       ~fct_explicit_na(.x, na_level = 'missing')
-    ),
-    is_primary_foot2 = sprintf('%s_%s', primary_foot, is_primary_foot) |> factor()
-  ) |> 
+    )
+  )
+glimpse(discretized_updated_np_shots)
+
+updated_np_shot_diffs <- discretized_updated_np_shots |> 
+  select(-all_of(meta_updated_shots_cols)) |> 
   pivot_longer(
-    -c(is_penalty, is_goal, old_xg, new_xg),
+    -c(is_goal, old_xg, new_xg),
     names_to = 'feature',
     values_to = 'group'
   ) |> 
-  compare_by(feature, group) |> 
-  mutate(
-    drate_diff = drate - !!baseline_drate
-  )
-tidy_updated_shots
-tidy_updated_shots |> 
-  filter(d < 0)
+  compare_by(feature, group)
+updated_np_shot_diffs
 
-
-updated_shots |> 
-  filter(!is_penalty) |> 
-  count(old_xg, xgd) |> 
-  ggplot() +
-  aes(x = old_xg, y = xgd) +
-  geom_point(
-    aes(size = n, alpha = n, color = n)
-  ) +
-  scale_alpha_continuous(range = c(0.5, 1)) +
-  scale_color_viridis_c(option = 'D')
-
-updated_shots |> 
-
-  ggplot() +
-  aes(x = old_xg, y = new_xg) +
-  geom_abline(linetype = 2) +
-  geom_point(
-    aes(size = n)
-  ) +
-  coord_equal()
-
-
-library(tidymodels)
-library(forcats)
-df <- updated_shots |> 
-  filter(!is.na(xgd), !is_penalty) |> 
-  transmute(
-    xgd,
-    is_xgd_pos = xgd > 0,
-    old_xg,
-    log_distance = log(1 + distance),
-    across(
-      sca1, 
-      ~.x |> 
-        str_remove_all( '\\(|\\)') |> 
-        str_replace_all('\\s|[-]', '_') |> 
-        tolower()
-    ),
-    # country,
-    across(
-      c(
-        is_xgd_pos,
-        is_from_deflection,
-        is_free_kick,
-        is_open_play,
-        is_primary_foot
-      ),
-      ~ifelse(.x, 'yes', 'no') |> 
-        factor()
-    ),
-    across(
-      c(is_primary_foot, primary_foot, sca1), 
-      ~fct_explicit_na(.x, na_level = 'missing')
-    )
-  )
-
-rec <- recipe(
-  xgd ~ .,
-  data = df
-) |> 
-  step_rm(is_xgd_pos) |> 
-  step_dummy(all_nominal_predictors())
-
-spec <- linear_reg()
-wf <- workflow(rec, spec)
-fit <- fit(wf, df)
-
-rmse(
-  augment(fit, df),
-  truth = xgd,
-  estimate = .pred
-)
-
-tidy_coefs <- tidy(fit) |> 
-  mutate(
-    across(p.value, round, 3)
-  ) |> 
-  arrange(estimate)
-tidy_coefs
-
-rec <- recipe(
-  is_xgd_pos ~ .,
-  data = df
-) |> 
-  step_rm(xgd) |> 
-  step_nzv(all_predictors()) |> 
-  step_dummy(all_nominal_predictors())
-
-spec <- logistic_reg()
-wf <- workflow(rec, spec)
-fit <- fit(wf, df)
-
-preds <- augment(fit, df)
-accuracy(
-  preds,
-  truth = is_xgd_pos,
-  estimate = .pred_class,
-  event_level = 'second'
-)
-
-source(file.path(proj_dir, 'helpers.R'))
-brier_score(
-  preds,
-  truth = is_xgd_pos,
-  estimate = .pred_yes,
-  event_level = 'second'
-)
-
-roc_auc(
-  preds,
-  is_xgd_pos,
-  .pred_yes,
-  event_level = 'second'
-)
-
-tidy_coefs <- tidy(fit) |> 
-  mutate(
-    across(p.value, round, 3)
-  ) |> 
-  arrange(estimate)
-
-pivot_shots_longer <- function(df) {
-  df |>
-    pivot_longer(
-      -c(season_end_year, country, team),
-      names_to = 'stat',
-      values_to = 'value'
-    )
+slice_and_tabularize_np_shot_diffs <- function(op, n = 6) {
+  updated_np_shot_diffs |> 
+    filter(n_shots >= 100) |> 
+    arrange(op(prop_old_npxg_is_higher)) |> 
+    head(n) |> 
+    transmute(
+      Feature = sprintf('`%s`', feature),
+      Group = sprintf('`%s`', ifelse(feature == "distance", as.character(group), paste0('"', group, '"'))),
+      `# of non-penalty shots` = scales::comma(n_shots),
+      `# of shots with changed npxG` = sprintf('%s (%.1f%%)', scales::comma(n_diff_npxg), 100 * prop_diff_npxg),
+      `# of shots with lower post-update npxG of those that changed` = sprintf('%s (%.1f%%)', scales::comma(n_old_npxg_is_higher), 100 * prop_old_npxg_is_higher),
+    ) |> 
+    knitr::kable()
 }
 
-updated_shots_pivoted <- updated_shots |>
-  select(
-    source,
-    match_url, 
-    date, 
-    half,
-    minute,
-    team,
-    player,
-    xg
-  ) |> 
-  pivot_wider(
-    -c(
-      source,
-      match_url, 
-      date, 
-      half,
-      minute,
-      team,
-      player
-    ),
-    names_from = 'source',
-    values_from = 'xg'
-  ) |> 
-  pivot_wider(
-    names_from = source,
-    values_from = value
-  ) |> 
-  group_by(stat) |> 
-  mutate(
-    new_rescaled = scales::rescale(new, to = c(0, 1)),
-    old_rescaled = scales::rescale(old, to = c(0, 1))
-  )
-combined |> arrange(desc(raw_rescaled))
+slice_and_tabularize_np_shot_diffs(`-`)
+slice_and_tabularize_np_shot_diffs(`+`)
