@@ -11,7 +11,7 @@ footedness_path <- file.path(data_dir, 'footedness.rds')
 match_shooting_path <- file.path(data_dir, 'match_shooting.rds')
 clean_shots_path <- file.path(data_dir, 'clean_shots.rds')
 ## for pre- and post-2023-02-08 xG comparison for 2021/22 season (https://twitter.com/fbref/status/1623358271791722502)
-clean_shots_compare_path <- file.path(data_dir, 'clean_shots_compare.rds')
+clean_updated_shots_path <- file.path(data_dir, 'clean_updated_shots.rds')
 source(file.path(proj_dir, 'params.R'))
 
 footedness <- read_rds(footedness_path)
@@ -113,7 +113,7 @@ old_fb_match_shooting <- params |>
   ) |> 
   unnest(data)
 
-shots_compare <- inner_join(
+updated_shots <- inner_join(
   shots |> 
     filter(group == 'big5', season_end_year == 2022) |> 
     rename(new_xg = xg),
@@ -134,8 +134,5 @@ shots_compare <- inner_join(
   by = join_by(match_url, half, minute, team, player),
   multiple = 'first'
 ) |> 
-  mutate(
-    xgd = new_xg - old_xg
-  ) |> 
-  arrange(desc(abs(xgd)))
-write_rds(shots_compare, clean_shots_compare_path)
+  relocate(old_xg, .before = new_xg)
+write_rds(updated_shots, clean_updated_shots_path)

@@ -5,12 +5,12 @@ library(ggplot2)
 
 proj_dir <- '65-opta_xg_calib'
 data_dir <- file.path(proj_dir, 'data')
-clean_shotss_compare_path <- file.path(data_dir, 'clean_shots_compare.rds')
+clean_shotss_compare_path <- file.path(data_dir, 'clean_updated_shots.rds')
 
-shots_compare <- read_rds(clean_shots_compare_path)
+updated_shots <- read_rds(clean_updated_shots_path)
 
-compare_by <- function(shots_compare, ...) {
-  shots_compare |> 
+compare_by <- function(updated_shots, ...) {
+  updated_shots |> 
     filter(!is_penalty) |> 
     group_by(...) |> 
     summarize(
@@ -27,45 +27,9 @@ compare_by <- function(shots_compare, ...) {
     arrange(desc(abs(drate)))
 }
 
-baseline_drate <- shots_compare |> compare_by() |> pull(drate)
-baseline_drate
+baseline_drate <- updated_shots |> compare_by() |> pull(drate)
 
-compare_to_baseline <- function(df) {
-  df |> 
-    mutate(
-      drate_ratio = drate - !!baseline_drate
-    )
-}
-
-shots_compare |> 
-  compare_by(is_primary_foot) |> 
-  compare_to_baseline()
-shots_compare |> 
-  compare_by(primary_foot) |> 
-  compare_to_baseline()
-shots_compare |> 
-  compare_by(is_primary_foot, primary_foot) |> 
-  compare_to_baseline()
-shots_compare |> 
-  compare_by(country) |> 
-  compare_to_baseline()
-shots_compare |> 
-  compare_by(distance) |> 
-  compare_to_baseline()
-shots_compare |> 
-  compare_by(sca1) |> 
-  compare_to_baseline()
-shots_compare |> 
-  compare_by(is_from_deflection) |> 
-  compare_to_baseline()
-shots_compare |> 
-  compare_by(is_true_open_play) |> 
-  compare_to_baseline()
-shots_compare |> 
-  compare_by(is_free_kick) |> 
-  compare_to_baseline()
-
-shots_compare |> 
+tidy_updated_shots <- updated_shots |> 
   select(
     is_penalty,
     new_xg,
@@ -126,16 +90,40 @@ shots_compare |>
     names_to = 'feature',
     values_to = 'group'
   ) |> 
-  compare_by(feature, group)
+  compare_by(feature, group) |> 
+  mutate(
+    drate_diff = drate - !!baseline_drate
+  )
+tidy_updated_shots
+tidy_updated_shots |> 
+  filter(d < 0)
 
-shots_compare |> 
+
+updated_shots |> 
+  filter(!is_penalty) |> 
+  count(old_xg, xgd) |> 
   ggplot() +
-  aes(x = new_xg, y = xgd) +
-  geom_point()
+  aes(x = old_xg, y = xgd) +
+  geom_point(
+    aes(size = n, alpha = n, color = n)
+  ) +
+  scale_alpha_continuous(range = c(0.5, 1)) +
+  scale_color_viridis_c(option = 'D')
+
+updated_shots |> 
+
+  ggplot() +
+  aes(x = old_xg, y = new_xg) +
+  geom_abline(linetype = 2) +
+  geom_point(
+    aes(size = n)
+  ) +
+  coord_equal()
+
 
 library(tidymodels)
 library(forcats)
-df <- shots_compare |> 
+df <- updated_shots |> 
   filter(!is.na(xgd), !is_penalty) |> 
   transmute(
     xgd,
@@ -241,7 +229,7 @@ pivot_shots_longer <- function(df) {
     )
 }
 
-shots_compare_pivoted <- shots_compare |>
+updated_shots_pivoted <- updated_shots |>
   select(
     source,
     match_url, 

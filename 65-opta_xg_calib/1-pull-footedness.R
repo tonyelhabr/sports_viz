@@ -183,7 +183,7 @@ players_meta <- fs::dir_ls(
     }
   )
 
-players_meta |>
+footedness <- players_meta |>
   filter(str_detect(text, 'Footed')) |> 
   transmute(
     player_id = basename(dirname(url)),
@@ -211,5 +211,6 @@ players_meta |>
     by = join_by(player_id),
     multiple = 'all'
   ) |> 
-  arrange(player) |> 
-  write_rds(file.path(data_dir, 'footedness.rds'))
+  arrange(player)
+write_rds(footedness, file.path(data_dir, 'footedness.rds'))
+write_csv(footedness, file.path(data_dir, 'footedness.csv'), na = '')
