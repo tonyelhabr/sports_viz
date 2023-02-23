@@ -1,18 +1,25 @@
-library(readr)
-library(dplyr)
-library(probably)
-library(ggplot2)
-packageVersion('probably')
+suppressPackageStartupMessages({
+  library(readr)
+  library(dplyr)
+  library(probably)
+  library(ggplot2)
+  packageVersion('probably')
+})
 
 proj_dir <- '65-opta_xg_calib'
 data_dir <- file.path(proj_dir, 'data')
-clean_shots_path <- file.path(data_dir, 'clean_shots.rds')
+# clean_shots_path <- file.path(data_dir, 'clean_shots.rds')
+clean_shots_path <- 'c:/users/antho/documents/projects/sports_viz/65-opta_xg_calib/data/clean_shots.rds'
+np_shots <- read_rds(clean_shots_path) |> 
+  filter(!is_penalty) |> 
+  mutate(
+    league = sprintf('%s_%s_%s', country, tier, gender)
+  )
 
-shots <- read_rds(clean_shots_path)
+np_shots |> count(league, name = 'n_shots')
 
 npxg_by <- function(shots, ...) {
   shots |> 
-    filter(!is_penalty) |> 
     group_by(...) |> 
     summarize(
       n_shots = n(),
@@ -22,15 +29,17 @@ npxg_by <- function(shots, ...) {
     ungroup() |> 
     mutate(
       d = npxg - npg,
-      drate = d / n_shots
+      d_rate = d / n_shots
     ) |> 
-    arrange(desc(abs(drate)))
+    arrange(desc(n_shots))
 }
 
-npxg_by_season <- shots |>
+
+
+npxg_by_season <- np_shots |>
   npxg_by(season_end_year)
 
-npxg_by_league <- shots |> 
+npxg_by_league <- np_shots |> 
   npxg_by(
     group,
     country,
@@ -38,7 +47,7 @@ npxg_by_league <- shots |>
     gender
   )
 
-npxg_by_league_season <- shots |> 
+npxg_by_league_season <- np_shots |> 
   npxg_by(
     group,
     country,
@@ -47,40 +56,40 @@ npxg_by_league_season <- shots |>
     season_end_year
   )
 
-npxg_by_body_part <- shots |>
+npxg_by_body_part <- np_shots |>
   filter(group == 'big5') |>
   npxg_by(body_part)
 
-npxg_by_primary_foot <- shots |>
+npxg_by_primary_foot <- np_shots |>
   filter(group == 'big5') |> 
   npxg_by(is_primary_foot)
 
-npxg_by_foot <- shots |>
+npxg_by_foot <- np_shots |>
   filter(group == 'big5') |> 
   npxg_by(primary_foot, is_primary_foot)
 
-npxg_by_true_open_play <- shots |>
+npxg_by_true_open_play <- np_shots |>
   filter(group == 'big5') |> 
   npxg_by(is_true_open_play)
 
-npxg_by_open_play <- shots |>
+npxg_by_open_play <- np_shots |>
   filter(group == 'big5') |> 
   npxg_by(is_open_play)
 
-npxg_by_deflection <- shots |>
+npxg_by_deflection <- np_shots |>
   filter(group == 'big5') |> 
   npxg_by(is_from_deflection)
 
-npxg_by_volley <- shots |>
+npxg_by_volley <- np_shots |>
   filter(group == 'big5') |> 
   npxg_by(is_from_volley)
 
-npxg_by_free_kick <- shots |>
+npxg_by_free_kick <- np_shots |>
   filter(group == 'big5') |> 
   npxg_by(is_free_kick)
 
 ## bss ----
-np_shots <- shots |> 
+np_shots <- np_shots |> 
   filter(!is_penalty, !is.na(xg))
 
 goal_rate <- np_shots |> 
