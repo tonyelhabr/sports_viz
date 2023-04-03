@@ -12,15 +12,15 @@ gt_plt_dumbbell_custom <- function(
     col1 = NULL,
     col2 = NULL,
     label = NULL,
-    palette = c("#378E38", "#A926B6", "#D3D3D3"),
+    palette = c("#378E38", "#A926B6", "#D3D3D3", "grey50"),
     width = 70,
     text_args = list(accuracy = 1),
     text_size = 2.5,
-    # hjust_val = c(-1, 1),
+    text_font = 'mono', ## addition
     rng_val = NULL ## addition
 ) {
   stopifnot("'gt_object' must be a 'gt_tbl', have you accidentally passed raw data?" = "gt_tbl" %in% class(gt_object))
-  stopifnot("'palette' must be 3 colors in order of col1, col2, bar color" = length(palette) == 3)
+  stopifnot("'palette' must be 3 colors in order of col1, col2, bar color" = length(palette) == 4)
   
   if (rlang::quo_is_null(rlang::enquo(col1)) | rlang::quo_is_null(rlang::enquo(col2))) {
     stop("'col1' and 'col2' must be specified")
@@ -95,7 +95,7 @@ gt_plt_dumbbell_custom <- function(
               aes(x = x2),
               color = "white",
               pch = 21,
-              fill = palette[3],
+              fill = palette[4],
               size = 4, # 3,
               stroke = 1.25
             ) +
@@ -107,7 +107,7 @@ gt_plt_dumbbell_custom <- function(
               ),
               # TODO: revisit horizontal adjustment
               hjust = hjust_val[[1]],
-              family = 'Titillium Web', # "mono"
+              family = text_font, # "mono"
               color = palette[1],
               size = text_size,
               
@@ -120,7 +120,7 @@ gt_plt_dumbbell_custom <- function(
               ),
               # TODO: revisit horizontal adjustment
               hjust = hjust_val[[2]],
-              family = 'Titillium Web', # "mono"
+              family = text_font, # "mono"
               color = palette[2],
               size = text_size
             ) +
@@ -131,9 +131,9 @@ gt_plt_dumbbell_custom <- function(
                 label = do.call(scales::label_number, text_args)(x1),
               ),
               # TODO: revisit horizontal adjustment
-              hjust = hjust_val[[1]],
-              family = 'Titillium Web', # "mono"
-              color = palette[3],
+              hjust = 0.5,
+              family = text_font, # "mono"
+              color = palette[4],
               size = text_size,
             ) +
             coord_cartesian(xlim = rng_val) +

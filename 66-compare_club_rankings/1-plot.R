@@ -74,8 +74,7 @@ make_table <- function(
     )
   
   if (isFALSE(include_league)) {
-    df <- df |> select(-league_538)
-  } else {
+    # df <- df |> select(-league_538)
     df$league_538 <- ''
   }
   
@@ -95,6 +94,7 @@ make_table <- function(
       tb, 
       team_538, 
       league_538,
+      palette = c('black', 'grey30'),
       font_weight = c('bold', 'normal')
     )
   } else {
@@ -102,7 +102,6 @@ make_table <- function(
       tb,
       team_538,
       league_538, 
-      font_weight = c('bold', 'normal'),
       font_size = c('14px', '0px')
     )
   }
@@ -124,7 +123,9 @@ make_table <- function(
     gt_plt_dumbbell_custom(
       rank_538_dummy,
       rank_opta_dummy,
-      palette = c(unname(palette), '#D3D3D3'),
+      palette = c(unname(palette), '#D3D3D3', 'grey50'),
+      text_font = 'Titillium Web',
+      text_size = 3,
       ...
     ) |> 
     gt::tab_header(
@@ -132,7 +133,7 @@ make_table <- function(
       subtitle = gt::md(subtitle)
     ) |> 
     gt::tab_source_note(
-      source_note = gt::md('***Updated**: 2023-04-07.*')
+      source_note = gt::md('***Updated**: 2023-04-01.*')
     )
   
   gt::gtsave(
@@ -146,6 +147,7 @@ make_table <- function(
 
 make_table(
   biggest_positive_top100_538_diffs,
+  filename = 'biggest_positive_top100_538_diffs',
   title = 'Club ranking differences',
   subtitle = glue::glue('Biggest deviations where {label_opta} rank is **lower** than {label_538}'),
   width = 50,
@@ -161,9 +163,10 @@ compared_latest_rankings |>
   arrange(rank_538) |> 
   make_table(
     filename = 'epl',
+    include_league = FALSE,
     title = 'English Premier League club rankings',
     subtitle = glue::glue('Comparison of {label_538} and {label_opta} club rankings'),
     width = 70,
     rng_val = c(1, 150),
-    vheight = 1.5 * 1100
+    vheight = 1100
   )
