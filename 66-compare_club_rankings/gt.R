@@ -15,7 +15,8 @@ gt_plt_dumbbell_custom <- function(
     palette = c("#378E38", "#A926B6", "#D3D3D3"),
     width = 70,
     text_args = list(accuracy = 1),
-    text_size = 3, # 2.5,
+    text_size = 2.5,
+    # hjust_val = c(-1, 1),
     rng_val = NULL ## addition
 ) {
   stopifnot("'gt_object' must be a 'gt_tbl', have you accidentally passed raw data?" = "gt_tbl" %in% class(gt_object))
@@ -40,7 +41,7 @@ gt_plt_dumbbell_custom <- function(
   if ((length(rng_val) != 2) | any(is.null(rng_val))) {
     rng_val <- range(all_vals, na.rm = TRUE)
   }
-
+  
   tab_out <- gt_object %>%
     text_transform(
       locations = cells_body({{ col1 }}),
@@ -51,19 +52,28 @@ gt_plt_dumbbell_custom <- function(
           if (any(is.na(all_df_in_vals)) | any(is.null(all_df_in_vals))) {
             return("<div></div>")
           }
-
-          df_vals <- dplyr::tibble(x1 = col1_vals, x2 = col2_vals)
           
-          # TODO: revisit horizontal adjustment
-          hjust_val <- ifelse(col1_vals >= col2_vals, list(1,0), list(0,1))
+          df_vals <- dplyr::tibble(x1 = col1_vals, x2 = col2_vals)
 
-          plot_obj <- ggplot(df_vals, aes(y = "y1")) +
+          # TODO: revisit horizontal adjustment
+          hjust_val <- if(col1_vals >= col2_vals) {
+            list(-0.1,1.1)
+          } else {
+            list(1.1,-0.1)
+          }
+          
+          df_vals1 <- dplyr::filter(df_vals, x1 != x2)
+          df_vals2 <- dplyr::filter(df_vals, x1 == x2)
+          plot_obj <- df_vals |> 
+            ggplot(aes(y = "y1")) +
             geom_segment(
+              data = df_vals1,
               aes(x = x1, xend = x2, yend = "y1"),
               linewidth = 1.5,
               color = palette[3]
             ) +
             geom_point(
+              data = df_vals1,
               aes(x = x1),
               color = "white",
               pch = 21,
@@ -72,6 +82,7 @@ gt_plt_dumbbell_custom <- function(
               stroke = 1.25
             ) +
             geom_point(
+              data = df_vals1,
               aes(x = x2),
               color = "white",
               pch = 21,
@@ -79,28 +90,51 @@ gt_plt_dumbbell_custom <- function(
               size = 4, # 3,
               stroke = 1.25
             ) +
+            geom_point(
+              data = df_vals2,
+              aes(x = x2),
+              color = "white",
+              pch = 21,
+              fill = palette[3],
+              size = 4, # 3,
+              stroke = 1.25
+            ) +
             geom_text(
+              data = df_vals1,
               aes(
                 x = x1, y = 1.05,
                 label = do.call(scales::label_number, text_args)(x1),
               ),
               # TODO: revisit horizontal adjustment
-              # hjust = hjust_val[[1]],
+              hjust = hjust_val[[1]],
               family = 'Titillium Web', # "mono"
               color = palette[1],
               size = text_size,
               
             ) +
             geom_text(
+              data = df_vals1,
               aes(
                 x = x2, y = 1.05,
                 label = do.call(scales::label_number, text_args)(x2),
               ),
               # TODO: revisit horizontal adjustment
-              # hjust = hjust_val[[2]],
-              family = "mono",
+              hjust = hjust_val[[2]],
+              family = 'Titillium Web', # "mono"
               color = palette[2],
               size = text_size
+            ) +
+            geom_text(
+              data = df_vals2,
+              aes(
+                x = x1, y = 1.05,
+                label = do.call(scales::label_number, text_args)(x1),
+              ),
+              # TODO: revisit horizontal adjustment
+              hjust = hjust_val[[1]],
+              family = 'Titillium Web', # "mono"
+              color = palette[3],
+              size = text_size,
             ) +
             coord_cartesian(xlim = rng_val) +
             # scale_x_continuous(expand = expansion(mult = c(0.1, 0.1))) +

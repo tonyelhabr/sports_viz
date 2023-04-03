@@ -50,18 +50,18 @@ palette <- c(
 label_538 <- glue::glue('<b><span style="color:{palette[["538"]]}">538</span></b>')
 label_opta <- glue::glue('<b><span style="color:{palette[["Opta"]]}">Opta</span></b>')
 
-
 make_table <- function(
     df, 
     title, 
     subtitle, 
     filename = deparse(substitute(df)),
-    width,
-    rng_val,
+    include_league = TRUE,
     vheight = 1100,
-    vwidth = vheight / 2
-  ) {
-  tb <- df |> 
+    vwidth = vheight / 2,
+    ...
+) {
+  
+  df <- df |> 
     transmute(
       # league = gsub('^[A-z]+\\s', '', league_538),
       league_538,
@@ -71,7 +71,15 @@ make_table <- function(
       # rank_opta,
       rank_538_dummy = rank_538,
       rank_opta_dummy = rank_opta
-    ) |> 
+    )
+  
+  if (isFALSE(include_league)) {
+    df <- df |> select(-league_538)
+  } else {
+    df$league_538 <- ''
+  }
+  
+  tb <- df |> 
     gt() |> 
     .gt_theme_538() |> 
     gt::cols_label(
@@ -79,10 +87,27 @@ make_table <- function(
       team_538 = '',
       # rank_538 = '', # gt::html(glue::glue('<b><span style="color:{palette[["538"]]}">538</span></b>')),
       # rank_opta = '', # gt::html(glue::glue('<b><span style="color:{palette[["Opta"]]}">Opta</span></b>')),
-      rank_538_dummy = '',
-      rank_opta_dummy = 'rank_opta_dummy'
-    ) |>
-    gtExtras::gt_merge_stack(team_538, league_538) |> 
+      rank_538_dummy = ''
+    )
+  
+  if (isTRUE(include_league)) {
+    tb <- gtExtras::gt_merge_stack(
+      tb, 
+      team_538, 
+      league_538,
+      font_weight = c('bold', 'normal')
+    )
+  } else {
+    tb <- gtExtras::gt_merge_stack(
+      tb,
+      team_538,
+      league_538, 
+      font_weight = c('bold', 'normal'),
+      font_size = c('14px', '0px')
+    )
+  }
+  
+  tb <- tb |> 
     gt::text_transform(
       locations = gt::cells_body(columns = url_logo),
       fn = function(x) {
@@ -100,8 +125,7 @@ make_table <- function(
       rank_538_dummy,
       rank_opta_dummy,
       palette = c(unname(palette), '#D3D3D3'),
-      width = width,
-      rng_val = rng_val
+      ...
     ) |> 
     gt::tab_header(
       title = gt::md(glue::glue('**{title}**')),
@@ -125,7 +149,7 @@ make_table(
   title = 'Club ranking differences',
   subtitle = glue::glue('Biggest deviations where {label_opta} rank is **lower** than {label_538}'),
   width = 50,
-  rng_val = c(1, 100),
+  rng_val = c(1, 110),
   vheight = 1100,
   vwidth = 550
 )
@@ -137,9 +161,9 @@ compared_latest_rankings |>
   arrange(rank_538) |> 
   make_table(
     filename = 'epl',
-    title = 'EPL club rankings',
+    title = 'English Premier League club rankings',
     subtitle = glue::glue('Comparison of {label_538} and {label_opta} club rankings'),
-    width = 100,
+    width = 70,
     rng_val = c(1, 150),
     vheight = 1.5 * 1100
   )
