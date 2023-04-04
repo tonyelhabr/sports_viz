@@ -12,6 +12,10 @@ compared_rankings <- generate_club_rankings_url('compared') |>
   read_csv() |> 
   filter(date == .env$club_rankings_date) |> 
   mutate(
+    across(league_538, ~coalesce(league_alternative, .x))
+  ) |> 
+  select(-league_alternative) |> 
+  mutate(
     drank = rank_538 - rank_opta
   )
 
@@ -99,7 +103,7 @@ make_table <- function(
   
   init_caption <- baseline_caption
   caption <- if (!is.null(caption)) {
-    paste0(init_caption, '\n', caption)
+    paste0(init_caption, '<br/>', caption)
   } else {
     init_caption
   }
@@ -139,23 +143,36 @@ make_table <- function(
   )
 }
 
-make_table(
-  biggest_negative_top100_538_diffs,
-  filename = 'biggest_negative_top100_538_diffs',
-  title = 'Battle of the club rankings',
-  subtitle = glue::glue('Biggest club ranking differences where {label_538} rank is more **bullish** than {label_opta}'),
-  caption = '***Criteria**: Limited to teams that Opta has ranked in its top 100.*',
-  width = 50,
-  rng_val = c(1, 250),
-  vheight = 1100,
-  vwidth = 550
-)
+league_brazil <- 'Brasileiro Série A'
+label_brazil <- sprintf('<b><span style="color:green">%s</span></b>', league_brazil)
+
+biggest_negative_top100_538_diffs |> 
+  mutate(
+    across(
+      league_538,
+      ~ifelse(
+        .x == league_brazil,
+        label_brasil,
+        .x
+      )
+    )
+  ) |> 
+  make_table(
+    filename = 'biggest_negative_top100_538_diffs',
+    title = sprintf('538 loves %s', label_brazil),
+    subtitle = glue::glue('Biggest club ranking differences where {label_538} is more bullish than {label_opta}'),
+    caption = '***Criteria**: Limited to teams that 538 has ranked in its top 100.*',
+    width = 50,
+    rng_val = c(1, 250),
+    vheight = 1100,
+    vwidth = 550
+  )
 
 make_table(
   biggest_positive_top100_opta_diffs,
   filename = 'biggest_positive_top100_opta_diffs',
-  title = 'Battle of the club rankings',
-  subtitle = glue::glue('Biggest club ranking differences where {label_opta} is more **bullish** than {label_538}'),
+  title = sprintf('Opta is higher on teams in less known leagues'),
+  subtitle = glue::glue('Biggest club ranking differences where {label_opta} is more bullish than {label_538}'),
   caption = '***Criteria**: Limited to teams that Opta has ranked in its top 100.*',
   width = 50,
   rng_val = c(1, 210),
