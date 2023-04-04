@@ -330,6 +330,8 @@ As of 2020-09-06
 
 # Future Ideas
 
+-   Visualize difference between proportion of the EPL season in which a team is in the top 4 of the league with matchweeks vs. actual time.
+
 -   In which sport is the leading team most likely to further their lead near the end of the game due to an opposition error, overly-aggressive tactics by the opposition, etc.? (End of game depends on the sport. Ideally, we could use a win probability model to help identify end-of-game context, although it would still need some adjustment.) Extension: In which sport are gamblers most likely to lose/win due to a back-door cover?
 
 -   Decision tree to filter down players in a sport to just one player who has achieved a very specific set of career totals/averages (i.e. [inspiration](https://twitter.com/JacobEGoldstein/status/1296570734047686658))
