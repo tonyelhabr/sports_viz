@@ -5,9 +5,12 @@ library(gtExtras)
 library(glue)
 
 proj_dir <- '66-compare_club_rankings'
+source(file.path(proj_dir, 'helpers.R'))
 source(file.path(proj_dir, 'gt.R'))
 
-compared_rankings <- read_csv('https://github.com/tonyelhabr/club-rankings/releases/download/club-rankings/compared-rankings.csv') |> 
+compared_rankings <- generate_club_rankings_url('compared') |> 
+  read_csv() |> 
+  filter(date == .env$club_rankings_date) |> 
   mutate(
     drank = rank_538 - rank_opta
   )
@@ -43,18 +46,11 @@ biggest_negative_top100_opta_diffs <- compared_latest_rankings |>
   arrange(drank) |>
   slice_min(drank, n = 10, with_ties = FALSE)
 
-palette <- c(
-  '538' = '#ED713B',
-  'Opta' = '#7B1582' # '#00ADEF'
-)
-
-label_538 <- glue::glue('<b><span style="color:{palette[["538"]]}">538</span></b>')
-label_opta <- glue::glue('<b><span style="color:{palette[["Opta"]]}">Opta</span></b>')
-
 make_table <- function(
     df, 
     title, 
     subtitle, 
+    caption = NULL,
     filename = deparse(substitute(df)),
     include_league = TRUE,
     vheight = 1100,
@@ -64,18 +60,14 @@ make_table <- function(
   
   df <- df |> 
     transmute(
-      # league = gsub('^[A-z]+\\s', '', league_538),
       league_538,
-      url_logo = sprintf('https://omo.akamai.opta.net/image.php?secure=true&h=omo.akamai.opta.net&sport=football&entity=team&description=badges&dimensions=150&id=%s', id_opta),
+      logo_url = generate_logo_url(id_opta),
       team_538,
-      # rank_538,
-      # rank_opta,
-      rank_538_dummy = rank_538,
-      rank_opta_dummy = rank_opta
+      rank_538,
+      rank_opta
     )
   
   if (isFALSE(include_league)) {
-    # df <- df |> select(-league_538)
     df$league_538 <- ''
   }
   
@@ -83,11 +75,9 @@ make_table <- function(
     gt() |> 
     .gt_theme_538() |> 
     gt::cols_label(
-      url_logo = '',
+      logo_url = '',
       team_538 = '',
-      # rank_538 = '', # gt::html(glue::glue('<b><span style="color:{palette[["538"]]}">538</span></b>')),
-      # rank_opta = '', # gt::html(glue::glue('<b><span style="color:{palette[["Opta"]]}">Opta</span></b>')),
-      rank_538_dummy = ''
+      rank_538 = ''
     )
   
   if (isTRUE(include_league)) {
@@ -95,7 +85,7 @@ make_table <- function(
       tb, 
       team_538, 
       league_538,
-      palette = c('black', 'grey30'),
+      palette = c('black', 'grey50'),
       font_weight = c('bold', 'normal')
     )
   } else {
@@ -107,9 +97,16 @@ make_table <- function(
     )
   }
   
+  init_caption <- baseline_caption
+  caption <- if (!is.null(caption)) {
+    paste0(init_caption, '\n', caption)
+  } else {
+    init_caption
+  }
+  
   tb <- tb |> 
     gt::text_transform(
-      locations = gt::cells_body(columns = url_logo),
+      locations = gt::cells_body(columns = logo_url),
       fn = function(x) {
         gt::web_image(
           url = x,
@@ -117,13 +114,9 @@ make_table <- function(
         )
       }
     ) |>
-    # gt::tab_spanner(
-    #   columns = c(rank_538, rank_opta),
-    #   label = 'Rank'
-    # ) |> 
     gt_plt_dumbbell_custom(
-      rank_538_dummy,
-      rank_opta_dummy,
+      rank_538,
+      rank_opta,
       palette = c(unname(palette), '#D3D3D3', 'grey50'),
       text_font = 'Titillium Web',
       text_size = 3,
@@ -134,7 +127,7 @@ make_table <- function(
       subtitle = gt::md(subtitle)
     ) |> 
     gt::tab_source_note(
-      source_note = gt::md('***Updated**: 2023-04-01.*')
+      source_note = gt::md(caption)
     )
   
   gt::gtsave(
@@ -151,6 +144,7 @@ make_table(
   filename = 'biggest_negative_top100_538_diffs',
   title = 'Battle of the club rankings',
   subtitle = glue::glue('Biggest club ranking differences where {label_538} rank is more **bullish** than {label_opta}'),
+  caption = '***Criteria**: Limited to teams that Opta has ranked in its top 100.*',
   width = 50,
   rng_val = c(1, 250),
   vheight = 1100,
@@ -161,7 +155,8 @@ make_table(
   biggest_positive_top100_opta_diffs,
   filename = 'biggest_positive_top100_opta_diffs',
   title = 'Battle of the club rankings',
-  subtitle = glue::glue('Biggest club ranking differences where {label_opta} rank is more **bullish** than {label_538}'),
+  subtitle = glue::glue('Biggest club ranking differences where {label_opta} is more **bullish** than {label_538}'),
+  caption = '***Criteria**: Limited to teams that Opta has ranked in its top 100.*',
   width = 50,
   rng_val = c(1, 210),
   vheight = 1100,
