@@ -22,26 +22,27 @@ biggest_positive_top100_538_diffs <- compared_latest_rankings |>
   arrange(desc(drank)) |> 
   slice_max(drank, n = 10, with_ties = FALSE)
 
-# biggest_negative_top100_538_diffs <- compared_latest_rankings |> 
-#   filter(
-#     rank_538 <= 100
-#   ) |> 
-#   arrange(drank) |> 
-#   slice_min(drank, n = 10, with_ties = FALSE)
-# 
-# biggest_positive_top100_opta_diffs <- compared_latest_rankings |> 
-#   filter(
-#     rank_opta <= 100
-#   ) |> 
-#   arrange(desc(drank)) |> 
-#   slice_max(drank, n = 10, with_ties = FALSE)
-# 
-# biggest_negative_top100_opta_diffs <- compared_latest_rankings |> 
-#   filter(
-#     rank_opta <= 100
-#   ) |> 
-#   arrange(drank) |> 
-#   slice_min(drank, n = 10, with_ties = FALSE)
+biggest_negative_top100_538_diffs <- compared_latest_rankings |>
+  filter(
+    rank_538 <= 100
+  ) |>
+  arrange(drank) |>
+  slice_min(drank, n = 10, with_ties = FALSE)
+
+biggest_positive_top100_opta_diffs <- compared_latest_rankings |>
+  filter(
+    rank_opta <= 100
+  ) |>
+  arrange(desc(drank)) |>
+  slice_max(drank, n = 10, with_ties = FALSE)
+
+biggest_negative_top100_opta_diffs <- compared_latest_rankings |>
+  filter(
+    rank_opta <= 100
+  ) |>
+  arrange(drank) |>
+  slice_min(drank, n = 10, with_ties = FALSE)
+
 palette <- c(
   '538' = '#ED713B',
   'Opta' = '#7B1582' # '#00ADEF'
@@ -146,12 +147,23 @@ make_table <- function(
 }
 
 make_table(
-  biggest_positive_top100_538_diffs,
-  filename = 'biggest_positive_top100_538_diffs',
-  title = 'Club ranking differences',
-  subtitle = glue::glue('Biggest deviations where {label_opta} rank is **lower** than {label_538}'),
+  biggest_negative_top100_538_diffs,
+  filename = 'biggest_negative_top100_538_diffs',
+  title = 'Battle of the club rankings',
+  subtitle = glue::glue('Biggest club ranking differences where {label_538} rank is more **bullish** than {label_opta}'),
   width = 50,
-  rng_val = c(1, 110),
+  rng_val = c(1, 250),
+  vheight = 1100,
+  vwidth = 550
+)
+
+make_table(
+  biggest_positive_top100_opta_diffs,
+  filename = 'biggest_positive_top100_opta_diffs',
+  title = 'Battle of the club rankings',
+  subtitle = glue::glue('Biggest club ranking differences where {label_opta} rank is more **bullish** than {label_538}'),
+  width = 50,
+  rng_val = c(1, 210),
   vheight = 1100,
   vwidth = 550
 )
@@ -170,3 +182,9 @@ compared_latest_rankings |>
     rng_val = c(1, 150),
     vheight = 1100
   )
+
+compared_latest_rankings |> 
+  filter(
+    league_538 == 'Barclays Premier League'
+  ) |>
+  arrange(rank_538)

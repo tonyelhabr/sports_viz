@@ -219,7 +219,7 @@ gt_plt_dumbbell_custom <- function(
       source_notes.border.lr.style = "none",
       table.font.size = 14,
       heading.title.font.size = 18,
-      heading.subtitle.font.size = 16,
+      heading.subtitle.font.size = 14,
       heading.align = "left",
       heading.padding = gt::px(0),
       ...
