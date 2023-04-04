@@ -5,10 +5,8 @@ library(gtExtras)
 library(glue)
 
 proj_dir <- '66-compare_club_rankings'
-source(file.path(proj_dir, 'helpers.R'))
-
-compared_rankings <- generate_club_rankings_url('compared') |> 
-  read_csv()
+source(file.path(proj_dir, 'helpers.R'))]
+source(file.path(proj_dir, 'gt.R'))
 
 opta_rankings <- generate_club_rankings_url('opta-club') |> 
   read_csv() |> 
@@ -18,7 +16,7 @@ opta_rankings <- generate_club_rankings_url('opta-club') |>
 
 top_opta_not_in_538 <- opta_rankings |> 
   anti_join(
-    compared_rankings,
+    compared_latest_rankings,
     by = join_by(date, id == id_opta)
   ) |> 
   arrange(rank) |> 
@@ -44,7 +42,7 @@ tb_top_opta_not_in_538 <- top_opta_not_in_538 |>
     team,
     rank
   ) |> 
-  gt() |> 
+  gt::gt() |> 
   .gt_theme_538() |> 
   gt::cols_label(
     logo_url = '',
@@ -67,7 +65,7 @@ tb_top_opta_not_in_538 <- top_opta_not_in_538 |>
     }
   ) |>
   gt::tab_header(
-    title = gt::md(glue::glue('**538 hates small nations?**')),
+    title = gt::md('**538 hates small nations?**'),
     subtitle = gt::md(glue::glue("Highest ranked teams in {label_opta}'s club rankings<br/>that are not in {label_538}'s rankings"))
   ) |> 
   gt::tab_source_note(

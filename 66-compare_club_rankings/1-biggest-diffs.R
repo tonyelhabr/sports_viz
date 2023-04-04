@@ -8,20 +8,6 @@ proj_dir <- '66-compare_club_rankings'
 source(file.path(proj_dir, 'helpers.R'))
 source(file.path(proj_dir, 'gt.R'))
 
-compared_rankings <- generate_club_rankings_url('compared') |> 
-  read_csv() |> 
-  filter(date == .env$club_rankings_date) |> 
-  mutate(
-    across(league_538, ~coalesce(league_alternative, .x))
-  ) |> 
-  select(-league_alternative) |> 
-  mutate(
-    drank = rank_538 - rank_opta
-  )
-
-compared_latest_rankings <- compared_rankings |> 
-  slice_max(date, n = 1, with_ties = TRUE)
-
 biggest_positive_top100_538_diffs <- compared_latest_rankings |> 
   filter(
     rank_538 <= 100
@@ -76,7 +62,7 @@ make_table <- function(
   }
   
   tb <- df |> 
-    gt() |> 
+    gt::gt() |> 
     .gt_theme_538() |> 
     gt::cols_label(
       logo_url = '',
@@ -179,24 +165,3 @@ make_table(
   vheight = 1100,
   vwidth = 550
 )
-
-compared_latest_rankings |> 
-  filter(
-    league_538 == 'Barclays Premier League'
-  ) |>
-  arrange(rank_538) |> 
-  make_table(
-    filename = 'epl',
-    include_league = FALSE,
-    title = 'English Premier League club rankings',
-    subtitle = glue::glue('Comparison of {label_538} and {label_opta} club rankings'),
-    width = 70,
-    rng_val = c(1, 150),
-    vheight = 1100
-  )
-
-compared_latest_rankings |> 
-  filter(
-    league_538 == 'Barclays Premier League'
-  ) |>
-  arrange(rank_538)
