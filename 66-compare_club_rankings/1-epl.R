@@ -9,8 +9,7 @@ proj_dir <- '66-compare_club_rankings'
 source(file.path(proj_dir, 'helpers.R'))
 source(file.path(proj_dir, 'gt.R'))
 
-
-epl_table <- fotmob_get_league_tables(league_id = 47, season = '2022/2023')
+epl_table <- worldfootballR::fotmob_get_league_tables(league_id = 47, season = '2022/2023')
 
 overall_epl_table <- epl_table |> 
   filter(table_type == 'all')
@@ -38,17 +37,19 @@ tb_epl <- compared_epl_rankings |>
   ) |> 
   arrange(table_idx) |> 
   transmute(
+    rank = row_number(),
     league_538 = '',
     logo_url = generate_logo_url(id_opta),
     team_538,
     table_pts,
-    rank_538,
-    rank_opta,
-    drank
+    rank_538 = row_number(rank_538),
+    rank_opta = row_number(rank_opta),
+    drank = rank_538 - rank_opta
   ) |> 
   gt::gt() |> 
   .gt_theme_538() |> 
   gt::cols_label(
+    rank = '',
     logo_url = '',
     team_538 = '',
     table_pts = 'Pts',
@@ -83,18 +84,22 @@ tb_epl <- compared_epl_rankings |>
     }
   )  |>
   gt::tab_header(
-    title = gt::md('**Opta is not as bullish on the EPL as 538**'),
-    subtitle = gt::md(glue::glue("English Premier League club rankings, according to {label_538} and {label_opta}"))
+    # title = gt::md('**Opta is not as bullish on the EPL as 538**'),
+    # subtitle = gt::md(glue::glue("English Premier League club rankings, according to {label_538} and {label_opta}"))
+    title = gt::md('**English Premier League**'),
+    subtitle = gt::md(glue::glue('EPL club rankings, according to {label_538} and {label_opta}'))
   ) |> 
   gt::tab_source_note(
     source_note = gt::md(baseline_caption)
   )
 tb_epl
 
+path_epl <- file.path(proj_dir, 'epl.png')
 gt::gtsave(
   tb_epl,
-  filename = file.path(proj_dir, 'epl.png'),
+  filename = path_epl,
   vheight = 1100,
   vwidth = 550,
   zoom = 2
 )
+widen_image(path_epl, ratio = 1.5)

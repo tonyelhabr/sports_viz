@@ -120,13 +120,15 @@ make_table <- function(
       source_note = gt::md(caption)
     )
   
+  path <- file.path(proj_dir, sprintf('%s.png', filename))
   gt::gtsave(
     tb,
-    filename = file.path(proj_dir, sprintf('%s.png', filename)),
+    filename = path,
     vheight = vheight,
     vwidth = vwidth,
     zoom = 2
   )
+  widen_image(path, ratio = 1)
 }
 
 league_brazil <- 'Brasileiro Série A'
@@ -138,7 +140,7 @@ biggest_negative_top100_538_diffs |>
       league_538,
       ~ifelse(
         .x == league_brazil,
-        label_brasil,
+        label_brazil,
         .x
       )
     )

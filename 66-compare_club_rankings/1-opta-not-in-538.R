@@ -5,7 +5,7 @@ library(gtExtras)
 library(glue)
 
 proj_dir <- '66-compare_club_rankings'
-source(file.path(proj_dir, 'helpers.R'))]
+source(file.path(proj_dir, 'helpers.R'))
 source(file.path(proj_dir, 'gt.R'))
 
 opta_rankings <- generate_club_rankings_url('opta-club') |> 
@@ -71,12 +71,15 @@ tb_top_opta_not_in_538 <- top_opta_not_in_538 |>
   gt::tab_source_note(
     source_note = gt::md(baseline_caption)
   )
+tb_top_opta_not_in_538
 
+path_top_opta_not_in_538 <- file.path(proj_dir, 'top_opta_not_in_538.png')
 gt::gtsave(
   tb_top_opta_not_in_538,
-  filename = file.path(proj_dir, 'top_opta_not_in_538.png'),
+  filename = path_top_opta_not_in_538,
   vheight = 1100,
   vwidth = 550,
   zoom = 2
 )
+widen_image(path_top_opta_not_in_538, ratio = 1)
 
