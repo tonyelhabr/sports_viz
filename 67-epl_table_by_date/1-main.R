@@ -18,8 +18,7 @@ clean_epl_matches <- raw_epl_matches |>
   unnest_wider(c(home, away, status), names_sep = '_') |> 
   filter(status_finished, !status_cancelled) |> 
   transmute(
-    matchweek = round,
-    # across(matchweek, ~na_if(.x, 7L)), ## the queen
+    # across(gp, ~na_if(.x, 7L)), ## the queen
     date = date(status_utcTime),
     rn = row_number(status_utcTime),
     home_id = home_id,
@@ -49,44 +48,35 @@ clean_epl_matches |> filter(is.na(home_pts))
 
 long_epl_matches <- bind_rows(
   clean_epl_matches |>
-    select(matchweek, date, rn, starts_with('home'), g_conceded = away_g) |> 
+    select(date, rn, starts_with('home'), g_conceded = away_g) |> 
     rename_with(~str_remove(.x, 'home_'), starts_with('home')) |> 
     mutate(side = 'home'),
   clean_epl_matches |>
-    select(matchweek, date, rn, starts_with('away'), g_conceded = home_g) |> 
+    select(date, rn, starts_with('away'), g_conceded = home_g) |> 
     rename_with(~str_remove(.x, 'away_'), starts_with('away')) |> 
     mutate(side = 'away')
 ) |> 
+  group_by(name) |> 
+  mutate(
+    gp = row_number(date),
+    .before = 1
+  ) |> 
+  ungroup() |> 
   mutate(
     gd = g - g_conceded
   )
-long_epl_matches |> filter(is.na(pts))
-long_epl_matches |> 
-  arrange(rn)|> 
-  group_by(name) |> 
-  mutate(
-    across(
-      c(matchweek, date, rn),
-      list(
-        lag1 = lag,
-        lead1 = lead
-      )
-    )
-  ) |> 
-  filter(matchweek < matchweek_lag1) |> 
-  ungroup()
 
 cumu_epl_matches <- long_epl_matches |> 
   arrange(rn) |> 
   group_by(name) |> 
   mutate(
     across(
-      matchweek,
+      gp,
       ## e.g. postponed matches due to the queen's passing
       ~ifelse(
-        matchweek < lag(matchweek, default = 0),
-        lag(matchweek),
-        matchweek
+        gp < lag(gp, default = 0),
+        lag(gp),
+        gp
       )
     ),
     across(
@@ -126,18 +116,27 @@ get_table_by <- function(df, ...) {
     arrange(..., rank)
 }
 
-cumu_epl_table_by_matchweek <- cumu_epl_matches |> get_table_by(matchweek)
-# cumu_epl_table_by_matchweek |> count(matchweek, rank) |> filter(n > 1)
-# cumu_epl_table_by_matchweek |> filter(matchweek == 1L)
-cumu_epl_table_by_date <- cumu_epl_matches |> get_table_by(date)
+cumu_epl_table_by_gp <- cumu_epl_matches |> get_table_by(gp)
+range(cumu_epl_matches$date)
+cumu_epl_table_by_date <- cumu_epl_matches |> 
+  complete(
+    date = seq.Date(min(cumu_epl_matches$date), max(cumu_epl_matches$date), by = 'day'),
+    name = unique(cumu_epl_matches$name)
+  ) |> 
+  group_by(name) |> 
+  fill(g, g_conceded, gd, pts, starts_with('cumu'), .direction = 'down') |> 
+  ungroup() |> 
+  mutate(
+    across(c(g, g_conceded, gd, pts, starts_with('cumu')), \(x) replace_na(x, 0))
+  ) |> 
+  get_table_by(date)
 # cumu_epl_table_by_date |> arrange(date, rank)
+cumu_epl_table_by_date |> filter(date == first(date))
 
 summarize_props <- function(df) {
   df |> 
-    filter(matchweek > 3) |> 
     group_by(name) |> 
     summarize(
-      n = n(),
       prop_top4 = sum(rank <= 4) / n(),
       prop_top6 = sum(rank <= 6) / n(),
       prop_bot3 = sum(rank >= 18) / n()
@@ -145,9 +144,54 @@ summarize_props <- function(df) {
     ungroup()
 }
 
-cumu_epl_prop_by_matchweek <- cumu_epl_table_by_matchweek |> summarize_props()
-cumu_epl_prop_by_date <- cumu_epl_table_by_date |> summarize_props()
+cumu_epl_prop_by_gp <- cumu_epl_table_by_gp |> 
+  filter(gp > 3) |>
+  summarize_props()
 
-inner_join(
-  cumu_epl_prop_by_matchweek |> select()
+cumu_epl_prop_by_date <- cumu_epl_table_by_date |> 
+  filter(date >= '2022-08-22') |> 
+  summarize_props()
+
+cumu_epl_props <- inner_join(
+  cumu_epl_prop_by_gp |> 
+    rename_with(~paste0(.x, '_gps'), -name),
+  cumu_epl_prop_by_date  |> 
+    rename_with(~paste0(.x, '_days'), -name),
+  by = join_by(name)
 )
+
+long_cumu_epl_props <- cumu_epl_props |> 
+  pivot_longer(
+    -name,
+    names_pattern = '(^.*)_(gps|days)',
+    names_to = c('prop_type', 'type'),
+    values_to = 'prop'
+  ) |> 
+  mutate(
+    across(prop_type, ~str_remove(.x, '^prop_'))
+  )
+
+pivoted_cumu_epl_props <- long_cumu_epl_props |> 
+  pivot_wider(
+    names_from = type,
+    values_from = prop
+  ) |> 
+  mutate(
+    d = gps - days
+  )
+
+pivoted_cumu_epl_props |> 
+  group_by(prop_type, with_ties = FALSE) |> 
+  slice_max(d, n = 3) |> 
+  ungroup()
+
+pivoted_cumu_epl_props |> 
+  group_by(prop_type) |> 
+  slice_min(d, n = 3, with_ties = FALSE) |> 
+  ungroup()
+pivoted_cumu_epl_props |> 
+  ggplot() +
+  aes(x = gps, y = (gps - days)) +
+  geom_point(aes(color = prop_type))
+
+cumu_epl_table_by_gp |> filter(name == 'Tottenham', gp >= 19)
