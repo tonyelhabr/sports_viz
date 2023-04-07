@@ -218,7 +218,7 @@ gt_plt_dumbbell2_custom <- function(
       fn = function(x) {
         dumbbell_fx <- function(col1_vals, col2_vals, ref_vals, text_args, text_size) {
           all_df_in_vals <- c(col1_vals, col2_vals, ref_vals)
-          
+
           if (any(is.na(all_df_in_vals)) | any(is.null(all_df_in_vals))) {
             return("<div></div>")
           }
@@ -237,7 +237,7 @@ gt_plt_dumbbell2_custom <- function(
             ggplot(aes(y = "y1")) +
             geom_segment(
               data = df_vals1,
-              aes(x = x1, xend = x2, yend = "y1"),
+              aes(x = pmin(x1, x2, r), xend = pmax(x1, x2, r), yend = "y1"),
               linewidth = 1.5,
               color = palette[4]
             ) +
@@ -284,7 +284,7 @@ gt_plt_dumbbell2_custom <- function(
                 label = do.call(scales::label_number, text_args)(x1),
               ),
               # TODO: revisit horizontal adjustment
-              hjust = hjust_val[[1]],
+              # hjust = hjust_val[[1]],
               family = text_font, # "mono"
               color = palette[1],
               size = text_size,
@@ -297,7 +297,7 @@ gt_plt_dumbbell2_custom <- function(
                 label = do.call(scales::label_number, text_args)(x2),
               ),
               # TODO: revisit horizontal adjustment
-              hjust = hjust_val[[2]],
+              # hjust = hjust_val[[2]],
               family = text_font, # "mono"
               color = palette[2],
               size = text_size
@@ -309,7 +309,7 @@ gt_plt_dumbbell2_custom <- function(
                 label = do.call(scales::label_number, text_args)(x1),
               ),
               # TODO: revisit horizontal adjustment
-              hjust = 0.5,
+              # hjust = 0.5,
               family = text_font, # "mono"
               color = palette[5],
               size = text_size,
@@ -318,7 +318,7 @@ gt_plt_dumbbell2_custom <- function(
               data = df_vals,
               aes(
                 x = r, y = 1.05,
-                label = do.call(scales::label_number, text_args)(x1),
+                label = do.call(scales::label_number, text_args)(r),
               ),
               # TODO: revisit horizontal adjustment
               hjust = 0.5,
@@ -353,7 +353,8 @@ gt_plt_dumbbell2_custom <- function(
       }
     ) %>%
     gt::cols_align(align = "left", columns = {{ col1 }}) %>%
-    gt::cols_hide({{ col2 }})
+    gt::cols_hide({{ col2 }}) %>%
+    gt::cols_hide({{ ref }})
   
   if(!is.null(label)){
     
@@ -412,11 +413,14 @@ gt_plt_dumbbell2_custom <- function(
       heading.subtitle.font.size = 14,
       heading.align = "left",
       heading.padding = gt::px(0),
+      footnotes.padding = gt::px(0),
+      footnotes.font.size = 12,
+      table_body.border.bottom.color = 'black',
       ...
     ) |>
     opt_css(
-      "tbody tr:last-child {
-        border-bottom: 2px solid #ffffff00;
+      ".gt_title {
+        line-height: 1em;
       }
     ",
     add = TRUE

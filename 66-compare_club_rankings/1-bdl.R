@@ -49,54 +49,30 @@ tb_bdl <- compared_bdl_rankings |>
   ) |> 
   arrange(table_idx) |> 
   transmute(
-    rank = row_number(),
+    # rank = row_number(),
     league_538 = '',
     logo_url = generate_logo_url(id_opta),
     team_538,
     table_pts,
+    table_idx,
     rank_538 = row_number(rank_538),
-    drank_538 = rank - rank_538,
-    rank_opta = row_number(rank_opta),
-    drank_opta = rank - rank_opta
+    rank_opta = row_number(rank_opta), # 
+    # rank_538_dummy = rank_538,
+    # rank_opta_dummy = rank_opta
   ) |> 
   gt::gt() |> 
   .gt_theme_538() |> 
   gt::cols_label(
-    rank = '',
     logo_url = '',
     team_538 = '',
-    table_pts = 'Pts',
-    rank_538 = gt::md('Rank'),
-    drank_538 = gt::html('<b>&#916</b>'),
-    rank_opta = gt::md('Rank'),
-    drank_opta = gt::html('<b>&#916</b>')
-  ) |> 
-  gt::tab_spanner(
-    label = gt::md(label_538),
-    columns = c(rank_538, drank_538)
-  ) |> 
-  gt::tab_spanner(
-    label = gt::md(label_opta),
-    columns = c(rank_opta, drank_opta)
+    table_pts = gt::md('**Pts**'),
+    rank_538 = gt::md(glue::glue('**Standing** vs. {label_opta} and {label_538} Ranks'))
   ) |> 
   gtExtras::gt_merge_stack(
     team_538,
     league_538, 
     palette = c('black', 'grey50'),
     font_weight = c('bold', 'normal')
-  ) |> 
-  gtExtras::gt_fa_rank_change(
-    drank_538, 
-    # palette = c("#1b7837", "lightgrey", "#762a83"),
-    palette = c("#1b7837", "lightgrey", "#ca0020"),
-    fa_type = 'angles',
-    font_color = 'match'
-  ) |> 
-  gtExtras::gt_fa_rank_change(
-    drank_opta, 
-    palette = c("#1b7837", "lightgrey", "#ca0020"),
-    fa_type = 'angles',
-    font_color = 'match'
   ) |> 
   gt::text_transform(
     locations = gt::cells_body(columns = logo_url),
@@ -107,14 +83,23 @@ tb_bdl <- compared_bdl_rankings |>
       )
     }
   )  |>
+  gt_plt_dumbbell2_custom(
+    rank_538,
+    rank_opta,
+    table_idx,
+    palette = c(unname(club_rankings_palette), 'black', '#D3D3D3', 'grey50'),
+    # club_rankings_palette = c("#ED713B", "#7B1582", '#000', '#D3D3D3', '#7f7f7f'),
+    text_font = 'Titillium Web',
+    text_size = 3,
+    width = 70,
+    rng_val = c(0, 19),
+  ) |> 
   gt::tab_header(
-    # title = gt::md('**Opta is not as bullish on the EPL as 538**'),
-    # subtitle = gt::md(glue::glue("English Premier League club rankings, according to {label_538} and {label_opta}"))
-    title = gt::md('**German Bundesliga**'),
-    subtitle = gt::md(glue::glue('Bundesliga club rankings, according to {label_538} and {label_opta}'))
+    title = gt::md('**Bundesliga standings and club rankings**'),
+    subtitle = gt::md(glue::glue("{label_opta}'s ranks tend to be closer to the standings than {label_538}'s"))
   ) |> 
   gt::tab_source_note(
-    source_note = gt::md(baseline_caption)
+    source_note = gt::md(paste0('*Source ranks normalized to the league.*<br/>', baseline_caption))
   )
 tb_bdl
 

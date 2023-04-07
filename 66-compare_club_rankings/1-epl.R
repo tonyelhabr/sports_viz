@@ -63,13 +63,13 @@ tb_epl <- compared_epl_rankings |>
   gtExtras::gt_merge_stack(
     team_538,
     league_538, 
-    palette = c('black', 'grey50'),
+    club_rankings_palette = c('black', 'grey50'),
     font_weight = c('bold', 'normal')
   ) |> 
   gtExtras::gt_fa_rank_change(
     drank, 
-    # palette = c("#1b7837", "lightgrey", "#762a83"),
-    palette = c("#1b7837", "lightgrey", "#ca0020"),
+    # club_rankings_palette = c("#1b7837", "lightgrey", "#762a83"),
+    club_rankings_palette = c("#1b7837", "lightgrey", "#ca0020"),
     fa_type = 'angles',
     font_color = 'match'
   ) |> 

@@ -47,7 +47,7 @@ tb_top_opta_not_in_538 <- top_opta_not_in_538 |>
   gt::cols_label(
     logo_url = '',
     team = '',
-    rank = 'Rank'
+    rank = gt::md('**Rank**')
   ) |> 
   gtExtras::gt_merge_stack(
     team,

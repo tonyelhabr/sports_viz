@@ -3,7 +3,7 @@ library(readr)
 library(glue)
 library(magick)
 
-club_rankings_date <- '2023-04-04 (morning)'
+club_rankings_date <- sprintf('%s (morning)', Sys.Date())
 baseline_caption <- sprintf('***Updated**: %s.*', club_rankings_date)
 generate_club_rankings_url <- function(x) {
   sprintf(
@@ -16,13 +16,13 @@ generate_logo_url <- function(id) {
   sprintf('https://omo.akamai.opta.net/image.php?secure=true&h=omo.akamai.opta.net&sport=football&entity=team&description=badges&dimensions=150&id=%s', id)
 }
 
-palette <- c(
+club_rankings_palette <- c(
   '538' = '#ED713B',
   'Opta' = '#7B1582' # '#00ADEF'
 )
 
-label_538 <- glue::glue('<b><span style="color:{palette[["538"]]}">538</span></b>')
-label_opta <- glue::glue('<b><span style="color:{palette[["Opta"]]}">Opta</span></b>')
+label_538 <- glue::glue('<b><span style="color:{club_rankings_palette[["538"]]}">538</span></b>')
+label_opta <- glue::glue('<b><span style="color:{club_rankings_palette[["Opta"]]}">Opta</span></b>')
 
 compared_rankings <- generate_club_rankings_url('compared') |> 
   read_csv() |> 

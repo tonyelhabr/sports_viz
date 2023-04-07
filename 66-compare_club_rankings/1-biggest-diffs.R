@@ -89,7 +89,7 @@ make_table <- function(
   
   init_caption <- baseline_caption
   caption <- if (!is.null(caption)) {
-    paste0(init_caption, '<br/>', caption)
+    paste0(caption, '<br/>', init_caption)
   } else {
     init_caption
   }
@@ -107,7 +107,7 @@ make_table <- function(
     gt_plt_dumbbell_custom(
       rank_538,
       rank_opta,
-      palette = c(unname(palette), '#D3D3D3', 'grey50'),
+      palette = c(unname(club_rankings_palette), '#D3D3D3', 'grey50'),
       text_font = 'Titillium Web',
       text_size = 3,
       ...
@@ -151,7 +151,7 @@ biggest_negative_top100_538_diffs |>
     subtitle = glue::glue('Biggest club ranking differences where {label_538} is more bullish than {label_opta}'),
     caption = '***Criteria**: Limited to teams that 538 has ranked in its top 100.*',
     width = 50,
-    rng_val = c(1, 250),
+    rng_val = c(1, 200),
     vheight = 1100,
     vwidth = 550
   )
@@ -163,7 +163,7 @@ make_table(
   subtitle = glue::glue('Biggest club ranking differences where {label_opta} is more bullish than {label_538}'),
   caption = '***Criteria**: Limited to teams that Opta has ranked in its top 100.*',
   width = 50,
-  rng_val = c(1, 210),
+  rng_val = c(1, 200),
   vheight = 1100,
   vwidth = 550
 )
