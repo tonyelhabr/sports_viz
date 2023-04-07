@@ -2,6 +2,18 @@ This repo stores my code and plots for sports-related plots. Any "small" data is
 
 The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I scraped.
 
+# 66. Club ranking comparison
+
+![](66-compare_club_rankings/biggest_negative_top100_538_diffs.png "538 loves Brasileiro Série A | Biggest club ranking differences where 538 is more bullish than Opta")
+
+![](66-compare_club_rankings/biggest_positive_top100_opta_diffs.png "Opta is higher on teams in less known leagues | Biggest club ranking differences where Opta is more bullish than 538")
+
+![](66-compare_club_rankings/top_opta_not_in_538.png "538 hates small nations? | Highest ranked teams in Opta's club rankings that are not in 538's rankings")
+
+![](66-compare_club_rankings/big5.png "How similar are the current standings and club rankings for the Big 5 leagues? | Opta's ranks tend to be closer to the standings than 538's")
+
+![](66-compare_club_rankings/bdl.png "Bundesliga standings and club rankings | Opta's ranks tend to be closer to the standings than 538's")
+
 # 65. Opta npxG model calibration
 
 ![](65-opta_xg_calib/old_vs_new_xg.png "Comparison of Opta non-penalty expected goals (npxG) | Pre- and post-FBref update (2023-02-08) for Big 5 leagues, 2021/22 season")
