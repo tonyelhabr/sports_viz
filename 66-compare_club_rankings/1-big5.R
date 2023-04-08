@@ -17,6 +17,7 @@ league_id_mapping <- c(
   '55' = 'ITA',
   '87' = 'ESP'
 )
+
 big5_tables <- worldfootballR::fotmob_get_league_tables(
   league_id = names(league_id_mapping),
   season = '2022/2023'
@@ -170,11 +171,11 @@ tb_big5 <- agg_big5_rankings |>
     id = 'mad'
   ) |> 
   gt::tab_footnote(
-    footnote = 'Spearman correlation of rankings with actual standings',
+    footnote = gt::html('<i>Spearman correlation of rankings with actual standings (higher &#8594; closer)</i>'),
     location = gt::cells_column_spanners('cor')
   ) |> 
   gt::tab_footnote(
-    footnote = 'Mean absolute deviation (MAD) with actual standings',
+    footnote = gt::html('<i>Mean absolute deviation (MAD) with actual standings (smaller &#8594; closer)</i>'),
     location = gt::cells_column_spanners('mad')
   ) |> 
   gt::tab_header(
@@ -182,7 +183,7 @@ tb_big5 <- agg_big5_rankings |>
     subtitle = gt::md(glue::glue("{label_opta}'s ranks tend to be closer to the standings than {label_538}'s"))
   ) |> 
   gt::tab_source_note(
-    source_note = gt::md(paste0('*Source ranks normalized to the league.*<br/>*', baseline_caption))
+    source_note = gt::md(paste0('*Source ranks normalized to the league.*<br/>', baseline_caption))
   )
 tb_big5
 

@@ -3,8 +3,6 @@ library(readr)
 library(glue)
 library(magick)
 
-club_rankings_date <- sprintf('%s (morning)', Sys.Date())
-baseline_caption <- sprintf('***Updated**: %s.*', club_rankings_date)
 generate_club_rankings_url <- function(x) {
   sprintf(
     'https://github.com/tonyelhabr/club-rankings/releases/download/club-rankings/%s-rankings.csv',
@@ -35,7 +33,11 @@ compared_rankings <- generate_club_rankings_url('compared') |>
   )
 
 compared_latest_rankings <- compared_rankings |> 
-  filter(date == .env$club_rankings_date)
+  # filter(date == .env$club_rankings_date)
+  slice_max(date, n = 1, with_ties = TRUE)
+
+club_rankings_date <- sprintf('%s (morning)', compared_latest_rankings$date[1])
+baseline_caption <- sprintf('*Updated at %s.*', club_rankings_date)
 
 widen_image <- function(path, ratio = NULL, ratio_resolution = 0.25, height_resolution = 100) {
   img <- magick::image_read(path)
