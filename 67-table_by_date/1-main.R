@@ -1,11 +1,11 @@
-library(readr)
+library(worldfootballR)
 library(dplyr)
 library(tidyr)
-library(worldfootballR)
 library(stringr)
 library(lubridate)
+library(qs)
 
-proj_dir <- '66-compare_club_rankings'
+proj_dir <- '67-table_by_date'
 
 raw_epl_matches <- worldfootballR::fotmob_get_league_matches(
   league_id = 47,
@@ -124,74 +124,12 @@ cumu_epl_table_by_date <- cumu_epl_matches |>
     name = unique(cumu_epl_matches$name)
   ) |> 
   group_by(name) |> 
-  fill(g, g_conceded, gd, pts, starts_with('cumu'), .direction = 'down') |> 
+  fill(gp, g, g_conceded, gd, pts, starts_with('cumu'), .direction = 'down') |> 
   ungroup() |> 
   mutate(
-    across(c(g, g_conceded, gd, pts, starts_with('cumu')), \(x) replace_na(x, 0))
+    across(c(gp, g, g_conceded, gd, pts, starts_with('cumu')), \(x) replace_na(x, 0))
   ) |> 
   get_table_by(date)
-# cumu_epl_table_by_date |> arrange(date, rank)
-cumu_epl_table_by_date |> filter(date == first(date))
 
-summarize_props <- function(df) {
-  df |> 
-    group_by(name) |> 
-    summarize(
-      prop_top4 = sum(rank <= 4) / n(),
-      prop_top6 = sum(rank <= 6) / n(),
-      prop_bot3 = sum(rank >= 18) / n()
-    ) |> 
-    ungroup()
-}
-
-cumu_epl_prop_by_gp <- cumu_epl_table_by_gp |> 
-  filter(gp > 3) |>
-  summarize_props()
-
-cumu_epl_prop_by_date <- cumu_epl_table_by_date |> 
-  filter(date >= '2022-08-22') |> 
-  summarize_props()
-
-cumu_epl_props <- inner_join(
-  cumu_epl_prop_by_gp |> 
-    rename_with(~paste0(.x, '_gps'), -name),
-  cumu_epl_prop_by_date  |> 
-    rename_with(~paste0(.x, '_days'), -name),
-  by = join_by(name)
-)
-
-long_cumu_epl_props <- cumu_epl_props |> 
-  pivot_longer(
-    -name,
-    names_pattern = '(^.*)_(gps|days)',
-    names_to = c('prop_type', 'type'),
-    values_to = 'prop'
-  ) |> 
-  mutate(
-    across(prop_type, ~str_remove(.x, '^prop_'))
-  )
-
-pivoted_cumu_epl_props <- long_cumu_epl_props |> 
-  pivot_wider(
-    names_from = type,
-    values_from = prop
-  ) |> 
-  mutate(
-    d = gps - days
-  )
-
-pivoted_cumu_epl_props |> 
-  group_by(prop_type, with_ties = FALSE) |> 
-  slice_max(d, n = 3) |> 
-  ungroup()
-
-pivoted_cumu_epl_props |> 
-  group_by(prop_type) |> 
-  slice_min(d, n = 3, with_ties = FALSE) |> 
-  ungroup()
-pivoted_cumu_epl_props |> 
-  ggplot() +
-  aes(x = gps, y = (gps - days)) +
-  geom_point(aes(color = prop_type))
-
-cumu_epl_table_by_gp |> filter(name == 'Tottenham', gp >= 19)
+qs::qsave(cumu_epl_table_by_gp, file.path(proj_dir, 'cumu_epl_table_by_gp.qs'))
+qs::qsave(cumu_epl_table_by_date, file.path(proj_dir, 'cumu_epl_table_by_date.qs'))
