@@ -1,8 +1,10 @@
 library(worldfootballR)  ## version: 0.5.12.5000
 library(dplyr)
 library(lubridate)
+library(tidyr)
+library(qs)
 
-dir_proj <- '59-xg_xpoints'
+proj_dir <- '68-opta_xg_calib_by_gamestate'
 
 rename_home_away_teams <- function(df) {
   df |> 
@@ -60,12 +62,12 @@ shots <- raw_shots |>
     ),
     ## some shots with NAs for some reason
     home_xg = case_when(
-      event_type == 'Goal' & is_home ~ coalesce(expected_goals, 0),
+      is_home ~ coalesce(expected_goals, 0),
       is_own_goal & !is_home ~ coalesce(expected_goals, 0),
       TRUE ~ 0L
     ),
     away_xg = case_when(
-      event_type == 'Goal' & !is_home ~ coalesce(expected_goals, 0),
+      !is_home ~ coalesce(expected_goals, 0),
       is_own_goal & is_home ~ coalesce(expected_goals, 0),
       TRUE ~ 0L
     )
@@ -78,9 +80,6 @@ shots <- raw_shots |>
   ungroup() |> 
   arrange(season, date, shot_idx)
 
-df <- shots |> 
-  filter(match_id == 3411340) 
-df
 restacked_shots <- bind_rows(
   shots |> 
     filter(is_home) |> 
@@ -143,5 +142,7 @@ cumu_doublecounted_restacked_shots <- doublecounted_restacked_shots |>
   ) |> 
   ungroup() |> 
   mutate(
+    is_goal = factor(ifelse(g == 1L, 'yes', 'no')),
     g_state = g_cumu - g_conceded_cumu
   )
+qs::qsave(cumu_doublecounted_restacked_shots, file.path(proj_dir, 'shots.qs'))

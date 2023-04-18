@@ -1,0 +1,185 @@
+library(dplyr)
+library(qs)
+library(probably)
+
+library(ggplot2)
+library(sysfonts)
+library(showtext)
+library(ggtext)
+# library(ggforce)
+library(ragg)
+library(htmltools)
+
+proj_dir <- '68-opta_xg_calib_by_gamestate'
+shots <- qs::qread(file.path(proj_dir, 'shots.qs'))
+np_shots <- shots |> 
+  filter(
+    situation != 'Penalty',
+    pov == 'primary'
+  )
+
+calib_gs1 <- np_shots |> 
+  mutate(
+    g_state = case_when(
+      g_state < -1 ~ '<=-2 goals',
+      g_state > 1 ~ '>=+2 goals',
+      g_state == -1 ~ '-1 goal',
+      g_state == +1 ~ '+1 goal',
+      g_state == 0 ~ 'neutral',
+      TRUE ~ NA_character_
+    ) |> 
+      factor(levels = c('<=-2 goals', '-1 goal', 'neutral', '+1 goal', '>=+2 goals'))
+  ) |> 
+  cal_plot_breaks(
+    truth = is_goal,
+    estimate = xg,
+    group = g_state,
+    num_breaks = 20,
+    conf_level = 0.9,
+    event_level = 'second'
+  )
+
+calib_gs2 <- np_shots |> 
+  mutate(
+    g_state = case_when(
+      g_state <= -1 ~ 'trailing',
+      g_state >= +1 ~ 'leading',
+      g_state == 0 ~ 'neutral',
+      TRUE ~ NA_character_
+    ) |> 
+      factor(levels = c('trailing', 'neutral', 'leading'))
+  ) |> 
+  cal_plot_breaks(
+    truth = is_goal,
+    estimate = xg,
+    group = g_state,
+    num_breaks = 20,
+    conf_level = 0.9,
+    event_level = 'second'
+  )
+
+font <- 'Titillium Web'
+sysfonts::font_add_google(font, font)
+## https://github.com/tashapiro/tanya-data-viz/blob/main/chatgpt-lensa/chatgpt-lensa.R for twitter logo
+sysfonts::font_add('fb', 'Font Awesome 6 Brands-Regular-400.otf')
+showtext::showtext_auto()
+plot_resolution <- 300
+showtext::showtext_opts(dpi = plot_resolution)
+
+blackish_background <- '#1c1c1c'
+  
+theme_set(theme_minimal())
+theme_update(
+  text = element_text(family = font),
+  title = element_text(size = 20, color = 'white'),
+  plot.title = element_text(face = 'bold', size = 20, color = 'white'),
+  plot.title.position = 'plot',
+  plot.subtitle = element_text(size = 16, color = '#f1f1f1'),
+  axis.text = element_text(color = 'white', size = 14),
+  axis.title = element_text(size = 14, color = 'white', face = 'bold', hjust = 0.99),
+  axis.line = element_blank(),
+  strip.text = element_text(size = 14, color = 'white', face = 'bold', hjust = 0),
+  panel.grid.major = element_line(color = '#4d4d4d'),
+  panel.grid.minor = element_line(color = '#4d4d4d'),
+  panel.grid.minor.x = element_blank(),
+  panel.grid.minor.y = element_blank(),
+  plot.margin = margin(10, 20, 10, 20),
+  plot.background = element_rect(fill = blackish_background, color = '#1c1c1c'),
+  plot.caption = element_text(color = 'white', hjust = 0, size = 12, face = 'plain'),
+  plot.caption.position = 'plot',
+  plot.tag = ggtext::element_markdown(size = 12, color = 'white', hjust = 1),
+  plot.tag.position = c(0.99, 0.01),
+  panel.spacing.x = unit(2, 'lines'),
+  panel.background = element_rect(fill = blackish_background, color = '#1c1c1c')
+)
+update_geom_defaults('text', list(color = 'white', size = 12 / .pt))
+## https://github.com/tashapiro/tanya-data-viz/blob/1dfad735bca1a7f335969f0eafc94cf971345075/nba-shot-chart/nba-shots.R#L64
+tag_lab <-tagList(
+  tags$span(HTML(enc2utf8("&#xf099;")), style='font-family:fb'),
+  tags$span("@TonyElHabr"),
+)
+
+plot_and_save_calibration <- function(
+    df,
+    size = 7,
+    width = size, 
+    height = size, 
+    title = NULL,
+    # subtitle = 'Big 5 leagues',
+    subtitle = 'English Premier League, 2020/21 - 2022/23',
+    caption = NULL,
+    filename = tempfile(),
+    labels_layer
+) {
+  
+  group_cols <- setdiff(
+    colnames(df),
+    c('predicted_midpoint', 'event_rate', 'events', 'total', 'lower', 'upper')
+  )
+  
+  has_group_cols <- length(group_cols) > 0
+  
+  p <- df |> 
+    ggplot() +
+    aes(x = predicted_midpoint, y = event_rate) +
+    geom_abline(color = 'white', linetype = 2) +
+    geom_ribbon(
+      fill = '#999999',
+      alpha = 0.5,
+      aes(ymin = lower, ymax = upper)
+    ) +
+    geom_line(color = 'white') +
+    geom_point(
+      color = 'white',
+      aes(size = total),
+      show.legend = FALSE
+    ) +
+    labs(
+      title = paste0(c('Opta npxG calibration', title), collapse = ', by '),
+      subtitle = subtitle,
+      y = 'Actual non-penalty goal rate',
+      x = 'npxG',
+      caption = paste0(c('Point size is proportional to number of observations.', caption), collapse = '\n'),
+      tag = tag_lab
+    )
+  
+  if (isTRUE(has_group_cols)) {
+    p <- p + 
+      theme(
+        panel.grid.major = element_blank(),
+        panel.background = element_rect(color = 'white')
+      ) + 
+      facet_wrap(vars(!!!syms(group_cols)))
+  }
+  
+  # if (!missing(labels_layer)) {
+  #   p <- p + labels_layer
+  # }
+  
+  ggsave(
+    p,
+    device = ragg::agg_png,
+    res = plot_resolution,
+    filename = file.path(proj_dir, sprintf('%s_calibration.png', filename)),
+    width = width * plot_resolution,
+    height = height * plot_resolution,
+    units = 'px'
+  )
+  invisible(p)
+}
+
+calib_gs1$data |> 
+  plot_and_save_calibration(
+    width = 10,
+    height = 10 / 1.5,
+    title = 'game state',
+    filename = 'game_state1'
+  )
+
+calib_gs2$data |> 
+  plot_and_save_calibration(
+    width = 10,
+    height = 5,
+    title = 'game state',
+    filename = 'game_state2'
+  )
