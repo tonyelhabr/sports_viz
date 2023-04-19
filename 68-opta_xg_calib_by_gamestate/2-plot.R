@@ -16,47 +16,43 @@ np_shots <- shots |>
   filter(
     situation != 'Penalty',
     pov == 'primary'
+  ) |> 
+  mutate(
+    .pred_yes = xg,
+    .pred_no = 1 - xg,
+    g_state5 = cut(
+      g_state,
+      breaks = c(-Inf, -2, -1, 0, 1, Inf), 
+      labels = c('<=-2 goals', '-1 goal', 'neutral', '+1 goal', '>=+2 goals')
+    ),
+    g_state3 = cut(
+      g_state,
+      breaks = c(-Inf, -1, 0, Inf), 
+      labels = c('trailing', 'neutral', 'leading')
+    )
   )
 
-calib_gs1 <- np_shots |> 
-  mutate(
-    g_state = case_when(
-      g_state < -1 ~ '<=-2 goals',
-      g_state > 1 ~ '>=+2 goals',
-      g_state == -1 ~ '-1 goal',
-      g_state == +1 ~ '+1 goal',
-      g_state == 0 ~ 'neutral',
-      TRUE ~ NA_character_
-    ) |> 
-      factor(levels = c('<=-2 goals', '-1 goal', 'neutral', '+1 goal', '>=+2 goals'))
-  ) |> 
-  cal_plot_breaks(
-    truth = is_goal,
-    estimate = xg,
-    group = g_state,
-    num_breaks = 20,
-    conf_level = 0.9,
-    event_level = 'second'
-  )
+calibrate_by_g_state <- function(df, group) {
+  df |> 
+    cal_plot_breaks(
+      truth = is_goal,
+      estimate = xg,
+      group = {{ group }},
+      num_breaks = 20,
+      conf_level = 0.9,
+      event_level = 'second'
+    )
+}
 
-calib_gs2 <- np_shots |> 
-  mutate(
-    g_state = case_when(
-      g_state <= -1 ~ 'trailing',
-      g_state >= +1 ~ 'leading',
-      g_state == 0 ~ 'neutral',
-      TRUE ~ NA_character_
-    ) |> 
-      factor(levels = c('trailing', 'neutral', 'leading'))
-  ) |> 
-  cal_plot_breaks(
-    truth = is_goal,
-    estimate = xg,
-    group = g_state,
-    num_breaks = 20,
-    conf_level = 0.9,
-    event_level = 'second'
-  )
+calib_g_state3 <- calibrate_by_g_state(
+  np_shots,
+  g_state3
+)
+
+calib_g_state5 <- calibrate_by_g_state(
+  np_shots,
+  g_state5
+)
 
 font <- 'Titillium Web'
 sysfonts::font_add_google(font, font)
@@ -168,18 +164,51 @@ plot_and_save_calibration <- function(
   invisible(p)
 }
 
-calib_gs1$data |> 
+calib_g_state3$data |> 
   plot_and_save_calibration(
     width = 10,
     height = 10 / 1.5,
     title = 'game state',
-    filename = 'game_state1'
+    filename = 'game_state3'
   )
 
-calib_gs2$data |> 
+calib_g_state5$data |> 
   plot_and_save_calibration(
     width = 10,
     height = 5,
     title = 'game state',
-    filename = 'game_state2'
+    filename = 'game_state5'
   )
+
+# debugonce(probably:::cal_isoreg_impl)
+## estimate must be `.pred_{level1}` and `.pred_{level2}`
+isotonic_model <- np_shots |> 
+  cal_estimate_isotonic(
+    truth = is_goal
+  )
+
+debugonce(probably:::cal_apply)
+new_np_shots <- cal_apply(
+  np_shots,
+  isotonic_model
+)
+
+bind_cols(
+  np_shots |> select(starts_with('.pred')),
+  new_np_shots |> select(starts_with('.pred'))
+)
+np_shots |> 
+  mutate(
+    .pred_adj = predict(isotonic_model, np_shots)
+  )
+
+adj_model <- glm(
+  is_goal ~ g_state + xg,
+  np_shots,
+  family = 'binomial'
+)
+np_shots |> 
+  mutate(
+    .pred_xg = predict(adj_model, np_shots)
+  )
+
