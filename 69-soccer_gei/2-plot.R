@@ -1,14 +1,19 @@
 library(dplyr)
 library(qs)
 library(scales)
+library(lubridate)
+library(stringr)
 
 PROJ_DIR <- '69-soccer_gei'
+matches_path <- file.path(PROJ_DIR, 'matches.qs')
 momentum_path <- file.path(PROJ_DIR, 'momentum.qs')
+match_team_stats_path <- file.path(PROJ_DIR, 'match_team_stats.qs')
 
+matches <- qs::qread(matches_path)
 momentum <- qs::qread(momentum_path)
+match_team_stats <- qs::qread(match_team_stats_path)
 
 ## Reference: https://lukebenz.com/post/gei/
-momentum |> filter(minute > 90) |> count(minute)
 filt_momentum <- momentum |> 
   filter(type == 'main') |> 
   arrange(match_id, minute) |> 
@@ -19,7 +24,7 @@ filt_momentum <- momentum |>
   group_by(match_id) |> 
   mutate(
     max_minute = max(minute),
-    lag_value = dplyr::lag(value, n = 1)
+    lag_value = lag(value, n = 1)
   ) |>
   ungroup() |> 
   filter(minute > 1)
@@ -37,8 +42,40 @@ gei <- filt_momentum |>
   ) |> 
   arrange(desc(gei))
 
-gei |> 
+gei_with_results <- gei |> 
   inner_join(
-    unnested_matches,
+    matches,
     by = join_by(match_id)
+  ) |> 
+  transmute(
+    match_id,
+    match_date = date(match_time),
+    home_team,
+    away_team,
+    gei
   )
+
+
+long_match_team_stats <- match_team_stats |> 
+  mutate(
+    home = home_value |> str_remove('\\(.*$') |> as.numeric(), 
+    away = away_value |> str_remove('\\(.*$') |> as.numeric()
+  ) |> 
+  drop_na(home, away) |> 
+  transmute(
+    match_id, 
+    key, 
+    stats_title, 
+    total = home + away,
+    delta = home - away
+  ) |> 
+  pivot_longer(
+    -c(match_id, key, stats_title),
+    names_to = 'type',
+    values_to = 'value'
+  )
+
+inner_join(
+  gei_with_results,
+  long_match_team_stats
+)
