@@ -48,13 +48,14 @@ gei_with_results <- gei |>
     by = join_by(match_id)
   ) |> 
   transmute(
+    league_id,
+    round,
     match_id,
     match_date = date(match_time),
     home_team,
     away_team,
     gei
   )
-
 
 long_match_team_stats <- match_team_stats |> 
   mutate(
@@ -64,7 +65,7 @@ long_match_team_stats <- match_team_stats |>
   drop_na(home, away) |> 
   transmute(
     match_id, 
-    key, 
+    key, ## need key since some stats_title are replicated across keys
     stats_title, 
     total = home + away,
     delta = home - away
@@ -75,7 +76,32 @@ long_match_team_stats <- match_team_stats |>
     values_to = 'value'
   )
 
+wide_match_team_stats <- long_match_team_stats |> 
+  pivot_wider(
+    names_from = c(key, stats_title, type),
+    values_from = value
+  )
+
 inner_join(
-  gei_with_results,
-  long_match_team_stats
-)
+  gei_with_results |> select(league_id, round, match_id, gei),
+  wide_match_team_stats,
+  by = join_by(match_id)
+) |> 
+  select(gei, )
+
+inner_join(
+  gei |> select(match_id, gei),
+  wide_match_team_stats,
+  by = join_by(match_id)
+) |> 
+  select(-match_id) |> 
+  corrr::correlate() |>
+  filter(term == 'gei') |> 
+  select(-term) |> 
+  pivot_longer(
+    everything(),
+    names_to = 'term',
+    values_to = 'cor'
+  ) |> 
+  # select(-term) |> 
+  arrange(desc(abs(cor)))
