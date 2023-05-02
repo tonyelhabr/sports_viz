@@ -3,6 +3,11 @@ library(qs)
 library(scales)
 library(lubridate)
 library(stringr)
+library(tidyr)
+library(corrr)
+library(janitor)
+library(ggplot2)
+library(forcats)
 
 PROJ_DIR <- '69-soccer_gei'
 matches_path <- file.path(PROJ_DIR, 'matches.qs')
@@ -80,18 +85,12 @@ wide_match_team_stats <- long_match_team_stats |>
   pivot_wider(
     names_from = c(key, stats_title, type),
     values_from = value
-  )
+  ) |> 
+  clean_names()
 
-inner_join(
-  gei_with_results |> select(league_id, round, match_id, gei),
-  wide_match_team_stats,
-  by = join_by(match_id)
-) |> 
-  select(gei, )
-
-inner_join(
+cors <- inner_join(
   gei |> select(match_id, gei),
-  wide_match_team_stats,
+  wide_match_team_stats |> select(-matches('expected_goals_x_g_penalty')),
   by = join_by(match_id)
 ) |> 
   select(-match_id) |> 
@@ -100,8 +99,47 @@ inner_join(
   select(-term) |> 
   pivot_longer(
     everything(),
-    names_to = 'term',
+    names_to = 'name',
     values_to = 'cor'
   ) |> 
   # select(-term) |> 
   arrange(desc(abs(cor)))
+
+wide_match_team_stats |> 
+  pivot_longer(
+    -c(match_id),
+    names_to = 'name',
+    values_to = 'value'
+  ) |> 
+  inner_join(
+    cors |> slice_max(abs(cor), n = 12),
+    by = join_by(name)
+  ) |> 
+  inner_join(
+    gei |> select(match_id, gei),
+    by = join_by(match_id)
+  ) |> 
+  mutate(
+    across(name, ~fct_reorder(.x, -cor))
+  ) |> 
+  ggplot() +
+  aes(
+    x = value,
+    y = gei
+  ) +
+  geom_point() +
+  facet_wrap(~name, scales = 'free')
+
+
+inner_join(
+  gei_with_results |> select(league_id, round, match_id, gei),
+  wide_match_team_stats,
+  by = join_by(match_id)
+) |> 
+  select(gei, passes_accurate_crosses_total) |> 
+  ggplot() +
+  aes(
+    x = passes_accurate_crosses_total,
+    y = gei
+  ) +
+  geom_point()
