@@ -212,30 +212,31 @@ theme_set(theme_minimal())
 theme_update(
   text = element_text(family = font),
   title = element_text(size = 14, color = 'white'),
-  plot.title = element_text(face = 'bold', size = 20, color = 'gray10', hjust = 0.5),
+  plot.title = element_text(face = 'bold', size = 20, color = 'black', hjust = 0.5),
   plot.title.position = 'plot',
   plot.subtitle = element_text(size = 14, color = 'gray50', hjust = 0.5),
   axis.text = element_text(size = 14),
   axis.title = element_text(size = 14, face = 'bold', hjust = 0.99),
   axis.line = element_blank(),
   plot.margin = margin(10, 20, 10, 20),
-  plot.background = element_rect(fill = 'white', color = 'white'),
-  plot.caption = ggtext::element_markdown(color = 'gray10', hjust = 0, size = 10, face = 'plain', lineheight = 1.1),
+  plot.background = element_rect(fill = NA, color = 'white'),
+  plot.caption = ggtext::element_markdown(color = 'black', hjust = 0, size = 10, face = 'plain', lineheight = 1.1),
   plot.caption.position = 'plot',
-  plot.tag = ggtext::element_markdown(size = 10, color = 'gray10', hjust = 1),
+  plot.tag = ggtext::element_markdown(size = 10, color = 'black', hjust = 1),
   plot.tag.position = c(0.99, 0.01),
   panel.spacing.x = unit(2, 'lines'),
-  panel.background = element_rect(fill = 'white', color = 'white')
+  panel.background = element_rect(fill = NA, color = 'white')
 )
 
 ## https://github.com/tashapiro/tanya-data-viz/blob/1dfad735bca1a7f335969f0eafc94cf971345075/nba-shot-chart/nba-shots.R#L64
-tag_lab <-tagList(
+tag_lab <- tagList(
   tags$span(HTML(enc2utf8("&#xf099;")), style='font-family:fb'),
   tags$span("@TonyElHabr"),
 )
 
 f_text <- partial(
   ggtext::geom_richtext,
+  fill = NA,
   label.color = NA,
   family = font,
   fontface = 'bold',
@@ -247,7 +248,7 @@ best_xi_plot <- best_xi |>
   aes(x = x, y = y) +
   ggsoccer::annotate_pitch(
     dimensions = ggsoccer::pitch_opta,
-    fill = 'white',
+    fill = NA, # 'white',
     colour = 'grey80',
     limits = FALSE
   ) +
@@ -303,12 +304,46 @@ best_xi_plot <- best_xi |>
   )
 
 path_best_xi <- file.path(proj_dir, 'best_xi_vaep_p90.png')
+size <- 7
+w <- size * plot_resolution
+h <- round(7 * 105 / 68 * plot_resolution)
 ggsave(
   best_xi_plot,
   device = ragg::agg_png,
   res = plot_resolution,
   filename = path_best_xi,
-  width = 7 * plot_resolution,
-  height = round(7 * 105 / 68 * plot_resolution),
+  width = w,
+  height = h,
   units = 'px'
 )
+
+library(grid)
+
+path_background <- file.path(proj_dir, 'background.png')
+pal <- c("white", "#74c69d")
+g <- grid::rasterGrob(pal, width = unit(1, 'npc'), height = unit(1, 'npc'), interpolate = TRUE)
+ggsave(
+  plot = g, 
+  filename = path_background,
+  width = w,
+  height = h,
+  units = 'px'
+)
+
+best_xi_plot_with_background <- ggimage::ggbackground(best_xi_plot, background = path_background)
+ggsave(
+  best_xi_plot_with_background,
+  device = ragg::agg_png,
+  res = plot_resolution,
+  filename = gsub('\\.png', '_background.png', path_best_xi),
+  width = w,
+  height = h,
+  units = 'px'
+)
+best_xi_plot_with_background <- ggplot(data.frame(x = 0:1, y = 0:1), aes(x = x, y = y)) + geom_image(image = path_background, size = Inf) + geom_subview(subview = best_xi_plot, width = Inf, height = Inf, x = 0.5, y = 0.5) + theme_nothing()
+# library(magick)
+# raw <- image_read(path_best_xi)
+# raw
+# img <- image_background(raw, '#74c69d')
+# image_write(img, str_replace(path_best_xi, '\\.png', '_bkgrd.png'))
+# ?image_canny
