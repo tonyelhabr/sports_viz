@@ -14,6 +14,10 @@ library(sysfonts)
 library(showtext)
 library(ragg)
 library(htmltools)
+library(ggimage)
+library(grid)
+library(magick)
+library(cropcircles)
 
 input_data_dir <- '../socceraction-streamlined/data/final'
 proj_dir <- '70-2023_vaep'
@@ -76,8 +80,8 @@ position_343_mapping <- list(
 ## TODO: Refactor this to go from list to tibble (to improve readability)
 position_343_coords <- tibble(
   position = c('Keeper', 'Left Defender', 'Center Defender', 'Right Defender', 'Left Mid', 'Left Center Mid', 'Right Center Mid', 'Right Mid', 'Left Forward / Attacker', 'Center Forward / Attacker', 'Right Forward / Attacker'),
-  x = c( 7, 28, 25, 28, 60, 45, 45, 60, 80, 75, 80),
-  y = c(50, 15, 50, 85, 12, 32, 68, 88, 20, 50, 80)
+  x = c( 8, 28, 28, 28, 60, 45, 45, 60, 80, 75, 80),
+  y = c(50, 15, 50, 85, 14, 32, 68, 86, 20, 50, 80)
 ) |>
   mutate(across(c(x, y), as.integer))
 
@@ -86,10 +90,12 @@ team_abbrvs <- tibble(
   team_abbrv = c('BOU', 'ARS', 'AVL', 'BRI', 'BRE', 'CHE', 'CRY', 'EVE', 'FUL', 'LEE', 'LEI', 'LIV', 'MCI', 'MUN', 'NEW', 'FOR', 'SOU', 'TOT', 'WHU', 'WOL')
 )
 
+min_minutes_played <- 2000L
 latest_vaep_by_players_positions <- vaep_by_player_season |> 
   filter(
+    competition_id == 8L,
     season_id == 2023L,
-    minutes_played >= 900L
+    minutes_played >= min_minutes_played
   ) |> 
   left_join(
     position_343_mapping,
@@ -99,38 +105,29 @@ latest_vaep_by_players_positions <- vaep_by_player_season |>
   ) |> 
   group_by(position) |> 
   mutate(
-    rn = row_number(desc(vaep_p90))
+    rn = row_number(desc(vaep_atomic_p90))
   ) |> 
   ungroup()
 
-best_xi <- bind_rows(
-  latest_vaep_by_players_positions |> 
-    filter(position != 'Center Mid') |> 
-    group_by(position) |> 
-    slice_min(rn, n = 4) |> 
-    ungroup(),
-  latest_vaep_by_players_positions |> 
-    filter(position == 'Center Mid') |> 
-    group_by(position) |> 
-    slice_min(rn, n = 8) |> 
-    ungroup()
-) |> 
+set.seed(42)
+best_xi <- latest_vaep_by_players_positions |> 
   ## break ties with players labeled as both left mid and left forward, etc.
   group_by(competition_id, season_id, player_id) |> 
-  slice_min(
-    rn,
-    n = 1,
-    with_ties = FALSE
-  ) |> 
+  slice_sample(n = 1) |> 
   ungroup() |> 
+  ## randomly assign players to left/right midfielder or left/right forward. any logic that tries
+  ##   to assign players to one or the another or to both is susceptible to error.
   group_by(position) |> 
   mutate(
-    rn = row_number(desc(vaep_p90))
+    rn = row_number(desc(vaep_atomic_p90))
   ) |> 
   ungroup() |> 
+  # filter(position == 'Left Mid' | position == 'Left Forward / Attacker') |> 
+  # select(player_name, position, team_name, vaep_atomic_p90, rn) |> 
+  arrange(rn) |> 
   filter(
     rn <= 2L | (position == 'Center Mid' & rn <= 4L)
-  ) |> 
+  ) |>
   mutate(
     orig_rn = rn,
     rn = case_when(
@@ -160,14 +157,15 @@ best_xi <- bind_rows(
     team_abbrv,
     x,
     y,
-    vaep_p90,
+    vaep_atomic_p90,
     minutes_played
   )
+stopifnot(nrow(best_xi) == 2 * 11)
 
 best_xi_player_names <- best_xi |> 
   filter(rn == 1L)
 
-best_xi_fotmob_player_ids <- set_names(
+best_xi_rn1_with_logos <- set_names(
   best_xi_player_names$player_name,
   best_xi_player_names$player_id
 ) |> 
@@ -180,7 +178,7 @@ best_xi_fotmob_player_ids <- set_names(
         TRUE ~ substr(term, 1, 10)
       )
       
-      search_and_cache_player_on_fotmob(
+      res <- search_and_cache_player_on_fotmob(
         player_id = .y, 
         term = term
       ) |> 
@@ -193,11 +191,55 @@ best_xi_fotmob_player_ids <- set_names(
           player_name = .x,
           .before = 1
         )
+      
+      ## specifically for the goalkeeper
+      if (.y == 76202) {
+        res <- filter(res, fotmob_player_id == 176186)
+      }
+      res
     }
   ) |> 
   group_by(player_id) |> 
   filter(row_number() == 1L) |> 
-  ungroup()
+  ungroup() |> 
+  mutate(
+    player_url = generate_player_image_url(fotmob_player_id),
+    local_player_path = map_chr(
+      player_url,
+      ~{
+        path <- file.path(data_dir, basename(.x))
+        if (file.exists(path)) {
+          return(path)
+        }
+        download.file(.x, destfile = path, mode = 'wb')
+        path
+      }
+    ),
+    local_player_path = map_chr(
+      local_player_path,
+      ~{
+        whitened <- magick::image_background(
+          magick::image_read(.x),
+          color = 'white'
+        )
+        new_path <- gsub('\\.png', '_cropped.png', .x)
+        magick::image_write(whitened, new_path)
+        cropcircles::circle_crop(
+          new_path,
+          to = new_path,
+          border_colour = 'black'
+        )
+        new_path
+      }
+    )
+  ) |> 
+  inner_join(
+    best_xi |> select(player_id, x, y),
+    by = join_by(player_id)
+  ) |> 
+  mutate(
+    x = x + 8
+  )
 
 ## plot ----
 font <- 'Titillium Web'
@@ -211,21 +253,21 @@ showtext::showtext_opts(dpi = plot_resolution)
 theme_set(theme_minimal())
 theme_update(
   text = element_text(family = font),
-  title = element_text(size = 14, color = 'white'),
+  title = element_text(size = 14, color = 'black'),
   plot.title = element_text(face = 'bold', size = 20, color = 'black', hjust = 0.5),
   plot.title.position = 'plot',
-  plot.subtitle = element_text(size = 14, color = 'gray50', hjust = 0.5),
+  plot.subtitle = element_text(size = 14, color = 'black', hjust = 0.5),
   axis.text = element_text(size = 14),
   axis.title = element_text(size = 14, face = 'bold', hjust = 0.99),
   axis.line = element_blank(),
   plot.margin = margin(10, 20, 10, 20),
-  plot.background = element_rect(fill = NA, color = 'white'),
+  plot.background = element_rect(fill = NA, color = NA),
   plot.caption = ggtext::element_markdown(color = 'black', hjust = 0, size = 10, face = 'plain', lineheight = 1.1),
   plot.caption.position = 'plot',
   plot.tag = ggtext::element_markdown(size = 10, color = 'black', hjust = 1),
-  plot.tag.position = c(0.99, 0.01),
+  plot.tag.position = c(0.98, 0.01),
   panel.spacing.x = unit(2, 'lines'),
-  panel.background = element_rect(fill = NA, color = 'white')
+  panel.background = element_rect(fill = NA, color = NA)
 )
 
 ## https://github.com/tashapiro/tanya-data-viz/blob/1dfad735bca1a7f335969f0eafc94cf971345075/nba-shot-chart/nba-shots.R#L64
@@ -246,10 +288,10 @@ f_text <- partial(
 best_xi_plot <- best_xi |> 
   ggplot() +
   aes(x = x, y = y) +
-  ggsoccer::annotate_pitch(
+  annotate_pitch(
     dimensions = ggsoccer::pitch_opta,
-    fill = NA, # 'white',
-    colour = 'grey80',
+    fill = NA,
+    colour = 'gray50',
     limits = FALSE
   ) +
   coord_flip(xlim = c(-1, 101), ylim = c(-1, 101)) +
@@ -260,7 +302,7 @@ best_xi_plot <- best_xi |>
       filter(rn == 2L) |> 
       mutate(x = x - 3.5) |> 
       mutate(
-        lab = sprintf('<span style="font-size:12px;color:#7F7F7F">%s (%s) </span><span style="font-size:10px;color:#7F7F7F">%.2f</span>', player_name, team_abbrv, vaep_p90)
+        lab = sprintf('<span style="font-size:12px;color:black">%s (%s) </span><span style="font-size:10px;color:black">%.2f</span>', player_name, team_abbrv, vaep_atomic_p90)
       ),
     aes(label = lab)
   ) +
@@ -268,23 +310,14 @@ best_xi_plot <- best_xi |>
     data = best_xi |>
       filter(rn == 1L) |> 
       mutate(
-        lab = sprintf('<span style="font-size:14px;color:black">%s (%s) </span><span style="font-size:12px;color:black">%.2f</span>', player_name, team_abbrv, vaep_p90)
+        lab = sprintf('<span style="font-size:14px;color:white">%s (%s) </span><span style="font-size:12px;color:white">%.2f</span>', player_name, team_abbrv, vaep_atomic_p90)
       ), 
     aes(label = lab)
   ) +
   ggimage::geom_image(
-    data = best_xi |>
-      filter(rn == 1L) |>
-      inner_join(
-        best_xi_fotmob_player_ids,
-        by = join_by(player_id, player_name)
-      ) |> 
-      mutate(
-        x = x + 8L,
-        logo_url = generate_player_image_url(fotmob_player_id)
-      ),
+    data = best_xi_rn1_with_logos,
     size = 0.08,
-    aes(image = logo_url)
+    aes(image = local_player_path)
   ) +
   theme(
     plot.title = element_text(hjust = 0.5),
@@ -292,10 +325,11 @@ best_xi_plot <- best_xi |>
   ) +
   labs(
     title = 'Premier League Team of the Season',
-    subtitle = '2022/23 season, through May 7',
+    subtitle = 'Based on atomic VAEP per 90 minutes',
     caption = glue::glue(
       '
-      **Criteria**: Based on VAEP per 90 minutes. Minimum 900 minutes played.
+      **Data**: 2022/23 season, through May 8.
+      <br/>**Criteria**: Minimum {min_minutes_played} minutes played.
       <br/>**VAEP**: Valuing Actions by Estimating Probabilities
       <br/>**VAEP paper DOI**: 10.1145/3292500.3330758
       '
@@ -303,7 +337,7 @@ best_xi_plot <- best_xi |>
     tag = tag_lab
   )
 
-path_best_xi <- file.path(proj_dir, 'best_xi_vaep_p90.png')
+path_best_xi <- file.path(proj_dir, 'best_xi_vaep_atomic_p90.png')
 size <- 7
 w <- size * plot_resolution
 h <- round(7 * 105 / 68 * plot_resolution)
@@ -317,10 +351,9 @@ ggsave(
   units = 'px'
 )
 
-library(grid)
-
+## add background
 path_background <- file.path(proj_dir, 'background.png')
-pal <- c("white", "#74c69d")
+pal <- c('#52B788', '#74C69D') ## https://coolors.co/palette/d8f3dc-b7e4c7-95d5b2-74c69d-52b788-40916c-2d6a4f-1b4332-081c15
 g <- grid::rasterGrob(pal, width = unit(1, 'npc'), height = unit(1, 'npc'), interpolate = TRUE)
 ggsave(
   plot = g, 
@@ -330,20 +363,14 @@ ggsave(
   units = 'px'
 )
 
-best_xi_plot_with_background <- ggimage::ggbackground(best_xi_plot, background = path_background)
-ggsave(
-  best_xi_plot_with_background,
-  device = ragg::agg_png,
-  res = plot_resolution,
-  filename = gsub('\\.png', '_background.png', path_best_xi),
-  width = w,
-  height = h,
-  units = 'px'
+main <- image_read(path_best_xi)
+background <- image_read(path_background)
+composite <- image_composite(
+  background,
+  main
 )
-best_xi_plot_with_background <- ggplot(data.frame(x = 0:1, y = 0:1), aes(x = x, y = y)) + geom_image(image = path_background, size = Inf) + geom_subview(subview = best_xi_plot, width = Inf, height = Inf, x = 0.5, y = 0.5) + theme_nothing()
-# library(magick)
-# raw <- image_read(path_best_xi)
-# raw
-# img <- image_background(raw, '#74c69d')
-# image_write(img, str_replace(path_best_xi, '\\.png', '_bkgrd.png'))
-# ?image_canny
+image_write(
+  composite, 
+  gsub('\\.png', '_w_background.png', path_best_xi)
+)
+
