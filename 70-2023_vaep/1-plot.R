@@ -253,18 +253,18 @@ showtext::showtext_opts(dpi = plot_resolution)
 theme_set(theme_minimal())
 theme_update(
   text = element_text(family = font),
-  title = element_text(size = 14, color = 'black'),
-  plot.title = element_text(face = 'bold', size = 20, color = 'black', hjust = 0.5),
+  title = element_text(size = 14, color = 'white'),
+  plot.title = element_text(face = 'bold', size = 20, color = 'white', hjust = 0.5),
   plot.title.position = 'plot',
-  plot.subtitle = element_text(size = 14, color = 'black', hjust = 0.5),
+  plot.subtitle = element_text(size = 14, color = 'white', hjust = 0.5),
   axis.text = element_text(size = 14),
   axis.title = element_text(size = 14, face = 'bold', hjust = 0.99),
   axis.line = element_blank(),
   plot.margin = margin(10, 20, 10, 20),
   plot.background = element_rect(fill = NA, color = NA),
-  plot.caption = ggtext::element_markdown(color = 'black', hjust = 0, size = 10, face = 'plain', lineheight = 1.1),
+  plot.caption = ggtext::element_markdown(color = 'white', hjust = 0, size = 10, face = 'plain', lineheight = 1.1),
   plot.caption.position = 'plot',
-  plot.tag = ggtext::element_markdown(size = 10, color = 'black', hjust = 1),
+  plot.tag = ggtext::element_markdown(size = 10, color = 'white', hjust = 1),
   plot.tag.position = c(0.98, 0.01),
   panel.spacing.x = unit(2, 'lines'),
   panel.background = element_rect(fill = NA, color = NA)
@@ -302,7 +302,7 @@ best_xi_plot <- best_xi |>
       filter(rn == 2L) |> 
       mutate(x = x - 3.5) |> 
       mutate(
-        lab = sprintf('<span style="font-size:12px;color:black">%s (%s) </span><span style="font-size:10px;color:black">%.2f</span>', player_name, team_abbrv, vaep_atomic_p90)
+        lab = sprintf('<span style="font-size:11px;color:#999999">%s (%s) </span><span style="font-size:9px;color:#999999">%.2f</span>', player_name, team_abbrv, vaep_atomic_p90)
       ),
     aes(label = lab)
   ) +
@@ -310,7 +310,7 @@ best_xi_plot <- best_xi |>
     data = best_xi |>
       filter(rn == 1L) |> 
       mutate(
-        lab = sprintf('<span style="font-size:14px;color:white">%s (%s) </span><span style="font-size:12px;color:white">%.2f</span>', player_name, team_abbrv, vaep_atomic_p90)
+        lab = sprintf('<span style="font-size:13px;color:white">%s (%s) </span><span style="font-size:11px;color:white">%.2f</span>', player_name, team_abbrv, vaep_atomic_p90)
       ), 
     aes(label = lab)
   ) +
@@ -353,7 +353,7 @@ ggsave(
 
 ## add background
 path_background <- file.path(proj_dir, 'background.png')
-pal <- c('#40916C', '#52B788') ## https://coolors.co/palette/d8f3dc-b7e4c7-95d5b2-74c69d-52b788-40916c-2d6a4f-1b4332-081c15
+pal <- c('#171717', '#1f1f1f') ## https://coolors.co/palette/d8f3dc-b7e4c7-95d5b2-74c69d-52b788-40916c-2d6a4f-1b4332-081c15
 g <- grid::rasterGrob(pal, width = unit(1, 'npc'), height = unit(1, 'npc'), interpolate = TRUE)
 ggsave(
   plot = g, 
