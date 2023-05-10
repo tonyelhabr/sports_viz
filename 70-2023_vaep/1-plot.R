@@ -24,6 +24,7 @@ proj_dir <- '70-2023_vaep'
 data_dir <- file.path(proj_dir, 'data')
 dir.create(data_dir, showWarnings = FALSE)
 
+all_vaep <- read_parquet(file.path(input_data_dir, 'all_vaep.parquet'))
 players_season_games <- read_parquet(file.path(input_data_dir, 'players_season_games.parquet'))
 vaep_by_player_season <- read_parquet(file.path(input_data_dir, 'vaep_by_player_season.parquet'))
 search_and_cache_player_on_fotmob <- function(player_id, term, overwrite = FALSE) {
@@ -90,11 +91,18 @@ team_abbrvs <- tibble(
   team_abbrv = c('BOU', 'ARS', 'AVL', 'BRI', 'BRE', 'CHE', 'CRY', 'EVE', 'FUL', 'LEE', 'LEI', 'LIV', 'MCI', 'MUN', 'NEW', 'FOR', 'SOU', 'TOT', 'WHU', 'WOL')
 )
 
+filter_data <- function(df) {
+  df |> 
+    filter(
+      competition_id == 8,
+      season_id == 2023
+    )
+}
+
 min_minutes_played <- 2000L
 latest_vaep_by_players_positions <- vaep_by_player_season |> 
+  filter_data() |> 
   filter(
-    competition_id == 8L,
-    season_id == 2023L,
     minutes_played >= min_minutes_played
   ) |> 
   left_join(
@@ -252,21 +260,17 @@ showtext::showtext_opts(dpi = plot_resolution)
 
 theme_set(theme_minimal())
 theme_update(
-  text = element_text(family = font),
+  text = element_text(family = font, color = 'white'),
   title = element_text(size = 14, color = 'white'),
   plot.title = element_text(face = 'bold', size = 20, color = 'white', hjust = 0.5),
   plot.title.position = 'plot',
   plot.subtitle = element_text(size = 14, color = 'white', hjust = 0.5),
-  axis.text = element_text(size = 14),
-  axis.title = element_text(size = 14, face = 'bold', hjust = 0.99),
-  axis.line = element_blank(),
   plot.margin = margin(10, 20, 10, 20),
   plot.background = element_rect(fill = NA, color = NA),
   plot.caption = ggtext::element_markdown(color = 'white', hjust = 0, size = 10, face = 'plain', lineheight = 1.1),
   plot.caption.position = 'plot',
   plot.tag = ggtext::element_markdown(size = 10, color = 'white', hjust = 1),
-  plot.tag.position = c(0.98, 0.01),
-  panel.spacing.x = unit(2, 'lines'),
+  plot.tag.position = c(0.99, 0.01),
   panel.background = element_rect(fill = NA, color = NA)
 )
 
@@ -324,7 +328,7 @@ best_xi_plot <- best_xi |>
     plot.subtitle = element_text(hjust = 0.5)
   ) +
   labs(
-    title = 'Premier League Team of the Season',
+    title = 'EPL Team of the Season',
     subtitle = 'Based on atomic VAEP per 90 minutes',
     caption = glue::glue(
       '
@@ -353,7 +357,7 @@ ggsave(
 
 ## add background
 path_background <- file.path(proj_dir, 'background.png')
-pal <- c('#171717', '#1f1f1f') ## https://coolors.co/palette/d8f3dc-b7e4c7-95d5b2-74c69d-52b788-40916c-2d6a4f-1b4332-081c15
+pal <- c('#171717', '#1f1f1f')
 g <- grid::rasterGrob(pal, width = unit(1, 'npc'), height = unit(1, 'npc'), interpolate = TRUE)
 ggsave(
   plot = g, 
@@ -372,5 +376,142 @@ composite <- image_composite(
 image_write(
   composite, 
   gsub('\\.png', '_w_background.png', path_best_xi)
+)
+
+## by-type ----
+vaep_by_type <- all_vaep |> 
+  filter_data() |> 
+  group_by(competition_id, season_id, type_name, player_id, player_name) |> 
+  summarize(
+    n_type_actions_atomic = n(),
+    vaep_atomic_type = sum(vaep_atomic)
+  ) |> 
+  ungroup() |> 
+  arrange(desc(vaep_atomic_type))
+
+# vaep_by_type |> 
+#   group_by(type_name) |> 
+#   summarize(
+#     across(
+#       vaep_atomic_type, 
+#       sum
+#     )
+#   ) |> 
+#   ungroup() |> 
+#   arrange(desc(abs(vaep_atomic_type)))
+
+top_vaep_by_type <- vaep_by_type |> 
+  mutate(
+    type_name = ifelse(
+      type_name %in% c('receival', 'pass', 'dribble', 'shot'),
+      type_name,
+      'other'
+    )
+  ) |> 
+  group_by(competition_id, season_id, type_name, player_id, player_name) |> 
+  summarize(
+    across(
+      c(
+        n_type_actions_atomic,
+        vaep_atomic_type
+      ),
+      sum
+    )
+  ) |> 
+  ungroup() |> 
+  inner_join(
+    vaep_by_player_season |> 
+      select(
+        competition_id, 
+        season_id, 
+        player_id, 
+        player_name,
+        vaep_atomic,
+        vaep_atomic_p90
+      ) |> 
+      filter_data() |> 
+      slice_max(
+        vaep_atomic,
+        n = 20
+      ),
+    by = join_by(competition_id, season_id, player_id, player_name)
+  ) |> 
+  mutate(
+    across(
+      player_name,
+      \(x) fct_reorder(x, vaep_atomic)
+    ),
+    across(
+      type_name,
+      \(x) factor(x, levels = rev(c('shot', 'receival', 'dribble', 'pass', 'other')))
+    )
+  )
+
+theme_update(
+  plot.text = element_text(color = 'white'),
+  plot.title = element_text(hjust = 0),
+  plot.subtitle = element_text(hjust = 0),
+  plot.background = element_rect(fill = '#1f1f1f', color = '#1f1f1f'),
+  panel.background = element_rect(fill = '#1f1f1f', color = '#1f1f1f'),
+  axis.title = element_text(color = 'white', size = 14, face = 'bold', hjust = 0.99),
+  axis.line = element_blank(),
+  axis.text = element_text(color = 'white', size = 12),
+  legend.text = element_text(color = 'white', size = 12),
+  legend.position = 'top'
+)
+
+type_pal <- c(
+  'shot' = '#9b5de5',
+  'receival' = '#f15bb5',
+  'pass' = '#00bbf9',
+  'dribble' = '#00f5d4',
+  'other' = '#fee440'
+)
+
+top_vaep_by_type_plot <- top_vaep_by_type |> 
+  ggplot() +
+  aes(
+    x = vaep_atomic_type,
+    y = player_name
+  ) +
+  geom_col(
+    aes(
+      fill = type_name
+    )
+  ) +
+  scale_fill_manual(
+    values = type_pal
+  ) +
+  guides(
+    fill = guide_legend(title = '', nrow = 1, reverse = TRUE)
+  ) +
+  theme(
+    panel.grid.major.y = element_blank(),
+    panel.grid.minor.x = element_blank()
+  ) +
+  labs(
+    title = "Players with most atomic VAEP",
+    subtitle = 'EPL, 2022/23 season',
+    caption = glue::glue(
+      '
+      **Data**: 2022/23 season, through May 8.
+      <br/>**VAEP**: Valuing Actions by Estimating Probabilities
+      <br/>**VAEP paper DOI**: 10.1145/3292500.3330758
+      '
+    ),
+    tag = tag_lab,
+    y = NULL,
+    x = 'Atomic VAEP'
+  )
+
+path_top_vaep_by_type <- file.path(proj_dir, 'top_vaep_by_type_plot.png')
+ggsave(
+  top_vaep_by_type_plot,
+  device = ragg::agg_png,
+  res = plot_resolution,
+  filename = path_top_vaep_by_type,
+  width = 8 * plot_resolution,
+  height = 8 * plot_resolution,
+  units = 'px'
 )
 
