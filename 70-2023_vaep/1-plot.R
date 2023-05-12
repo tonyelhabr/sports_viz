@@ -7,6 +7,7 @@ library(tidyr)
 library(purrr)
 library(tibble)
 library(stringr)
+library(forcats)
 
 library(ggplot2)
 library(ggtext)
@@ -262,16 +263,14 @@ theme_set(theme_minimal())
 theme_update(
   text = element_text(family = font, color = 'white'),
   title = element_text(size = 14, color = 'white'),
-  plot.title = element_text(face = 'bold', size = 20, color = 'white', hjust = 0.5),
+  plot.title = element_text(face = 'bold', size = 20, color = 'white'),
   plot.title.position = 'plot',
-  plot.subtitle = element_text(size = 14, color = 'white', hjust = 0.5),
+  plot.subtitle = element_text(size = 14, color = 'white'),
   plot.margin = margin(10, 20, 10, 20),
-  plot.background = element_rect(fill = NA, color = NA),
   plot.caption = ggtext::element_markdown(color = 'white', hjust = 0, size = 10, face = 'plain', lineheight = 1.1),
   plot.caption.position = 'plot',
   plot.tag = ggtext::element_markdown(size = 10, color = 'white', hjust = 1),
-  plot.tag.position = c(0.99, 0.01),
-  panel.background = element_rect(fill = NA, color = NA)
+  plot.tag.position = c(0.99, 0.01)
 )
 
 ## https://github.com/tashapiro/tanya-data-viz/blob/1dfad735bca1a7f335969f0eafc94cf971345075/nba-shot-chart/nba-shots.R#L64
@@ -325,7 +324,9 @@ best_xi_plot <- best_xi |>
   ) +
   theme(
     plot.title = element_text(hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5)
+    plot.subtitle = element_text(hjust = 0.5),
+    plot.background = element_rect(fill = NA, color = NA),
+    panel.background = element_rect(fill = NA, color = NA)
   ) +
   labs(
     title = 'EPL Team of the Season',
@@ -373,10 +374,22 @@ composite <- image_composite(
   background,
   main
 )
-image_write(
-  composite, 
-  gsub('\\.png', '_w_background.png', path_best_xi)
+
+path_best_xi_composite <- gsub('\\.png', '_w_background.png', path_best_xi)
+image_write(composite, path_best_xi_composite)
+file.remove(path_best_xi)
+file.remove(path_background)
+
+path_epl_logo <- file.path(proj_dir, 'epl-logo-white.png')
+add_logo(
+  path_viz = path_best_xi_composite,
+  path_logo = path_epl_logo,
+  logo_scale = 0.15,
+  idx_x = 0.04,
+  idx_y = 0.86,
+  adjust_y = FALSE
 )
+
 
 ## by-type ----
 vaep_by_type <- all_vaep |> 
@@ -402,10 +415,10 @@ vaep_by_type <- all_vaep |>
 
 top_vaep_by_type <- vaep_by_type |> 
   mutate(
-    type_name = ifelse(
-      type_name %in% c('receival', 'pass', 'dribble', 'shot'),
-      type_name,
-      'other'
+    type_name = case_when(
+      type_name %in% c('shot', 'dribble') ~ type_name,
+      type_name %in% c('receival', 'pass') ~ 'pass or reception',
+      TRUE ~ 'other'
     )
   ) |> 
   group_by(competition_id, season_id, type_name, player_id, player_name) |> 
@@ -426,6 +439,7 @@ top_vaep_by_type <- vaep_by_type |>
         season_id, 
         player_id, 
         player_name,
+        team_name,
         vaep_atomic,
         vaep_atomic_p90
       ) |> 
@@ -436,6 +450,13 @@ top_vaep_by_type <- vaep_by_type |>
       ),
     by = join_by(competition_id, season_id, player_id, player_name)
   ) |> 
+  inner_join(
+    team_abbrvs,
+    by = join_by(team_name)
+  ) |> 
+  mutate(
+    player_name = sprintf('<span style="font-size:13px;color:white">%s </span><span style="font-size:10px;color:#999999">(%s)</span>', player_name, team_abbrv)
+  ) |> 
   mutate(
     across(
       player_name,
@@ -443,29 +464,15 @@ top_vaep_by_type <- vaep_by_type |>
     ),
     across(
       type_name,
-      \(x) factor(x, levels = rev(c('shot', 'receival', 'dribble', 'pass', 'other')))
+      \(x) factor(x, levels = rev(c('shot', 'pass or reception', 'dribble', 'other')))
     )
   )
 
-theme_update(
-  plot.text = element_text(color = 'white'),
-  plot.title = element_text(hjust = 0),
-  plot.subtitle = element_text(hjust = 0),
-  plot.background = element_rect(fill = '#1f1f1f', color = '#1f1f1f'),
-  panel.background = element_rect(fill = '#1f1f1f', color = '#1f1f1f'),
-  axis.title = element_text(color = 'white', size = 14, face = 'bold', hjust = 0.99),
-  axis.line = element_blank(),
-  axis.text = element_text(color = 'white', size = 12),
-  legend.text = element_text(color = 'white', size = 12),
-  legend.position = 'top'
-)
-
 type_pal <- c(
-  'shot' = '#9b5de5',
-  'receival' = '#f15bb5',
-  'pass' = '#00bbf9',
-  'dribble' = '#00f5d4',
-  'other' = '#fee440'
+  'shot' = '#ef476f',
+  'pass or reception' = '#ffd166',
+  'dribble' = '#06d6a0',
+  'other' = '#118ab2'
 )
 
 top_vaep_by_type_plot <- top_vaep_by_type |> 
@@ -487,7 +494,18 @@ top_vaep_by_type_plot <- top_vaep_by_type |>
   ) +
   theme(
     panel.grid.major.y = element_blank(),
-    panel.grid.minor.x = element_blank()
+    panel.grid.minor.x = element_blank(),
+    
+    plot.title = element_text(hjust = 0),
+    plot.subtitle = element_text(hjust = 0),
+    plot.background = element_rect(fill = '#1f1f1f', color = '#1f1f1f'),
+    panel.background = element_rect(fill = '#1f1f1f', color = '#1f1f1f'),
+    axis.title = element_text(color = 'white', size = 14, face = 'bold', hjust = 0.99),
+    axis.line = element_blank(),
+    axis.text = element_text(color = 'white', size = 12),
+    axis.text.y = ggtext::element_markdown(),
+    legend.text = element_text(color = 'white', size = 12),
+    legend.position = 'top'
   ) +
   labs(
     title = "Players with most atomic VAEP",
@@ -510,8 +528,16 @@ ggsave(
   device = ragg::agg_png,
   res = plot_resolution,
   filename = path_top_vaep_by_type,
-  width = 8 * plot_resolution,
-  height = 8 * plot_resolution,
+  width = 7 * plot_resolution,
+  height = 7 * plot_resolution,
   units = 'px'
 )
 
+add_logo(
+  path_viz = path_top_vaep_by_type,
+  path_logo = path_epl_logo,
+  logo_scale = 0.15,
+  idx_x = 0.05,
+  idx_y = 0.98,
+  adjust_y = FALSE
+)
