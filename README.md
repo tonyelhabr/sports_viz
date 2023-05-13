@@ -2,6 +2,12 @@ This repo stores my code and plots for sports-related plots. Any "small" data is
 
 The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I scraped.
 
+# 70. 2023 EPL Team of the Season
+
+![](70-2023_vaep/best_xi_vaep_atomic_p90_w_background_w_logo.png "EPL Team of the Season based on atomic VAEP per 90 minutes, 2022/23 season")
+
+![](70-2023_vaep/top_vaep_by_type_plot_w_logo.png "Players with most atomic VAEP in EPL 2022/23 season")
+
 # 66. Club ranking comparison
 
 ![](66-compare_club_rankings/biggest_negative_top100_538_diffs.png "538 loves Brasileiro Série A | Biggest club ranking differences where 538 is more bullish than Opta")
