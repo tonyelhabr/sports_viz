@@ -2,6 +2,7 @@ library(worldfootballR)
 library(dplyr)
 library(tidyr)
 library(lubridate)
+library(stringr)
 library(purrr)
 library(tibble)
 library(qs)
@@ -16,7 +17,7 @@ dir.create(MOMENTUM_DATA_DIR, recursive = TRUE, showWarnings = FALSE)
 dir.create(MATCH_TEAM_STATS_DATA_DIR, recursive = TRUE, showWarnings = FALSE)
 matches_path <- file.path(PROJ_DIR, 'matches.qs')
 momentum_path <- file.path(PROJ_DIR, 'momentum.qs')
-match_team_stats <- file.path(PROJ_DIR, 'match_team_stats.qs')
+match_team_stats_path <- file.path(PROJ_DIR, 'match_team_stats.qs')
 
 league_matches <- map_dfr(
   c(42, 47),
@@ -28,26 +29,21 @@ league_matches <- map_dfr(
 )
 
 matches <- league_matches |>
-  unnest(status, names_sep = '_') |> 
+  rename(match_id = id) |> 
+  unnest_wider(c(home, away, status), names_sep = '_') |> 
   filter(status_finished, !status_cancelled) |> 
-  select(
-    league_id,
-    round,
-    match_time = status_utcTime, 
-    match_id = id, 
-    home, 
-    away
-  ) |>
-  unnest_wider(c(home, away), names_sep = '_') |> 
   transmute(
     league_id,
     round,
-    match_time = ymd_hms(match_time), 
-    across(match_id, as.integer),
-    home_id,
+    match_time = ymd_hms(status_utcTime), 
+    match_date = date(match_time),
+    match_id = as.integer(match_id),
+    across(home_id, as.integer),
     home_team = home_name,
-    away_id,
-    away_team = away_name
+    home_g = as.integer(str_remove(status_scoreStr, '\\s[-].*$')), 
+    across(away_id, as.integer),
+    away_team = away_name,
+    away_g = as.integer(str_remove(status_scoreStr, '^.*[-]\\s'))
   )
 qs::qsave(matches, matches_path)
 
@@ -70,7 +66,7 @@ get_and_cache_fotmob_match_momentum <- function(match_id) {
 }
 
 momentum <- map_dfr(
-  unnested_matches$match_id, 
+  matches$match_id, 
   get_and_cache_fotmob_match_momentum
 )
 
@@ -102,3 +98,4 @@ match_team_stats <- map_dfr(
 )
 
 qs::qsave(match_team_stats, match_team_stats_path)
+
