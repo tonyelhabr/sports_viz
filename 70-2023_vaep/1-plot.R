@@ -72,7 +72,7 @@ position_343_mapping <- list(
   'Center Mid' = c('AMC', 'MC'),
   'Right Mid' = c('AMR', 'MR'),
   'Left Defender' = c('DL', 'DML'),
-  'Center Defender' = c('DML', 'DC', 'DMC', 'DMR'),
+  'Center Defender' = c('DC', 'DMC'),
   'Right Defender' = c('DR', 'DMR'),
   'Keeper' = 'GK'
 ) |> 
@@ -112,6 +112,25 @@ latest_vaep_by_players_positions <- vaep_by_player_season |>
     by = join_by(starting_position == opta_position),
     relationship = 'many-to-many'
   ) |> 
+  ## Force AMx into either Forward / Attcker role or Mid role
+  mutate(
+    position = case_when(
+      str_detect(position, 'Forward / Attacker$') & substr(starting_position, 1, 2) == 'AM' & starting_position_prop < 0.8 ~ NA_character_,
+      TRUE ~ position
+    )
+  ) |> 
+  filter(!is.na(position)) |> 
+  add_count(player_id, name = 'n_player_id') |> 
+  # filter(n_player_id > 1) |> 
+  #A select(player_id, player_name, position, starting_position, starting_position_prop, n_player_id) |> 
+  mutate(
+    position = case_when(
+      n_player_id == 1 ~ position,
+      str_detect(position, 'Mid$') & substr(starting_position, 1, 2) == 'AM' & starting_position_prop >= 0.8 ~ NA_character_,
+      TRUE ~ position
+    )
+  ) |> 
+  filter(!is.na(position)) |> 
   group_by(position) |> 
   mutate(
     rn = row_number(desc(vaep_atomic_p90))
