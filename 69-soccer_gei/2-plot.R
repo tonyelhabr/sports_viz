@@ -59,6 +59,8 @@ gei_with_results <- gei |>
     match_date = date(match_time),
     home_team,
     away_team,
+    home_g,
+    away_g,
     gei
   )
 
