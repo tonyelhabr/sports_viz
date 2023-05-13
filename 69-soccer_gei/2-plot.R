@@ -52,11 +52,11 @@ gei_with_results <- gei |>
     matches,
     by = join_by(match_id)
   ) |> 
-  transmute(
+  select(
     league_id,
     round,
     match_id,
-    match_date = date(match_time),
+    match_date,
     home_team,
     away_team,
     home_g,
@@ -74,16 +74,19 @@ long_match_team_stats <- match_team_stats |>
     match_id, 
     key, ## need key since some stats_title are replicated across keys
     stats_title, 
+    home,
+    away,
     total = home + away,
     delta = home - away
   ) |> 
   pivot_longer(
-    -c(match_id, key, stats_title),
+    -c(match_id, key, stats_title, home, away),
     names_to = 'type',
     values_to = 'value'
   )
 
 wide_match_team_stats <- long_match_team_stats |> 
+  select(-c(home, away)) |> 
   pivot_wider(
     names_from = c(key, stats_title, type),
     values_from = value
@@ -145,3 +148,12 @@ inner_join(
     y = gei
   ) +
   geom_point()
+
+inner_join(
+  gei_with_results |> select(league_id, round, match_id, gei),
+  long_match_team_stats |> 
+    filter(
+      stats_title == 'Expected goals (xG)'
+    ),
+  by = join_by(match_id)
+)
