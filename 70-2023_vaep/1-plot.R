@@ -377,7 +377,7 @@ ggsave(
 
 ## add background
 path_background <- file.path(proj_dir, 'background.png')
-pal <- c('#171717', '#1f1f1f')
+pal <- c('black', '#1f1f1f')
 g <- grid::rasterGrob(pal, width = unit(1, 'npc'), height = unit(1, 'npc'), interpolate = TRUE)
 ggsave(
   plot = g, 
