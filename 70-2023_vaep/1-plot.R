@@ -474,11 +474,11 @@ top_vaep_by_type <- vaep_by_type |>
     by = join_by(team_name)
   ) |> 
   mutate(
-    player_name = sprintf('<span style="font-size:13px;color:white">%s </span><span style="font-size:10px;color:#999999">(%s)</span>', player_name, team_abbrv)
+    player_lab = sprintf('<span style="font-size:13px;color:white">%s </span><span style="font-size:10px;color:#999999">(%s)</span>', player_name, team_abbrv)
   ) |> 
   mutate(
     across(
-      player_name,
+      player_lab,
       \(x) fct_reorder(x, vaep_atomic)
     ),
     across(
@@ -498,7 +498,7 @@ top_vaep_by_type_plot <- top_vaep_by_type |>
   ggplot() +
   aes(
     x = vaep_atomic_type,
-    y = player_name
+    y = player_lab
   ) +
   geom_col(
     aes(
