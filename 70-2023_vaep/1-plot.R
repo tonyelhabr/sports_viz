@@ -25,9 +25,9 @@ proj_dir <- '70-2023_vaep'
 data_dir <- file.path(proj_dir, 'data')
 dir.create(data_dir, showWarnings = FALSE)
 
-all_vaep <- read_parquet(file.path(input_data_dir, 'all_vaep.parquet'))
-players_season_games <- read_parquet(file.path(input_data_dir, 'players_season_games.parquet'))
-vaep_by_player_season <- read_parquet(file.path(input_data_dir, 'vaep_by_player_season.parquet'))
+all_vaep <- arrow::read_parquet(file.path(input_data_dir, 'all_vaep.parquet'))
+players_season_games <- arrow::read_parquet(file.path(input_data_dir, 'players_season_games.parquet'))
+vaep_by_player_season <- arrow::read_parquet(file.path(input_data_dir, 'vaep_by_player_season.parquet'))
 search_and_cache_player_on_fotmob <- function(player_id, term, overwrite = FALSE) {
   path <- file.path(data_dir, paste0(player_id, '.csv'))
   if (file.exists(path) & isFALSE(overwrite)) {
