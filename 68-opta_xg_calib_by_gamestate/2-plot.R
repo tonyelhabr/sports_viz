@@ -1,6 +1,7 @@
 library(dplyr)
 library(qs)
-library(probably)
+library(probably) ## 0.1.0.9008
+# packageVersion('probably') 
 
 library(ggplot2)
 library(sysfonts)
@@ -18,41 +19,118 @@ np_shots <- shots |>
     pov == 'primary'
   ) |> 
   mutate(
-    .pred_yes = xg,
-    .pred_no = 1 - xg,
-    g_state5 = cut(
-      g_state,
-      breaks = c(-Inf, -2, -1, 0, 1, Inf), 
-      labels = c('<=-2 goals', '-1 goal', 'neutral', '+1 goal', '>=+2 goals')
-    ),
-    g_state3 = cut(
+    .pred1 = xg,
+    .pred2 = 1 - xg,
+    g_state = cut(
       g_state,
       breaks = c(-Inf, -1, 0, Inf), 
       labels = c('trailing', 'neutral', 'leading')
     )
   )
 
-calibrate_by_g_state <- function(df, group) {
-  df |> 
-    cal_plot_breaks(
-      truth = is_goal,
-      estimate = xg,
-      group = {{ group }},
-      num_breaks = 20,
-      conf_level = 0.9,
-      event_level = 'second'
-    )
+convert_seq_to_cuts <- function(seq) {
+  list(
+    lower_cut = seq[1:length(seq) - 1], 
+    upper_cut = seq[2:length(seq)]
+  )
 }
 
-calib_g_state3 <- calibrate_by_g_state(
+convert_cuts_to_df <- function(cuts) {
+  tibble::tibble(
+    lower_cut = cuts$lower_cut,
+    upper_cut = cuts$upper_cut,
+    predicted_midpoint = lower_cut + (upper_cut - lower_cut) / 2
+  )
+}
+
+n_breaks <- 20
+side <- seq(0, 1, by = 1 / n_breaks)
+
+calib_g_state <- cal_plot_breaks(
   np_shots,
-  g_state3
+  truth = is_goal,
+  estimate = starts_with('.pred'),
+  group = g_state,
+  num_breaks = n_breaks,
+  conf_level = 0.9,
+  event_level = 'second'
 )
 
-calib_g_state5 <- calibrate_by_g_state(
+calib_g_state$data |> 
+  left_join(
+    convert_seq_to_cuts(seq(0, 1, by = 1 / n_breaks)) |> 
+      convert_cuts_to_df(),
+    by = join_by(predicted_midpoint)
+  )
+
+
+cal_table_custom_breaks <- function(
+    .data, 
+    truth, 
+    estimate = dplyr::starts_with(".pred"), 
+    side, 
+    conf_level = 0.9, 
+    event_level = c("auto", "first", "second"), 
+    ..., 
+    group = NULL
+) {
+  
+  ## mostly internals of probably:::.cal_table_breaks_impl (from probably:::.cal_table_breaks)
+  truth <- rlang::enquo(truth)
+  estimate <- rlang::enquo(estimate)
+  group <- rlang::enquo(group)
+  
+  levels <- probably:::truth_estimate_map(
+    .data = .data, 
+    truth = !!truth, 
+    estimate = !!estimate
+  )
+  
+
+  ## internals of probably:::.cal_table_breaks_grp
+  cuts <- convert_seq_to_cuts(side)
+  ## return lower and upper cut for plotting
+  cuts_df <- convert_cuts_to_df(cuts)
+  
+  res <- .data |> 
+    dplyr::group_by(!!group, .add = TRUE) |> 
+    dplyr::group_map(
+      ~{
+        ## replace call to probably:::.cal_table_breaks_grp with direct call to probably:::.cal_class_grps with pre-computed cuts
+        grp <- probably:::.cal_class_grps(
+          .data = .x,
+          truth = !!truth,
+          cuts = cuts,
+          event_level = event_level,
+          levels = levels,
+          conf_level = conf_level
+        )
+        dplyr::bind_cols(.y, grp)
+      }
+    ) |> 
+    dplyr::bind_rows() |> 
+    dplyr::inner_join(
+      cuts_df,
+      by = dplyr::join_by(predicted_midpoint)
+    )
+  
+  if (length(levels) > 2) {
+    res <- dplyr::group_by(res, !!truth, .add = TRUE)
+  }
+  res
+}
+
+
+calib_g_state_custom <- cal_table_custom_breaks(
   np_shots,
-  g_state5
+  truth = is_goal,
+  estimate = starts_with('.pred'),
+  group = g_state,
+  side = c(0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.5, 1),
+  conf_level = 0.9,
+  event_level = 'second'
 )
+
 
 font <- 'Titillium Web'
 sysfonts::font_add_google(font, font)
@@ -164,20 +242,20 @@ plot_and_save_calibration <- function(
   invisible(p)
 }
 
-calib_g_state3$data |> 
+calib_g_state$data |> 
   plot_and_save_calibration(
     width = 10,
-    height = 10 / 1.5,
+    height = 10 / 2,
     title = 'game state',
-    filename = 'game_state3'
+    filename = 'game_state'
   )
 
-calib_g_state5$data |> 
+calib_g_state_custom |> 
   plot_and_save_calibration(
     width = 10,
-    height = 5,
+    height = 10 / 2,
     title = 'game state',
-    filename = 'game_state5'
+    filename = 'game_state_custom'
   )
 
 # debugonce(probably:::cal_isoreg_impl)
