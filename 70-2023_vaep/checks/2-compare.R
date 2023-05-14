@@ -38,24 +38,34 @@ VAEP_COLS <- c(
   'ovaep_atomic',
   'vaep_atomic'
 )
-
+# arrow::read_parquet(file.path(ineput_data_dir, 'all_vaep.parquet')) |> 
+#   filter(game_id == 1640674) -> x
 spadl_shots <- arrow::read_parquet(file.path(input_data_dir, 'all_vaep.parquet')) |> 
+  ## both atomic and non-atomic
   filter(
-    # !is.na(action_id), ## non-atomic
-    (
-      lead(type_name) %in% c('shot', 'goal') |
-        type_name %in% c('shot', 'goal') 
-    ) &
+    type_name %in% c('shot', 'goal') &
       season_id == 2023
   ) |> 
-  left_join(
-    team_mapping |> 
-      select(
-        fotmob_home_team_id = fotmob_team_id,
-        spadl_team_id
-      ),
-    by = join_by(home_team_id == spadl_team_id)
-  ) |> 
+  ## just non-atomic
+  # filter(!is.na(action_id)) |>
+  # filter(
+  #     # (
+  #     #   lead(type_name) %in% c('shot', 'goal') |
+  #     #     type_name %in% c('shot', 'goal') 
+  #     # ) &
+  #     (
+  #       lead(type_name) == 'shot' | type_name == 'shot'
+  #     ) &
+  #     season_id == 2023
+# ) |> 
+left_join(
+  team_mapping |> 
+    select(
+      fotmob_home_team_id = fotmob_team_id,
+      spadl_team_id
+    ),
+  by = join_by(home_team_id == spadl_team_id)
+) |> 
   left_join(
     team_mapping |> 
       select(
@@ -72,6 +82,7 @@ spadl_shots <- arrow::read_parquet(file.path(input_data_dir, 'all_vaep.parquet')
   select(
     season,
     game_date,
+    game_id,
     home_team_id = fotmob_home_team_id,
     away_team_id = fotmob_away_team_id,
     action_id,
@@ -91,7 +102,7 @@ n_shots_by_game_compared <- full_join(
   fotmob_shots |> 
     count(home_team_id, away_team_id, game_date, name = 'n_shots_fotmob'),
   spadl_shots |> 
-    filter(!is.na(action_id), type_name == 'shot')  |> 
+    filter(type_name == 'shot')  |> 
     count(home_team_id, away_team_id, game_date, name = 'n_shots_spadl'),
   by = join_by(home_team_id, away_team_id, game_date)
 ) |>
@@ -106,11 +117,39 @@ non_atomic_compare <- inner_join(
     filter(!is.na(action_id)) |> 
     group_by(game_date, home_team_id) |> 
     mutate(
-      across(
-        pred_scores,
-        list(lag = ~lag(.x)),
-        .names = 'prev_{.col}'
-      )
+      prev_pred_scores = ovaep - pred_scores
+    ) |> 
+    ungroup() |> 
+    filter(type_name == 'shot') |> 
+    group_by(game_date, home_team_id) |> 
+    mutate(
+      shot_idx = row_number()
+    ) |> 
+    ungroup() |> 
+    select(
+      season,
+      game_date,
+      home_team_id,
+      away_team_id,
+      shot_idx,
+      all_of(VAEP_COLS),
+      starts_with('prev_')
+    ),
+  by = join_by(season, game_date, shot_idx, home_team_id, away_team_id)
+)
+
+spadl_shots |> 
+  filter(type_name == 'shot') |> 
+  ggplot() +
+  aes(x = vaep_atomic) +
+  geom_histogram()
+
+atomic_compare <- inner_join(
+  fotmob_shots,
+  spadl_shots |> 
+    group_by(game_date, home_team_id) |> 
+    mutate(
+      prev_pred_scores_atomic = ovaep_atomic - pred_scores_atomic
     ) |> 
     ungroup() |> 
     filter(type_name == 'shot') |> 
@@ -137,6 +176,41 @@ non_atomic_compare |>
   aes(
     x = g - xg,
     y = ovaep
+  ) +
+  geom_point(
+    aes(
+      color = factor(g)
+    )
+  )
+spadl_shots |>
+  filter(!is.na(action_id)) |> 
+  group_by(game_date, home_team_id) |> 
+  mutate(
+    across(
+      pred_scores,
+      list(lag = ~lag(.x)),
+      .names = 'prev_{.col}'
+    )
+  ) |> 
+  ungroup() |> 
+  filter(type_name == 'shot') |> 
+  mutate(
+    diff_scores = coalesce(pred_scores - prev_pred_scores, 0)
+  ) |> 
+  filter(
+    round(ovaep, 2) != round(diff_scores, 2)
+  ) |>
+  relocate(
+    ovaep,
+    diff_scores,
+    pred_scores,
+    prev_pred_scores
+  )
+non_atomic_compare |> 
+  ggplot() +
+  aes(
+    x = g - xg,
+    y = coalesce(pred_scores - prev_pred_scores, 0)
   ) +
   geom_point(
     aes(
@@ -192,6 +266,20 @@ non_atomic_compare |>
     )
   )
 
+spadl_shots |>
+  filter(type_name == 'shot') |> 
+  ggplot() +
+  aes(
+    x = vaep,
+    y = vaep_atomic
+  ) +
+  geom_point(
+    aes(
+      color = factor(result_name)
+    )
+  )
+
+
 non_atomic_compare |> 
   transmute(
     g,
@@ -199,8 +287,33 @@ non_atomic_compare |>
     g_minus_xg = g,
     pred_scores,
     prev_pred_scores,
-    diff_pred_score = pred_scores - prev_pred_scores,
+    diff_pred_scores = pred_scores - prev_pred_scores,
     vaep
   ) |> 
   corrr::correlate() |> 
-  autoplot()
+  autoplot() +
+  geom_text(
+    aes(
+      label = round(r, 2)
+    )
+  )
+
+atomic_compare |> 
+  transmute(
+    g,
+    xg,
+    g_minus_xg = g,
+    pred_scores_atomic,
+    prev_pred_scores_atomic,
+    diff_pred_scores_atomic = pred_scores_atomic - prev_pred_scores_atomic,
+    vaep,
+    vaep_atomic
+  ) |> 
+  corrr::correlate() |> 
+  autoplot() +
+  geom_text(
+    aes(
+      label = round(r, 2)
+    )
+  )
+
