@@ -31,16 +31,18 @@ team_mapping <- bind_cols(
     arrange(team = team_name) |> 
     rename_all(~sprintf('spadl_%s', .x))
 )
-VAEP_COLS <- c(
+ATOMIC_VAEP_COLS <- c(
   'pred_scores',
   'ovaep',
-  'vaep'
+  'vaep',
+  'pred_scores_atomic',
+  'ovaep_atomic',
+  'vaep_atomic'
 )
 all_vaep <- arrow::read_parquet(file.path(input_data_dir, 'all_vaep.parquet')) |> 
   filter(
     season_id == 2023
   )
-
 all_spadl_shots <- all_vaep |> filter(type_name == 'shot')
 process_spadl <- function(df, ...) {
   df |> 
@@ -84,34 +86,34 @@ process_spadl <- function(df, ...) {
       result_name,
       goal,
       ...,
-      all_of(VAEP_COLS)
+      all_of(ATOMIC_VAEP_COLS)
     )
 }
 
-spadl_shots <- process_spadl(all_spadl_shots)
-spadl_post_shots <- spadl_shots |> 
+atomic_spadl_shots <- process_spadl(all_spadl_shots)
+atomic_spadl_post_shots <- atomic_spadl_shots |> 
   transmute(
     game_id,
-    action_id = action_id + 1L,
+    atomic_action_id = atomic_action_id + 1L,
     shot_goal = goal
   ) |> 
   left_join(
     all_vaep,
-    by = join_by(game_id, action_id)
+    by = join_by(game_id, atomic_action_id)
   ) |> 
   process_spadl(shot_goal) |> 
   select(-goal) |> 
   rename(goal = shot_goal)
 
-spadl_pre_shots <- spadl_shots |> 
+atomic_spadl_pre_shots <- atomic_spadl_shots |> 
   transmute(
     game_id,
-    action_id = action_id - 1L,
+    atomic_action_id = atomic_action_id - 1L,
     shot_goal = goal
   ) |> 
   left_join(
     all_vaep,
-    by = join_by(game_id, action_id)
+    by = join_by(game_id, atomic_action_id)
   ) |> 
   process_spadl(shot_goal) |> 
   select(-goal) |> 
@@ -136,25 +138,26 @@ join_fotmob_shots <- function(df) {
         away_team_id,
         shot_idx,
         goal,
-        all_of(VAEP_COLS),
+        all_of(ATOMIC_VAEP_COLS),
         starts_with('prev_')
       ),
     by = join_by(season, game_date, shot_idx, home_team_id, away_team_id)
   )
 }
 
-compare_shots <- join_fotmob_shots(spadl_shots)
-compare_post_shots <- join_fotmob_shots(spadl_post_shots)
-compare_pre_shots <- join_fotmob_shots(spadl_pre_shots)
+compare_atomic_shots <- join_fotmob_shots(atomic_spadl_shots)
+compare_atomic_post_shots <- join_fotmob_shots(atomic_spadl_post_shots)
+compare_atomic_pre_shots <- join_fotmob_shots(atomic_spadl_pre_shots)
 
-correlate_vars <- function(df) {
+correlate_atomic_vars <- function(df) {
   df |> 
     select(
       goal,
       xg,
       g_minus_xg,
       pred_scores,
-      vaep
+      vaep,
+      vaep_atomic
     ) |>
     nest(data = -c(goal)) |> 
     mutate(
@@ -168,7 +171,7 @@ correlate_vars <- function(df) {
       values_to = 'cor'
     ) |> 
     filter(!is.na(cor)) |> 
-    filter(term1 %in% c('vaep')) |> 
+    filter(term1 %in% c('vaep_atomic')) |> 
     mutate(
       across(goal, ~ifelse(.x == 'Goal', 'goal', 'no_goal'))
     ) |> 
@@ -178,10 +181,10 @@ correlate_vars <- function(df) {
     )
 }
 
-compare_cors <- compare_shots |> correlate_vars()
-compare_cors
-compare_pre_shots |> correlate_vars()
-compare_post_shots |> correlate_vars()
+compare_cors_atomic <- compare_atomic_shots |> correlate_atomic_vars()
+compare_cors_atomic
+compare_atomic_pre_shots |> correlate_atomic_vars()
+compare_atomic_post_shots |> correlate_atomic_vars()
 
 theme_compare <- function(...) {
   list(
@@ -230,22 +233,62 @@ gg_compare <- function(...) {
   )
 }
 
-compare_shots |>
+atomic_spadl_shots |>
   ggplot() +
   aes(
-    x = xg,
-    y = vaep
+    x = vaep,
+    y = vaep_atomic
   ) +
   gg_compare() +
   labs(
-    title = 'xG vs. VAEP',
+    title = 'Shot actions',
+    x = 'VAEP',
+    y = 'Atomic VAEP'
+  )
+
+## Won't have goals since vaep is NA for action following shot that is a goal
+atomic_spadl_post_shots |>
+  ggplot() +
+  aes(
+    x = vaep,
+    y = vaep_atomic
+  ) +
+  gg_compare() +
+  labs(
+    title = 'Action after shot',
+    x = 'VAEP',
+    y = 'Atomic VAEP'
+  )
+
+atomic_spadl_pre_shots |>
+  ggplot() +
+  aes(
+    x = vaep,
+    y = vaep_atomic
+  ) +
+  gg_compare() +
+  labs(
+    title = 'Action before shot',
+    x = 'VAEP',
+    y = 'Atomic VAEP'
+  )
+
+compare_atomic_shots |>
+  ggplot() +
+  aes(
+    x = xg,
+    y = vaep_atomic
+  ) +
+  gg_compare() +
+  labs(
+    title = 'xG vs. Atomic VAEP',
     x = 'xG',
-    y = 'VAEP'
+    y = 'Atomic VAEP'
   ) +
   geom_text(
-    data = compare_cors |> 
+    data = compare_cors_atomic |> 
       filter(
-        term1 == 'vaep',
+        term1 == 'vaep_atomic',
         term2 == 'xg'
       ),
     color = '#00BFC4',
@@ -254,14 +297,14 @@ compare_shots |>
     hjust = 0,
     aes(
       x = 0.01,
-      y = 1.1,
+      y = 0.9,
       label = paste0('No goal cor.: ', round(no_goal, 2))
     )
   ) +
   geom_text(
-    data = compare_cors |> 
+    data = compare_cors_atomic |> 
       filter(
-        term1 == 'vaep',
+        term1 == 'vaep_atomic',
         term2 == 'xg'
       ),
     color = '#F8766D',
@@ -270,61 +313,60 @@ compare_shots |>
     hjust = 0,
     aes(
       x = 0.01,
-      y = 1.2,
+      y = 1,
       label = paste0('Goal cor.: ', round(goal, 2))
     )
   )
 
 ggsave(
-  filename = file.path(proj_dir, 'xg_vs_vaep.png'),
+  filename = file.path(proj_dir, 'xg_vs_vaep_atomic.png'),
   width = 7,
   height = 7,
   units = 'in'
 )
 
-
-compare_post_shots |>
+compare_atomic_post_shots |>
   ggplot() +
   aes(
     x = xg,
-    y = vaep
+    y = vaep_atomic
   ) +
   gg_compare() +
   labs(
     title = 'Action after shot',
     x = 'xG',
-    y = 'VAEP'
+    y = 'Atomic VAEP'
   )
 
-compare_pre_shots |>
+compare_atomic_pre_shots |>
   ggplot() +
   aes(
     x = xg,
-    y = vaep
+    y = vaep_atomic
   ) +
   gg_compare() +
   labs(
     title = 'Action before shot',
     x = 'xG',
-    y = 'VAEP'
+    y = 'Atomic VAEP'
   )
 
-compare_shots |>
+compare_atomic_shots |>
   ggplot() +
   aes(
     x = g_minus_xg,
-    y = vaep
+    y = vaep_atomic
   ) +
   gg_compare() +
   labs(
-    title = 'Goal minus xG vs. VAEP',
+    title = 'Goal minus xG vs. Atomic VAEP',
     x = 'Goal minus xG',
-    y = 'VAEP'
+    y = 'Atomic VAEP'
   ) +
   geom_text(
-    data = compare_cors |> 
+    data = compare_cors_atomic |> 
       filter(
-        term1 == 'vaep',
+        term1 == 'vaep_atomic',
         term2 == 'g_minus_xg'
       ),
     color = '#00BFC4',
@@ -338,9 +380,9 @@ compare_shots |>
     )
   ) +
   geom_text(
-    data = compare_cors |> 
+    data = compare_cors_atomic |> 
       filter(
-        term1 == 'vaep',
+        term1 == 'vaep_atomic',
         term2 == 'g_minus_xg'
       ),
     color = '#F8766D',
@@ -355,35 +397,34 @@ compare_shots |>
   )
 
 ggsave(
-  filename = file.path(proj_dir, 'g_minus_xg_vs_vaep.png'),
+  filename = file.path(proj_dir, 'g_minus_xg_vs_vaep_atomic.png'),
   width = 7,
   height = 7,
   units = 'in'
 )
 
-compare_post_shots |>
+compare_atomic_post_shots |>
   ggplot() +
   aes(
     x = g_minus_xg,
-    y = vaep
+    y = vaep_atomic
   ) +
   gg_compare() +
   labs(
     title = 'Action after shot',
     x = 'Goal minus xG',
-    y = 'VAEP'
+    y = 'Atomic VAEP'
   )
 
-compare_pre_shots |>
+compare_atomic_pre_shots |>
   ggplot() +
   aes(
     x = g_minus_xg,
-    y = vaep
+    y = vaep_atomic
   ) +
   gg_compare() +
   labs(
     title = 'Action before shot',
     x = 'Goal minus xG',
-    y = 'VAEP'
+    y = 'Atomic VAEP'
   )
-
