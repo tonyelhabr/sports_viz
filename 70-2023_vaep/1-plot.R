@@ -203,6 +203,7 @@ best_xi_rn1_with_logos <- set_names(
       term <- tolower(stringi::stri_trans_general(.x, id = 'Latin-ASCII'))
       term <- case_when(
         .x == 'Erling Haaland' ~ substr(term, 1, 6),
+        .x == 'Son Heung-Min' ~ 'Heung-Min',
         TRUE ~ substr(term, 1, 10)
       )
       
@@ -226,7 +227,7 @@ best_xi_rn1_with_logos <- set_names(
       }
       res
     }
-  ) |> 
+  ) |>
   group_by(player_id) |> 
   filter(row_number() == 1L) |> 
   ungroup() |> 
@@ -453,6 +454,9 @@ top_vaep_by_type <- vaep_by_type |>
   ungroup() |> 
   inner_join(
     vaep_by_player_season |> 
+      filter(
+        starting_position != 'GK'
+      ) |> 
       select(
         competition_id, 
         season_id, 
@@ -560,3 +564,4 @@ add_logo(
   idx_y = 0.98,
   adjust_y = FALSE
 )
+
