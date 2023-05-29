@@ -6,6 +6,7 @@ library(purrr)
 library(janitor)
 library(cli)
 library(qs)
+library(stringr)
 
 proj_dir <- '71-2023_u20_world_cup'
 data_dir <- file.path(proj_dir, 'data')
@@ -127,13 +128,13 @@ possibly_scrape_live_match_elements <- possibly(
   quiet = FALSE
 )
 
-scrape_and_scrape_live_match_elements <- function(url, overwrite = FALSE) {
+scrape_and_scrape_live_match_elements <- function(url, result_id, overwrite = FALSE) {
   path <- file.path(data_dir, 'live-match-elements', paste0(result_id, '.qs'))
   if (file.exists(path) & isFALSE(overwrite)) {
     return(qs::qread(path))
   }
   cli::cli_inform('Scraping {result_id}.')
-  res <- possibly_scrape_live_match_elements(result_id)
+  res <- possibly_scrape_live_match_elements(url)
   dir.create(dirname(path), showWarnings = FALSE, recursive = TRUE)
   qs::qsave(res, path)
   res
@@ -154,10 +155,21 @@ live_match_elements <- matches |>
       match_id = match_id
     )
   ) |> 
-  pull(match_players_url) |> 
-  map_dfr(get_live_match_elements)
+  pull(live_match_url, result_id) |> 
+  imap_dfr(
+    ~{
+      scrape_and_scrape_live_match_elements(
+        url = ..1,
+        result_id = ..2
+      ) |> 
+        mutate(
+          result_id = !!..2,
+          .before = 1
+        )
+    }
+  )
 
-teams <- elements |> 
+live_match_teams <- live_match_elements |> 
   filter(
     element %in% c(
       'HomeTeam',
@@ -165,13 +177,28 @@ teams <- elements |>
     )
   ) |> 
   unnest_wider(values)
-teams |> 
-  select(Players) |> 
+
+players <- live_match_teams |> 
+  transmute(
+    country = ShortClubName, 
+    country_picture_url = str_replace_all(PictureUrl, c('\\{format\\}' = 'sq', '\\{size\\}' = '4')), 
+    Players
+  ) |> 
   unnest_longer(Players) |> 
   unnest_wider(Players) |> 
   unnest_wider(where(is.list), names_sep = '_') |> 
   unnest_wider(where(is.list), names_sep = '_') |> 
-  clean_names()
+  # clean_names() |> 
+  # rename_with(\(x) gsub('_1', '', x), everything()) |> 
+  distinct(
+    player_id = IdPlayer,
+    player_name = str_to_title(PlayerName_1_Description),
+    # position = Position,
+    # player_picture_id = PlayerPicture_Id,
+    player_picture_url = PlayerPicture_PictureUrl,
+    country,
+    country_picture_url
+  )
 
 ## combine everything ----
 linebreak_stats <- match_stats |> 
@@ -183,12 +210,11 @@ linebreak_stats <- match_stats |>
   select(-values) |> 
   filter(
     stat %in% c(
+      'TimePlayed',
+      'LinebreaksAttemptedAttackingLineCompleted',
       'LinebreaksAttempted',
       'LinebreaksAttemptedCompleted'
     )
-  ) |> 
-  mutate(
-    across(player_id, as.integer)
   ) |> 
   pivot_wider(
     names_from = stat, 
@@ -196,15 +222,34 @@ linebreak_stats <- match_stats |>
   ) |> 
   clean_names()
 
-linebreak_stats |> 
+linebreaking_players <- linebreak_stats |> 
   group_by(player_id) |> 
   summarize(
-    n_games = n_distinct(result_id),
-    across(starts_with('linebreaks_'), sum)
+    n_matches = n_distinct(result_id),
+    across(
+      c(
+        matches('^linebreaks_'), 
+        time_played
+      ),
+      sum
+    )
   ) |> 
   ungroup() |> 
-  left_join(players, by = 'player_id') |> 
-  left_join(squads, by = 'squad_id') |> 
-  select(player_id, player, country, linebreaks_attempted_completed) |> 
+  left_join(
+    players, 
+    by = join_by(player_id)
+  ) |> 
+  # select(player_id, player_name, player_nationality, linebreaks_attempted_completed) |> 
   arrange(desc(linebreaks_attempted_completed)) |> 
-  slice_max(linebreaks_attempted_completed, n = 10)
+  mutate(
+    across(
+      matches('^linebreaks_'),
+      list(p90 = \(x) 90 * x / time_played)
+    )
+  )
+
+top_linebreaking_players <- linebreaking_players |> 
+  filter(time_played > 90) |> 
+  slice_max(linebreaks_attempted_completed_p90, n = 20) |> 
+  filter(country == 'USA')
+top_linebreaking_players
