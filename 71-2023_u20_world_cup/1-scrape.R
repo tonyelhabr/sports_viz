@@ -45,25 +45,6 @@ matches <- tibble(
   filter(match_status == 0L) |> 
   select(-match_status)
 
-# squad_resp <- GET('https://play.fifa.com/json/fantasy/squads_fifa.json')
-# player_resp <- GET('https://play.fifa.com/json/fantasy/players.json')
-# 
-# squad_cont <- content(squad_resp)
-# player_cont <- content(player_resp)
-
-squads <- tibble(
-  squad_id = map_pluck_int(squad_cont, 'id'),
-  country =  map_pluck_chr(squad_cont, 'name')
-)
-
-players <- tibble(
-  player_id = map_pluck_int(player_cont, 'id'),
-  squad_id = map_pluck_int(player_cont, 'squadId'),
-  player = map_pluck_chr(player_cont, 'name'),
-  position = map_pluck_int(player_cont, 'position')
-)
-
-
 scrape_match_stats <- function(result_id) {
   stats_resp <- GET(sprintf('https://fdh-api.fifa.com/v1/stats/match/%s/players.json', result_id))
   stop_for_status(stats_resp)
@@ -80,7 +61,7 @@ possibly_scrape_match_stats <- possibly(
 )
 
 scrape_and_save_match_stats <- function(result_id, overwrite = FALSE) {
-  path <- file.path(data_dir, paste0(result_id, '.qs'))
+  path <- file.path(data_dir, 'match-stats', paste0(result_id, '.qs'))
   if (file.exists(path) & isFALSE(overwrite)) {
     return(qs::qread(path))
   }
@@ -201,55 +182,97 @@ players <- live_match_teams |>
   )
 
 ## combine everything ----
-linebreak_stats <- match_stats |> 
+unnested_match_stats <- match_stats |> 
   hoist(
     values,
     'stat' = 1,
     'value' = 2
   ) |> 
-  select(-values) |> 
-  filter(
-    stat %in% c(
-      'TimePlayed',
-      'LinebreaksAttemptedAttackingLineCompleted',
-      'LinebreaksAttempted',
-      'LinebreaksAttemptedCompleted'
-    )
-  ) |> 
+  select(-values) 
+unnested_match_stats |> count(stat, sort = TRUE) |> tibble::view()
+## Why are there 2 records???
+## unnested_match_stats |> filter(stat %in% 'TotalDistance', result_id == 137442, player_id == 441263)
+player_stats <- unnested_match_stats |> 
+  # filter(
+  #   stat %in% c(
+  #     'TimePlayed',
+  #     'TotalDistance', ## some duplicates???
+  #     'AttemptedBallProgressions',
+  #     'CompletedBallProgressions',
+  #     'LinebreaksAttemptedAttackingLineCompleted',
+  #     'LinebreaksAttempted',
+  #     'LinebreaksAttemptedCompleted'
+  #   )
+  # ) |> 
+  # distinct(result_id, player_id, stat, value) |> 
+  group_by(result_id, player_id, stat) |> 
+  slice_max(value, n = 1, with_ties = FALSE) |> 
+  ungroup() |> 
   pivot_wider(
     names_from = stat, 
-    values_from = value
+    values_from = value,
+    values_fill = 0
   ) |> 
   clean_names()
 
-linebreaking_players <- linebreak_stats |> 
+player_stats_p90 <- player_stats |> 
   group_by(player_id) |> 
   summarize(
     n_matches = n_distinct(result_id),
     across(
-      c(
-        matches('^linebreaks_'), 
-        time_played
-      ),
+      -c(result_id),
       sum
     )
   ) |> 
   ungroup() |> 
+  # select(player_id, player_name, player_nationality, linebreaks_attempted_completed) |> 
+  # arrange(desc(linebreaks_attempted_completed)) |> 
+  mutate(
+    across(
+      -c(player_id, time_played),
+      list(p90 = \(x) 90 * x / time_played)
+    )
+  ) |> 
   left_join(
     players, 
     by = join_by(player_id)
-  ) |> 
-  # select(player_id, player_name, player_nationality, linebreaks_attempted_completed) |> 
-  arrange(desc(linebreaks_attempted_completed)) |> 
-  mutate(
-    across(
-      matches('^linebreaks_'),
-      list(p90 = \(x) 90 * x / time_played)
-    )
   )
+qs::qsave(player_stats_p90, file.path(data_dir, 'player_stats_p90.qs'))
 
-top_linebreaking_players <- linebreaking_players |> 
-  filter(time_played > 90) |> 
-  slice_max(linebreaks_attempted_completed_p90, n = 20) |> 
-  filter(country == 'USA')
-top_linebreaking_players
+# long_player_stats_p90 <- player_stats |> 
+#   group_by(player_id) |> 
+#   summarize(
+#     n_matches = n_distinct(result_id),
+#     across(
+#       -c(result_id),
+#       sum
+#     )
+#   ) |> 
+#   ungroup() |> 
+#   mutate(
+#     across(
+#       -c(player_id, n_matches, time_played),
+#       list(p90 = \(x) 90 * x / time_played)
+#     )
+#   ) |> 
+#   pivot_longer(
+#     -c(player_id, n_matches, time_played),
+#     names_to = 'stat',
+#     values_to = 'value'
+#   ) |> 
+#   filter(
+#     time_played > 90,
+#     str_detect(stat, '_p90$')
+#   ) |> 
+#   group_by(stat) |> 
+#   mutate(
+#     rnk = row_number(desc(value))
+#   ) |> 
+#   ungroup()
+# long_player_stats_p90 |> 
+#   left_join(
+#     players |> distinct(player_id, player_name, country)
+#   ) |> 
+#   filter(rnk <= 15) |> 
+#   count(stat, country, sort = TRUE) |> 
+#   filter(country == 'USA')
