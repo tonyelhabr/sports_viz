@@ -173,7 +173,7 @@ players <- live_match_teams |>
   # rename_with(\(x) gsub('_1', '', x), everything()) |> 
   distinct(
     player_id = IdPlayer,
-    player_name = str_to_title(PlayerName_1_Description),
+    player_name = PlayerName_1_Description, # str_to_title(PlayerName_1_Description),
     # position = Position,
     # player_picture_id = PlayerPicture_Id,
     player_picture_url = PlayerPicture_PictureUrl,

@@ -1,6 +1,7 @@
 library(qs)
 library(dplyr)
 library(forcats)
+library(purrr)
 
 library(ggplot2)
 library(ggtext)
@@ -9,13 +10,13 @@ library(showtext)
 library(ragg)
 library(htmltools)
 library(ggimage)
-library(grid)
 library(magick)
-# library(cropcircles)
 
 proj_dir <- '71-2023_u20_world_cup'
+data_dir <- file.path(proj_dir, 'data')
 img_dir <- file.path(proj_dir, 'img')
 dir.create(img_dir, showWarnings = FALSE, recursive = FALSE)
+tourney_logo_path <- file.path(proj_dir, 'FPLUS_FU2023_Argentina_Textmark.png')
 
 font <- 'Titillium Web'
 sysfonts::font_add_google(font, font)
@@ -30,7 +31,7 @@ theme_set(theme_minimal())
 theme_update(
   text = element_text(family = font, color = 'white'),
   title = element_text(size = 14, color = 'white'),
-  plot.title = element_text(face = 'bold', size = 20, color = 'white', hjust = 0),
+  plot.title = element_text(face = 'bold', size = 16, color = 'white', hjust = 0),
   plot.title.position = 'plot',
   plot.subtitle = element_text(size = 14, color = 'white', hjust = 0),
   plot.margin = margin(10, 20, 10, 20),
@@ -56,168 +57,147 @@ tag_lab <- tagList(
   tags$span("@TonyElHabr"),
 )
 
-player_stats_p90 <- qs::qread(file.path(data_dir, 'player_stats_p90.qs'))
-
 min_minutes_played <- 90
-top_player_stats_p90 <- player_stats_p90 |> 
-  filter(time_played >= min_minutes_played) |> 
-  slice_max(linebreaks_attempted_completed_p90, n = 10) |> 
-  mutate(
-    local_player_picture_url = map2(
-      player_picture_url,
-      player_id,
-      ~{
-        path <- file.path(img_dir, sprintf('%s.png', ..2))
-        if (file.exists(path)) {
-          return(path)
-        }
-        download.file(..1, destfile = path, mode = 'wb')
-        path
-      }
-    ),
-    player_lab = sprintf('<span style="font-size:14px;color:white"><b>%s</b></span><br/><span style="font-size:12px;color:#ffffff">%s</span>', player_name, country),
-    across(
-      player_lab,
-      \(x) fct_reorder(x, linebreaks_attempted_completed_p90)
-    )
-  )
+filt_player_stats_p90 <- qs::qread(file.path(data_dir, 'player_stats_p90.qs'))|> 
+  filter(time_played >= min_minutes_played) 
 
-p <- top_player_stats_p90 |> 
-  ggplot() +
-  aes(
-    x = linebreaks_attempted_completed_p90,
-    y = player_lab
-  ) +
-  geom_col(
-    fill = '#00a896',
-    width = 0.9
-  ) +
-  theme(
-    axis.text.y = element_blank()
-  ) +
-  geom_richtext(
-    hjust = 0,
-    vjust = 0.5,
-    fill = NA,
-    family = font,
-    label.colour = NA,
-    lineheight = 0.8,
-    aes(
-      x = 3,
-      label = player_lab
-    )
-  ) +
-  geom_text(
-    hjust = 1.5,
-    vjust = 0.5,
-    family = font,
-    fontface = 'bold',
-    color = 'white',
-    size = 14 / .pt,
-    aes(
-      label = sprintf('%.1f', linebreaks_attempted_completed_p90)
-    )
-  ) +
-  theme(
-    plot.title = element_text(size = 18),
-    axis.text.x = element_blank(),
-    axis.ticks = element_blank(),
-    panel.grid.major.x = element_blank()
-  ) +
-  labs(
-    y = NULL,
-    x = NULL,
-    title = 'Most linebreaks attempted per 90 minutes',
-    subtitle = 'FIFA U-20 World Cup 2023',
-    caption = glue::glue(
-      '
-      **Data**: FIFA through June 2. Minimum {min_minutes_played} minutes played.
-      '
-    ),
-    tag = tag_lab
-  )
-p
+download_player_picture <- function(url, player_id) {
+  path <- file.path(img_dir, sprintf('%s.png', player_id))
+  if (file.exists(path)) {
+    return(path)
+  }
+  download.file(url, destfile = path, mode = 'wb')
+  path
+}
 
-p_with_logos <- p +
-  ## passing in more than 1 row to geom_image isn't working for some reason...
-  map(
-    top_player_stats_p90 |>
-      group_split(row_number()),
-    ~{
-      ggimage::geom_image(
-        data = .x,
-        size = 0.06,
-        hjust = 0,
-        # vjust = 0.5,
-        aes(
-          x = 0.5,
-          image = local_player_picture_url
-        )
+generate_player_lab <- function(player_name, country) {
+  sprintf('<span style="font-size:16px;color:white"><b>%s</b></span><br/><span style="font-size:12px;color:#ffffff">%s</span>', player_name, country)
+}
+
+plot_top_10_for_stat <- function(
+    col, 
+    bar_color = '#ffffff', 
+    n_digits = 0, 
+    title_stem = 'stat', 
+    player_lab_x_offset = 1
+) {
+  col_sym <- ensym(col)
+  top_players <- filt_player_stats_p90 |> 
+    slice_max(!!col_sym, n = 10) |> 
+    mutate(
+      local_player_picture_url = map2(
+        player_picture_url,
+        player_id,
+        download_player_picture
+      ),
+      player_lab = generate_player_lab(player_name, country),
+      across(
+        player_lab,
+        \(x) fct_reorder(x, !!col_sym)
       )
-    }
+    )
+  
+  p <- top_players |> 
+    ggplot() +
+    aes(
+      x = !!col_sym,
+      y = player_lab
+    ) +
+    geom_col(
+      fill = bar_color,
+      width = 0.9
+    ) +
+    theme(
+      axis.text.y = element_blank()
+    ) +
+    geom_richtext(
+      hjust = 0,
+      vjust = 0.5,
+      fill = NA,
+      family = font,
+      label.colour = NA,
+      lineheight = 0.8,
+      aes(
+        x = player_lab_x_offset,
+        label = player_lab
+      )
+    ) +
+    geom_text(
+      hjust = 1.5,
+      vjust = 0.5,
+      family = font,
+      fontface = 'bold',
+      color = 'white',
+      size = 14 / .pt,
+      aes(
+        label = sprintf(paste0('%.', n_digits, 'f'), !!col_sym)
+      )
+    ) +
+    ## passing in more than 1 row to geom_image isn't working for some reason...
+    map(
+      top_players |>
+        group_split(row_number()),
+      ~{
+        ggimage::geom_image(
+          data = .x,
+          size = 0.055,
+          hjust = 0,
+          # vjust = 0.5,
+          aes(
+            x = 0.5,
+            image = local_player_picture_url
+          )
+        )
+      }
+    ) +
+    theme(
+      axis.text.x = element_blank(),
+      axis.ticks = element_blank(),
+      panel.grid.major.x = element_blank()
+    ) +
+    labs(
+      y = NULL,
+      x = NULL,
+      title = sprintf('Most %s per 90 minutes', title_stem),
+      subtitle = 'FIFA U-20 World Cup 2023',
+      caption = sprintf('**Source**: FIFA. Data through June 2. Minimum %s minutes played.', min_minutes_played),
+      tag = tag_lab
+    )
+  
+  plot_path <- file.path(proj_dir, sprintf('top_%s.png', col))
+  ggsave(
+    p,
+    filename = plot_path,
+    width = 7,
+    height = 7
   )
-
-linebreaks_plot_path <- file.path(proj_dir, 'top_linebreaks_attempted_p90.png')
-ggsave(
-  p_with_logos,
-  filename = linebreaks_plot_path,
-  width = 7,
-  height = 7
-)
-
-add_logo(
-  linebreaks_plot_path,
-  file.path(proj_dir, 'FPLUS_FU2023_Argentina_Textmark.png'),
-  delete = TRUE, 
-  logo_scale = 0.12,
-  idx_x = 0.02,
-  idx_y = 0.98,
-  adjust_y = FALSE
-)
-
-
-
-p <- player_stats_p90 |> 
-  filter(time_played > 90) |> 
-  arrange(desc(total_distance_p90))
-ggplot() +
-  aes(
-    x = linebreaks_attempted_completed_p90,
-    y = total_distance_p90
-  ) +
-  geom_point(color = 'white')
-
-grid.newpage()
-plot <- print(
-  p,
-  vp = viewport(
-    width = unit(0.8, "npc"),
-    height = unit(0.8, "npc"), 
-    angle = 45
+  
+  add_logo(
+    plot_path,
+    tourney_logo_path,
+    delete = FALSE, 
+    path_suffix = '',
+    logo_scale = 0.12,
+    idx_x = 0.02,
+    idx_y = 0.98,
+    adjust_y = FALSE
   )
+  
+  invisible(p)
+}
+
+plot_top_10_for_stat(
+  'linebreaks_attempted_p90',
+  bar_color = '#1b9aaa',
+  n_digits = 1,
+  player_lab_x_offset = 4,
+  title_stem = 'line-breaking passes attempted'
 )
-vp <- viewport(x = 0.82, y = 0.98, width = 0, height = 0)
-pushViewport(vp)
-plot <- grid.grab()
-plot <- as.ggplot(plot)
-ggsave(file.path(proj_dir, 'temp.png'), bg = blackish_background, width = 1500, height = 1500, units = "px")
 
-
-pak::pak('thebioengineer/camcorder')
-player_stats_p90 |>
-  filter(time_played > 90, linebreaks_completed_all_lines_p90 > 0) |> 
-  ggplot() +
-  aes(
-    x = linebreaks_attempted_completed_p90,
-    y = linebreaks_completed_all_lines
-  ) +
-  geom_point(color = 'white')
-library(camcorder)
-gg_record(
-  dir = file.path(tempdir(), '71'),
-  device = 'png',
-  width = 6,
-  height = 6,
-  units = 'in',
-  dpi = 300
+plot_top_10_for_stat(
+  'distance_high_speed_sprinting_p90',
+  bar_color = '#ef476f',
+  n_digits = 0,
+  player_lab_x_offset = 45,
+  title_stem = 'distance (m) sprinted'
 )
