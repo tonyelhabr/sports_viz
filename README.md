@@ -2,6 +2,18 @@ This repo stores my code and plots for sports-related plots. Any "small" data is
 
 The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I scraped.
 
+# 72. 2023 Women's World Cup
+
+![](72-2023_womens_world_cup/top_distance_high_speed_sprinting.png "Most distance (m) covered while high speed sprinting, FIFA Women's World Cup 2023")
+
+![](72-2023_womens_world_cup/top_sprints.png "Most sprints, FIFA Women's World Cup 2023")
+
+# 71. 2023 Men's U20 World Cup
+
+![](71-2023_u20_world_cup/top_linebreaks_attempted_p90.png "Most line-breaking passes attempted per 90 minutes, FIFA U-20 World Cup 2023")
+
+![](71-2023_u20_world_cup/top_distance_high_speed_sprinting_p90.png "Most distance (m) sprinted per 90 minutes, FIFA U-20 World Cup 2023")
+
 # 70. 2023 EPL Team of the Season
 
 ![](70-2023_vaep/best_xi_vaep_atomic_p90_w_background_w_logo.png "EPL Team of the Season based on atomic VAEP per 90 minutes, 2022/23 season")
