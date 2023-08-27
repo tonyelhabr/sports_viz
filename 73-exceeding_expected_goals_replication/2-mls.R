@@ -402,6 +402,20 @@ xg_ratio_stability |>
     caption = 'Minimum 50 shots on target faced in both years'
   )
 
+## example for blog post
+gamma_gamma_eb_adjust(
+  tibble(
+    g = c(2, 120),
+    xg = c(6, 100),
+    xg_ratio = c(3, 1.2)
+  ),
+  ratio_metric = 'xg_ratio',
+  xg_metric = 'xg',
+  goal_metric = 'g',
+  forced_prior_shape = 9.392108,
+  forced_prior_rate = 8.927794 
+)
+
 adj_xg_ratio_stability <- gamma_gamma_eb_adjust(
   shooter_xg_by_season,
   ratio_metric = 'xg_ratio',
