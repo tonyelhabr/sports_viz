@@ -48,17 +48,17 @@ gamma_gamma_eb_adjust <- function(
     goal_metric = 'g',
     shot_metric = 'shots',
     shot_threshold = 50,
-    force_prior_shape = NULL,
-    force_prior_rate = NULL,
+    forced_prior_shape = NULL,
+    forced_prior_rate = NULL,
     metric_lo_cutoff = 0, 
     metric_hi_cutoff = 10
 ){
-  prior_df <- df[df[[shot_metric]] >= shot_threshold,]
-  prior_df <- prior_df[prior_df[[ratio_metric]] > metric_lo_cutoff,]
-  prior_df <- prior_df[prior_df[[ratio_metric]] < metric_hi_cutoff,]
   
-  
-  if(is.null(force_prior_shape)){
+  if(is.null(forced_prior_shape) | is.null(forced_prior_rate)){
+    prior_df <- df[df[[shot_metric]] >= shot_threshold,]
+    prior_df <- prior_df[prior_df[[ratio_metric]] > metric_lo_cutoff,]
+    prior_df <- prior_df[prior_df[[ratio_metric]] < metric_hi_cutoff,]
+    
     ## Ignore the warning here.
     suppressWarnings(
       prior_distr <- fitdistr(
@@ -71,10 +71,9 @@ gamma_gamma_eb_adjust <- function(
     prior_shape <- prior_distr$estimate[1]
     prior_rate <- prior_distr$estimate[2]
   } else {
-    prior_shape = force_prior_shape
-    prior_rate = force_prior_rate
+    prior_shape <- forced_prior_shape
+    prior_rate <- forced_prior_rate
   }
-  
   
   df$adj_ratio <- map2(
     df[[goal_metric]], df[[xg_metric]],
@@ -90,18 +89,6 @@ gamma_gamma_eb_adjust <- function(
   
   res <- unnest_wider(df, adj_ratio, names_sep = '_')
   return(res)
-}
-
-## Truncate John Doe to J. Doe
-truncate_name <- function(full_name) {
-  name_parts <- strsplit(full_name, ' ')[[1]]
-  
-  if (length(name_parts) < 2) {
-    return(full_name)
-  }
-  
-  first_initial <- substr(name_parts[1], 1, 1)
-  paste(first_initial, '.', name_parts[length(name_parts)])
 }
 
 ## main ----
@@ -129,10 +116,12 @@ raw_shooter_xg <- tbl(con, in_schema('mls', 'xgoals')) |>
       select(game_id, season_name),
     by = join_by(game_id)
   ) |>
-  as_tibble()|>
+  as_tibble()
+
+filt_raw_shooter_xg <- raw_shooter_xg |>
   filter(season_name %in% as.character(2021L:2023L))
 
-agg_shooter_xg <- raw_shooter_xg |>
+filt_agg_shooter_xg <- filt_raw_shooter_xg |>
   group_by(player_id, player) |>
   mutate(g = as.integer(!is.na(g))) |> 
   summarise(
@@ -145,15 +134,15 @@ agg_shooter_xg <- raw_shooter_xg |>
     xg_ratio = g / xg
   )
 
-adjusted_shooter_xg <- gamma_gamma_eb_adjust(
-  agg_shooter_xg,
+filt_adj_shooter_xg <- gamma_gamma_eb_adjust(
+  filt_agg_shooter_xg,
   ratio_metric = 'xg_ratio',
   xg_metric = 'xg',
   goal_metric = 'g',
   shot_threshold = 50
 )
 
-top_adjusted_shooters <- adjusted_shooter_xg |> 
+top_adj_shooters <- filt_adj_shooter_xg |> 
   filter(shots >= 100) |> 
   slice_max(adj_ratio_mean, n = 20, with_ties = FALSE) |> 
   arrange(desc(adj_ratio_mean)) |> 
@@ -215,7 +204,7 @@ theme_asa <- function(...) {
   )
 }
 
-top_adjusted_shooters_plot <- top_adjusted_shooters |>
+top_adj_shooters_plot <- top_adj_shooters |>
   plot_estimates() +
   theme_asa() +
   labs(
@@ -223,18 +212,18 @@ top_adjusted_shooters_plot <- top_adjusted_shooters |>
     subtitle = 'Since beginning of 2021 season. Minimum 100 shots.'
   )
 
-top_adjusted_shooters_plot_path <- file.path(proj_dir, 'mls-top-overperformers.png')
+top_adj_shooters_plot_path <- file.path(proj_dir, 'mls-top-overperformers.png')
 asa_logo_path <- file.path(proj_dir, 'ASAlogo.png')
 ggsave(
-  top_adjusted_shooters_plot,
-  filename = top_adjusted_shooters_plot_path,
+  top_adj_shooters_plot,
+  filename = top_adj_shooters_plot_path,
   units = 'in',
   width = 8,
   height = 8
 )
 
 add_logo(
-  top_adjusted_shooters_plot_path,
+  top_adj_shooters_plot_path,
   path_logo = asa_logo_path,
   delete = FALSE,
   path_suffix = '',
@@ -245,20 +234,19 @@ add_logo(
   adjust_y = FALSE
 )
 
-top_shrunken_adjusted_shooters <- adjusted_shooter_xg |> 
+top_shrunken_adj_shooters <- filt_adj_shooter_xg |> 
   filter(
     shots >= 25,
     shots < 100
-  ) |> 
+  ) |>
   slice_max(adj_ratio_mean, n = 20, with_ties = FALSE) |> 
   arrange(desc(adj_ratio_mean)) |> 
   mutate(
     player = fct_reorder(player, adj_ratio_mean)
   )
+top_shrunken_adj_shooters
 
-top_shrunken_adjusted_shooters
-
-top_shrunken_adjusted_shooters_plot <- top_shrunken_adjusted_shooters |> 
+top_shrunken_adj_shooters_plot <- top_shrunken_adj_shooters |> 
   plot_estimates() +
   geom_curve(
     aes(
@@ -272,7 +260,9 @@ top_shrunken_adjusted_shooters_plot <- top_shrunken_adjusted_shooters |>
   ) +
   geom_point(
     aes(x = xg_ratio, size = shots),
-    color = '#01C4E7'
+    color = '#01C4E7',
+    # inherit.aes = FALSE,
+    show.legend = FALSE
   ) +
   geom_text(
     data = tibble(
@@ -342,19 +332,18 @@ top_shrunken_adjusted_shooters_plot <- top_shrunken_adjusted_shooters |>
     title = 'Top 20 low volume shooting overperformers in the MLS',
     subtitle = 'Since beginning of 2021 season. Minimum 10 shots. Maximum 100 shots.'
   )
-top_shrunken_adjusted_shooters_plot
 
-top_shrunken_adjusted_shooters_plot_path <- file.path(proj_dir, 'mls-top-overperformers-shrunken.png')
+top_shrunken_adj_shooters_plot_path <- file.path(proj_dir, 'mls-top-overperformers-shrunken.png')
 ggsave(
-  top_shrunken_adjusted_shooters_plot,
-  filename = top_shrunken_adjusted_shooters_plot_path,
+  top_shrunken_adj_shooters_plot,
+  filename = top_shrunken_adj_shooters_plot_path,
   units = 'in',
   width = 8,
   height = 8
 )
 
 add_logo(
-  top_shrunken_adjusted_shooters_plot_path,
+  top_shrunken_adj_shooters_plot_path,
   path_logo = asa_logo_path,
   delete = FALSE,
   path_suffix = '',
@@ -376,3 +365,133 @@ add_logo(
 ## Christian Ramirez: forward
 ## Juan José Purata: centerback
 ## Ryan Hollingshead: rightback
+
+shooter_xg_by_season <- raw_shooter_xg |>
+  group_by(player_id, player, season_name) |>
+  mutate(g = as.integer(!is.na(g))) |> 
+  summarise(
+    xg = sum(xg),
+    g = sum(g),
+    shots = n()
+  ) |> 
+  ungroup() |> 
+  mutate(
+    xg_ratio = g / xg
+  )
+
+xg_ratio_stability <- shooter_xg_by_season |> 
+  group_by(player_id) |> 
+  arrange(season_name, .by_group = TRUE) |> 
+  mutate(
+    prev_xg_ratio = lag(xg_ratio)
+  ) |> 
+  ungroup() |> 
+  filter(!is.na(prev_xg_ratio), !is.na(xg_ratio))
+
+xg_ratio_stability |> 
+  filter(shots >= 50) |> 
+  ggplot(aes(x = xg_ratio, y = prev_xg_ratio)) +
+  geom_point() +
+  geom_smooth(method = 'lm') +
+  # coord_cartesian(xlim = c(0, 3), ylim = c(0, 3)) +
+  ggpubr::stat_cor() +
+  labs(
+    x = 'G/xG', 
+    y = "Previous Year's G/xG",
+    title = 'Year-over-Year Stability of G/xG',
+    caption = 'Minimum 50 shots on target faced in both years'
+  )
+
+adj_xg_ratio_stability <- gamma_gamma_eb_adjust(
+  shooter_xg_by_season,
+  ratio_metric = 'xg_ratio',
+  xg_metric = 'xg',
+  goal_metric = 'g',
+  ## params from 2021-2023 run
+  forced_prior_shape  = 9.340606,
+  forced_prior_rate = 9.24754
+) |> 
+  group_by(player_id) |> 
+  arrange(season_name, .by_group = TRUE) |> 
+  mutate(
+    prev_adj_ratio_mean  = lag(adj_ratio_mean)
+  ) |> 
+  ungroup() |> 
+  filter(!is.na(prev_adj_ratio_mean), !is.na(adj_ratio_mean))
+
+adj_xg_ratio_stability_plot <- adj_xg_ratio_stability |> 
+  ggplot(aes(x = adj_ratio_mean, y = prev_adj_ratio_mean)) +
+  geom_hline(
+    aes(yintercept = 1),
+    color = '#6E7275',
+    linewidth = 1.5
+  ) +
+  geom_vline(
+    aes(xintercept = 1),
+    color = '#6E7275',
+    linewidth = 1.5
+  ) +
+  geom_point(
+    alpha = 1,
+    shape = 21,
+    color = 'white'
+  ) +
+  geom_smooth(
+    method = 'lm',
+    color = '#FF6A62'
+  ) +
+  geom_text(
+    data = tibble(
+      x = 0.85,
+      y = 1.5,
+      label = paste0('R: ', round(
+        cor(
+          adj_xg_ratio_stability$adj_ratio_mean, 
+          adj_xg_ratio_stability$prev_adj_ratio_mean), 
+        3
+      ))
+    ),
+    aes(
+      x = x,
+      y = y,
+      label = label
+    ),
+    color = 'white',
+    family = 'Bebas Neue',
+    size = 24 / .pt,
+    hjust = 0.5,
+    vjust = 0.5
+  ) +
+  theme_asa() +
+  theme(
+    axis.text.x = element_text(color = 'white', size = 14),
+    axis.text.y = element_text(color = 'white', size = 14),
+    panel.grid.major.y = element_line(color = '#6E7275')
+  ) +
+  labs(
+    x = 'Adjusted G/xG', 
+    y = "Previous Year's Adjusted G/xG",
+    title = 'Year-over-Year Stability of Adjusted G/xG',
+    caption = 'MLS since 2013. All shot takers.'
+  )
+
+adj_xg_ratio_stability_plot_path <- file.path(proj_dir, 'adj-g-xg-ratio-stability.png')
+ggsave(
+  adj_xg_ratio_stability_plot,
+  filename = adj_xg_ratio_stability_plot_path,
+  units = 'in',
+  width = 7,
+  height = 7
+)
+
+add_logo(
+  adj_xg_ratio_stability_plot_path,
+  path_logo = asa_logo_path,
+  delete = FALSE,
+  path_suffix = '',
+  logo_scale = 0.2,
+  idx_x = 0.98,
+  idx_y = 0.05,
+  adjust_x = FALSE,
+  adjust_y = FALSE
+)
