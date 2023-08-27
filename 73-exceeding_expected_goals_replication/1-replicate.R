@@ -261,12 +261,139 @@ magick::image_write(
   path = file.path(proj_dir, 'shaw-figure-1-compared-w-asa-logo.png')
 )
 
-combined_image_with_tony_logo <- magick::image_append(
-  c(orig_image, replicated_image_with_tony_logo), 
-  stack = TRUE
+## beyond-replication ----
+raw_shots <- worldfootballR::load_understat_league_shots(league = 'EPL')
+shots <- raw_shots |> 
+  tibble::as_tibble() |> 
+  dplyr::filter(
+    season %in% c(2021L, 2022L),
+    situation != 'DirectFreeKick'
+  ) |> 
+  dplyr::arrange(id) |> 
+  dplyr::transmute(
+    id,
+    player,
+    ## since 2022/23, xG is filled out, not x_g
+    xg = dplyr::coalesce(x_g, xG),
+    g = as.integer(result == 'Goal')
+  )
+
+shots_by_player <- shots |> 
+  dplyr::group_by(player) |> 
+  dplyr::summarize(
+    shots = dplyr::n(),
+    dplyr::across(c(g, xg), sum)
+  ) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(raw_ratio = g / xg) |> 
+  dplyr::arrange(dplyr::desc(shots))
+shots_by_player
+
+shots_by_player$adj_ratio <- purrr::map2(
+  shots_by_player$g, shots_by_player$xg,
+  function(g, xg) {
+    simulate_gamma_posterior(
+      successes = g,
+      trials = xg,
+      prior_shape = prior_shape,
+      prior_rate = prior_rate
+    )
+  }
 )
 
-magick::image_write(
-  combined_image_with_tony_logo, 
-  path = file.path(proj_dir, 'shaw-figure-1-compared-w-tony-logo.png')
+adj_ratio_by_player <- shots_by_player |> 
+  tidyr::unnest_wider(
+    adj_ratio, 
+    names_sep = '_'
+  ) |> 
+  dplyr::arrange(dplyr::desc(adj_ratio_mean))
+
+ordinal_adj_ratio_by_player <- adj_ratio_by_player |>
+  dplyr::filter(
+    player %in% names(shaw_players)
+  ) |> 
+  dplyr::mutate(
+    player = forcats::fct_reorder(shaw_players[player], adj_ratio_mean)
+  )
+
+library(htmltools)
+library(sysfonts)
+library(showtext)
+
+blackish_background <- '#1f1f1f'
+font <- 'Titillium Web'
+sysfonts::font_add_google(font, font)
+sysfonts::font_add('fb', 'Font Awesome 6 Brands-Regular-400.otf')
+showtext::showtext_auto()
+plot_resolution <- 300
+showtext::showtext_opts(dpi = plot_resolution)
+## https://github.com/tashapiro/tanya-data-viz/blob/1dfad735bca1a7f335969f0eafc94cf971345075/nba-shot-chart/nba-shots.R#L64
+
+
+tag_lab <- htmltools::tagList(
+  htmltools::tags$span(htmltools::HTML(enc2utf8("&#xf099;")), style='font-family:fb'),
+  htmltools::tags$span("@TonyElHabr"),
 )
+
+beyond_replication_adj_ratio_plot <- ordinal_adj_ratio_by_player |>
+  ggplot2::ggplot() +
+  ggplot2::aes(y = player) +
+  ggplot2::geom_vline(
+    ggplot2::aes(xintercept = 1), 
+    linewidth = 1,
+    linetype = 2,
+    color = 'white'
+  ) +
+  ggplot2::geom_errorbarh(
+    ggplot2::aes(
+      xmin = adj_ratio_mean - adj_ratio_sd,
+      xmax = adj_ratio_mean + adj_ratio_sd
+    ),
+    color = 'white',
+    height = 0.5
+  ) +
+  ggplot2::geom_point(
+    ggplot2::aes(x = adj_ratio_mean, size = shots),
+    color = 'white'
+  ) +
+  ggplot2::theme_minimal() +
+  ggplot2::theme(
+    text = ggplot2::element_text(family = font, color = 'white'),
+    title = ggplot2::element_text(size = 14, color = 'white'),
+    plot.title = ggplot2::element_text(face = 'bold', size = 16, color = 'white', hjust = 0),
+    plot.title.position = 'plot',
+    plot.subtitle = ggplot2::element_text(size = 14, color = 'white', hjust = 0),
+    plot.margin = ggplot2::margin(10, 20, 10, 20),
+    plot.caption = ggtext::element_markdown(color = 'white', hjust = 0, size = 10, face = 'plain', lineheight = 1.1),
+    plot.caption.position = 'plot',
+    plot.tag = ggtext::element_markdown(size = 10, color = 'white', hjust = 1),
+    plot.tag.position = c(0.99, 0.01),
+    panel.grid.major.y = ggplot2::element_blank(),
+    panel.grid.minor.x = ggplot2::element_blank(),
+    panel.grid.major.x = ggplot2::element_line(linewidth = 0.1),
+    plot.background = ggplot2::element_rect(fill = blackish_background, color = blackish_background),
+    panel.background = ggplot2::element_rect(fill = blackish_background, color = blackish_background),
+    axis.title = ggplot2::element_text(color = 'white', size = 14, face = 'bold', hjust = 0.99),
+    axis.line = ggplot2::element_blank(),
+    axis.text = ggplot2::element_text(color = 'white', size = 12),
+    axis.text.y = ggtext::element_markdown(),
+    legend.text = ggplot2::element_text(color = 'white', size = 12),
+    legend.position = 'top'
+  ) +
+  ggplot2::labs(
+    title = 'Top 20 shooting overperformers in the EPL',
+    subtitle = 'EPL 2021/22 and 2022/23 seasons. ',
+    caption = 'Players sorted according to descending adjusted G/xG ratio. Minimum 100 shots.<br/>**Source**: understat.',
+    y = NULL,
+    x = 'Adjusted G/xG Ratio',
+    tag = tag_lab
+  )
+
+beyond_replication_plot_path <- file.path(proj_dir, 'beyond-replication.png')
+ggplot2::ggsave(
+  beyond_replication_adj_ratio_plot,
+  filename = beyond_replication_plot_path,
+  width = 7,
+  height = 7
+)
+
