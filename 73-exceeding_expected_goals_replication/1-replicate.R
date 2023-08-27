@@ -1,12 +1,18 @@
+## data wrangling
 library(worldfootballR)
 library(dplyr)
 library(tibble)
 
 ## distribution fitting and wrangling
-library(MASS, include.only = "fitdistr") ## to avoid `select` name conflict with dplyr
+library(MASS, include.only = 'fitdistr') ## to avoid `select` name conflict with dplyr
 library(withr)
 library(purrr)
 library(tidyr)
+
+## plotting
+library(ggplot2)
+library(forcats)
+library(ggh4x)
 
 raw_shots <- worldfootballR::load_understat_league_shots(league = 'EPL')
 shots <- raw_shots |> 
@@ -81,7 +87,6 @@ shots_by_player$adj_g_xg_ratio <- purrr::map2(
   }
 )
 
-options(width = 120)
 adj_shots_by_player <- shots_by_player |> 
   tidyr::unnest_wider(
     adj_g_xg_ratio, 
@@ -121,27 +126,18 @@ shaw_players <- c(
   'Christian Benteke' = 'C. Benteke'
 )
 
-
-## plotting
-library(ggplot2)
-library(forcats)
-library(ggh4x)
-
-## Not shown, but `shaw_players` is a named vector of player names, mapping
-##    understat names to the names in Shaw's plot
 ordinal_adj_shots_by_player <- adj_shots_by_player |>
-  filter(
+  dplyr::filter(
     player %in% names(shaw_players)
   ) |> 
-  mutate(
-    player = fct_reorder(shaw_players[player], adj_g_xg_ratio_mean)
+  dplyr::mutate(
+    player = forcats::fct_reorder(shaw_players[player], adj_g_xg_ratio_mean)
   )
 
-
-p <- ordinal_adj_shots_by_player |>
-  ggplot() +
-  aes(y = player) +
-  geom_errorbarh(
+adj_ratio_plot <- ordinal_adj_shots_by_player |>
+  ggplot2::ggplot() +
+  ggplot2::aes(y = player) +
+  ggplot2::geom_errorbarh(
     aes(
       xmin = adj_g_xg_ratio_mean - adj_g_xg_ratio_sd,
       xmax = adj_g_xg_ratio_mean + adj_g_xg_ratio_sd
@@ -150,75 +146,127 @@ p <- ordinal_adj_shots_by_player |>
     linewidth = 0.1,
     height = 0.3
   ) +
-  geom_point(
-    aes(x = adj_g_xg_ratio_mean),
+  ggplot2::geom_point(
+    ggplot2::aes(x = adj_g_xg_ratio_mean),
     shape = 23,
     size = 0.75,
     stroke = 0.15,
     fill = 'red',
     color = 'black'
   ) +
-  geom_vline(
-    aes(xintercept = 1), 
+  ggplot2::geom_vline(
+    ggplot2::aes(xintercept = 1), 
     linewidth = 0.1, 
     linetype = 2
   ) +
   ## add duplicate axis for ticks: https://stackoverflow.com/questions/56247205/r-ggplot2-add-ticks-on-top-and-right-sides-of-all-facets
-  scale_x_continuous(sec.axis = dup_axis()) +
+  ggplot2::scale_x_continuous(sec.axis = ggplot2::dup_axis()) +
   ## ggplot2 doesn't support duplicated and creatinga  second axis for discrete variables:
   ##   https://github.com/tidyverse/ggplot2/issues/3171.
   ##   using ggh4x is a workaround.
-  guides(
-    y.sec = guide_axis_manual(
+  ggplot2::guides(
+    y.sec = ggh4x::guide_axis_manual(
       breaks = ordinal_adj_shots_by_player$player,
       labels = ordinal_adj_shots_by_player$player
     )
   ) +
-  theme_linedraw(base_family = 'DejaVu Sans', base_size = 4) +
-  theme(
-    plot.title = element_text(hjust = 0.5, size = 4.25, face = 'plain'),
-    axis.ticks.length = unit(-1, 'pt'),
-    axis.ticks = element_line(linewidth = 0.05),
-    panel.grid.major.y = element_blank(),
-    panel.grid.minor = element_blank(),
-    panel.grid.major.x = element_line(linetype = 2),
-    axis.text.x.top = element_blank(),
-    axis.text.y.right = element_blank(),
-    axis.title.x.top = element_blank(),
-    axis.title.y.right = element_blank()
+  ggplot2::theme_linedraw(base_family = 'DejaVu Sans', base_size = 4) +
+  ggplot2::theme(
+    plot.title = ggplot2::element_text(hjust = 0.5, size = 4.25, face = 'plain'),
+    axis.ticks.length = ggplot2::unit(-1, 'pt'),
+    axis.ticks = ggplot2::element_line(linewidth = 0.05),
+    panel.grid.major.y = ggplot2::element_blank(),
+    panel.grid.minor = ggplot2::element_blank(),
+    panel.grid.major.x = ggplot2::element_line(linetype = 2),
+    axis.text.x.top = ggplot2::element_blank(),
+    axis.text.y.right = ggplot2::element_blank(),
+    axis.title.x.top = ggplot2::element_blank(),
+    axis.title.y.right = ggplot2::element_blank()
   ) +
-  labs(
+  ggplot2::labs(
     title = 'Shots from 2016/17 & 2017/18 seasons',
     y = NULL,
     x = 'Outperformance (= G/xG)'
   )
 
+ggplot() +
+  theme_void() +
+  geom_text(
+    data = data.frame(
+      x = 0,
+      y = 0,
+      label = "(tony's version)"
+    ),
+    aes(
+      x = x,
+      y = y,
+      label = label
+    ),
+    family = 'Titillium Web',
+    hjust = 0.5,
+    vjust = 0.5,
+    size = 12 / ggplot2::.pt
+  )
+
 proj_dir <- '73-exceeding_expected_goals_replication'
 plot_path <- file.path(proj_dir, 'shaw-figure-1-replication.png')
 ggsave(
-  p,
+  filename = file.path(proj_dir, 'tony-logo.png'),
+  width = 1000,
+  height = 200,
+  units = 'px'
+)
+
+ggsave(
+  adj_ratio_plot,
   filename = plot_path,
   units = 'px',
   width = 549,
   height = 640
 )
 
-logo_plot_path <- add_logo(
+plot_with_tony_logo_path <- add_logo(
+  plot_path,
+  path_logo = file.path(proj_dir, 'tony-logo.png'),
+  delete = FALSE,
+  path_suffix = '-w-tony-logo',
+  logo_scale = 0.9,
+  idx_x = 0.47,
+  idx_y = 0.05
+)
+
+plot_with_asa_logo_path <- add_logo(
   plot_path,
   path_logo = file.path(proj_dir, 'ASAlogo.png'),
-  delete = FALSE,
-  path_suffix = '',
+  delete = TRUE,
+  path_suffix = '-w-asa-logo',
   logo_scale = 0.3,
   idx_x = 0.03,
   idx_y = 0.09,
 )
 
-
 library(magick)
 orig_image <- magick::image_read(file.path(proj_dir, 'shaw-figure-1.png'))
-replicated_image <- magick::image_read(logo_plot_path)
+replicated_image_with_tony_logo <- magick::image_read(plot_with_tony_logo_path)
+replicated_image_with_asa_logo <- magick::image_read(plot_with_asa_logo_path)
 
 ## images should have the same dimensions since i used the orig dimensions for saving the replicated plot
-combined_image <- magick::image_append(c(orig_image, replicated_image), stack = FALSE)
+combined_image_with_asa_logo <- magick::image_append(
+  c(orig_image, replicated_image_with_asa_logo), 
+  stack = FALSE
+)
 
-magick::image_write(combined_image, path = file.path(proj_dir, 'shaw-figure-1-compared.png'))
+magick::image_write(
+  combined_image_with_asa_logo, 
+  path = file.path(proj_dir, 'shaw-figure-1-compared-w-asa-logo.png')
+)
+
+combined_image_with_tony_logo <- magick::image_append(
+  c(orig_image, replicated_image_with_tony_logo), 
+  stack = TRUE
+)
+
+magick::image_write(
+  combined_image_with_tony_logo, 
+  path = file.path(proj_dir, 'shaw-figure-1-compared-w-tony-logo.png')
+)
