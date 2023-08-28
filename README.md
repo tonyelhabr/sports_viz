@@ -1,6 +1,26 @@
+---
+title: README
+---
+
 This repo stores my code and plots for sports-related plots. Any "small" data is stored in the repo. Otherwise, it's saved locally and git-ignored here.
 
 The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I scraped.
+
+# 74. 2023 Women's World Cup xG Calibration
+
+![](74-2023_womens_world_cup_xg/wwc_2023_xg_source_calibration.png "Comparison of Opta's and StatsBomb's xG model calibration for non-penalty shots in the 2023 FIFA Womens' World Cup")
+
+# 73. "Exceeding Expected Goals" Replication
+
+![](73-exceeding_expected_goals_replication/beyond-replication.png "Top 20 shooting overperformers in the EPL, 2021/22 and 2022/23 seasons")
+
+![](73-exceeding_expected_goals_replication/shaw-figure-1-comparison-w-tony-logo.png "Replication of Laurie Shaw's 2016/17 and 2017/18 EPL G/xG Overperformance graph")
+
+![](73-exceeding_expected_goals_replication/mls-top-overperformers.png "Top 20 shooting overperformers in the MLS, since start of 2021 season")
+
+![](73-exceeding_expected_goals_replication/mls-top-overperformers-shrunken.png "Top 20 low volume shooting overperformers in the MLS, since start of 2021 season")
+
+![](73-exceeding_expected_goals_replication/adj-g-xg-ratio-stability.png "Year-over-year stability of adjusted G/xG for the MLS 2013-2023 seasons")
 
 # 72. 2023 Women's World Cup
 

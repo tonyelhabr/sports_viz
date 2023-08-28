@@ -309,7 +309,7 @@ logo_path <- file.path(proj_dir, '2023-fifa-womens-world-cup-logo.jpg')
 add_logo(
   path_viz = plot_path,
   path_logo = logo_path,
-  delete = TRUE,,
+  delete = FALSE,
   path_suffix = '',
   logo_scale  = 0.15,
   idx_x = 0.01,
