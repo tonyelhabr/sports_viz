@@ -179,7 +179,7 @@ sysfonts::font_add_google(font, font)
 ## https://github.com/tashapiro/tanya-data-viz/blob/main/chatgpt-lensa/chatgpt-lensa.R for twitter logo
 sysfonts::font_add('fb', 'Font Awesome 6 Brands-Regular-400.otf')
 showtext::showtext_auto()
-showtext::showtext_opts(dpi = 300)
+showtext::showtext_opts(dpi = PLOT_RESOLUTION)
 
 blackish_background <- '#1c1c1c'
 
