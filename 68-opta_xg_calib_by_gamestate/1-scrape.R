@@ -1,10 +1,11 @@
-library(worldfootballR)  ## version: 0.5.12.5000
+library(worldfootballR)  ## version: 0.6.4.1
 library(dplyr)
 library(lubridate)
 library(tidyr)
 library(qs)
 
-proj_dir <- '68-opta_xg_calib_by_gamestate'
+PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
+source(file.path(PROJ_DIR, 'load_fb.R')) ## until these are added to worldfootballR
 
 rename_home_away_teams <- function(df) {
   df |> 
@@ -15,41 +16,48 @@ rename_home_away_teams <- function(df) {
     select(-c(home_team, away_team)) 
 }
 
-raw_shots <- load_fotmob_match_details(
+raw_shots <- load_fb_match_shooting(
   country = 'ENG',
-  league_name = 'Premier League'
+  gender = 'M',
+  tier = '1st',
+  season_end_year = 2018:2023
 )
 
-shots <- raw_shots |> 
-  mutate(
-    date = date(strptime(match_time_utc, "%a, %b %d, %Y, %H:%M UTC", tz = 'UTC')),
-    season = case_when(
-      date >= ymd('2020-09-12') & date <= ymd('2021-05-23') ~ '2020/21',
-      date >= ymd('2021-08-13') & date <= ymd('2022-05-22') ~ '2021/22',
-      date >= ymd('2022-08-06') & date <= ymd('2023-05-28') ~ '2022/23',
-      TRUE ~ NA_character_
-    )
-  ) |> 
-  drop_na(season) |> 
+long_shots <- raw_shots |> 
   transmute(
-    match_id,
-    season,
-    date,
-    id,
-    across(period, ~ifelse(.x == 'FirstHalf', 1L, 2L)),
-    min,
-    min_added,
-    is_home = team_id == home_team_id,
+    # match_id = MatchURL,
+    match_id = basename(dirname(MatchURL)),
+    season = sprintf('%s/%s', Season_End_Year, substr(Season_End_Year, 3, 4)),
+    date = ymd(Date),
+    period = as.integer(Match_Half),
+    min = ifelse(
+      grepl('+', Minute),
+      as.integer(gsub('(^[0-9]+)[+]([0-9]+$)', '\\1', Minute)), 
+      as.integer(Minute)
+    ),
+    min_added = ifelse(
+      grepl('+', Minute), 
+      as.integer(gsub('(^[0-9]+)[+]([0-9]+$)', '\\2', Minute)), 
+      as.integer(Minute)
+    ),
+    is_home = Home_Away == 'Home',
+    team = Squad,
     # team = ifelse(is_home, home_team, away_team),
     # opponent = ifelse(is_home, away_team, home_team),
-    home_team,
-    away_team,
-    player_id,
-    # player_name,
-    situation,
-    # shot_type,
-    # event_type,
-    # is_own_goal,
+    player = Player,
+    is_goal = Outcome == 'Goal',
+    xg = xG
+  )
+
+match_teams <- long_shots |> 
+  distinct(match_id, team, side = ifelse(is_home, 'home', 'away')) |> 
+  pivot_wider(
+    names_from = side,
+    values_from = team,
+    names_glue = '{side}_{.value}'
+  )
+
+long_shots
     home_g = case_when(
       event_type == 'Goal' & is_home ~ 1L,
       is_own_goal & !is_home ~ 1L,
@@ -60,15 +68,14 @@ shots <- raw_shots |>
       is_own_goal & is_home ~ 1L,
       TRUE ~ 0L
     ),
-    ## some shots with NAs for some reason
     home_xg = case_when(
-      is_home ~ coalesce(expected_goals, 0),
-      is_own_goal & !is_home ~ coalesce(expected_goals, 0),
+      is_home ~ coalesce(xG, 0),
+      is_own_goal & !is_home ~ coalesce(xG, 0),
       TRUE ~ 0L
     ),
     away_xg = case_when(
-      !is_home ~ coalesce(expected_goals, 0),
-      is_own_goal & is_home ~ coalesce(expected_goals, 0),
+      !is_home ~ coalesce(xG, 0),
+      is_own_goal & is_home ~ coalesce(xG, 0),
       TRUE ~ 0L
     )
   ) |>
@@ -145,4 +152,4 @@ cumu_doublecounted_restacked_shots <- doublecounted_restacked_shots |>
     is_goal = factor(ifelse(g == 1L, 'yes', 'no')),
     g_state = g_cumu - g_conceded_cumu
   )
-qs::qsave(cumu_doublecounted_restacked_shots, file.path(proj_dir, 'shots.qs'))
+qs::qsave(cumu_doublecounted_restacked_shots, file.path(PROJ_DIR, 'shots.qs'))
