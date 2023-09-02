@@ -283,23 +283,27 @@ calib_g_state_custom |>
 
 library(probably)
 ## estimate must be `.pred_{level1}` and `.pred_{level2}`
-just_shots <- shots |> 
-  dplyr::select(
-    id, 
-    g_state, 
-    is_goal, 
-    tidyselect::vars_select_helpers$starts_with('.pred')
-  ) |> 
+# just_shots <- shots |> 
+#   dplyr::select(
+#     id, 
+#     g_state, 
+#     is_goal, 
+#     tidyselect::vars_select_helpers$starts_with('.pred')
+#   ) |> 
+#   dplyr::mutate(
+#     ## probably has a bug when .by is a factor? (https://github.com/tidymodels/probably/issues/127)
+#     dplyr::across(g_state, as.character)
+#   )
+
+beta_cal_model <- shots |> 
   dplyr::mutate(
     ## probably has a bug when .by is a factor? (https://github.com/tidymodels/probably/issues/127)
     dplyr::across(g_state, as.character)
-  )
-
-beta_cal_model <- just_shots |> 
+  ) |> 
   probably::cal_estimate_beta(
-  truth = is_goal,
-  .by = g_state
-)
+    truth = is_goal,
+    .by = g_state
+  )
 
 # df <- just_shots |> filter(g_state == 'leading')
 # betacal::beta_calibration(
@@ -308,12 +312,12 @@ beta_cal_model <- just_shots |>
 #   parameters = 'abm'
 # )
 beta_cal_shots <- probably::cal_apply(
-  just_shots,
+  shots,
   beta_cal_model
 )
 
-adj_shots <- dplyr::inner_join(
-  just_shots,
+cal_shots <- dplyr::inner_join(
+  shots,
   beta_cal_shots |> 
     dplyr::select(id, starts_with('.pred')) |> 
     dplyr::rename_with(
@@ -323,7 +327,7 @@ adj_shots <- dplyr::inner_join(
   by = dplyr::join_by(id)
 )
 
-adj_shots_plot <- adj_shots |>
+cal_shots_plot <- cal_shots |>
   ggplot2::ggplot() +
   ggplot2::aes(x = .pred_yes, y = .cal_pred_yes) +
   ggplot2::geom_abline(color = WHITISH_FOREGROUND_COLOR, linetype = 2) +
@@ -351,16 +355,19 @@ adj_shots_plot <- adj_shots |>
     panel.background = ggplot2::element_rect(color = WHITISH_FOREGROUND_COLOR)
   )
 
-adj_shots_plot_path <- file.path(PROJ_DIR, 'calibrated_xg.png')
+cal_shots_plot_path <- file.path(PROJ_DIR, 'calibrated_xg.png')
 ggplot2::ggsave(
-  adj_shots_plot,
-  filename = adj_shots_plot_path,
+  cal_shots_plot,
+  filename = cal_shots_plot_path,
   width = 10,
   height = 5
 )
 
 library(purrr)
 library(poibin)
+library(gdata)
+library(tidyr)
+
 permute_xg <- function(xg) {
   n <- length(xg)
   x <- seq.int(0, n)
@@ -375,20 +382,20 @@ calculate_permuted_xg <- function(df) {
       prob = purrr::map(xg, ~permute_xg(.x))
     ) |> 
     dplyr::select(-c(xg)) |> 
-    dplyr::unnest(cols = c(prob)) |> 
+    tidyr::unnest(cols = c(prob)) |> 
     dplyr::group_by(dplyr::across(-c(prob))) |>
     dplyr::mutate(
       g = dplyr::row_number() - 1L
     ) |>
     dplyr::ungroup() |> 
-    dplyr::arrange(match_id, is_home, g)
+    dplyr::arrange(match_id, is_home)
 }
 
 summarize_pivoted_permuted_xg <- function(prob_away, prob_home) {
   outer_prod <- outer(prob_away, prob_home)
   p_draw <- sum(diag(outer_prod), na.rm = TRUE)
-  p_home <- sum(upperTriangle(outer_prod), na.rm = TRUE)
-  p_away <- sum(lowerTriangle(outer_prod), na.rm = TRUE)
+  p_home <- sum(gdata::upperTriangle(outer_prod), na.rm = TRUE)
+  p_away <- sum(gdata::lowerTriangle(outer_prod), na.rm = TRUE)
   list(
     draw = p_draw,
     home = p_home,
@@ -396,7 +403,208 @@ summarize_pivoted_permuted_xg <- function(prob_away, prob_home) {
   )
 }
 
-just_shots |> 
-  head(1000) |> 
-  calculate_permuted_xg() |> 
-  summarize_permuted_xg_by_match()
+
+## Bournemouth 0 - 1 Manchester City on 2019-03-02
+## Huddersfield 0 - 0 Swansea on 2018-03-10
+pad_for_matches_without_shots_from_one_team <- function(df) {
+  n_teams_per_match <- df |> 
+    distinct(match_id, team) |> 
+    count(match_id, sort = TRUE)
+  
+  matches_with_no_shots_from_one_team <- n_teams_per_match |> 
+    filter(n == 1)
+  
+  dummy_opponents <- df |> 
+    distinct(match_id, season, date, team, opponent, is_home) |> 
+    semi_join(
+      matches_with_no_shots_from_one_team,
+      by = 'match_id'
+    ) |> 
+    mutate(
+      z = team
+    ) |> 
+    transmute(
+      match_id, 
+      season, 
+      date, 
+      team = opponent,
+      opponent = z,
+      across(is_home, ~!.x),
+      prob = 1,
+      g = 0L
+    )
+  
+  bind_rows(
+    df,
+    dummy_opponents
+  ) |> 
+    arrange(season, date, team, g)
+}
+
+summarize_permuted_xg_by_match <- function(df) {
+  
+  padded_df <- pad_for_matches_without_shots_from_one_team(df)
+  
+  pivoted <- padded_df |>
+    transmute(
+      match_id,
+      season,
+      date,
+      g,
+      is_home = ifelse(is_home, 'home', 'away'),
+      prob
+    ) |>
+    tidyr::pivot_wider(
+      names_from = is_home,
+      names_prefix = 'prob_',
+      values_from = prob,
+      values_fill = 0L
+    )
+  
+  pivoted |> 
+    select(match_id, season, date, prob_away, prob_home) |>
+    group_by(match_id, season, date) |> 
+    summarize(
+      across(starts_with('prob_'), ~list(.x))
+    ) |> 
+    ungroup() |> 
+    inner_join(
+      padded_df |> distinct(match_id, team, opponent, is_home),
+      by = 'match_id'
+    ) |> 
+    mutate(
+      prob = map2(prob_away, prob_home, summarize_pivoted_permuted_xg)
+    ) |> 
+    select(-starts_with('prob_')) |> 
+    tidyr::unnest_wider(prob, names_sep = '_') |> 
+    mutate(
+      prob_win = ifelse(is_home, prob_home, prob_away),
+      prob_lose = ifelse(is_home, prob_away, prob_home),
+      xpts = 3 * prob_win + 1 * prob_draw
+    ) |> 
+    select(-c(prob_home, prob_away))
+}
+
+calculate_xpts_by_match <- purrr::compose(
+  \(df) {
+    dplyr::select(
+      df,
+      match_id,
+      season,
+      date,
+      is_home,
+      team,
+      opponent,
+      xg
+    )
+  },
+  calculate_permuted_xg,
+  summarize_permuted_xg_by_match,
+  .dir = 'forward'
+)
+
+reg_xpts_by_match <- calculate_xpts_by_match(raw_shots)
+
+cal_xpts_by_match <- cal_shots |> 
+  dplyr::select(
+    id,
+    xg = .cal_pred_yes
+  ) |> 
+  dplyr::inner_join(
+    raw_shots |> dplyr::select(-xg),
+    by = join_by(id)
+  ) |> 
+  calculate_xpts_by_match()
+
+match_results <- raw_shots |> 
+  arrange(desc(date)) |> 
+  group_by(match_id, date, team) |> 
+  summarize(
+    across(c(g, g_conceded), sum)
+  ) |> 
+  ungroup() |> 
+  mutate(
+    match_result = case_when(
+      g > g_conceded ~ 'w',
+      g < g_conceded ~ 'l',
+      g == g_conceded ~ 'd'
+    ),
+    is_win = g > g_conceded,
+    is_draw = g == g_conceded
+  ) |> 
+  transmute(
+    match_id,
+    team,
+    match_result,
+    pts = 3 * as.integer(is_win) + 1 * as.integer(is_draw)
+  )
+match_results |> count(match_result)
+
+compared_xpts_by_match <- reg_xpts_by_match |> 
+  dplyr::rename_with(
+    \(.x) paste0('reg_', .x),
+    c(xpts, tidyselect::vars_select_helpers$starts_with('prob'))
+  ) |> 
+  dplyr::inner_join(
+    cal_xpts_by_match |>
+      dplyr::select(match_id, team, xpts, tidyselect::vars_select_helpers$starts_with('prob')) |> 
+      dplyr::rename_with(
+        \(.x) paste0('cal_', .x),
+        c(xpts, tidyselect::vars_select_helpers$starts_with('prob'))
+      ),
+    by = dplyr::join_by(match_id, team)
+  ) |> 
+  dplyr::inner_join(
+    match_results,
+    by = dplyr::join_by(match_id, team)
+  )
+
+compared_xpts_by_match |> 
+  ggplot() +
+  aes(
+    x = reg_xpts,
+    y = cal_xpts
+  ) +
+  geom_point()
+
+compared_xpts_by_season <- compared_xpts_by_match |> 
+  group_by(season, team) |> 
+  summarize(
+    across(ends_with('pts'), sum)
+  ) |> 
+  ungroup() |> 
+  mutate(
+    reg_d = pts - reg_xpts,
+    cal_d = pts - cal_xpts,
+    cal_is_improvement = abs(cal_d) < abs(reg_d)
+  )
+compared_xpts_by_season |> count(cal_is_improvement)
+
+compared_xpts_by_match |> 
+  arrange(desc(abs(reg_xpts - cal_xpts)))
+
+compared_xpts_by_season |> 
+  arrange(desc(abs(reg_xpts - cal_xpts)))
+
+compared_xpts_by_season |> 
+  filter(team == 'Brighton & Hove Albion')
+
+compared_xpts_by_season |> 
+  select(
+    season,
+    team,
+    pts,
+    reg = reg_xpts,
+    cal = cal_xpts
+  ) |> 
+  pivot_longer(
+    c(reg, cal),
+    names_to = 'method',
+    values_to = 'xpts'
+  ) |> 
+  group_by(season, method) |> 
+  summarize(
+    mae = mean(abs(pts - xpts)),
+    rmse = sqrt(mean((pts - xpts)^2))
+  ) |> 
+  ungroup()
