@@ -29,13 +29,13 @@
 load_fb_match_summary <- function(country, gender, tier, season_end_year = NA) {
 
   urls <- sprintf(
-    "https://github.com/JaseZiv/worldfootballR_data/releases/download/fb_match_shooting/%s_%s_%s_match_summary.rds",
+    "https://github.com/JaseZiv/worldfootballR_data/releases/download/fb_match_summary/%s_%s_%s_match_summary.rds",
     country,
     gender,
     tier
   )
   
-  res <- purrr::map_dfr(urls, .file_reader)
+  res <- purrr::map_dfr(urls, worldfootballR:::.file_reader)
   
   if(nrow(res) == 0) {
     cli::cli_alert("Data not loaded. Please check parameters.")
@@ -93,7 +93,7 @@ load_fb_advanced_match_stats <- function(country, gender, tier, stat_type, team_
     team_or_player
   )
   
-  res <- purrr::map_dfr(urls, .file_reader)
+  res <- purrr::map_dfr(urls, worldfootballR:::.file_reader)
   
   if(nrow(res) == 0) {
     cli::cli_alert("Data not loaded. Please check parameters.")
