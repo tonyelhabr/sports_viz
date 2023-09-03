@@ -35,10 +35,9 @@ shots <- raw_shots |>
     date,
     home_team,
     away_team,
-    id,
-    is_penalty = situation == 'Penalty',
+    shot_idx,
+    is_penalty,
     is_goal,
-    # g,
     .pred_yes = xg,
     .pred_no = 1 - xg,
     g_state = cut(
@@ -144,7 +143,6 @@ cal_table_custom_breaks <- function(
   res
 }
 
-
 calib_g_state_custom <- cal_table_custom_breaks(
   shots,
   truth = is_goal,
@@ -159,7 +157,7 @@ TAG_LABEL <- htmltools::tagList(
   htmltools::tags$span(htmltools::HTML(enc2utf8("&#xf099;")), style = 'font-family:fb'),
   htmltools::tags$span("@TonyElHabr"),
 )
-SUBTITLE_LABEL <- 'English Premier League, 2020/21 - 2022/23'
+SUBTITLE_LABEL <- 'English Premier League, 2017/18 - 2022/23'
 PLOT_RESOLUTION <- 300
 WHITISH_FOREGROUND_COLOR <- 'white'
 COMPLEMENTARY_FOREGROUND_COLOR <- '#f1f1f1'
@@ -285,7 +283,7 @@ library(probably)
 ## estimate must be `.pred_{level1}` and `.pred_{level2}`
 # just_shots <- shots |> 
 #   dplyr::select(
-#     id, 
+#     shot_idx, 
 #     g_state, 
 #     is_goal, 
 #     tidyselect::vars_select_helpers$starts_with('.pred')
@@ -319,12 +317,12 @@ beta_cal_shots <- probably::cal_apply(
 cal_shots <- dplyr::inner_join(
   shots,
   beta_cal_shots |> 
-    dplyr::select(id, starts_with('.pred')) |> 
+    dplyr::select(shot_idx, starts_with('.pred')) |> 
     dplyr::rename_with(
       \(.x)  gsub('.pred', '.cal_pred', .x), 
       dplyr::starts_with('.pred')
     ),
-  by = dplyr::join_by(id)
+  by = dplyr::join_by(shot_idx)
 )
 
 cal_shots_plot <- cal_shots |>
@@ -507,12 +505,12 @@ reg_xpts_by_match <- calculate_xpts_by_match(raw_shots)
 
 cal_xpts_by_match <- cal_shots |> 
   dplyr::select(
-    id,
+    shot_idx,
     xg = .cal_pred_yes
   ) |> 
   dplyr::inner_join(
     raw_shots |> dplyr::select(-xg),
-    by = join_by(id)
+    by = join_by(shot_idx)
   ) |> 
   calculate_xpts_by_match()
 

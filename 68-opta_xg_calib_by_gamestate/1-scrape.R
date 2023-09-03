@@ -41,7 +41,6 @@ extract_fbref_match_id <- function(match_url) {
 }
 
 generate_time_key <- function(period, min, min_added) {
-  # ifelse(period == 1L, 0L, 100L) + min + coalesce(min_added, 0L)
   period * (min + coalesce(min_added, 0L))
 }
 
@@ -92,21 +91,12 @@ match_summaries <- raw_match_summaries |>
     event_type = ifelse(match_has_no_goals & match_has_no_penalties, NA_character_, Event_Type),
     time_key = generate_time_key(period, min, min_added)
   )
-# match_summaries |> 
-#   filter(date == '2020-09-12', home_team == 'Fulham')
-# match_summaries |> count(match_has_no_goals, match_has_no_penalties)
-# match_summaries |> filter(is.na(event_type)) |> arrange(desc(date))
-# match_summaries <- raw_match_summaries |> 
-#   filter(Event_Type == 'Own Goal')
 
 long_shots <- raw_shots |> 
   transmute(
     rn = row_number(),
     match_id = basename(dirname(MatchURL)),
-    # season = sprintf('%s/%s', Season_End_Year - 1, substr(Season_End_Year , 3, 4)),
-    # date = ymd(Date),
     period = as.integer(Match_Half),
-    # raw_min = Minute,
     min = ifelse(
       grepl('[+]', Minute),
       as.integer(gsub('(^[0-9]+)[+]([0-9]+$)', '\\1', Minute)), 
@@ -122,24 +112,17 @@ long_shots <- raw_shots |>
     player = Player,
     is_goal = Outcome == 'Goal',
     xg = as.double(xG),
+    is_penalty = coalesce((Distance == '13' & round(xg, 2) == 0.79), FALSE),
     time_key = generate_time_key(period, min, min_added)
   )
-# long_shots |> filter(match_id == 'e3c3ddf0') |> View()
-
-# match_teams <- long_shots |> 
-#   distinct(match_id, team, side = ifelse(is_home, 'home', 'away')) |> 
-#   pivot_wider(
-#     names_from = side,
-#     values_from = team,
-#     names_glue = '{side}_{.value}'
-#   )
 
 synthetic_rn_base <- 10^(ceiling(log10(max(long_shots$rn))))
-clean_shots <- long_shots |> 
+long_shots_with_own_goals <- long_shots |> 
   mutate(
     is_own_goal = FALSE
   ) |> 
   bind_rows(
+    ## synthetic events for own goals
     match_summaries |> 
       filter(
         is_own_goal
@@ -156,9 +139,11 @@ clean_shots <- long_shots |>
         is_goal = TRUE,
         xg = NA_real_,
         time_key,
-        is_own_goal = TRUE
+        is_own_goal = TRUE,
+        is_penalty = FALSE
       )
-  ) |> 
+  )
+clean_shots <- long_shots_with_own_goals |> 
   inner_join(
     match_summaries |>
       distinct(match_id, season, date, home_team, away_team),
@@ -168,8 +153,7 @@ clean_shots <- long_shots |>
   left_join(
     match_summaries |> 
       group_by(match_id, time_key) |> 
-      ## keep onw goals
-      slice_max(2 * is_own_goal + home_g + away_g, n = 1, with_ties = FALSE) |> 
+      slice_max(home_g + away_g, n = 1, with_ties = FALSE) |> 
       ungroup() |>
       select(
         match_id, 
@@ -178,6 +162,8 @@ clean_shots <- long_shots |>
         away_g,
         is_own_goal,
         is_penalty,
+        team,
+        player
       ) |> 
       rename_with(
         \(.x) paste0('summary_', .x),
@@ -190,7 +176,6 @@ clean_shots <- long_shots |>
     ),
     relationship = 'many-to-many'
   ) |> 
-  # select(-summary_time_key) |> 
   group_by(match_id) |> 
   fill(summary_home_g, summary_away_g, .direction = 'down') |> 
   ungroup() |> 
@@ -199,16 +184,17 @@ clean_shots <- long_shots |>
   ) |> 
   mutate(
     home_g = case_when(
-      is_goal & is_home ~ 1L,
+      ## note that fotmob would list the away team for an own goal but fbref lists the home team
+      (is_goal | is_own_goal) & is_home ~ 1L,
       is_own_goal & is_home ~ 1L,
       TRUE ~ 0L
     ),
     away_g = case_when(
-      is_goal & !is_home ~ 1L,
-      is_own_goal & !is_home ~ 1L,
+      (is_goal | is_own_goal) & !is_home ~ 1L,
       TRUE ~ 0L
     ),
     home_xg = case_when(
+      is_home ~ coalesce(xg, 0),
       TRUE ~ 0L ## even for own goals
     ),
     away_xg = case_when(
@@ -222,10 +208,11 @@ clean_shots <- long_shots |>
   ) |> 
   ungroup() |> 
   arrange(season, date, shot_idx)
-clean_shots |> count(match_id, rn) |> filter(n > 1L)
-match_summaries |> filter(match_id == '3f89bccf')
-long_shots |> filter(match_id == '3f89bccf', is_goal)
-clean_shots |> filter(match_id == '3f89bccf')
+
+## these should have equal counts. i belive these happen when there is a second shot immediately
+##   after a saved penalty
+clean_shots |> filter(!summary_is_penalty, is_penalty)
+# clean_shots |> filter(summary_is_penalty, !is_penalty) |> count(grepl('saved|Miss|-$', summary_player))
 
 restacked_shots <- bind_rows(
   clean_shots |> 
@@ -240,6 +227,8 @@ restacked_shots <- bind_rows(
       min_added,
       is_home,
       is_goal,
+      is_penalty,
+      is_own_goal,
       player,
       team = home_team,
       opponent = away_team,
@@ -262,6 +251,8 @@ restacked_shots <- bind_rows(
       min_added,
       is_home,
       is_goal,
+      is_penalty = summary_is_penalty,
+      is_own_goal,
       player,
       team = away_team,
       opponent = home_team,
@@ -274,9 +265,6 @@ restacked_shots <- bind_rows(
     )
 ) |> 
   arrange(season, date, match_id, shot_idx)
-clean_shots |> filter(match_id == 'e3c3ddf0', is_goal)
-restacked_shots |> filter(match_id == 'e3c3ddf0', is_goal)
-match_summaries |> filter(match_id == 'e3c3ddf0')
 
 doublecounted_restacked_shots <- bind_rows(
   restacked_shots |> mutate(pov = 'primary', .before = is_home),
@@ -317,21 +305,16 @@ cumu_doublecounted_restacked_shots <- doublecounted_restacked_shots |>
     is_goal = factor(ifelse(g == 1L, 'yes', 'no')),
     g_state = g_cumu - g_conceded_cumu
   )
-# qs::qsave(cumu_doublecounted_restacked_shots, file.path(PROJ_DIR, 'fbref_shots.qs'))
-cumu_doublecounted_restacked_shots |> 
-  filter(
-    pov == 'primary', 
-    is_goal == 'yes', 
-    match_id == 'e3c3ddf0'
-  )
-cumu_doublecounted_restacked_shots |> 
-  filter(
-    season == '2022/23',
-    pov == 'primary', 
-    is_goal == 'yes', 
-    summary_g != g_cumu
-  ) |> 
-  arrange(desc(date))
+qs::qsave(cumu_doublecounted_restacked_shots, file.path(PROJ_DIR, 'shots.qs'))
+
+# cumu_doublecounted_restacked_shots |>
+#   filter(
+#     season == '2022/23',
+#     pov == 'primary',
+#     is_goal == 'yes',
+#     summary_g != g_cumu
+#   ) |>
+#   arrange(desc(date))
 # ## occasionally there are 1-minute disagreements between the match summary and player log minute,
 # ##  e.g. Martial's 45+5/6 minute goal for https://fbref.com/en/matches/d2f2263d/Manchester-United-Chelsea-May-25-2023-Premier-League
 # cumu_doublecounted_restacked_shots |> 
