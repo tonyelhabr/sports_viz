@@ -3,6 +3,7 @@ library(dplyr)
 library(lubridate)
 library(tidyr)
 library(qs)
+library(rlang)
 
 PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
 source(file.path(PROJ_DIR, 'load_fb.R')) ## until these are added to worldfootballR
@@ -16,102 +17,266 @@ rename_home_away_teams <- function(df) {
     select(-c(home_team, away_team)) 
 }
 
+COUNTRIES <-  'ENG'
+GENDERS <- 'M'
+TIERS <- '1st'
+SEASON_END_YEARS <- 2018:2023
+
 raw_shots <- load_fb_match_shooting(
-  country = 'ENG',
-  gender = 'M',
-  tier = '1st',
-  season_end_year = 2018:2023
+  country = COUNTRIES,
+  gender = GENDERS,
+  tier = TIERS,
+  season_end_year = SEASON_END_YEARS
 )
+
+raw_match_summaries <- load_fb_match_summary(
+  country = COUNTRIES,
+  gender = GENDERS,
+  tier = TIERS,
+  season_end_year = SEASON_END_YEARS
+)
+
+extract_fbref_match_id <- function(match_url) {
+  basename(dirname(match_url))
+}
+
+generate_time_key <- function(period, min, min_added) {
+  # ifelse(period == 1L, 0L, 100L) + min + coalesce(min_added, 0L)
+  period * (min + coalesce(min_added, 0L))
+}
+
+match_summaries <- raw_match_summaries |> 
+  group_by(MatchURL) |> 
+  mutate(
+    match_summary_rn = row_number(desc(Event_Time)),
+    match_has_no_penalties = all(Event_Type != 'Penalty')
+  ) |> 
+  ungroup() |> 
+  mutate(
+    match_has_no_goals = Away_Score == 0 & Home_Score == 0
+  ) |> 
+  filter(
+    Event_Type %in% c('Goal', 'Own Goal', 'Penalty') | 
+      ## don't drop games with no goals
+      (match_has_no_goals & match_has_no_penalties & match_summary_rn == 1)
+  ) |> 
+  transmute(
+    rn = row_number(), 
+    match_id = extract_fbref_match_id(MatchURL),
+    season = sprintf('%s/%s', Season_End_Year - 1, substr(Season_End_Year , 3, 4)),
+    gender = Gender,
+    tier = Tier,
+    date = ymd(Match_Date),
+    home_team = Home_Team ,
+    away_team = Away_Team,
+    period = as.integer(Event_Half),
+    min = case_when(
+      period == 1L & Event_Time > 45 ~ 45, 
+      period == 2L & Event_Time > 90 ~ 90,
+      .default = Event_Time
+    ) |> as.integer(),
+    min_added = case_when(
+      period == 1L & Event_Time > 45 ~ Event_Time - 45, 
+      period == 2L & Event_Time > 90 ~ Event_Time - 90,
+      .default = NA_integer_
+    ) |> as.integer(),
+    # score_progression = Score_Progression,
+    home_g = as.integer(gsub('[:].*$', '', Score_Progression)), ## after event
+    away_g = as.integer(gsub('^.*[:]', '', Score_Progression)),
+    match_has_no_goals,
+    match_has_no_penalties,
+    is_own_goal = Event_Type == 'Own Goal',
+    is_penalty = Event_Type == 'Penalty',
+    team = Team,
+    player = Event_Players,
+    event_type = ifelse(match_has_no_goals & match_has_no_penalties, NA_character_, Event_Type),
+    time_key = generate_time_key(period, min, min_added)
+  )
+# match_summaries |> 
+#   filter(date == '2020-09-12', home_team == 'Fulham')
+# match_summaries |> count(match_has_no_goals, match_has_no_penalties)
+# match_summaries |> filter(is.na(event_type)) |> arrange(desc(date))
+# match_summaries <- raw_match_summaries |> 
+#   filter(Event_Type == 'Own Goal')
 
 long_shots <- raw_shots |> 
   transmute(
-    # match_id = MatchURL,
+    rn = row_number(),
     match_id = basename(dirname(MatchURL)),
-    season = sprintf('%s/%s', Season_End_Year, substr(Season_End_Year, 3, 4)),
-    date = ymd(Date),
+    # season = sprintf('%s/%s', Season_End_Year - 1, substr(Season_End_Year , 3, 4)),
+    # date = ymd(Date),
     period = as.integer(Match_Half),
+    # raw_min = Minute,
     min = ifelse(
-      grepl('+', Minute),
+      grepl('[+]', Minute),
       as.integer(gsub('(^[0-9]+)[+]([0-9]+$)', '\\1', Minute)), 
       as.integer(Minute)
     ),
     min_added = ifelse(
-      grepl('+', Minute), 
+      grepl('[+]', Minute), 
       as.integer(gsub('(^[0-9]+)[+]([0-9]+$)', '\\2', Minute)), 
-      as.integer(Minute)
+      NA_integer_
     ),
     is_home = Home_Away == 'Home',
     team = Squad,
-    # team = ifelse(is_home, home_team, away_team),
-    # opponent = ifelse(is_home, away_team, home_team),
     player = Player,
     is_goal = Outcome == 'Goal',
-    xg = xG
+    xg = as.double(xG),
+    time_key = generate_time_key(period, min, min_added)
   )
+# long_shots |> filter(match_id == 'e3c3ddf0') |> View()
 
-match_teams <- long_shots |> 
-  distinct(match_id, team, side = ifelse(is_home, 'home', 'away')) |> 
-  pivot_wider(
-    names_from = side,
-    values_from = team,
-    names_glue = '{side}_{.value}'
-  )
+# match_teams <- long_shots |> 
+#   distinct(match_id, team, side = ifelse(is_home, 'home', 'away')) |> 
+#   pivot_wider(
+#     names_from = side,
+#     values_from = team,
+#     names_glue = '{side}_{.value}'
+#   )
 
-long_shots
-    home_g = case_when(
-      event_type == 'Goal' & is_home ~ 1L,
-      is_own_goal & !is_home ~ 1L,
-      TRUE ~ 0L
+synthetic_rn_base <- 10^(ceiling(log10(max(long_shots$rn))))
+clean_shots <- long_shots |> 
+  mutate(
+    is_own_goal = FALSE
+  ) |> 
+  bind_rows(
+    match_summaries |> 
+      filter(
+        is_own_goal
+      ) |> 
+      transmute(
+        rn = .env$synthetic_rn_base + row_number(),
+        match_id,
+        period,
+        min,
+        min_added,
+        is_home = team == home_team,
+        team,
+        player,
+        is_goal = TRUE,
+        xg = NA_real_,
+        time_key,
+        is_own_goal = TRUE
+      )
+  ) |> 
+  inner_join(
+    match_summaries |>
+      distinct(match_id, season, date, home_team, away_team),
+    by = join_by(match_id),
+    relationship = 'many-to-one'
+  ) |> 
+  left_join(
+    match_summaries |> 
+      group_by(match_id, time_key) |> 
+      ## keep onw goals
+      slice_max(2 * is_own_goal + home_g + away_g, n = 1, with_ties = FALSE) |> 
+      ungroup() |>
+      select(
+        match_id, 
+        time_key, 
+        home_g, 
+        away_g,
+        is_own_goal,
+        is_penalty,
+      ) |> 
+      rename_with(
+        \(.x) paste0('summary_', .x),
+        -c(match_id)
+      ),
+    by = join_by(
+      match_id,
+      time_key >= summary_time_key,
+      time_key <= summary_time_key
     ),
-    away_g = case_when(
-      event_type == 'Goal' & !is_home ~ 1L,
+    relationship = 'many-to-many'
+  ) |> 
+  # select(-summary_time_key) |> 
+  group_by(match_id) |> 
+  fill(summary_home_g, summary_away_g, .direction = 'down') |> 
+  ungroup() |> 
+  mutate(
+    across(c(summary_home_g, summary_away_g), \(.x) coalesce(.x, 0L))
+  ) |> 
+  mutate(
+    home_g = case_when(
+      is_goal & is_home ~ 1L,
       is_own_goal & is_home ~ 1L,
       TRUE ~ 0L
     ),
-    home_xg = case_when(
-      is_home ~ coalesce(xG, 0),
-      is_own_goal & !is_home ~ coalesce(xG, 0),
+    away_g = case_when(
+      is_goal & !is_home ~ 1L,
+      is_own_goal & !is_home ~ 1L,
       TRUE ~ 0L
     ),
+    home_xg = case_when(
+      TRUE ~ 0L ## even for own goals
+    ),
     away_xg = case_when(
-      !is_home ~ coalesce(xG, 0),
-      is_own_goal & is_home ~ coalesce(xG, 0),
+      !is_home ~ coalesce(xg, 0),
       TRUE ~ 0L
     )
   ) |>
   group_by(match_id) |> 
   mutate(
-    shot_idx = row_number(period * (min + coalesce(min_added, 0L))),
-    .after = id
+    shot_idx = row_number(time_key)
   ) |> 
   ungroup() |> 
   arrange(season, date, shot_idx)
+clean_shots |> count(match_id, rn) |> filter(n > 1L)
+match_summaries |> filter(match_id == '3f89bccf')
+long_shots |> filter(match_id == '3f89bccf', is_goal)
+clean_shots |> filter(match_id == '3f89bccf')
 
 restacked_shots <- bind_rows(
-  shots |> 
+  clean_shots |> 
     filter(is_home) |> 
-    mutate(
+    transmute(
+      match_id,
+      season,
+      date,
+      shot_idx,
+      period,
+      min,
+      min_added,
+      is_home,
+      is_goal,
+      player,
       team = home_team,
       opponent = away_team,
       g = home_g,
       g_conceded = away_g,
       xg = home_xg,
       xg_conceded = away_xg,
-      .keep = 'unused'
+      summary_g = summary_home_g,
+      summary_g_conceded = summary_away_g
     ),
-  shots |> 
+  clean_shots |> 
     filter(!is_home) |> 
-    mutate(
+    transmute(
+      match_id,
+      season,
+      date,
+      shot_idx,
+      period,
+      min,
+      min_added,
+      is_home,
+      is_goal,
+      player,
       team = away_team,
       opponent = home_team,
       g = away_g,
       g_conceded = home_g,
       xg = away_xg,
       xg_conceded = home_xg,
-      .keep = 'unused'
+      summary_g = summary_away_g,
+      summary_g_conceded = summary_home_g,
     )
 ) |> 
   arrange(season, date, match_id, shot_idx)
+clean_shots |> filter(match_id == 'e3c3ddf0', is_goal)
+restacked_shots |> filter(match_id == 'e3c3ddf0', is_goal)
+match_summaries |> filter(match_id == 'e3c3ddf0')
 
 doublecounted_restacked_shots <- bind_rows(
   restacked_shots |> mutate(pov = 'primary', .before = is_home),
@@ -152,4 +317,25 @@ cumu_doublecounted_restacked_shots <- doublecounted_restacked_shots |>
     is_goal = factor(ifelse(g == 1L, 'yes', 'no')),
     g_state = g_cumu - g_conceded_cumu
   )
-qs::qsave(cumu_doublecounted_restacked_shots, file.path(PROJ_DIR, 'shots.qs'))
+# qs::qsave(cumu_doublecounted_restacked_shots, file.path(PROJ_DIR, 'fbref_shots.qs'))
+cumu_doublecounted_restacked_shots |> 
+  filter(
+    pov == 'primary', 
+    is_goal == 'yes', 
+    match_id == 'e3c3ddf0'
+  )
+cumu_doublecounted_restacked_shots |> 
+  filter(
+    season == '2022/23',
+    pov == 'primary', 
+    is_goal == 'yes', 
+    summary_g != g_cumu
+  ) |> 
+  arrange(desc(date))
+# ## occasionally there are 1-minute disagreements between the match summary and player log minute,
+# ##  e.g. Martial's 45+5/6 minute goal for https://fbref.com/en/matches/d2f2263d/Manchester-United-Chelsea-May-25-2023-Premier-League
+# cumu_doublecounted_restacked_shots |> 
+#   filter(match_id == 'd2f2263d', pov == 'primary', is_goal == 'yes')
+# ## this can happen for non-extra time events as well. e.g. Danilo's 68/69th minute goal for https://fbref.com/en/matches/76db2de1/Nottingham-Forest-Brighton-and-Hove-Albion-April-26-2023-Premier-League
+# cumu_doublecounted_restacked_shots |> 
+#   filter(match_id == 'e265430e', pov == 'primary', is_goal == 'yes') 
