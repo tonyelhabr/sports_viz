@@ -80,6 +80,9 @@ match_summaries <- raw_match_summaries |>
       .default = NA_integer_
     ) |> as.integer(),
     # score_progression = Score_Progression,
+    final_home_g = Home_Score,
+    final_away_g = Away_Score,
+    ## TODO: Identify these vars as "_cumu" vars for the rest of the script
     home_g = as.integer(gsub('[:].*$', '', Score_Progression)), ## after event
     away_g = as.integer(gsub('^.*[:]', '', Score_Progression)),
     match_has_no_goals,
@@ -91,6 +94,20 @@ match_summaries <- raw_match_summaries |>
     event_type = ifelse(match_has_no_goals & match_has_no_penalties, NA_character_, Event_Type),
     time_key = generate_time_key(period, min, min_added)
   )
+
+match_results <- match_summaries |> 
+  distinct(
+    match_id,
+    season,
+    gender,
+    tier,
+    date,
+    home_team,
+    away_team,
+    home_g = final_home_g,
+    away_g = final_away_g
+  )
+qs::qsave(match_results, file.path(PROJ_DIR, 'match_results.qs'))
 
 long_shots <- raw_shots |> 
   transmute(
@@ -207,7 +224,10 @@ clean_shots <- long_shots_with_own_goals |>
     shot_idx = row_number(time_key)
   ) |> 
   ungroup() |> 
-  arrange(season, date, shot_idx)
+  mutate(
+    id = sprintf('%s-%02d', match_id, shot_idx)
+  ) |> 
+  arrange(season, date, id)
 
 ## these should have equal counts. i belive these happen when there is a second shot immediately
 ##   after a saved penalty
@@ -218,10 +238,10 @@ restacked_shots <- bind_rows(
   clean_shots |> 
     filter(is_home) |> 
     transmute(
+      id,
       match_id,
       season,
       date,
-      shot_idx,
       period,
       min,
       min_added,
@@ -242,10 +262,10 @@ restacked_shots <- bind_rows(
   clean_shots |> 
     filter(!is_home) |> 
     transmute(
+      id,
       match_id,
       season,
       date,
-      shot_idx,
       period,
       min,
       min_added,
@@ -264,7 +284,7 @@ restacked_shots <- bind_rows(
       summary_g_conceded = summary_home_g,
     )
 ) |> 
-  arrange(season, date, match_id, shot_idx)
+  arrange(season, date, match_id, id)
 
 doublecounted_restacked_shots <- bind_rows(
   restacked_shots |> mutate(pov = 'primary', .before = is_home),
@@ -290,7 +310,7 @@ doublecounted_restacked_shots <- bind_rows(
       pov = 'secondary'
     )
 ) |> 
-  arrange(season, date, match_id, shot_idx, pov)
+  arrange(season, date, match_id, id, pov)
 
 cumu_doublecounted_restacked_shots <- doublecounted_restacked_shots |> 
   group_by(match_id, team) |> 

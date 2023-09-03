@@ -14,7 +14,8 @@ library(htmltools)
 PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
 raw_shots <- qs::qread(file.path(PROJ_DIR, 'shots.qs')) |> 
   dplyr::filter(
-    pov == 'primary'
+    pov == 'primary',
+    !is_own_goal
   )
 
 match_teams <- raw_shots |> 
@@ -35,7 +36,7 @@ shots <- raw_shots |>
     date,
     home_team,
     away_team,
-    shot_idx,
+    id,
     is_penalty,
     is_goal,
     .pred_yes = xg,
@@ -283,7 +284,7 @@ library(probably)
 ## estimate must be `.pred_{level1}` and `.pred_{level2}`
 # just_shots <- shots |> 
 #   dplyr::select(
-#     shot_idx, 
+#     id, 
 #     g_state, 
 #     is_goal, 
 #     tidyselect::vars_select_helpers$starts_with('.pred')
@@ -317,12 +318,12 @@ beta_cal_shots <- probably::cal_apply(
 cal_shots <- dplyr::inner_join(
   shots,
   beta_cal_shots |> 
-    dplyr::select(shot_idx, starts_with('.pred')) |> 
+    dplyr::select(id, starts_with('.pred')) |> 
     dplyr::rename_with(
       \(.x)  gsub('.pred', '.cal_pred', .x), 
       dplyr::starts_with('.pred')
     ),
-  by = dplyr::join_by(shot_idx)
+  by = dplyr::join_by(id)
 )
 
 cal_shots_plot <- cal_shots |>
@@ -505,24 +506,47 @@ reg_xpts_by_match <- calculate_xpts_by_match(raw_shots)
 
 cal_xpts_by_match <- cal_shots |> 
   dplyr::select(
-    shot_idx,
+    id,
     xg = .cal_pred_yes
   ) |> 
   dplyr::inner_join(
     raw_shots |> dplyr::select(-xg),
-    by = join_by(shot_idx)
+    by = join_by(id)
   ) |> 
   calculate_xpts_by_match()
 
-match_results <- raw_shots |> 
-  arrange(desc(date)) |> 
-  group_by(match_id, date, team) |> 
-  summarize(
-    across(c(g, g_conceded), sum)
-  ) |> 
+match_results <- qs::qread(file.path(PROJ_DIR, 'match_results.qs'))
+match_pts <- bind_rows(
+  match_results |> 
+    transmute(
+      match_id,
+      season,
+      gender,
+      tier,
+      date,
+      is_home = TRUE,
+      team = home_team,
+      opponent = away_team,
+      g = home_g,
+      g_conceded = away_g
+    ),
+  match_results |> 
+    transmute(
+      match_id,
+      season,
+      gender,
+      tier,
+      date,
+      is_home = FALSE,
+      team = away_team,
+      opponent = home_team,
+      g = away_g,
+      g_conceded = home_g
+    ) 
+) |> 
   ungroup() |> 
   mutate(
-    match_result = case_when(
+    result = case_when(
       g > g_conceded ~ 'w',
       g < g_conceded ~ 'l',
       g == g_conceded ~ 'd'
@@ -532,11 +556,15 @@ match_results <- raw_shots |>
   ) |> 
   transmute(
     match_id,
+    season,
+    gender,
+    tier,
+    date,
     team,
-    match_result,
+    result,
     pts = 3 * as.integer(is_win) + 1 * as.integer(is_draw)
   )
-match_results |> count(match_result)
+match_pts |> count(result)
 
 compared_xpts_by_match <- reg_xpts_by_match |> 
   dplyr::rename_with(
@@ -553,7 +581,7 @@ compared_xpts_by_match <- reg_xpts_by_match |>
     by = dplyr::join_by(match_id, team)
   ) |> 
   dplyr::inner_join(
-    match_results,
+    match_pts,
     by = dplyr::join_by(match_id, team)
   )
 
