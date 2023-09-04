@@ -8,15 +8,6 @@ library(rlang)
 PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
 source(file.path(PROJ_DIR, 'load_fb.R')) ## until these are added to worldfootballR
 
-rename_home_away_teams <- function(df) {
-  df |> 
-    mutate(
-      team = ifelse(is_home, home_team, away_team),
-      opponent = ifelse(is_home, away_team, home_team)
-    ) |> 
-    select(-c(home_team, away_team)) 
-}
-
 COUNTRIES <-  'ENG'
 GENDERS <- 'M'
 TIERS <- '1st'
@@ -107,7 +98,7 @@ match_results <- match_summaries |>
     home_g = final_home_g,
     away_g = final_away_g
   )
-qs::qsave(match_results, file.path(PROJ_DIR, 'match_results.qs'))
+qsave(match_results, file.path(PROJ_DIR, 'match_results.qs'))
 
 long_shots <- raw_shots |> 
   transmute(
@@ -225,9 +216,9 @@ clean_shots <- long_shots_with_own_goals |>
   ) |> 
   ungroup() |> 
   mutate(
-    id = sprintf('%s-%02d', match_id, shot_idx)
+    shot_id = sprintf('%s-%02d', match_id, shot_idx)
   ) |> 
-  arrange(season, date, id)
+  arrange(season, date, shot_id)
 
 ## these should have equal counts. i belive these happen when there is a second shot immediately
 ##   after a saved penalty
@@ -238,7 +229,7 @@ restacked_shots <- bind_rows(
   clean_shots |> 
     filter(is_home) |> 
     transmute(
-      id,
+      shot_id,
       match_id,
       season,
       date,
@@ -262,7 +253,7 @@ restacked_shots <- bind_rows(
   clean_shots |> 
     filter(!is_home) |> 
     transmute(
-      id,
+      shot_id,
       match_id,
       season,
       date,
@@ -284,7 +275,7 @@ restacked_shots <- bind_rows(
       summary_g_conceded = summary_home_g,
     )
 ) |> 
-  arrange(season, date, match_id, id)
+  arrange(season, date, match_id, shot_id)
 
 doublecounted_restacked_shots <- bind_rows(
   restacked_shots |> mutate(pov = 'primary', .before = is_home),
@@ -310,7 +301,7 @@ doublecounted_restacked_shots <- bind_rows(
       pov = 'secondary'
     )
 ) |> 
-  arrange(season, date, match_id, id, pov)
+  arrange(season, date, match_id, shot_id, pov)
 
 cumu_doublecounted_restacked_shots <- doublecounted_restacked_shots |> 
   group_by(match_id, team) |> 
@@ -325,7 +316,7 @@ cumu_doublecounted_restacked_shots <- doublecounted_restacked_shots |>
     is_goal = factor(ifelse(g == 1L, 'yes', 'no')),
     game_state = g_cumu - g_conceded_cumu
   )
-qs::qsave(cumu_doublecounted_restacked_shots, file.path(PROJ_DIR, 'shots.qs'))
+qsave(cumu_doublecounted_restacked_shots, file.path(PROJ_DIR, 'shots.qs'))
 
 # cumu_doublecounted_restacked_shots |>
 #   filter(

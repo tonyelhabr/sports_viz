@@ -8,7 +8,6 @@ library(ggplot2)
 library(sysfonts)
 library(showtext)
 library(ggtext)
-library(ragg)
 library(htmltools)
 
 PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
@@ -37,7 +36,9 @@ shots <- raw_shots |>
     date,
     home_team,
     away_team,
-    id,
+    team,
+    player,
+    shot_id,
     is_penalty,
     is_goal,
     .pred_yes = xg,
@@ -49,7 +50,7 @@ shots <- raw_shots |>
     )
   ) |> 
   dplyr::group_by(match_id) |> 
-  dplyr::arrange(id, .by_group = TRUE) |> 
+  dplyr::arrange(shot_id, .by_group = TRUE) |> 
   dplyr::mutate(
     pre_shot_game_state = dplyr::lag(game_state, default = 'neutral')
   ) |> 
@@ -148,6 +149,7 @@ TAG_LABEL <- htmltools::tagList(
   htmltools::tags$span(htmltools::HTML(enc2utf8("&#xf099;")), style = 'font-family:fb'),
   htmltools::tags$span("@TonyElHabr"),
 )
+CAPTION_LABEL <- '**Data**: Opta via fbref.<br/>Point size is proportional to number of observations.'
 SUBTITLE_LABEL <- 'English Premier League, 2017/18 - 2022/23'
 PLOT_RESOLUTION <- 300
 WHITISH_FOREGROUND_COLOR <- 'white'
@@ -190,6 +192,7 @@ ggplot2::update_geom_defaults('point', list(color = WHITISH_FOREGROUND_COLOR))
 
 plot_and_save_calibration <- function(
     df,
+    .by,
     size = 7,
     width = size, 
     height = size, 
@@ -199,12 +202,7 @@ plot_and_save_calibration <- function(
     extra_layers
 ) {
   
-  group_cols <- setdiff(
-    colnames(df),
-    c('predicted_midpoint', 'event_rate', 'events', 'total', 'lower', 'upper')
-  )
-  
-  has_group_cols <- length(group_cols) > 0
+  group_cols <- rlang::ensyms(.by)
   
   p <- df |> 
     ggplot2::ggplot() +
@@ -226,11 +224,11 @@ plot_and_save_calibration <- function(
       ylim = c(0, 1)
     ) +
     ggplot2::labs(
-      title = paste0(c('Opta xG calibration', title), collapse = ' by '),
+      title = paste0(c('xG calibration', title), collapse = ' by '),
       subtitle = SUBTITLE_LABEL,
       y = 'Actual goal rate',
       x = 'Expected goals (xG)',
-      caption = paste0(c('**Data**: Opta via fbref.<br/>Point size is proportional to number of observations.', caption), collapse = '\n'),
+      caption = paste0(c(CAPTION_LABEL, caption), collapse = '\n'),
       tag = TAG_LABEL
     ) + 
     ggplot2::theme(
@@ -251,7 +249,6 @@ plot_and_save_calibration <- function(
   )
   invisible(p)
 }
-
 
 xg_cal_plot_breaks <- purrr::partial(
   probably::cal_plot_breaks,
@@ -339,46 +336,35 @@ extra_xg_cal_plot_layers <- list(
   )
 )
 
-shots |> 
+calib_game_state <- shots |> 
   xg_cal_plot_breaks(
     truth = is_goal,
     estimate = .pred_yes,
     .by = pre_shot_game_state
   ) |> 
-  purrr::pluck('data') |> 
-  plot_and_save_calibration(
-    width = 10,
-    height = 10 / 2,
-    extra_layers = extra_xg_cal_plot_layers,
-    title = 'game state',
-    filename = 'no_pre_shot_game_state_xg'
-  )
+  purrr::pluck('data')
+
+plot_and_save_calibration(
+  calib_game_state,
+  width = 10,
+  height = 10 / 2,
+  # extra_layers = extra_xg_cal_plot_layers,
+  .by = pre_shot_game_state,
+  title = 'game state',
+  filename = 'no_pre_shot_game_state_xg'
+)
 
 calib_game_state_custom |>
-  dplyr::select(
-    -c(lower_cut, upper_cut)
-  ) |>
   plot_and_save_calibration(
     width = 10,
     height = 10 / 2,
+    .by = pre_shot_game_state,
     title = 'game state',
     filename = 'custom_no_pre_shot_game_state_xg'
   )
 
 ## calibrate xG with game state ----
 ## estimate must be `.pred_{level1}` and `.pred_{level2}`
-# just_shots <- shots |> 
-#   dplyr::select(
-#     id, 
-#     pre_shot_game_state, 
-#     is_goal, 
-#     tidyselect::vars_select_helpers$starts_with('.pred')
-#   ) |> 
-#   dplyr::mutate(
-#     ## probably has a bug when .by is a factor? (https://github.com/tidymodels/probably/issues/127)
-#     dplyr::across(pre_shot_game_state, as.character)
-#   )
-
 beta_cal_model <- shots |> 
   dplyr::mutate(
     ## probably has a bug when .by is a factor? (https://github.com/tidymodels/probably/issues/127)
@@ -400,19 +386,22 @@ beta_cal_shots <- probably::cal_apply(
   beta_cal_model
 )
 
-beta_cal_shots |>
+beta_cal_calib_game_state <- beta_cal_shots |>
   xg_cal_plot_breaks(
     truth = is_goal,
     estimate = .pred_yes,
     .by = pre_shot_game_state
   ) |> 
-  purrr::pluck('data') |> 
-  plot_and_save_calibration(
-    width = 10,
-    height = 10 / 2,
-    title = 'game state',
-    filename = 'pre_shot_game_state_xg'
-  )
+  purrr::pluck('data')
+
+plot_and_save_calibration(
+  beta_cal_calib_game_state,
+  width = 9,
+  height = 9 / 2,
+  .by = pre_shot_game_state,
+  title = 'game state',
+  filename = 'pre_shot_game_state_xg'
+)
 
 beta_cal_calib_game_state_custom <- xg_cal_table_custom_breaks(
   beta_cal_shots,
@@ -422,28 +411,96 @@ beta_cal_calib_game_state_custom <- xg_cal_table_custom_breaks(
 )
 
 beta_cal_calib_game_state_custom |>
-  dplyr::select(
-    -c(lower_cut, upper_cut)
-  ) |>
   plot_and_save_calibration(
-    width = 10,
-    height = 10 / 2,
+    width = 9,
+    height = 9 / 2,
+    .by = pre_shot_game_state,
     title = 'game state',
     filename = 'custom_pre_shot_game_state_xg'
   )
 
-## plot calibrated xG ----
 cal_shots <- dplyr::inner_join(
   shots,
   beta_cal_shots |> 
-    dplyr::select(id, starts_with('.pred')) |> 
+    dplyr::select(shot_id, starts_with('.pred')) |> 
     dplyr::rename_with(
       \(.x)  gsub('.pred', '.cal_pred', .x), 
       dplyr::starts_with('.pred')
     ),
-  by = dplyr::join_by(id)
+  by = dplyr::join_by(shot_id)
 )
 
+stacked_calib_game_state <- dplyr::bind_rows(
+  calib_game_state |> dplyr::mutate(method =  'Uncalibrated'),
+  beta_cal_calib_game_state |> dplyr::mutate(method = 'Calibrated')
+) |> 
+  dplyr::mutate(method = factor(method, c('Uncalibrated', 'Calibrated')))
+
+calib_game_state_plot <- stacked_calib_game_state |> 
+  ggplot2::ggplot() +
+  ggplot2::aes(x = predicted_midpoint, y = event_rate, color = method) +
+  ggplot2::geom_abline(color = WHITISH_FOREGROUND_COLOR, linetype = 2) +
+  ggplot2::geom_line(
+    alpha = 0.5,
+    ggplot2::aes(y = event_rate),
+    show.legend = FALSE
+  ) +
+  ggplot2::geom_point(
+    alpha = 1,
+    ggplot2::aes(y = event_rate, size = total),
+    show.legend = FALSE
+  ) +
+  ggplot2::coord_cartesian(
+    xlim = c(0, 1),
+    ylim = c(0, 1)
+  ) +
+  ggplot2::scale_color_manual(
+    values = c('Uncalibrated' = '#F012BE', 'Calibrated' = '#FFDC00')
+  ) +
+  ggplot2::labs(
+    title = 'Comparing Performance of <span style=color:#F012BE>Uncalibrated</span> vs. <span style=color:#FFDC00>Calibrated</span> xG',
+    subtitle = SUBTITLE_LABEL,
+    y = 'Actual goal rate',
+    x = 'Expected goals (xG)',
+    caption = CAPTION_LABEL,
+    tag = TAG_LABEL
+  ) + 
+  ggplot2::theme(
+    legend.position = 'top',
+    plot.title = ggtext::element_markdown(),
+    panel.grid.major = ggplot2::element_blank(),
+    panel.background = ggplot2::element_rect(color = WHITISH_FOREGROUND_COLOR)
+  ) + 
+  ggplot2::facet_wrap(ggplot2::vars(pre_shot_game_state))  + 
+  ggtext::geom_richtext(
+    data = data.frame(
+      x = 0.05,
+      y = 0.9,
+      label = '<span style=color:#F012BE>Uncalibrated xG</span><br/><span style=color:#FFDC00>Calibrated xG</span>',
+      pre_shot_game_state = 'neutral'
+    ),
+    fill = NA, label.color = NA,
+    label.padding = grid::unit(rep(0, 1), 'pt'),
+    family = FONT,
+    hjust = 0,
+    vjust = 0.5,
+    size = 11 / ggplot2::.pt,
+    inherit.aes = FALSE,
+    ggplot2::aes(
+      x = x,
+      y = y,
+      label = label
+    )
+  ) 
+
+ggplot2::ggsave(
+  calib_game_state_plot,
+  filename = file.path(PROJ_DIR, 'compared_xg_calibration.png'),
+  width = 9,
+  height = 9 / 2
+)
+
+## plot calibrated xG ----
 cal_shots_plot <- cal_shots |>
   ggplot2::ggplot() +
   ggplot2::aes(x = .pred_yes, y = .cal_pred_yes) +
@@ -476,7 +533,7 @@ cal_shots_plot_path <- file.path(PROJ_DIR, 'calibrated_xg_vs_orig_xg.png')
 ggplot2::ggsave(
   cal_shots_plot,
   filename = cal_shots_plot_path,
-  width = 10,
+  width = 9,
   height = 5
 )
 
@@ -625,12 +682,12 @@ reg_xpts_by_match <- calculate_xpts_by_match(raw_shots)
 
 cal_xpts_by_match <- cal_shots |> 
   dplyr::select(
-    id,
+    shot_id,
     xg = .cal_pred_yes
   ) |> 
   dplyr::inner_join(
     raw_shots |> dplyr::select(-xg),
-    by = join_by(id)
+    by = join_by(shot_id)
   ) |> 
   calculate_xpts_by_match()
 
