@@ -1,13 +1,13 @@
 library(dplyr)
 library(qs)
+library(purrr)
 library(probably) ## 0.1.0.9008
-# packageVersion('probably') 
+packageVersion('probably') 
 
 library(ggplot2)
 library(sysfonts)
 library(showtext)
 library(ggtext)
-# library(ggforce)
 library(ragg)
 library(htmltools)
 
@@ -18,6 +18,7 @@ raw_shots <- qs::qread(file.path(PROJ_DIR, 'shots.qs')) |>
     !is_own_goal
   )
 
+## uncalibrated xG calibration ----
 match_teams <- raw_shots |> 
   dplyr::distinct(
     match_id,
@@ -41,18 +42,23 @@ shots <- raw_shots |>
     is_goal,
     .pred_yes = xg,
     .pred_no = 1 - xg,
-    g_state = cut(
-      g_state,
+    game_state = cut(
+      game_state,
       breaks = c(-Inf, -1, 0, Inf), 
       labels = c('trailing', 'neutral', 'leading')
     )
-  )
+  ) |> 
+  dplyr::group_by(match_id) |> 
+  dplyr::arrange(id, .by_group = TRUE) |> 
+  dplyr::mutate(
+    pre_shot_game_state = dplyr::lag(game_state, default = 'neutral')
+  ) |> 
+  dplyr::ungroup()
 
-# np_shots <- filter(
-#   shots,
-#   !is_penalty
-# )
+CAL_N_BREAKS <- 20
+CAL_CONF_LEVEL <- 0.9
 
+## cal_table_custom_breaks ----
 convert_seq_to_cuts <- function(seq) {
   list(
     lower_cut = seq[1:length(seq) - 1], 
@@ -68,48 +74,27 @@ convert_cuts_to_df <- function(cuts) {
   )
 }
 
-n_breaks <- 20
-side <- seq(0, 1, by = 1 / n_breaks)
-
-calib_g_state <- cal_plot_breaks(
-  shots,
-  truth = is_goal,
-  estimate = .pred_yes,
-  .by = g_state,
-  num_breaks = n_breaks,
-  conf_level = 0.9,
-  event_level = 'second'
-)
-
-# calib_g_state$data |> 
-#   left_join(
-#     convert_seq_to_cuts(seq(0, 1, by = 1 / n_breaks)) |> 
-#       convert_cuts_to_df(),
-#     by = join_by(predicted_midpoint)
-#   )
-
 cal_table_custom_breaks <- function(
     .data, 
     truth, 
     estimate = dplyr::starts_with(".pred"), 
     side, 
-    conf_level = 0.9, 
+    conf_level = CAL_CONF_LEVEL, 
     event_level = c("auto", "first", "second"), 
     ..., 
-    group = NULL
+    .by = NULL
 ) {
   
   ## mostly internals of probably:::.cal_table_breaks_impl (from probably:::.cal_table_breaks)
   truth <- rlang::enquo(truth)
   estimate <- rlang::enquo(estimate)
-  group <- rlang::enquo(group)
+  group <- rlang::enquo(.by)
   
   levels <- probably:::truth_estimate_map(
     .data = .data, 
     truth = !!truth, 
     estimate = !!estimate
   )
-  
   
   ## internals of probably:::.cal_table_breaks_grp
   cuts <- convert_seq_to_cuts(side)
@@ -144,16 +129,21 @@ cal_table_custom_breaks <- function(
   res
 }
 
-calib_g_state_custom <- cal_table_custom_breaks(
-  shots,
-  truth = is_goal,
-  estimate = .pred_yes,
-  group = g_state,
-  side = c(0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.5, 1),
-  conf_level = 0.9,
+xg_cal_table_custom_breaks <- purrr::partial(
+  cal_table_custom_breaks,
+  side = c(0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.25, 0.5, 0.78, 0.8, 1),
+  conf_level = CAL_CONF_LEVEL,
   event_level = 'second'
 )
 
+calib_game_state_custom <- xg_cal_table_custom_breaks(
+  shots,
+  truth = is_goal,
+  estimate = .pred_yes,
+  .by = pre_shot_game_state
+)
+
+## plot uncalibrated xG's calibration ----
 TAG_LABEL <- htmltools::tagList(
   htmltools::tags$span(htmltools::HTML(enc2utf8("&#xf099;")), style = 'font-family:fb'),
   htmltools::tags$span("@TonyElHabr"),
@@ -188,7 +178,7 @@ ggplot2::theme_update(
   panel.grid.minor.y = ggplot2::element_blank(),
   plot.margin = ggplot2::margin(10, 20, 10, 20),
   plot.background = ggplot2::element_rect(fill = BLACKISH_BACKGROUND_COLOR, color = BLACKISH_BACKGROUND_COLOR),
-  plot.caption = ggplot2::element_text(color = WHITISH_FOREGROUND_COLOR, hjust = 0, size = 12, face = 'plain'),
+  plot.caption = ggtext::element_markdown(color = WHITISH_FOREGROUND_COLOR, hjust = 0, size = 10, face = 'plain'),
   plot.caption.position = 'plot',
   plot.tag = ggtext::element_markdown(size = 12, color = WHITISH_FOREGROUND_COLOR, hjust = 1),
   plot.tag.position = c(0.99, 0.01),
@@ -205,7 +195,8 @@ plot_and_save_calibration <- function(
     height = size, 
     title = NULL,
     caption = NULL,
-    filename = tempfile()
+    filename = tempfile(),
+    extra_layers
 ) {
   
   group_cols <- setdiff(
@@ -239,17 +230,17 @@ plot_and_save_calibration <- function(
       subtitle = SUBTITLE_LABEL,
       y = 'Actual goal rate',
       x = 'Expected goals (xG)',
-      caption = paste0(c('Point size is proportional to number of observations.', caption), collapse = '\n'),
+      caption = paste0(c('**Data**: Opta via fbref.<br/>Point size is proportional to number of observations.', caption), collapse = '\n'),
       tag = TAG_LABEL
-    )
+    ) + 
+    ggplot2::theme(
+      panel.grid.major = ggplot2::element_blank(),
+      panel.background = ggplot2::element_rect(color = WHITISH_FOREGROUND_COLOR)
+    ) + 
+    ggplot2::facet_wrap(ggplot2::vars(!!!rlang::syms(group_cols)))
   
-  if (isTRUE(has_group_cols)) {
-    p <- p + 
-      ggplot2::theme(
-        panel.grid.major = ggplot2::element_blank(),
-        panel.background = ggplot2::element_rect(color = WHITISH_FOREGROUND_COLOR)
-      ) + 
-      ggplot2::facet_wrap(ggplot2::vars(!!!rlang::syms(group_cols)))
+  if (isFALSE(missing(extra_layers))) {
+    p <- p + extra_layers
   }
   
   ggplot2::ggsave(
@@ -261,50 +252,144 @@ plot_and_save_calibration <- function(
   invisible(p)
 }
 
-calib_g_state$data |> 
+
+xg_cal_plot_breaks <- purrr::partial(
+  probably::cal_plot_breaks,
+  num_breaks = CAL_N_BREAKS,
+  conf_level = CAL_CONF_LEVEL,
+  event_level = 'second'
+)
+
+extra_xg_cal_plot_layers <- list(
+  ggplot2::geom_segment(
+    data = data.frame(
+      x = 0.45,
+      xend = 0.35,
+      y = 0.6,
+      yend = 0.7,
+      pre_shot_game_state = 'leading'
+    ),
+    arrow = grid::arrow(length = grid::unit(6, 'pt'), type = 'closed'),
+    ggplot2::aes(
+      x = x,
+      xend = xend,
+      y = y,
+      yend = yend
+    ),
+    linewidth = 1,
+    color = '#009ffd'
+  ),
+  ggplot2::geom_segment(
+    data = data.frame(
+      x = 0.55,
+      xend = 0.65,
+      y = 0.4,
+      yend = 0.3,
+      pre_shot_game_state = 'leading'
+    ),
+    arrow = grid::arrow(length = grid::unit(6, 'pt'), type = 'closed'),
+    ggplot2::aes(
+      x = x,
+      xend = xend,
+      y = y,
+      yend = yend
+    ),
+    linewidth = 1,
+    color = '#ffa400'
+  ),
+  ggtext::geom_richtext(
+    data = data.frame(
+      x = 0.65,
+      y = 0.8,
+      label = 'Model *under-predicts*',
+      pre_shot_game_state = 'leading'
+    ),
+    fill = NA, label.color = NA,
+    label.padding = grid::unit(rep(0, 1), 'pt'),
+    color = '#009ffd',
+    family = FONT,
+    hjust = 1,
+    vjust = 0.5,
+    size = 11 / ggplot2::.pt,
+    ggplot2::aes(
+      x = x,
+      y = y,
+      label = label
+    )
+  ),
+  ggtext::geom_richtext(
+    data = data.frame(
+      x = 0.35,
+      y = 0.2,
+      label = 'Model *over-predicts*',
+      pre_shot_game_state = 'leading'
+    ),
+    fill = NA, label.color = NA,
+    label.padding = grid::unit(rep(0, 1), 'pt'),
+    color = '#ffa400',
+    family = FONT,
+    hjust = 0,
+    vjust = 0.5,
+    size = 11 / ggplot2::.pt,
+    ggplot2::aes(
+      x = x,
+      y = y,
+      label = label
+    )
+  )
+)
+
+shots |> 
+  xg_cal_plot_breaks(
+    truth = is_goal,
+    estimate = .pred_yes,
+    .by = pre_shot_game_state
+  ) |> 
+  purrr::pluck('data') |> 
   plot_and_save_calibration(
     width = 10,
     height = 10 / 2,
+    extra_layers = extra_xg_cal_plot_layers,
     title = 'game state',
-    filename = 'game_state'
+    filename = 'no_pre_shot_game_state_xg'
   )
 
-calib_g_state_custom |> 
+calib_game_state_custom |>
   dplyr::select(
     -c(lower_cut, upper_cut)
-  ) |> 
+  ) |>
   plot_and_save_calibration(
     width = 10,
     height = 10 / 2,
     title = 'game state',
-    filename = 'game_state_custom'
+    filename = 'custom_no_pre_shot_game_state_xg'
   )
 
-library(probably)
+## calibrate xG with game state ----
 ## estimate must be `.pred_{level1}` and `.pred_{level2}`
 # just_shots <- shots |> 
 #   dplyr::select(
 #     id, 
-#     g_state, 
+#     pre_shot_game_state, 
 #     is_goal, 
 #     tidyselect::vars_select_helpers$starts_with('.pred')
 #   ) |> 
 #   dplyr::mutate(
 #     ## probably has a bug when .by is a factor? (https://github.com/tidymodels/probably/issues/127)
-#     dplyr::across(g_state, as.character)
+#     dplyr::across(pre_shot_game_state, as.character)
 #   )
 
 beta_cal_model <- shots |> 
   dplyr::mutate(
     ## probably has a bug when .by is a factor? (https://github.com/tidymodels/probably/issues/127)
-    dplyr::across(g_state, as.character)
+    dplyr::across(pre_shot_game_state, as.character)
   ) |> 
   probably::cal_estimate_beta(
     truth = is_goal,
-    .by = g_state
+    .by = pre_shot_game_state
   )
 
-# df <- just_shots |> filter(g_state == 'leading')
+# df <- just_shots |> filter(pre_shot_game_state == 'leading')
 # betacal::beta_calibration(
 #   p = df$.pred_no,
 #   y = df$is_goal == 'no',
@@ -315,6 +400,39 @@ beta_cal_shots <- probably::cal_apply(
   beta_cal_model
 )
 
+beta_cal_shots |>
+  xg_cal_plot_breaks(
+    truth = is_goal,
+    estimate = .pred_yes,
+    .by = pre_shot_game_state
+  ) |> 
+  purrr::pluck('data') |> 
+  plot_and_save_calibration(
+    width = 10,
+    height = 10 / 2,
+    title = 'game state',
+    filename = 'pre_shot_game_state_xg'
+  )
+
+beta_cal_calib_game_state_custom <- xg_cal_table_custom_breaks(
+  beta_cal_shots,
+  truth = is_goal,
+  estimate = .pred_yes,
+  .by = pre_shot_game_state
+)
+
+beta_cal_calib_game_state_custom |>
+  dplyr::select(
+    -c(lower_cut, upper_cut)
+  ) |>
+  plot_and_save_calibration(
+    width = 10,
+    height = 10 / 2,
+    title = 'game state',
+    filename = 'custom_pre_shot_game_state_xg'
+  )
+
+## plot calibrated xG ----
 cal_shots <- dplyr::inner_join(
   shots,
   beta_cal_shots |> 
@@ -340,9 +458,9 @@ cal_shots_plot <- cal_shots |>
     xlim = c(0, 1),
     ylim = c(0, 1)
   ) +
-  ggplot2::facet_wrap(~g_state) +
+  ggplot2::facet_wrap(~pre_shot_game_state) +
   ggplot2::labs(
-    title = 'Re-calibrated Opta xG calibration by game state',
+    title = 'Game-state calibrated xG compared with original xG',
     subtitle = SUBTITLE_LABEL,
     y = 'Calibrated xG',
     x = 'Expected goals (xG)',
@@ -354,7 +472,7 @@ cal_shots_plot <- cal_shots |>
     panel.background = ggplot2::element_rect(color = WHITISH_FOREGROUND_COLOR)
   )
 
-cal_shots_plot_path <- file.path(PROJ_DIR, 'calibrated_xg.png')
+cal_shots_plot_path <- file.path(PROJ_DIR, 'calibrated_xg_vs_orig_xg.png')
 ggplot2::ggsave(
   cal_shots_plot,
   filename = cal_shots_plot_path,
@@ -362,6 +480,7 @@ ggplot2::ggsave(
   height = 5
 )
 
+## calculate xPts ----
 library(purrr)
 library(poibin)
 library(gdata)
@@ -407,37 +526,37 @@ summarize_pivoted_permuted_xg <- function(prob_away, prob_home) {
 ## Huddersfield 0 - 0 Swansea on 2018-03-10
 pad_for_matches_without_shots_from_one_team <- function(df) {
   n_teams_per_match <- df |> 
-    distinct(match_id, team) |> 
-    count(match_id, sort = TRUE)
+    dplyr::distinct(match_id, team) |> 
+    dplyr::count(match_id, sort = TRUE)
   
   matches_with_no_shots_from_one_team <- n_teams_per_match |> 
-    filter(n == 1)
+    dplyr::filter(n == 1)
   
   dummy_opponents <- df |> 
-    distinct(match_id, season, date, team, opponent, is_home) |> 
-    semi_join(
+    dplyr::distinct(match_id, season, date, team, opponent, is_home) |> 
+    dplyr::semi_join(
       matches_with_no_shots_from_one_team,
-      by = 'match_id'
+      by = dplyr::join_by(match_id)
     ) |> 
-    mutate(
-      z = team
+    dplyr::mutate(
+      dummy_team = team
     ) |> 
-    transmute(
+    dplyr::transmute(
       match_id, 
       season, 
       date, 
       team = opponent,
-      opponent = z,
-      across(is_home, ~!.x),
+      opponent = dummy_team,
+      dplyr::across(is_home, ~!.x),
       prob = 1,
       g = 0L
     )
   
-  bind_rows(
+  dplyr::bind_rows(
     df,
     dummy_opponents
   ) |> 
-    arrange(season, date, team, g)
+    dplyr::arrange(season, date, team, g)
 }
 
 summarize_permuted_xg_by_match <- function(df) {
@@ -556,16 +675,17 @@ match_pts <- bind_rows(
   ) |> 
   transmute(
     match_id,
-    season,
-    gender,
-    tier,
-    date,
+    # season,
+    # gender,
+    # tier,
+    # date,
     team,
     result,
     pts = 3 * as.integer(is_win) + 1 * as.integer(is_draw)
   )
 match_pts |> count(result)
 
+## compare xPts ----
 compared_xpts_by_match <- reg_xpts_by_match |> 
   dplyr::rename_with(
     \(.x) paste0('reg_', .x),
@@ -634,3 +754,4 @@ compared_xpts_by_season |>
     rmse = sqrt(mean((pts - xpts)^2))
   ) |> 
   ungroup()
+

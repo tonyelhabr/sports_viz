@@ -323,7 +323,7 @@ cumu_doublecounted_restacked_shots <- doublecounted_restacked_shots |>
   ungroup() |> 
   mutate(
     is_goal = factor(ifelse(g == 1L, 'yes', 'no')),
-    g_state = g_cumu - g_conceded_cumu
+    game_state = g_cumu - g_conceded_cumu
   )
 qs::qsave(cumu_doublecounted_restacked_shots, file.path(PROJ_DIR, 'shots.qs'))
 
