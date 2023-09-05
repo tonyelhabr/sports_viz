@@ -588,6 +588,36 @@ compared_xpts_by_match <- reg_xpts_by_match |>
   )
 
 compared_xpts_by_match |> 
+  transmute(
+    target = factor(ifelse(result == 'w', 'yes', 'no')),
+    .pred_yes = reg_prob_win
+  ) |> 
+  xg_cal_plot_breaks(
+    truth = target,
+    estimate = .pred_yes
+  )
+
+compared_xpts_by_match |> 
+  transmute(
+    target = factor(ifelse(result == 'd', 'yes', 'no')),
+    .pred_yes = reg_prob_draw
+  ) |> 
+  xg_cal_plot_breaks(
+    truth = target,
+    estimate = .pred_yes
+  )
+
+compared_xpts_by_match |> 
+  transmute(
+    target = factor(ifelse(result == 'l', 'yes', 'no')),
+    .pred_yes = reg_prob_lose
+  ) |> 
+  xg_cal_plot_breaks(
+    truth = target,
+    estimate = .pred_yes
+  )
+
+compared_xpts_by_match |> 
   ggplot() +
   aes(
     x = reg_xpts,
