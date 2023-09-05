@@ -53,8 +53,19 @@ player_team_season_mapping <- player_match_stats |>
   ) |> 
   dplyr::ungroup()
 
-team_match_stats <- player_match_stats |> 
-  dplyr::group_by(season, match_id, date, team) |> 
+# team_match_stats <- player_match_stats |> 
+#   dplyr::group_by(season, match_id, date, team) |> 
+#   dplyr::summarize(
+#     dplyr::across(c(minutes_played, passes_completed, passes_attempted), sum)
+#   ) |> 
+#   dplyr::ungroup() |> 
+#   dplyr::mutate(
+#     pass_completion_rate = passes_completed / passes_attempted,
+#     pass_completion_rate_p90 = 90 * pass_completion_rate / minutes_played
+#   )
+
+player_season_stats <- player_match_stats |> 
+  dplyr::group_by(season, team, player) |> 
   dplyr::summarize(
     dplyr::across(c(minutes_played, passes_completed, passes_attempted), sum)
   ) |> 
@@ -87,11 +98,11 @@ resample_stats <- function() {
     dplyr::ungroup() |> 
     dplyr::arrange(season, team, game_idx)
   
-  resampled_team_match_stats <- resampled_match_ids |> 
-    dplyr::inner_join(
-      team_match_stats,
-      by = dplyr::join_by(season, team, date, match_id)
-    )
+  # resampled_team_match_stats <- resampled_match_ids |> 
+  #   dplyr::inner_join(
+  #     team_match_stats,
+  #     by = dplyr::join_by(season, team, date, match_id)
+  #   )
   
   resampled_player_match_stats <- resampled_match_ids |> 
     dplyr::inner_join(
@@ -100,86 +111,135 @@ resample_stats <- function() {
       relationship = 'many-to-many'
     )
   
-  resampled_player_season_stats <- resampled_player_match_stats |> 
-    dplyr::group_by(season, team, player) |> 
-    dplyr::summarize(
-      dplyr::across(c(minutes_played, passes_completed, passes_attempted), sum)
-    ) |> 
-    dplyr::ungroup() |> 
-    dplyr::mutate(
-      pass_completion_rate = passes_completed / passes_attempted,
-      pass_completion_rate_p90 = 90 * pass_completion_rate / minutes_played
-    )
-  
-  list(
-    match_ids = resampled_match_ids,
-    teams = resampled_team_match_stats,
-    players = resampled_player_match_stats,
-    player_seasons = resampled_player_season_stats
-  )
+  # resampled_player_season_stats <- resampled_player_match_stats |> 
+  #   dplyr::group_by(season, team, player) |> 
+  #   dplyr::summarize(
+  #     dplyr::across(c(minutes_played, passes_completed, passes_attempted), sum)
+  #   ) |> 
+  #   dplyr::ungroup() |> 
+  #   dplyr::mutate(
+  #     pass_completion_rate = passes_completed / passes_attempted,
+  #     pass_completion_rate_p90 = 90 * pass_completion_rate / minutes_played
+  #   )
+  #  
+  # list(
+  #   match_ids = resampled_match_ids,
+  #   # teams = resampled_team_match_stats,
+  #   players = resampled_player_match_stats,
+  #   player_seasons = resampled_player_season_stats
+  # )
+  resampled_player_match_stats
 }
 
-N_BOOSTRAPS <- 20
-resampled_stats <- purrr::map(
+N_BOOSTRAPS <- 100
+resampled_player_match_stats <- purrr::map_dfr(
   rlang::set_names(1:N_BOOSTRAPS),
-  \(...) resample_stats()
-)
-
-resampled_player_match_stats <- resampled_stats |> 
-  purrr::imap_dfr(
-    \(.x, .y) purrr::pluck(.x, 'players'),
-    .id = 'bootstrap_id'
-  ) |> 
+  \(...) resample_stats(),
+  .id = 'bootstrap_id'
+) |> 
   dplyr::mutate(bootstrap_id = as.integer(bootstrap_id))
 
-resampled_player_season_stats <- resampled_stats |> 
-  purrr::imap_dfr(
-    \(.x, .y) purrr::pluck(.x, 'player_seasons'),
-    .id = 'bootstrap_id'
-  ) |> 
-  dplyr::mutate(bootstrap_id = as.integer(bootstrap_id))
+# flatten_bootstraps <- function(resamples, element) {
+#   resamples |> 
+#   purrr::imap_dfr(
+#     \(.x, .y) purrr::pluck(.x, element),
+#     .id = 'bootstrap_id'
+#   ) |> 
+#     dplyr::mutate(bootstrap_id = as.integer(bootstrap_id))
+# }
+# resampled_player_match_stats <- flatten_bootstraps(resampled_stats, 'players')
+# resampled_player_match_stats <- flatten_bootstraps(resampled_stats, 'player_seasons')
 
+resampled_player_season_stats <- resampled_player_match_stats |> 
+  dplyr::group_by(bootstrap_id, season, team, player) |> 
+  dplyr::summarize(
+    dplyr::across(c(minutes_played, passes_completed, passes_attempted), sum)
+  ) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(
+    pass_completion_rate = passes_completed / passes_attempted,
+    pass_completion_rate_p90 = 90 * pass_completion_rate / minutes_played
+  )
 
 ## season totals
 eligible_players <- player_team_season_mapping |> 
   dplyr::filter(minutes_played >= 270)
 
-## eq2
-## num
-v_spm <- resampled_player_season_stats |> 
-  inner_join(
+
+METRICS <- c(
+  'passes_completed',
+  'passes_attempted',
+  'pass_completion_rate',
+  'pass_completion_rate_p90'
+)
+
+## https://arxiv.org/pdf/1609.09830.pdf
+## eq2 numerator
+## or \frac{1}{P}\sum_{p=1}^{P}{BV[X_{spm}]} on p10
+## variance within player-season, by metric
+player_season_variance <- resampled_player_season_stats |> 
+  dplyr::semi_join(
     eligible_players,
-    by = join_by(season, team, player, minutes_played)
+    by = dplyr::join_by(season, team, player,)
   ) |> 
-  dplyr::filter(player == 'Petr Cech') |> 
-  select(
+  dplyr::select(
     season,
     team,
     player,
-    passes_completed,
-    passes_attempted,
-    pass_completion_rate,
-    pass_completion_rate_p90
+    dplyr::all_of(METRICS)
   ) |> 
   tidyr::pivot_longer(
     -c(season, team, player),
     names_to = 'metric',
     values_to = 'value'
   ) |> 
-  dplyr::filter(player == 'David Ospin')
-  group_by(season, team, player, metric) |> 
-  summarize(
+  dplyr::group_by(season, team, player, metric) |> 
+  dplyr::summarize(
     v_spm = var(value, na.rm = TRUE)
   ) |> 
-  ungroup()
+  dplyr::ungroup()
 
-e_sm_v_spm <- v_spm |> 
-  group_by(metric) |> 
-  summarize(
-    e_sm_v_spm = mean(v_spm)
+average_player_season_variance <- player_season_variance |> 
+  dplyr::group_by(metric) |> 
+  dplyr::summarize(
+    bv = mean(v_spm)
+  ) |> 
+  dplyr::ungroup()
+
+## eq2 denominator
+## or \frac{1}{P}\sum_{p=1}^{P}{(X_{spm}-\bar{X}_{s*m})^2} on p10
+season_variance <- player_season_stats |> 
+  dplyr::semi_join(
+    eligible_players,
+    by = dplyr::join_by(season, team, player,)
+  ) |> 
+  dplyr::select(
+    season,
+    team,
+    player,
+    dplyr::all_of(METRICS)
+  ) |> 
+  tidyr::pivot_longer(
+    -c(season, team, player),
+    names_to = 'metric',
+    values_to = 'value'
+  )  |> 
+  dplyr::group_by(season, metric) |> 
+  dplyr::summarize(
+    sv = var(value, na.rm = TRUE)
+  ) |> 
+  dplyr::ungroup()
+
+season_variance |> 
+  dplyr::filter(season == '2022/23') |> 
+  dplyr::inner_join(
+    average_player_season_variance,
+    by = dplyr::join_by(metric)
+  ) |> 
+  mutate(
+    discrimination = 1 - bv / sv
   )
 
-var(resampled_player_match_stats$pass_completion_rate, na.rm = TRUE)
 
 ## For each team
 ##   1. resample the match IDs with replacment for each season.
