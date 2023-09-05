@@ -67,17 +67,21 @@ load_fb_match_summary <- function(country, gender, tier, season_end_year = NA) {
 #' @examples
 #' \donttest{
 #' try({
-#' load_fb_match_summary(
+#' load_fb_advanced_match_stats(
 #'   country = "ENG",
 #'   gender = "M",
-#'   tier = "1st"
+#'   tier = "1st",
+#'   stat_type = "summary",
+#'   team_or_player = "player"
 #' )
 #'
-#' load_fb_match_summary(
+#' load_fb_advanced_match_stats(
 #'   country = c("ITA", "ESP"),
 #'   gender = "M",
 #'   tier = "1st",
-#'   season_end_year = 2019
+#'   season_end_year = 2023,
+#'   stat_type = "summary",
+#'   team_or_player = "player"
 #' )
 #' })
 #' }
@@ -85,7 +89,7 @@ load_fb_match_summary <- function(country, gender, tier, season_end_year = NA) {
 load_fb_advanced_match_stats <- function(country, gender, tier, stat_type, team_or_player, season_end_year = NA) {
   
   urls <- sprintf(
-    "https://github.com/JaseZiv/worldfootballR_data/releases/download/fb_match_shooting/%s_%s_%s_advanced_match_stats.rds",
+    "https://github.com/JaseZiv/worldfootballR_data/releases/download/fb_advanced_match_stats/%s_%s_%s_%s_%s_advanced_match_stats.rds",
     country,
     gender,
     tier,

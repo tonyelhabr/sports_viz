@@ -12,7 +12,7 @@ PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
 raw_shots <- qs::qread(file.path(PROJ_DIR, 'shots.qs')) |> 
   dplyr::filter(
     pov == 'primary',
-    season %in% c('2020/21', '2021/22', '2022/23')
+    # season %in% c('2020/21', '2021/22', '2022/23'),
     !is_own_goal
   )
 
@@ -24,7 +24,8 @@ match_teams <- raw_shots |>
     away_team = ifelse(is_home, opponent, team)
   )
 
-ORDERED_GAME_STATE_LABELS <- c('<1', '[-1,+1]', '>1')
+ORDERED_GAME_STATE_LABELS <- c('trailing', 'neutral', 'leading')
+# ORDERED_GAME_STATE_LABELS <- c('<1', '[-1,+1]', '>1')
 shots <- raw_shots |> 
   dplyr::inner_join(
     match_teams,
@@ -46,7 +47,8 @@ shots <- raw_shots |>
     # game_state,
     game_state = cut(
       game_state,
-      breaks = c(-Inf, -2, 1, Inf), 
+      breaks = c(-Inf, -1, 0, Inf), 
+      # breaks = c(-Inf, -2, 1, Inf), 
       labels = ORDERED_GAME_STATE_LABELS
     )
   ) |> 

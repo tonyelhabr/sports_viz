@@ -8,10 +8,10 @@ library(rlang)
 PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
 source(file.path(PROJ_DIR, 'load_fb.R')) ## until these are added to worldfootballR
 
-COUNTRIES <-  'ENG'
+COUNTRIES <-  'USA'
 GENDERS <- 'M'
 TIERS <- '1st'
-SEASON_END_YEARS <- 2018:2023
+SEASON_END_YEARS <- 2018:2022
 
 raw_shots <- load_fb_match_shooting(
   country = COUNTRIES,
@@ -151,6 +151,7 @@ long_shots_with_own_goals <- long_shots |>
         is_penalty = FALSE
       )
   )
+
 clean_shots <- long_shots_with_own_goals |> 
   inner_join(
     match_summaries |>

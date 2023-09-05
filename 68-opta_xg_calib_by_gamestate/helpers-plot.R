@@ -3,7 +3,8 @@ TAG_LABEL <- htmltools::tagList(
   htmltools::tags$span("@TonyElHabr"),
 )
 CAPTION_LABEL <- '**Data**: Opta via fbref.<br/>Point size is proportional to number of observations.'
-SUBTITLE_LABEL <- 'English Premier League, 2017/18 - 2022/23'
+# SUBTITLE_LABEL <- 'English Premier League, 2017/18 - 2022/23'
+SUBTITLE_LABEL <- 'Major League Soccer, 2018 - 2022'
 PLOT_RESOLUTION <- 300
 WHITISH_FOREGROUND_COLOR <- 'white'
 COMPLEMENTARY_FOREGROUND_COLOR <- '#f1f1f1'
