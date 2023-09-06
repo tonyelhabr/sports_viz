@@ -36,7 +36,7 @@ player_match_stats <- raw_player_match_stats |>
     passes_completed = Cmp_Passes,
     passes_attempted = Att_Passes,
     pass_completion_rate = passes_completed / passes_attempted,
-    pass_completion_rate_p90 = 90 * pass_completion_rate / minutes_played
+    passes_completed_p90 = 90 * passes_completed / minutes_played
   )
 player_match_stats
 
@@ -61,7 +61,7 @@ player_team_season_mapping <- player_match_stats |>
 #   dplyr::ungroup() |> 
 #   dplyr::mutate(
 #     pass_completion_rate = passes_completed / passes_attempted,
-#     pass_completion_rate_p90 = 90 * pass_completion_rate / minutes_played
+#     passes_completed_p90 = 90 * pass_completion_rate / minutes_played
 #   )
 
 player_season_stats <- player_match_stats |> 
@@ -72,7 +72,7 @@ player_season_stats <- player_match_stats |>
   dplyr::ungroup() |> 
   dplyr::mutate(
     pass_completion_rate = passes_completed / passes_attempted,
-    pass_completion_rate_p90 = 90 * pass_completion_rate / minutes_played
+    passes_completed_p90 = 90 * passes_completed / minutes_played
   )
 
 match_ids <- team_match_stats |>
@@ -119,7 +119,7 @@ resample_stats <- function() {
   #   dplyr::ungroup() |> 
   #   dplyr::mutate(
   #     pass_completion_rate = passes_completed / passes_attempted,
-  #     pass_completion_rate_p90 = 90 * pass_completion_rate / minutes_played
+  #     passes_completed_p90 = 90 * pass_completion_rate / minutes_played
   #   )
   #  
   # list(
@@ -158,88 +158,130 @@ resampled_player_season_stats <- resampled_player_match_stats |>
   dplyr::ungroup() |> 
   dplyr::mutate(
     pass_completion_rate = passes_completed / passes_attempted,
-    pass_completion_rate_p90 = 90 * pass_completion_rate / minutes_played
+    passes_completed_p90 = 90 * pass_completion_rate / minutes_played
   )
 
 ## season totals
 eligible_players <- player_team_season_mapping |> 
   dplyr::filter(minutes_played >= 270)
 
-
 METRICS <- c(
+  'minutes_played',
   'passes_completed',
   'passes_attempted',
   'pass_completion_rate',
-  'pass_completion_rate_p90'
+  'passes_completed_p90'
+)
+
+drop_ineligible_players <- function(df, eligible_players) {
+  df |> 
+    dplyr::semi_join(
+      eligible_players,
+      by = dplyr::join_by(season, team, player)
+    )
+}
+
+pivot_metrics <- function(df) {
+  df |> 
+    dplyr::select(
+      season,
+      team,
+      player,
+      dplyr::all_of(METRICS)
+    ) |> 
+    tidyr::pivot_longer(
+      -c(season, team, player),
+      names_to = 'metric',
+      values_to = 'value'
+    ) 
+}
+
+drop_ineligible_players_and_pivot_metrics <- purrr::compose(
+  drop_ineligible_players,
+  pivot_metrics,
+  .dir = 'forward'
 )
 
 ## https://arxiv.org/pdf/1609.09830.pdf
 ## eq2 numerator
 ## or \frac{1}{P}\sum_{p=1}^{P}{BV[X_{spm}]} on p10
 ## variance within player-season, by metric
-player_season_variance <- resampled_player_season_stats |> 
-  dplyr::semi_join(
-    eligible_players,
-    by = dplyr::join_by(season, team, player,)
-  ) |> 
-  dplyr::select(
-    season,
-    team,
-    player,
-    dplyr::all_of(METRICS)
-  ) |> 
-  tidyr::pivot_longer(
-    -c(season, team, player),
-    names_to = 'metric',
-    values_to = 'value'
-  ) |> 
+## bv
+## in the paper, they just calculate this for 1 season, but we can do it for every season
+resampled_player_season_variance <- resampled_player_season_stats |> 
+  drop_ineligible_players_and_pivot_metrics(eligible_players) |>
   dplyr::group_by(season, team, player, metric) |> 
   dplyr::summarize(
-    v_spm = var(value, na.rm = TRUE)
+    bv = var(value, na.rm = TRUE)
   ) |> 
   dplyr::ungroup()
 
-average_player_season_variance <- player_season_variance |> 
-  dplyr::group_by(metric) |> 
+average_resampled_player_season_variance <- resampled_player_season_variance |> 
+  dplyr::group_by(season, metric) |> 
   dplyr::summarize(
-    bv = mean(v_spm)
+    bv = mean(bv)
   ) |> 
   dplyr::ungroup()
 
 ## eq2 denominator
 ## or \frac{1}{P}\sum_{p=1}^{P}{(X_{spm}-\bar{X}_{s*m})^2} on p10
-season_variance <- player_season_stats |> 
-  dplyr::semi_join(
-    eligible_players,
-    by = dplyr::join_by(season, team, player,)
-  ) |> 
-  dplyr::select(
-    season,
-    team,
-    player,
-    dplyr::all_of(METRICS)
-  ) |> 
-  tidyr::pivot_longer(
-    -c(season, team, player),
-    names_to = 'metric',
-    values_to = 'value'
-  )  |> 
+## sv
+## in the paper, they just calculate this for 1 season, but we can do it for every season
+pivoted_player_season_stats <- player_season_stats |> 
+  drop_ineligible_players_and_pivot_metrics(eligible_players)
+
+season_variance <- pivoted_player_season_stats |>
   dplyr::group_by(season, metric) |> 
   dplyr::summarize(
     sv = var(value, na.rm = TRUE)
   ) |> 
   dplyr::ungroup()
 
-season_variance |> 
-  dplyr::filter(season == '2022/23') |> 
+discrimination <- average_resampled_player_season_variance |> 
   dplyr::inner_join(
-    average_player_season_variance,
-    by = dplyr::join_by(metric)
+    season_variance,
+    by = dplyr::join_by(season, metric)
   ) |> 
-  mutate(
+  dplyr::mutate(
     discrimination = 1 - bv / sv
   )
 
+## aggregate over seasons
+within_player_variance <- pivoted_player_season_stats |> 
+  ## should check for players with the same name
+  dplyr::group_by(player, metric) |>
+  dplyr::summarize(
+    wv = var(value, na.rm = TRUE)
+  ) |> 
+  dplyr::ungroup()
+
+average_within_player_variance <- within_player_variance |> 
+  dplyr::group_by(metric) |> 
+  dplyr::summarize(
+    wv = mean(wv, na.rm = TRUE)
+  ) |> 
+  dplyr::ungroup()
+
+total_variance <- pivoted_player_season_stats |> 
+  dplyr::group_by(metric) |>
+  dplyr::summarize(
+    tv = var(value, na.rm = TRUE)
+  ) |> 
+  dplyr::ungroup()
+
+stability <- average_resampled_player_season_variance |> 
+  dplyr::inner_join(
+    total_variance,
+    by = dplyr::join_by(metric),
+    relationship = 'many-to-one'
+  ) |>
+  dplyr::inner_join(
+    average_within_player_variance,
+    by = dplyr::join_by(metric)
+  ) |> 
+  dplyr::mutate(
+    stability = 1 - (wv - bv) / (tv - bv)
+  )
 
 ## For each team
 ##   1. resample the match IDs with replacment for each season.
