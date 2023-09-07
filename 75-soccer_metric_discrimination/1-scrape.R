@@ -70,8 +70,6 @@ RATE_METRICS <- c(
   'successful_takeon_rate'
 )
 
-# P90_METRICS <- paste0(BASE_METRICS, '_p90')
-
 ALL_METRICS <- c(
   BASE_METRICS,
   RATE_METRICS
@@ -137,12 +135,6 @@ summarize_all_metric_columns <- function(df, ...) {
       goal_conversion_rate = coalesce_fraction(goals, shots),
       pass_completion_rate = coalesce_fraction(passes_completed, passes_attempted),
       successful_takeon_rate = coalesce_fraction(successful_takeons, takeons_attempted)
-    ) |> 
-    dplyr::mutate(
-      dplyr::across(
-        dplyr::all_of(BASE_METRICS), 
-        list(p90 = \(.x) 90 * .x / minutes_played)
-      )
     )
 }
 
