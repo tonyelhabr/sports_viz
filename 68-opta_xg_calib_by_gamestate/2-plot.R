@@ -44,7 +44,6 @@ shots <- raw_shots |>
     is_goal,
     .pred_yes = xg,
     .pred_no = 1 - xg,
-    # game_state,
     game_state = cut(
       game_state,
       breaks = c(-Inf, -1, 0, Inf), 
@@ -52,7 +51,7 @@ shots <- raw_shots |>
       labels = ORDERED_GAME_STATE_LABELS
     )
   ) |> 
-  dplyr::group_by(match_id) |> 
+  dplyr::group_by(match_id, team) |> 
   dplyr::arrange(shot_id, .by_group = TRUE) |> 
   dplyr::mutate(
     pre_shot_game_state = dplyr::lag(game_state, default = ORDERED_GAME_STATE_LABELS[2])

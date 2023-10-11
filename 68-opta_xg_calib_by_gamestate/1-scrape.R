@@ -6,9 +6,9 @@ library(qs)
 library(rlang)
 
 PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
-source(file.path(PROJ_DIR, 'load_fb.R')) ## until these are added to worldfootballR
+# source(file.path(PROJ_DIR, 'load_fb.R')) ## until these are added to worldfootballR
 
-COUNTRIES <-  'USA'
+COUNTRIES <- 'ENG'
 GENDERS <- 'M'
 TIERS <- '1st'
 SEASON_END_YEARS <- 2018:2022
