@@ -10,6 +10,7 @@ clean_scores <- scores |>
       case_when(
         .x == 'Andrew ElHabr' ~ 'Andrew E.',
         .x == 'Andrew Lara' ~ 'Andrew L.',
+        .x == 'Manuel Espinosa' ~ 'Manny',
         TRUE ~ gsub('\\s.*$', '', .x)
       )
     )
@@ -300,15 +301,12 @@ agg_scores_plot <- agg_scores |>
       label = label
     )
   ) +
-  annotate(
-    
+  labs(
+    title = 'Is your team "good" (more points scored than average)?\nHave you been lucky (opponent has scored less than average)?',
+    subtitle = sprintf('%s season, through week %s', current_season, latest_week),
+    x = 'Points For',
+    y = 'Points Against'
   )
-labs(
-  title = 'Is your team "good" (more points scored than average)?\nHave you been lucky (opponent has scored less than average)?',
-  subtitle = sprintf('%s season, through week %s', current_season, latest_week),
-  x = 'Points For',
-  y = 'Points Against'
-)
 agg_scores_plot
 
 ggsave(
