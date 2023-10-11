@@ -157,15 +157,17 @@ eligible_player_season_stats <- player_season_stats |>
 eligible_player_match_stats <- player_match_stats |> 
   dplyr::semi_join(
     eligible_player_season_stats,
-    by = dplyr::join_by(season, player, team)
-  )
-
-match_ids <- player_match_stats |>
-  dplyr::distinct(league, season, team, date, match_id) |> 
-  dplyr::arrange(league, season, team, date)
+    by = dplyr::join_by(league, season, team, player)
+  ) |> 
+  dplyr::arrange(league, season, team, player)
 
 set.seed(42)
 resample_stats <- function(match_ids, player_match_stats) {
+  
+  match_ids <- eplayer_match_stats |>
+    dplyr::distinct(league, season, team, date, match_id) |> 
+    dplyr::arrange(league, season, team, date)
+  
   ## can't just specify to resample 38 matches per team since different leagues 
   ## have different season lengths (Bundesliga, MLS), and because COVID ball
   resampled_match_ids <- match_ids |> 
@@ -195,7 +197,11 @@ resample_stats <- function(match_ids, player_match_stats) {
 N_BOOSTRAPS <- 20
 resampled_player_match_stats <- purrr::map_dfr(
   rlang::set_names(1:N_BOOSTRAPS),
-  \(...) resample_stats(match_ids, eligible_player_match_stats),
+  \(...) {
+    resample_stats(
+      player_match_stats = eligible_player_match_stats
+    )
+  },
   .id = 'bootstrap_id'
 ) |> 
   dplyr::mutate(bootstrap_id = as.integer(bootstrap_id)) |> 
