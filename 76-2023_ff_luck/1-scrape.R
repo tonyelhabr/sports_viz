@@ -1,17 +1,17 @@
 library(ffscrapr)
 library(dplyr)
 library(purrr)
-library(cli)
 library(qs)
 
+PROJ_DIR <- '76-2023_ff_luck'
+SEASONS <- 2019:2023
 ESPN_LEAGUE_ID <- 899513
 ESPN_S2 <- Sys.getenv('FF_ESPN_S2')
 SWID <- Sys.getenv('FF_SWID')
-PROJ_DIR <- '76-2023_ff_luck'
 
 ## data scrape ----
 scrape_espn_season <- function(season) {
-  cli::cli_inform('Scraping scores for season = {season}.')
+  message(sprintf('Scraping scores for season = %s.', season))
   conn <- ffscrapr::espn_connect(
     season = season,
     league_id = ESPN_LEAGUE_ID,
@@ -54,7 +54,6 @@ slowly_scrape_espn_season <- purrr::slowly(
   scrape_espn_season
 )
 
-SEASONS <- 2019:2023
 scores <- purrr::map_dfr(
   SEASONS,
   slowly_scrape_espn_season

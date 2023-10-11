@@ -1,216 +1,10 @@
-
-clean_scores <- scores |> 
-  mutate(
-    across(
-      c(
-        user_name,
-        opponent_user_name
-      ),
-      \(.x) 
-      case_when(
-        .x == 'Andrew ElHabr' ~ 'Andrew E.',
-        .x == 'Andrew Lara' ~ 'Andrew L.',
-        .x == 'Manuel Espinosa' ~ 'Manny',
-        TRUE ~ gsub('\\s.*$', '', .x)
-      )
-    )
-  )
-
-## data processing ----
-current_season <- max(SEASONS)
-agg_scores <- clean_scores |> 
-  filter(season == current_season) |> 
-  group_by(user_name) |> 
-  summarize(
-    across(
-      c(
-        user_score,
-        opponent_score
-      ),
-      sum
-    )
-  ) |> 
-  ungroup()
-
-latest_week <- scores |> 
-  filter(season == current_season) |> 
-  filter(user_score > 0) |> 
-  slice_max(week, n = 1, with_ties = FALSE) |> 
-  pull(week)
-
+library(qs)
+library(dplyr)
 library(tidyr)
-all_h2h_records <- crossing(
-  'season' = SEASONS,
-  'week' = 1:latest_week,
-  'user_name' = clean_scores$user_name,
-  'opponent_user_name' = clean_scores$opponent_user_name
-) |> 
-  filter(user_name != opponent_user_name) |> 
-  inner_join(
-    clean_scores |>
-      select(season, week, user_name, user_score),
-    by = join_by(season, week, user_name)
-  ) |>
-  inner_join(
-    clean_scores |> 
-      select(
-        season,
-        week,
-        opponent_user_name = user_name,
-        opponent_score = user_score
-      ),
-    by = join_by(season, week, opponent_user_name)
-  ) |> 
-  mutate(
-    w = user_score > opponent_score,
-    l = user_score < opponent_score
-  ) |> 
-  group_by(season, user_name) |> 
-  summarize(
-    across(
-      c(w, l),
-      sum
-    )
-  ) |> 
-  ungroup() |> 
-  arrange(season, desc(w))
-all_h2h_records |> arrange(desc(w))
-all_h2h_records |> arrange(w)
 
 library(gt)
 library(gtExtras)
 
-all_h2h_latest_table <- all_h2h_records |> 
-  filter(season == current_season) |>
-  transmute(
-    `Player` = user_name,
-    `W` = w,
-    `L` = l,
-    `Win %` = w / (w + l)
-  ) |> 
-  gt() |> 
-  gt_theme_538() |> 
-  fmt_percent(
-    `Win %`,
-    decimals = 0
-  ) |> 
-  tab_header(
-    title = md(sprintf('**%s "All Play" record**', current_season)),
-    subtitle = md('Your record this season if your team<br/>played all other teams every week.')
-  )
-all_h2h_latest_table
-
-
-gtsave(
-  all_h2h_latest_table,
-  filename = file.path(PROJ_DIR, sprintf('all-play-record-%s.png', current_season)),
-  zoom = 1.5
-)
-
-widen_image <- function(path, ratio = NULL, ratio_resolution = 0.25, height_resolution = 100) {
-  img <- magick::image_read(path)
-  info <- magick::image_info(img)
-  w <- info$width
-  h <- info$height
-  r <- h / w
-  new_ratio <- if (is.null(ratio)) {
-    ratio_resolution * ceiling(ratio / ratio_resolution)
-  } else {
-    if (ratio > r) {
-      stop(
-        sprintf('`ratio` must be smaller than %s', round(r, 2))
-      )
-    }
-    ratio
-  }
-  
-  new_h <- height_resolution * ceiling(h / height_resolution)
-  new_w <- new_h / new_ratio
-  dw <- round((new_w - w) / 2)
-  if (dw < 0) {
-    stop(
-      'New width smaller than original width'
-    )
-  }
-  dh <- round((new_h - h) / 2)
-  new_img <- magick::image_border(img, 'white', sprintf('%sx%s', dw, dh))
-  magick::image_write(new_img, path)
-}
-
-TOP_N <- 10
-top_all_h2h_table <- all_h2h_records |> 
-  transmute(
-    `Season` = season,
-    `Player` = user_name,
-    `W` = w,
-    `L` = l,
-    `Win %` = w / (w + l)
-  ) |> 
-  slice_max(`Win %`, n = TOP_N, with_ties = FALSE) |> 
-  arrange(desc(`Win %`)) |> 
-  gt() |> 
-  gt_theme_538() |> 
-  fmt_percent(
-    `Win %`,
-    decimals = 0
-  ) |> 
-  gt_highlight_rows(
-    rows = `Season` == 2023,
-    fill = 'gold'
-  ) |> 
-  tab_header(
-    title = md('**Best "All Play" record**'),
-    subtitle = md(sprintf('%s best all play records through week %s, since %s', TOP_N, latest_week, min(SEASONS)))
-  )
-
-top_all_h2h_table_path <- file.path(PROJ_DIR, sprintf('top-all-play-records.png'))
-gtsave(
-  top_all_h2h_table,
-  filename = top_all_h2h_table_path,
-  zoom = 1.5
-)
-# widen_image(
-#   top_all_h2h_table_path,
-#   ratio = 2
-# )
-
-bottom_all_h2h_table <- all_h2h_records |> 
-  transmute(
-    `Season` = season,
-    `Player` = user_name,
-    `W` = w,
-    `L` = l,
-    `Win %` = w / (w + l)
-  ) |> 
-  slice_min(`Win %`, n = TOP_N, with_ties = FALSE) |> 
-  arrange(`Win %`) |> 
-  gt() |> 
-  gt_theme_538() |> 
-  fmt_percent(
-    `Win %`,
-    decimals = 0
-  ) |> 
-  gt_highlight_rows(
-    rows = `Season` == 2023,
-    fill = 'indianred'
-  ) |>
-  tab_header(
-    title = md('**Worst "All Play" records**'),
-    subtitle = md(sprintf('%s worst all play records through week %s, since %s', TOP_N, latest_week, min(SEASONS)))
-  )
-
-bottom_all_h2h_table_path <- file.path(PROJ_DIR, sprintf('bottom-all-play-records.png'))
-gtsave(
-  bottom_all_h2h_table,
-  filename = bottom_all_h2h_table_path,
-  zoom = 1.5
-)
-# widen_image(
-#   bottom_all_h2h_table_path,
-#   ratio = 2
-# )
-
-## data plotting ----
 library(ggplot2)
 library(ggforce)
 library(sysfonts)
@@ -252,29 +46,202 @@ ggplot2::theme_update(
   panel.background = ggplot2::element_rect(fill = BLACKISH_BACKGROUND_COLOR, color = BLACKISH_BACKGROUND_COLOR)
 )
 
+PROJ_DIR <- '76-2023_ff_luck'
+TOP_N_FOR_TABLES <- 10
+GTSAVE_ZOOM <- 1.5
+
+## data ----
+scores <- qs::qread(file.path(PROJ_DIR, 'seasons.qs'))
+seasons <- unique(scores$season)
+
+clean_scores <- scores |> 
+  dplyr::mutate(
+    dplyr::across(
+      c(
+        user_name,
+        opponent_user_name
+      ),
+      \(.x) 
+      dplyr::case_when(
+        .x == 'Andrew ElHabr' ~ 'Andrew E.',
+        .x == 'Andrew Lara' ~ 'Andrew L.',
+        .x == 'Manuel Espinosa' ~ 'Manny',
+        TRUE ~ gsub('\\s.*$', '', .x)
+      )
+    )
+  )
+
+## data processing ----
+current_season <- max(seasons)
+agg_scores <- clean_scores |> 
+  dplyr::filter(season == current_season) |> 
+  dplyr::group_by(user_name) |> 
+  dplyr::summarize(
+    dplyr::across(
+      c(
+        user_score,
+        opponent_score
+      ),
+      sum
+    )
+  ) |> 
+  dplyr::ungroup()
+
+latest_week <- scores |> 
+  dplyr::filter(season == current_season) |> 
+  dplyr::filter(user_score > 0) |> 
+  dplyr::slice_max(week, n = 1, with_ties = FALSE) |> 
+  dplyr::pull(week)
+
+
+all_h2h_records <- tidyr::crossing(
+  'season' = seasons,
+  'week' = 1:latest_week,
+  'user_name' = clean_scores$user_name,
+  'opponent_user_name' = clean_scores$opponent_user_name
+) |> 
+  dplyr::filter(user_name != opponent_user_name) |> 
+  dplyr::inner_join(
+    clean_scores |>
+      dplyr::select(season, week, user_name, user_score),
+    by = dplyr::join_by(season, week, user_name)
+  ) |>
+  dplyr::inner_join(
+    clean_scores |> 
+      dplyr::select(
+        season,
+        week,
+        opponent_user_name = user_name,
+        opponent_score = user_score
+      ),
+    by = dplyr::join_by(season, week, opponent_user_name)
+  ) |> 
+  dplyr::mutate(
+    w = user_score > opponent_score,
+    l = user_score < opponent_score
+  ) |> 
+  dplyr::group_by(season, user_name) |> 
+  dplyr::summarize(
+    dplyr::across(
+      c(w, l),
+      sum
+    )
+  ) |> 
+  dplyr::ungroup() |> 
+  dplyr::arrange(season, dplyr::desc(w))
+
+all_h2h_latest_table <- all_h2h_records |> 
+  dplyr::filter(season == current_season) |>
+  dplyr::transmute(
+    `Player` = user_name,
+    `W` = w,
+    `L` = l,
+    `Win %` = w / (w + l)
+  ) |> 
+  gt::gt() |> 
+  gtExtras::gt_theme_538() |> 
+  gt::fmt_percent(
+    `Win %`,
+    decimals = 0
+  ) |> 
+  gt::tab_header(
+    title = gt::md(sprintf('**%s "All Play" record**', current_season)),
+    subtitle = gt::md('Your record this season if your team<br/>played all other teams every week.')
+  )
+all_h2h_latest_table
+
+gt::gtsave(
+  all_h2h_latest_table,
+  filename = file.path(PROJ_DIR, sprintf('all-play-record-%s.png', current_season)),
+  zoom = GTSAVE_ZOOM
+)
+
+tabulate_and_save_all_h2h_records <- function(df, which = c('top', 'bottom')) {
+  match.arg(which)
+  if (which == 'top') {
+    order_op <- `-`
+    highlight_fill <- 'gold'
+    adjective <- 'Best'
+  } else if (which == 'bottom') {
+    order_op <- `+`
+    highlight_fill <- 'indianred'
+    adjective <- 'Worst'
+  }
+  
+  tb <- df |> 
+    dplyr::transmute(
+      `Season` = season,
+      `Player` = user_name,
+      `W` = w,
+      `L` = l,
+      `Win %` = w / (w + l)
+    ) |> 
+    dplyr::arrange(order_op(`Win %`)) |> 
+    head(n = TOP_N_FOR_TABLES) |> 
+    gt::gt() |> 
+    gtExtras::gt_theme_538() |> 
+    gt::fmt_percent(
+      `Win %`,
+      decimals = 0
+    ) |> 
+    gtExtras::gt_highlight_rows(
+      rows = `Season` == .env$current_season,
+      fill = highlight_fill
+    ) |> 
+    gt::tab_header(
+      title = gt::md(sprintf('**%s "All Play" record**', adjective)),
+      subtitle = gt::md(
+        sprintf(
+          '%s %s all play records through week %s, since %s', 
+          TOP_N_FOR_TABLES, 
+          tolower(adjective), 
+          latest_week, 
+          min(seasons)
+        )
+      )
+    )
+  gt::gtsave(
+    tb,
+    filename = file.path(PROJ_DIR, sprintf('%s-all-play-records.png', which)),
+    zoom = GTSAVE_ZOOM
+  )
+  invisible(tb)
+}
+
+tabulate_and_save_all_h2h_records(
+  all_h2h_records,
+  which = 'top'
+)
+
+tabulate_and_save_all_h2h_records(
+  all_h2h_records,
+  which = 'bottom'
+)
+
+## data plotting ----
 agg_scores_plot <- agg_scores |> 
-  ggplot() +
-  aes(
+  ggplot2::ggplot() +
+  ggplot2::aes(
     x = user_score,
     y = opponent_score
   ) +
-  geom_vline(
-    aes(
+  ggplot2::geom_vline(
+    ggplot2::aes(
       xintercept = mean(user_score)
     ),
     color = COMPLEMENTARY_BACKGROUND_COLOR,
     linetype = 2,
     linewidth = 1
   ) +
-  geom_hline(
-    aes(
+  ggplot2::geom_hline(
+    ggplot2::aes(
       yintercept = mean(opponent_score)
     ),
     color = COMPLEMENTARY_BACKGROUND_COLOR,
     linetype = 2,
     linewidth = 1
   ) +
-  geom_point(
+  ggplot2::geom_point(
     color = WHITISH_FOREGROUND_COLOR
   ) +
   ggrepel::geom_text_repel(
@@ -282,10 +249,10 @@ agg_scores_plot <- agg_scores |>
     size = 16 / .pt,
     color = WHITISH_FOREGROUND_COLOR,
     family = FONT,
-    aes(label = user_name)
+    ggplot2::aes(label = user_name)
   ) +
-  geom_text(
-    data = tibble(
+  ggplot2::geom_text(
+    data = tidyr::tibble(
       label = c('Good and\nUnlucky', 'Good and\nLucky', 'Bad and\nLucky', 'Bad and\nUnlucky'),
       x = c(625, 625, 475, 475),
       y = c(650, 475, 475, 650)
@@ -295,13 +262,13 @@ agg_scores_plot <- agg_scores |>
     family = FONT,
     hjust = 0.5,
     vjust = 0.5,
-    aes(
+    ggplot2::aes(
       x = x,
       y = y,
       label = label
     )
   ) +
-  labs(
+  ggplot2::labs(
     title = 'Is your team "good" (more points scored than average)?\nHave you been lucky (opponent has scored less than average)?',
     subtitle = sprintf('%s season, through week %s', current_season, latest_week),
     x = 'Points For',
@@ -309,11 +276,10 @@ agg_scores_plot <- agg_scores |>
   )
 agg_scores_plot
 
-ggsave(
+ggplot2::ggsave(
   agg_scores_plot,
   filename = file.path(PROJ_DIR, 'agg-scores-plot.png'),
   width = 8,
   height = 8,
   units = 'in'
 )
-
