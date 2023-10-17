@@ -334,3 +334,62 @@ qsave(cumu_doublecounted_restacked_shots, file.path(PROJ_DIR, 'shots.qs'))
 # ## this can happen for non-extra time events as well. e.g. Danilo's 68/69th minute goal for https://fbref.com/en/matches/76db2de1/Nottingham-Forest-Brighton-and-Hove-Albion-April-26-2023-Premier-League
 # cumu_doublecounted_restacked_shots |> 
 #   filter(match_id == 'e265430e', pov == 'primary', is_goal == 'yes') 
+
+match_dates <- match_summaries |> 
+  dplyr::distinct(date) |> 
+  dplyr::mutate(
+    prev_date = date - lubridate::days(1)
+  )
+
+CLUBELO_DIR <- file.path(PROJ_DIR, 'clubelo')
+dir.create(CLUBELO_DIR, showWarnings = FALSE)
+get_clubelo_ratings <- function(date) {
+  path <- file.path(CLUBELO_DIR, paste0(date, '.qs'))
+  if (file.exists(path)) {
+    return(qs::qread(path))
+  }
+  Sys.sleep(runif(1, 1, 3))
+  message(sprintf('Scraping clubelo for %s.', date))
+  url <- sprintf('http://api.clubelo.com/%s', date)
+  resp <- httr::GET(url)
+  httr::stop_for_status(resp)
+  res <- httr::content(resp)
+  qs::qsave(res,path)
+  invisible(res)
+}
+
+possibly_get_clubelo_ratings <- purrr::possibly(
+  get_clubelo_ratings,
+  otherwise = tibble::tibble(),
+  quiet = FALSE
+)
+
+raw_clubelo_ratings <- purrr::map2_dfr(
+  match_dates$prev_date,
+  match_dates$date,
+  \(prev_date, date) {
+    possibly_get_clubelo_ratings(prev_date) |> 
+      dplyr::mutate(
+        date = .env$date,
+        .before = 1
+      )
+  }
+)
+
+## created manually
+clubelo_team_mapping <- readr::read_csv(file.path(PROJ_DIR, 'clubelo-team-mapping.csv'))
+raw_clubelo_ratings |> 
+  dplyr::filter(
+    ## don't filter to Tier 1 since that would mess with some promoted teams' first match of the season
+    Country == 'ENG'
+  ) |> 
+  dplyr::inner_join(
+    clubelo_team_mapping,
+    by = dplyr::join_by(Club == team_clubelo)
+  ) |> 
+  dplyr::select(
+    date,
+    team = team_fbref,
+    elo = Elo
+  ) |> 
+  qs::qsave(file.path(PROJ_DIR, 'clubelo-ratings.qs'))

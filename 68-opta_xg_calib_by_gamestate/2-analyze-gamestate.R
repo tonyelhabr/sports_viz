@@ -71,38 +71,36 @@ glm_model <- glm(
 )
 glm_model
 
-# library(betareg)
-loess_model <- loess(
-  g ~ xg + raw_pre_shot_game_state,
-  data = shots
-)
-loess_model
-
 cal_shots <- shots
-cal_shots$.cal_pred_yes <- predict(
+cal_shots$.pred_glm <- predict(
   glm_model,
   data = cal_shots,
   type = 'response'
 )
 
-cal_shots$.loess_pred_yes <- predict(
-  loess_model,
-  data = cal_shots,
-  type = 'response'
-)
-
-# shots$.adj_beta_xg <- predict(
-#   beta_model,
-#   data = shots
-# )
 
 library(ggplot2)
 cal_shots |> 
   ggplot() +
   aes(
     x = xg,
-    y = .cal_pred_yes,
+    y = .pred_glm,
     color = pre_shot_game_state
   ) +
   geom_point() +
   geom_abline(linetype = 2)
+
+cal_shots |> 
+  ggplot() +
+  aes(
+    x = .pred_glm,
+    x = xg - .pred_glm,
+    color = pre_shot_game_state
+  ) +
+  geom_point() +
+  geom_hline(
+    aes(
+      yintercept = 0
+    ),
+    linetype = 2
+  )
