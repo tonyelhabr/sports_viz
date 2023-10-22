@@ -5,18 +5,37 @@ library(purrr)
 PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
 raw_shots <- qs::qread(file.path(PROJ_DIR, 'shots.qs')) |> 
   dplyr::filter(
-    country == 'USA',
     pov == 'primary',
     # season %in% c('2020/21', '2021/22', '2022/23'),
     !is_own_goal
   )
+clubelo_ratings <- qs::qread(file.path(PROJ_DIR, 'clubelo-ratings.qs'))
 
 ## uncalibrated xG calibration ----
 match_teams <- raw_shots |> 
   dplyr::distinct(
     match_id,
+    date,
     home_team = ifelse(is_home, team, opponent),
     away_team = ifelse(is_home, opponent, team)
+  ) |>
+  dplyr::left_join(
+    clubelo_ratings |> 
+      dplyr::select(
+        date,
+        home_team = team,
+        home_elo = elo
+      ),
+    by = dplyr::join_by(date, home_team)
+  ) |>
+  dplyr::left_join(
+    clubelo_ratings |> 
+      dplyr::select(
+        date,
+        away_team = team,
+        away_elo = elo
+      ),
+    by = dplyr::join_by(date, away_team)
   )
 
 ORDERED_GAME_STATE_LABELS <- c('trailing', 'neutral', 'leading')
@@ -24,7 +43,7 @@ ORDERED_GAME_STATE_LABELS <- c('trailing', 'neutral', 'leading')
 shots <- raw_shots |> 
   dplyr::inner_join(
     match_teams,
-    by = dplyr::join_by(match_id)
+    by = dplyr::join_by(date, match_id)
   ) |> 
   dplyr::transmute(
     match_id,
@@ -32,6 +51,8 @@ shots <- raw_shots |>
     date,
     home_team,
     away_team,
+    home_elo,
+    away_elo,
     team,
     player,
     shot_id,
@@ -53,7 +74,9 @@ shots <- raw_shots |>
       breaks = c(-Inf, -1, 0, Inf), 
       # breaks = c(-Inf, -2, 1, Inf), 
       labels = ORDERED_GAME_STATE_LABELS
-    )
+    ),
+    elo = ifelse(team == home_team, home_elo, away_elo),
+    elo_d = elo - ifelse(team == home_team, away_elo, home_elo)
   ) |> 
   dplyr::group_by(match_id) |> 
   dplyr::arrange(shot_id, team, .by_group = TRUE) |> 
@@ -65,12 +88,13 @@ shots <- raw_shots |>
 shots |> filter(match_id == '0014076a', team == 'Arsenal')
 
 glm_model <- glm(
-  is_goal ~ 0 + xg:pre_shot_game_state + pre_shot_game_state,
+  is_goal ~ xg + pre_shot_game_state + elo_d + elo:elo_d, # + xg:elo_d + elo:elo_d,
   data = shots,
-  family = binomial(link = 'logit'),
-  offset = shots$xg
+  # offset = shots$xg
+  family = binomial(link = 'logit')
 )
-glm_model
+# glm_model
+broom::tidy(glm_model)
 
 cal_shots <- shots
 cal_shots$.pred_glm <- predict(
@@ -86,17 +110,24 @@ cal_shots |>
   aes(
     x = xg,
     y = .pred_glm,
-    color = pre_shot_game_state
+    color = elo_d
+  ) +
+  scale_color_viridis_c(
+    option = 'H'
   ) +
   geom_point() +
-  geom_abline(linetype = 2)
+  geom_abline(linetype = 2) +
+  facet_wrap(~pre_shot_game_state)
 
 cal_shots |> 
   ggplot() +
   aes(
     x = .pred_glm,
-    x = xg - .pred_glm,
-    color = pre_shot_game_state
+    y = xg - .pred_glm,
+    color = elo_d
+  ) +
+  scale_color_viridis_c(
+    option = 'H'
   ) +
   geom_point() +
   geom_hline(
@@ -115,3 +146,4 @@ yardstick::roc_auc_vec(
   truth = cal_shots$is_goal,
   estimate = cal_shots$xg
 )
+
