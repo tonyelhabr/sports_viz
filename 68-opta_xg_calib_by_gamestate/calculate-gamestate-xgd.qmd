@@ -548,8 +548,8 @@ game_state_shots <- cumu_doublecounted_restacked_shots |>
     min,
     min_added,
     time = min + dplyr::coalesce(min_added, 0L),
-    g,
-    g_conceded,
+    # g_cumu,
+    # g_conceded_cumu,
     xg,
     xg_conceded,
     xgd = xg - xg_conceded,
@@ -559,7 +559,8 @@ game_state_shots <- cumu_doublecounted_restacked_shots |>
       labels = ORDERED_GAME_STATE_LABELS
     )
   ) |> 
-  dplyr::group_by(pov, match_id) |> 
+  ## intentionally don't include `pov`
+  dplyr::group_by(match_id) |> 
   dplyr::arrange(shot_id, team, .by_group = TRUE) |> 
   dplyr::mutate(
     pre_shot_game_state = dplyr::lag(game_state, default = ORDERED_GAME_STATE_LABELS[2])
@@ -568,81 +569,108 @@ game_state_shots <- cumu_doublecounted_restacked_shots |>
 dplyr::glimpse(game_state_shots)
 ```
 
+### Padding end-of-match events
+
+Oh wait! We should probably account for length of time spent in a game state when contextualizing other statistics, e.g. xGD. To do that properly, we should add more synthetic records for end of halves.
+
+We'll "pad" our data with artificial records to mark the end of halves, i.e. the 45th minute in the first half / 90th minute in the second half. We account for two cases:
+
+1.  If there are no shots after the last regular minute in a half, we add 3 minutes
+2.  If there is a shot after the last regular minute in a half, we add 1 minute beyond the last shot. This heuristic could technically be adding
+3.  
+
+```{r}
+#| label: game_state_shots_and_durations
+generate_synthetic_last_minute_record <- function(df, period = 1L) {
+  last_min <- ifelse(
+    period == 1L,
+    48L,
+    93L
+  )
+  last_min_pad <- game_state_shots |>
+    dplyr::filter(
+      .data$period == .env$period
+    ) |> 
+    dplyr::select(
+      match_id,
+      season,
+      date,
+      team,
+      pre_shot_game_state,
+      period,
+      time
+    ) |> 
+    dplyr::group_by(match_id, team) |>
+    dplyr::slice_max(time, n = 1, with_ties = FALSE) |>
+    dplyr::ungroup() |>
+    dplyr::mutate(
+      xg = 0,
+      xg_conceded = 0,
+      xgd = 0,
+      time = ifelse(time < .env$last_min, .env$last_min, time + 1L)
+    )
+  
+}
+last_min_pad <- purrr::map_dfr(
+  c(1L, 2L),
+  \(.x) generate_synthetic_last_minute_record(game_state_shots, period = .x)
+)
+
+padded_game_state_shots <- dplyr::bind_rows(
+  game_state_shots,
+  last_min_pad
+) |> 
+  dplyr::arrange(match_id, time)
+
+game_state_shots_and_durations <- padded_game_state_shots |> 
+  dplyr::group_by(match_id, team) |> 
+  dplyr::mutate(
+    prev_period = dplyr::lag(period),
+    prev_time = dplyr::lag(time)
+  ) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(
+    dur = dplyr::case_when(
+      period == 1L & is.na(prev_period) ~ time - 0L,
+      period == 2L & period != prev_period ~ time - 45L,
+      TRUE ~ time - prev_time
+    )
+  )
+dplyr::glimpse(game_state_shots_and_durations)
+```
+
 ## Data analysis
 
 As the saying goes, "80% of data analysis/science is data cleaning". Well, that rings true here, as all we need to do at this point is perform a few common `{dplyr}` and `{tidyr}` actions to arrive at xGD by game state.
 
 ```{r}
 #| label: agg_gamestate_shots
-game_state_shots |> 
-  filter(
-    # pov == 'primary',
-    match_id == '82503f4e'
-  ) |> 
-  transmute(
-    pov,
-    match_id,
-    team,
-    shot_id,
-    period,
-    time,
-    game_state,
-    g,
-    g_conceded,
-    game_state_change = ifelse(
-      game_state != pre_shot_game_state,
-      shot_id,
-      NA_character_
-    )
-  ) |> 
-  dplyr::group_by(pov, match_id) |> 
-  dplyr::mutate(
-    game_state_change_idx = row_number(game_state_change),
-    .keep = 'unused'
-  ) |> 
-  tidyr::fill(
-    game_state_change_idx,
-    .direction = 'down'
-  ) |> 
-  dplyr::mutate(
-    dplyr::across(game_state_change_idx, \(.x) dplyr::coalesce(.x, 0L)),
-    max_game_state_change_idx = max(game_state_change_idx)
-  ) |> 
-  dplyr::group_by(pov, match_id, game_state_change_idx) |> 
-  dplyr::mutate(
-    min_time = min(time),
-    max_time = max(time)
-  ) |> 
-  dplyr::ungroup() |> 
-  dplyr::mutate(
-    dplyr::across(min_time, \(.x) ifelse(game_state_change_idx == 0L, 1L, .x))
-  ) |> 
-  dplyr::group_by(pov, match_id) |> 
-  dplyr::mutate(
-    dplyr::across(max_time, \(.x) ifelse(
-      game_state_change_idx == max_game_state_change_idx,
-      pmax(max_time, 90L),
-      .x
-    ))
-  ) |> 
-  dplyr::ungroup() |> 
-  tibble::view()
-  dplyr::filter(
-    game_state != pre_shot_game_state
-  )
-
-agg_gamestate_shots <- gamestate_shots |> 
+agg_game_state_shots <- game_state_shots_and_durations |> 
   dplyr::group_by(
     season,
     team,
     pre_shot_game_state
   ) |> 
   dplyr::summarize(
-    xgd = sum(xgd)
+    dplyr::across(
+      c(
+        xgd,
+        dur
+      ),
+      sum
+    )
   ) |> 
   dplyr::ungroup() |> 
   tidyr::pivot_wider(
-    names_from = game_state,
-    values_from = xgd
+    names_from = pre_shot_game_state,
+    values_from = c(xgd, dur)
   )
+agg_game_state_shots |> arrange(desc(dur_leading))
+game_state_shots_and_durations |> 
+  dplyr::group_by(team) |> 
+  dplyr::summarize(
+    n_matches = dplyr::n_distinct(match_id)
+  ) |> 
+  dplyr::ungroup() |> 
+  dplyr::count(n_matches)
 ```
