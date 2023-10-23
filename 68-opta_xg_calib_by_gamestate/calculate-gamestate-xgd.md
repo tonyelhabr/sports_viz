@@ -1,19 +1,12 @@
----
-title: "Calculating Game-state xGD with FBref data"
-format: gfm
-execute: 
-  code-fold: false
-  eval: false
-  include: true
-  echo: true
----
+Calculating Game-state xGD with FBref data
+================
 
 ## Data pull
 
-First, we pull raw data from pre-saved `{worldfootballR}` release data, starting with match shots.
+First, we pull raw data from pre-saved `{worldfootballR}` release data,
+starting with match shots.
 
-```{r}
-#| label: raw_shots
+``` r
 ## data scrape
 library(worldfootballR)  ## version: 0.6.4.9
 
@@ -62,16 +55,22 @@ dplyr::glimpse(raw_shots)
 #> $ Season_End_Year  <int> 2023, 2023, 2023, 2023, 2023, 2023, 2023, 2023, 20…
 ```
 
-Given a match URL like [this](https://fbref.com/en/matches/82503f4e/Atlanta-United-Inter-Miami-September-16-2023-Major-League-Soccer), `worldfootballR::load_fb_match_shooting()` provides data from the "Shots" table on the page.
+Given a match URL like
+[this](https://fbref.com/en/matches/82503f4e/Atlanta-United-Inter-Miami-September-16-2023-Major-League-Soccer),
+`worldfootballR::load_fb_match_shooting()` provides data from the
+“Shots” table on the page.
 
 ![](c:/users/antho/downloads/match-shots.png)
 
-While it might seem like the shots table is all we'd need to calculate expected goal difference (xGD), FBref's match shot log table doesn't include own goals. Nonetheless, we can use `worldfootballR::load_fb_match_summary()` to extract timestamps for own goals from the "Match Summary" timeline.
+While it might seem like the shots table is all we’d need to calculate
+expected goal difference (xGD), FBref’s match shot log table doesn’t
+include own goals. Nonetheless, we can use
+`worldfootballR::load_fb_match_summary()` to extract timestamps for own
+goals from the “Match Summary” timeline.
 
 ![](c:/users/antho/downloads/match-summary.png)
 
-```{r}
-#| label: raw_match_summaries
+``` r
 raw_match_summaries <- worldfootballR::load_fb_match_summary(
   country = COUNTRIES,
   gender = GENDERS,
@@ -118,14 +117,15 @@ dplyr::glimpse(raw_match_summaries)
 
 ## Data wrangling
 
-Now we start to clean up the raw data. Starting with the match summary data, we:
+Now we start to clean up the raw data. Starting with the match summary
+data, we:
 
-1.  Create a `match_id` field, to make it easy to join this data set with the shots data set.
+1.  Create a `match_id` field, to make it easy to join this data set
+    with the shots data set.
 2.  Clean up the time fields, `min` and `min_added`.
 3.  Rename existing columns.
 
-```{r}
-#| label: data-clean
+``` r
 ## Extract the from "47880eb7" from "https://fbref.com/en/matches/47880eb7/Liverpool-Manchester-City-November-10-2019-Premier-League"
 extract_fbref_match_id <- function(match_url) {
   basename(dirname(match_url))
@@ -196,10 +196,10 @@ dplyr::glimpse(match_summaries)
 #> $ player      <chr> "Walker Zimmerman Assist: Fafà Picault", "Jacob Shaffel…
 ```
 
-Next, we start to clean up the shots data frame. We do data wrangling similar to that for match summaries.
+Next, we start to clean up the shots data frame. We do data wrangling
+similar to that for match summaries.
 
-```{r}
-#| label: long_shots
+``` r
 long_shots <- raw_shots |> 
   dplyr::transmute(
     match_id = extract_fbref_match_id(MatchURL),
@@ -243,12 +243,13 @@ dplyr::glimpse(long_shots)
 
 ### Accounting for Own goals
 
-Now, for the "ugly" part of all this shot data wrangling--handling own goals.
+Now, for the “ugly” part of all this shot data wrangling–handling own
+goals.
 
-First, we inject "synthetic" records into the shots data for every case where the match summary indicates that there is an own goal.
+First, we inject “synthetic” records into the shots data for every case
+where the match summary indicates that there is an own goal.
 
-```{r}
-#| label: long_shots_with_own_goals
+``` r
 long_shots_with_own_goals <- dplyr::bind_rows(
   long_shots |> 
     dplyr::transmute(
@@ -296,8 +297,7 @@ dplyr::glimpse(long_shots_with_own_goals)
 #> $ is_own_goal <lgl> FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,…
 ```
 
-```{r}
-#| label: clean_shots
+``` r
 clean_shots <- long_shots_with_own_goals |> 
   ## Join once to get meta-information about the game
   dplyr::inner_join(
@@ -370,12 +370,15 @@ dplyr::glimpse(clean_shots)
 
 ### Double Counting Shot Events
 
-Up to this point, we have one record per shot. But, to calculate goals and expected goals (xG) conceded for any given team at any given point in a game, it's easiest to "double count" each shot event, once from each team's perspective.
+Up to this point, we have one record per shot. But, to calculate goals
+and expected goals (xG) conceded for any given team at any given point
+in a game, it’s easiest to “double count” each shot event, once from
+each team’s perspective.
 
-To do that, we first re-assign ("re-stack") teams and goals based on the home and away teams' perspectives.
+To do that, we first re-assign (“re-stack”) teams and goals based on the
+home and away teams’ perspectives.
 
-```{r}
-#| label: restacked_shots
+``` r
 restacked_shots <- dplyr::bind_rows(
   clean_shots |> 
     dplyr::filter(is_home) |> 
@@ -418,10 +421,11 @@ restacked_shots <- dplyr::bind_rows(
 )
 ```
 
-Then, we replicate the whole data frame, indiciating whether we're looking at the shot events from a given team's point of view (`pov = "primary"`) or their opponents' point of view (`"secondary"`).
+Then, we replicate the whole data frame, indiciating whether we’re
+looking at the shot events from a given team’s point of view
+(`pov = "primary"`) or their opponents’ point of view (`"secondary"`).
 
-```{r}
-#| label: doublecounted_restacked_shots
+``` r
 doublecounted_restacked_shots <- dplyr::bind_rows(
   restacked_shots |> dplyr::mutate(pov = 'primary', .before = 1),
   restacked_shots |> 
@@ -475,10 +479,14 @@ dplyr::glimpse(doublecounted_restacked_shots)
 
 ### Calculating Cumulative Goals
 
-Finally, we calculate cumulative goals and xG scored and conceded. Then it's straightforward to calculate the game state at any given point in a match. (Keep in mind that the xG associated with a shot that is scored and changes the game state is associated with the post-shot game state, not the pre-shot game state. This may or may not matter for your individual analysis.)
+Finally, we calculate cumulative goals and xG scored and conceded. Then
+it’s straightforward to calculate the game state at any given point in a
+match. (Keep in mind that the xG associated with a shot that is scored
+and changes the game state is associated with the post-shot game state,
+not the pre-shot game state. This may or may not matter for your
+individual analysis.)
 
-```{r}
-#| label: cumu_doublecounted_restacked_shots
+``` r
 cumu_doublecounted_restacked_shots <- doublecounted_restacked_shots |> 
   dplyr::group_by(match_id, team) |> 
   dplyr::mutate(
@@ -515,10 +523,11 @@ dplyr::glimpse(cumu_doublecounted_restacked_shots)
 #> $ game_state      <int> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, …
 ```
 
-Finally, we bring everything together to create a singular data frame from which it is straightforward to calculate xGD with respect to game state.
+Finally, we bring everything together to create a singular data frame
+from which it is straightforward to calculate xGD with respect to game
+state.
 
-```{r}
-#| label: game_state_shots
+``` r
 match_results <- match_summaries |> 
   dplyr::distinct(
     match_id,
@@ -585,15 +594,23 @@ dplyr::glimpse(game_state_shots)
 
 ### Padding end-of-match events
 
-Oh wait! We should probably account for length of time spent in a game state when contextualizing other statistics, e.g. xGD. To do that properly, we should add more synthetic records for end of halves.
+Oh wait! We should probably account for length of time spent in a game
+state when contextualizing other statistics, e.g. xGD. To do that
+properly, we should add more synthetic records for end of halves.
 
-Unfortunately, FBref does not provide the exact ending minute of each half, as far as I know. Thus, we'll "pad" our data with artificial records to mark the end of halves--the 45th minute in the first half / 90th minute in the second half--using some heuristics.
+Unfortunately, FBref does not provide the exact ending minute of each
+half, as far as I know. Thus, we’ll “pad” our data with artificial
+records to mark the end of halves–the 45th minute in the first half /
+90th minute in the second half–using some heuristics.
 
-1.  If there are no shots after the last regular minute in a half, we add 3 minutes. (3 minutes is about the median amount of minutes allocated for extra time.)
-2.  If the last shot is after the last regular minute in a half, we take the maximum of (a) adding 3 minutes beyond the last regular minute (like (1)) and (b) adding one minute beyond the last shot.
+1.  If there are no shots after the last regular minute in a half, we
+    add 3 minutes. (3 minutes is about the median amount of minutes
+    allocated for extra time.)
+2.  If the last shot is after the last regular minute in a half, we take
+    the maximum of (a) adding 3 minutes beyond the last regular minute
+    (like (1)) and (b) adding one minute beyond the last shot.
 
-```{r}
-#| label: game_state_shots_and_durations
+``` r
 LAST_MIN_BUFFER <- 3
 last_min_pad <- game_state_shots |>
   dplyr::select(
@@ -661,12 +678,17 @@ dplyr::glimpse(game_state_shots_and_durations)
 
 ## Data analysis
 
-As the saying goes, "80% of data analysis/science is data cleaning". Well, that rings true here, as all we need to do at this point is perform a few common `{dplyr}` and `{tidyr}` actions to arrive at xGD by game state.
+As the saying goes, “80% of data analysis/science is data cleaning”.
+Well, that rings true here, as all we need to do at this point is
+perform a few common `{dplyr}` and `{tidyr}` actions to arrive at xGD by
+game state.
 
-```{r}
-#| label: agg_game_state_xgd
-agg_game_state_xgd <- game_state_shots_and_durations |> 
-  dplyr::group_by(team, pre_shot_game_state) |> 
+``` r
+agg_game_state_shots <- game_state_shots_and_durations |> 
+  dplyr::group_by(
+    team,
+    pre_shot_game_state
+  ) |> 
   dplyr::summarize(
     dplyr::across(
       c(
@@ -677,44 +699,35 @@ agg_game_state_xgd <- game_state_shots_and_durations |>
     )
   ) |> 
   dplyr::ungroup() |> 
-  dplyr::mutate(
-    xgd = xgd * 90 / dur
-  ) |> 
-  dplyr::group_by(team) |> 
-  dplyr::mutate(
-    prop = dur / sum(dur),
-    .keep = 'unused'
-  ) |> 
-  dplyr::ungroup()
-
-pivoted_agg_game_state_xgd <- agg_game_state_xgd |> 
   tidyr::pivot_wider(
     names_from = pre_shot_game_state,
-    values_from = c(xgd, prop)
+    values_from = c(xgd, dur)
   ) |> 
-  dplyr::arrange(desc(prop_leading))
-pivoted_agg_game_state_xgd
+  dplyr::arrange(desc(dur_leading))
+agg_game_state_shots
 #> # A tibble: 29 × 7
-#>    team    xgd_trailing xgd_neutral xgd_leading prop_trailing prop_neutral prop_leading
-#>    <chr>          <dbl>       <dbl>       <dbl>         <dbl>        <dbl>        <dbl>
-#>  1 Columb…       0.418       0.574       0.275          0.174        0.394        0.432
-#>  2 Orland…       0.230      -0.214       0.486          0.166        0.475        0.359
-#>  3 Atlant…       0.277      -0.0180      0.181          0.266        0.385        0.350
-#>  4 Sporti…      -0.458      -0.421       0.392          0.237        0.416        0.348
-#>  5 St. Lo…      -0.107      -0.223      -0.322          0.186        0.485        0.330
-#>  6 Housto…      -0.514      -0.0437      0.653          0.262        0.410        0.328
-#>  7 New En…       0.208      -0.0772      0.0538         0.169        0.513        0.318
-#>  8 Vancou…       0.0609      0.453       0.0866         0.217        0.475        0.308
-#>  9 Charlo…      -0.0656     -0.341      -0.666          0.212        0.489        0.299
-#> 10 Philad…       0.706       0.0781     -0.0624         0.232        0.473        0.296
+#>    team       xgd_trailing xgd_neutral xgd_leading dur_trailing dur_neutral dur_leading
+#>    <chr>             <dbl>       <dbl>       <dbl>        <dbl>       <dbl>       <dbl>
+#>  1 Columbus …         2.74       8.51         4.47          590        1335        1465
+#>  2 Orlando C…         1.43      -3.82         6.54          559        1603        1212
+#>  3 Atlanta U…         2.76      -0.260        2.37          897        1298        1180
+#>  4 Sporting …        -4.03      -6.5          5.06          792        1391        1163
+#>  5 Houston D…        -5.05      -0.67         8.01          884        1380        1104
+#>  6 St. Louis…        -0.74      -4           -3.93          620        1617        1100
+#>  7 New Engla…         1.29      -1.46         0.63          559        1702        1054
+#>  8 Vancouver…         0.49       7.97         0.99          724        1584        1029
+#>  9 Charlotte…        -0.52      -6.23        -7.44          713        1643        1005
+#> 10 Los Angel…         1.87       3.71        10.8           697        1716        1001
 #> # ℹ 19 more rows
 ```
 
-Houston Dynamo fans may have noticed that their team seemed to really perform well towards the end of the season. Indeed, they spent more time leading matches than all other MLS teams after the beginning of the Leagues Cup.
+Houston Dynamo fans may have noticed that their team seemed to really
+perform well towards the end of the season. Indeed, they spent more time
+leading matches than all other MLS teams after the beginning of the
+Leagues Cup.
 
-```{r}
-#| label: pivoted_agg_game_state_xgd_leagues_cup
-agg_game_state_xgd_leagues_cup <- game_state_shots_and_durations |> 
+``` r
+agg_game_state_shots_leagues_cup <- game_state_shots_and_durations |> 
   dplyr::group_by(
     team,
     pre_shot_game_state,
@@ -730,29 +743,28 @@ agg_game_state_xgd_leagues_cup <- game_state_shots_and_durations |>
     )
   ) |> 
   dplyr::ungroup() |> 
-  dplyr::mutate(
-    xgd = xgd * 90 / dur
-  ) |> 
-  dplyr::group_by(team) |> 
-  dplyr::mutate(
-    prop = dur / sum(dur),
-    .keep = 'unused'
-  ) |> 
-  dplyr::ungroup()
-
-pivoted_agg_game_state_xgd_leagues_cup <- agg_game_state_xgd_leagues_cup |> 
   tidyr::pivot_wider(
     names_from = pre_shot_game_state,
-    values_from = c(xgd, prop)
+    values_from = c(xgd, dur)
   ) |> 
+  dplyr::rowwise() |> 
+  dplyr::mutate(
+    total_dur = sum(dplyr::c_across(dplyr::starts_with('dur')))
+  ) |> 
+  dplyr::ungroup() |> 
+  dplyr::mutate(
+    prop_leading = dur_leading / total_dur
+  ) |>
   dplyr::filter(is_after_leagues_cup) |> 
   dplyr::select(
     team,
     xgd_leading,
+    dur_leading,
+    total_dur,
     prop_leading
   ) |> 
   dplyr::arrange(desc(prop_leading))
-pivoted_agg_game_state_xgd_leagues_cup
+agg_game_state_shots_leagues_cup
 #> # A tibble: 29 × 5
 #>    team                xgd_leading dur_leading total_dur prop_leading
 #>    <chr>                     <dbl>       <dbl>     <dbl>        <dbl>
@@ -767,56 +779,4 @@ pivoted_agg_game_state_xgd_leagues_cup
 #>  9 Los Angeles FC           5.75           308      1081        0.285
 #> 10 Philadelphia Union      -1.65           299      1079        0.277
 #> # ℹ 19 more rows
-```
-
-```{r}
-#| label: tb_agg_game_state_xgd
-library(gt)
-library(gtExtras)
-max_xgd <- max(abs(agg_game_state_xgd$xgd))
-tb_agg_game_state_xgd <- pivoted_agg_game_state_xgd |> 
-  select(-starts_with('prop_')) |> 
-  inner_join(
-    agg_game_state_xgd |>
-      group_by(team) |> 
-      summarize(
-        props = list(prop)
-      ),
-    by = join_by(team)
-  ) |> 
-  gt() |> 
-  cols_label(
-    team = md('**Team**'),
-    xgd_trailing = 'Trailing',
-    xgd_neutral = 'Neutral',
-    xgd_leading = 'Leading'
-  ) |> 
-  tab_spanner(
-    label = md('**xGD per 90**'),
-    columns = starts_with('xgd')
-  ) |> 
-  tab_spanner(
-    label = md('**% of Match**'),
-    columns = starts_with('prop')
-  ) |> 
-  fmt_number(
-    columns = starts_with('xgd'),
-    decimals = 2
-  ) |> 
-  gt_hulk_col_numeric(
-    columns = starts_with('xgd'),
-    domain = c(-max_xgd, max_xgd)
-  ) |>
-  gt_plt_bar_stack(
-    column = props,
-    labels = ORDERED_GAME_STATE_LABELS,
-    palette = c('#ef3e36', '#2e282a', '#17bebb'),
-    fmt_fn = scales::label_percent(accuracy = 1)
-  ) |> 
-  gt_theme_538() |> 
-  tab_header(
-    title = 'xGD per 90, by Game State',
-    subtitle = 'MLS, 2023'
-  )
-tb_agg_game_state_xgd
 ```
