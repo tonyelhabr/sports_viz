@@ -23,16 +23,16 @@ library(lubridate)
 library(tidyr)
 library(rlang)
 
-COUNTRIES <- 'USA'
-GENDERS <- 'M'
-TIERS <- '1st'
-SEASON_END_YEARS <- 2023
+COUNTRY <- 'USA'
+GENDER <- 'M'
+TIER <- '1st'
+SEASON_END_YEAR <- 2023
 
 raw_shots <- worldfootballR::load_fb_match_shooting(
-  country = COUNTRIES,
-  gender = GENDERS,
-  tier = TIERS,
-  season_end_year = SEASON_END_YEARS
+  country = COUNTRY,
+  gender = GENDER,
+  tier = TIER,
+  season_end_year = SEASON_END_YEAR
 )
 dplyr::glimpse(raw_shots)
 #> Rows: 15,116
@@ -73,10 +73,10 @@ While it might seem like the shots table is all we'd need to calculate expected 
 ```{r}
 #| label: raw_match_summaries
 raw_match_summaries <- worldfootballR::load_fb_match_summary(
-  country = COUNTRIES,
-  gender = GENDERS,
-  tier = TIERS,
-  season_end_year = SEASON_END_YEARS
+  country = COUNTRY,
+  gender = GENDER,
+  tier = TIER,
+  season_end_year = SEASON_END_YEAR
 )
 dplyr::glimpse(raw_match_summaries)
 #> Rows: 9,450
@@ -121,7 +121,7 @@ dplyr::glimpse(raw_match_summaries)
 Now we start to clean up the raw data. Starting with the match summary data, we:
 
 1.  Create a `match_id` field, to make it easy to join this data set with the shots data set.
-2.  Clean up the time fields, `min` and `min_added`.
+2.  Clean up the time fields, `minutes` and `minutes_added`.
 3.  Rename existing columns.
 
 ```{r}
@@ -157,13 +157,13 @@ match_summaries <- raw_match_summaries |>
     home_team = Home_Team ,
     away_team = Away_Team,
     period = as.integer(Event_Half),
-    ## ensure that min always has a value
-    min = dplyr::case_when(
+    ## ensure that minutes always has a value
+    minutes = dplyr::case_when(
       period == 1L & Event_Time > 45L ~ 45L, 
       period == 2L & Event_Time > 90L ~ 90L,
       .default = Event_Time
     ) |> as.integer(),
-    min_added = dplyr::case_when(
+    minutes_added = dplyr::case_when(
       period == 1L & Event_Time > 45 ~ Event_Time - 45L, 
       period == 2L & Event_Time > 90 ~ Event_Time - 90L,
       .default = NA_integer_
@@ -187,8 +187,8 @@ dplyr::glimpse(match_summaries)
 #> $ home_team   <chr> "Nashville SC", "Nashville SC", "FC Cincinnati", "FC Ci…
 #> $ away_team   <chr> "New York City FC", "New York City FC", "Houston Dynamo…
 #> $ period      <int> 1, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 2, 2, 2, 1, 1, 2…
-#> $ min         <int> 34, 80, 19, 45, 48, 48, 12, 39, 90, 90, 28, 45, 52, 72,…
-#> $ min_added   <dbl> NA, NA, NA, 2, NA, NA, NA, NA, 3, 9, NA, 3, NA, NA, NA,…
+#> $ minutes         <int> 34, 80, 19, 45, 48, 48, 12, 39, 90, 90, 28, 45, 52, 72,…
+#> $ minutes_added   <dbl> NA, NA, NA, 2, NA, NA, NA, NA, 3, 9, NA, 3, NA, NA, NA,…
 #> $ home_g      <int> 1, 2, 1, 1, 2, 0, 0, 0, 1, 2, 0, 1, 2, 3, 4, 1, 0, 1, 2…
 #> $ away_g      <int> 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1…
 #> $ is_own_goal <lgl> FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,…
@@ -205,13 +205,13 @@ long_shots <- raw_shots |>
     match_id = extract_fbref_match_id(MatchURL),
     period = as.integer(Match_Half),
     ## convert "45+2" to "45"
-    min = ifelse(
+    minutes = ifelse(
       grepl('[+]', Minute),
       as.integer(gsub('(^[0-9]+)[+]([0-9]+$)', '\\1', Minute)), 
       as.integer(Minute)
     ),
     ## convert "45+2" to "2"
-    min_added = ifelse(
+    minutes_added = ifelse(
       grepl('[+]', Minute), 
       as.integer(gsub('(^[0-9]+)[+]([0-9]+$)', '\\2', Minute)), 
       NA_integer_
@@ -232,8 +232,8 @@ dplyr::glimpse(long_shots)
 #> Columns: 9
 #> $ match_id  <chr> "48a684ed", "48a684ed", "48a684ed", "48a684ed", "48a684ed…
 #> $ period    <int> 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, …
-#> $ min       <int> 6, 13, 31, 34, 45, 51, 73, 80, 83, 19, 30, 41, 45, 48, 61…
-#> $ min_added <int> NA, NA, NA, NA, 1, NA, NA, NA, NA, NA, NA, NA, 2, NA, NA,…
+#> $ minutes       <int> 6, 13, 31, 34, 45, 51, 73, 80, 83, 19, 30, 41, 45, 48, 61…
+#> $ minutes_added <int> NA, NA, NA, NA, 1, NA, NA, NA, NA, NA, NA, NA, 2, NA, NA,…
 #> $ is_home   <lgl> TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, FAL…
 #> $ team      <chr> "Nashville", "Nashville", "Nashville", "Nashville", "Nash…
 #> $ player    <chr> "Jacob Shaffelburg", "Sean Davis", "Teal Bunbury", "Walke…
@@ -254,8 +254,8 @@ long_shots_with_own_goals <- dplyr::bind_rows(
     dplyr::transmute(
       match_id,
       period,
-      min,
-      min_added,
+      minutes,
+      minutes_added,
       is_home,
       team,
       player,
@@ -271,8 +271,8 @@ long_shots_with_own_goals <- dplyr::bind_rows(
     dplyr::transmute(
       match_id,
       period,
-      min,
-      min_added,
+      minutes,
+      minutes_added,
       is_home = team == home_team,
       team,
       player,
@@ -286,8 +286,8 @@ dplyr::glimpse(long_shots_with_own_goals)
 #> Columns: 10
 #> $ match_id    <chr> "48a684ed", "48a684ed", "48a684ed", "48a684ed", "48a684…
 #> $ period      <int> 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1…
-#> $ min         <int> 6, 13, 31, 34, 45, 51, 73, 80, 83, 19, 30, 41, 45, 48, …
-#> $ min_added   <dbl> NA, NA, NA, NA, 1, NA, NA, NA, NA, NA, NA, NA, 2, NA, N…
+#> $ minutes         <int> 6, 13, 31, 34, 45, 51, 73, 80, 83, 19, 30, 41, 45, 48, …
+#> $ minutes_added   <dbl> NA, NA, NA, NA, 1, NA, NA, NA, NA, NA, NA, NA, 2, NA, N…
 #> $ is_home     <lgl> TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, F…
 #> $ team        <chr> "Nashville", "Nashville", "Nashville", "Nashville", "Na…
 #> $ player      <chr> "Jacob Shaffelburg", "Sean Davis", "Teal Bunbury", "Wal…
@@ -328,15 +328,15 @@ clean_shots <- long_shots_with_own_goals |>
   ) |>
   dplyr::group_by(match_id) |> 
   dplyr::mutate(
-    shot_idx = dplyr::row_number((min + dplyr::coalesce(min_added, 0L)))
+    shot_idx = dplyr::row_number((minutes + dplyr::coalesce(minutes_added, 0L)))
   ) |> 
   dplyr::ungroup() |> 
   dplyr::transmute(
     shot_id = sprintf('%s-%02d', match_id, shot_idx),
     match_id,
     period,
-    min,
-    min_added,
+    minutes,
+    minutes_added,
     is_home,
     is_goal,
     is_own_goal,
@@ -354,8 +354,8 @@ dplyr::glimpse(clean_shots)
 #> $ shot_id     <chr> "48a684ed-01", "48a684ed-02", "48a684ed-05", "48a684ed-…
 #> $ match_id    <chr> "48a684ed", "48a684ed", "48a684ed", "48a684ed", "48a684…
 #> $ period      <int> 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1…
-#> $ min         <int> 6, 13, 31, 34, 45, 51, 73, 80, 83, 19, 30, 41, 45, 48, …
-#> $ min_added   <dbl> NA, NA, NA, NA, 1, NA, NA, NA, NA, NA, NA, NA, 2, NA, N…
+#> $ minutes         <int> 6, 13, 31, 34, 45, 51, 73, 80, 83, 19, 30, 41, 45, 48, …
+#> $ minutes_added   <dbl> NA, NA, NA, NA, 1, NA, NA, NA, NA, NA, NA, NA, 2, NA, N…
 #> $ is_home     <lgl> TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, TRUE, F…
 #> $ is_goal     <lgl> FALSE, FALSE, FALSE, TRUE, FALSE, FALSE, FALSE, TRUE, F…
 #> $ is_own_goal <lgl> FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,…
@@ -383,8 +383,8 @@ restacked_shots <- dplyr::bind_rows(
       shot_id,
       match_id,
       period,
-      min,
-      min_added,
+      minutes,
+      minutes_added,
       is_home,
       is_goal,
       is_own_goal,
@@ -402,8 +402,8 @@ restacked_shots <- dplyr::bind_rows(
       shot_id,
       match_id,
       period,
-      min,
-      min_added,
+      minutes,
+      minutes_added,
       is_home,
       is_goal,
       is_own_goal,
@@ -459,8 +459,8 @@ dplyr::glimpse(doublecounted_restacked_shots)
 #> $ shot_id     <chr> "00069d73-01", "00069d73-01", "00069d73-02", "00069d73-…
 #> $ match_id    <chr> "00069d73", "00069d73", "00069d73", "00069d73", "00069d…
 #> $ period      <int> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1…
-#> $ min         <int> 2, 2, 4, 4, 9, 9, 20, 20, 24, 24, 32, 32, 34, 34, 35, 3…
-#> $ min_added   <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+#> $ minutes         <int> 2, 2, 4, 4, 9, 9, 20, 20, 24, 24, 32, 32, 34, 34, 35, 3…
+#> $ minutes_added   <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
 #> $ is_home     <lgl> TRUE, FALSE, TRUE, FALSE, TRUE, FALSE, TRUE, FALSE, TRU…
 #> $ is_goal     <lgl> FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,…
 #> $ is_own_goal <lgl> FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,…
@@ -498,8 +498,8 @@ dplyr::glimpse(cumu_doublecounted_restacked_shots)
 #> $ shot_id         <chr> "00069d73-01", "00069d73-01", "00069d73-02", "00069…
 #> $ match_id        <chr> "00069d73", "00069d73", "00069d73", "00069d73", "00…
 #> $ period          <int> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
-#> $ min             <int> 2, 2, 4, 4, 9, 9, 20, 20, 24, 24, 32, 32, 34, 34, 3…
-#> $ min_added       <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+#> $ minutes             <int> 2, 2, 4, 4, 9, 9, 20, 20, 24, 24, 32, 32, 34, 34, 3…
+#> $ minutes_added       <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
 #> $ is_home         <lgl> TRUE, FALSE, TRUE, FALSE, TRUE, FALSE, TRUE, FALSE,…
 #> $ is_goal         <lgl> FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FA…
 #> $ is_own_goal     <lgl> FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FA…
@@ -528,7 +528,7 @@ match_results <- match_summaries |>
     away_team
   )
 
-ORDERED_GAME_STATE_LABELS <- c('trailing', 'neutral', 'leading')
+ORDERED_GAME_STATE_LABELS <- c('Trailing', 'Tied', 'Leading')
 game_state_shots <- cumu_doublecounted_restacked_shots |> 
   dplyr::inner_join(
     match_results,
@@ -545,9 +545,10 @@ game_state_shots <- cumu_doublecounted_restacked_shots |>
     player,
     shot_id,
     period,
-    min,
-    min_added,
-    time = min + dplyr::coalesce(min_added, 0L),
+    minutes,
+    minutes_added,
+    time = minutes + dplyr::coalesce(minutes_added, 0L),
+    xg,
     xgd = xg - xg_conceded,
     game_state = cut(
       game_state,
@@ -575,8 +576,8 @@ dplyr::glimpse(game_state_shots)
 #> $ player              <chr> "Hany Mukhtar", "Teal Bunbury", "Hany Mukhtar",…
 #> $ shot_id             <chr> "00069d73-01", "00069d73-02", "00069d73-03", "0…
 #> $ period              <int> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2,…
-#> $ min                 <int> 2, 4, 9, 20, 24, 32, 34, 35, 39, 40, 41, 42, 45…
-#> $ min_added           <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+#> $ minutes                 <int> 2, 4, 9, 20, 24, 32, 34, 35, 39, 40, 41, 42, 45…
+#> $ minutes_added           <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
 #> $ time                <dbl> 2, 4, 9, 20, 24, 32, 34, 35, 39, 40, 41, 42, 45…
 #> $ xgd                 <dbl> -0.04, -0.17, -0.02, -0.12, -0.05, -0.08, -0.04…
 #> $ game_state          <fct> neutral, neutral, neutral, neutral, neutral, ne…
@@ -609,6 +610,7 @@ last_min_pad <- game_state_shots |>
   dplyr::slice_max(time, n = 1, with_ties = FALSE) |>
   dplyr::ungroup() |>
   dplyr::mutate(
+    xg = 0,
     xgd = 0,
     last_regular_min = ifelse(period == 1L, 45L, 90L),
     time = pmax(last_regular_min + LAST_MIN_BUFFER, time + 1)
@@ -628,7 +630,7 @@ game_state_shots_and_durations <- padded_game_state_shots |>
   ) |> 
   dplyr::ungroup() |> 
   dplyr::mutate(
-    dur = dplyr::case_when(
+    duration = dplyr::case_when(
       period == 1L & is.na(prev_period) ~ time - 0L,
       period == 2L & period != prev_period ~ time - 45L,
       TRUE ~ time - prev_time
@@ -647,8 +649,8 @@ dplyr::glimpse(game_state_shots_and_durations)
 #> $ player              <chr> "Hany Mukhtar", "Hany Mukhtar", "Teal Bunbury",…
 #> $ shot_id             <chr> "00069d73-01", "00069d73-01", "00069d73-02", "0…
 #> $ period              <int> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,…
-#> $ min                 <int> 2, 2, 4, 4, 9, 9, 20, 20, 24, 24, 32, 32, 34, 3…
-#> $ min_added           <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
+#> $ minutes                 <int> 2, 2, 4, 4, 9, 9, 20, 20, 24, 24, 32, 32, 34, 3…
+#> $ minutes_added           <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
 #> $ time                <dbl> 2, 2, 4, 4, 9, 9, 20, 20, 24, 24, 32, 32, 34, 3…
 #> $ xgd                 <dbl> -0.04, 0.04, -0.17, 0.17, -0.02, 0.02, -0.12, 0…
 #> $ game_state          <fct> neutral, neutral, neutral, neutral, neutral, ne…
@@ -656,7 +658,7 @@ dplyr::glimpse(game_state_shots_and_durations)
 #> $ last_regular_min    <int> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA,…
 #> $ prev_period         <int> NA, NA, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
 #> $ prev_time           <dbl> NA, NA, 2, 2, 4, 4, 9, 9, 20, 20, 24, 24, 32, 3…
-#> $ dur                 <dbl> 2, 2, 2, 2, 5, 5, 11, 11, 4, 4, 8, 8, 2, 2, 1, …
+#> $ duration                 <dbl> 2, 2, 2, 2, 5, 5, 11, 11, 4, 4, 8, 8, 2, 2, 1, …
 ```
 
 ## Data analysis
@@ -668,124 +670,55 @@ As the saying goes, "80% of data analysis/science is data cleaning". Well, that 
 agg_game_state_xgd <- game_state_shots_and_durations |> 
   dplyr::group_by(team, pre_shot_game_state) |> 
   dplyr::summarize(
+    n_shots = sum(pov == 'primary', na.rm = TRUE),
     dplyr::across(
       c(
+        xg,
         xgd,
-        dur
+        duration
       ),
-      sum
+      \(.x) sum(.x, na.rm = TRUE)
     )
   ) |> 
   dplyr::ungroup() |> 
   dplyr::mutate(
-    xgd = xgd * 90 / dur
+    xg_per_shot = xg / n_shots,
+    xgd_p90 = xgd * 90 / duration,
   ) |> 
   dplyr::group_by(team) |> 
   dplyr::mutate(
-    prop = dur / sum(dur),
+    prop_duration = duration / sum(duration),
     .keep = 'unused'
-  ) |> 
-  dplyr::ungroup()
-
-pivoted_agg_game_state_xgd <- agg_game_state_xgd |> 
-  tidyr::pivot_wider(
-    names_from = pre_shot_game_state,
-    values_from = c(xgd, prop)
-  ) |> 
-  dplyr::arrange(desc(prop_leading))
-pivoted_agg_game_state_xgd
-#> # A tibble: 29 × 7
-#>    team    xgd_trailing xgd_neutral xgd_leading prop_trailing prop_neutral prop_leading
-#>    <chr>          <dbl>       <dbl>       <dbl>         <dbl>        <dbl>        <dbl>
-#>  1 Columb…       0.418       0.574       0.275          0.174        0.394        0.432
-#>  2 Orland…       0.230      -0.214       0.486          0.166        0.475        0.359
-#>  3 Atlant…       0.277      -0.0180      0.181          0.266        0.385        0.350
-#>  4 Sporti…      -0.458      -0.421       0.392          0.237        0.416        0.348
-#>  5 St. Lo…      -0.107      -0.223      -0.322          0.186        0.485        0.330
-#>  6 Housto…      -0.514      -0.0437      0.653          0.262        0.410        0.328
-#>  7 New En…       0.208      -0.0772      0.0538         0.169        0.513        0.318
-#>  8 Vancou…       0.0609      0.453       0.0866         0.217        0.475        0.308
-#>  9 Charlo…      -0.0656     -0.341      -0.666          0.212        0.489        0.299
-#> 10 Philad…       0.706       0.0781     -0.0624         0.232        0.473        0.296
-#> # ℹ 19 more rows
-```
-
-Houston Dynamo fans may have noticed that their team seemed to really perform well towards the end of the season. Indeed, they spent more time leading matches than all other MLS teams after the beginning of the Leagues Cup.
-
-```{r}
-#| label: pivoted_agg_game_state_xgd_leagues_cup
-agg_game_state_xgd_leagues_cup <- game_state_shots_and_durations |> 
-  dplyr::group_by(
-    team,
-    pre_shot_game_state,
-    is_after_leagues_cup = date >= lubridate::ymd('2023-07-21')
-  ) |> 
-  dplyr::summarize(
-    dplyr::across(
-      c(
-        xgd,
-        dur
-      ),
-      sum
-    )
   ) |> 
   dplyr::ungroup() |> 
-  dplyr::mutate(
-    xgd = xgd * 90 / dur
-  ) |> 
-  dplyr::group_by(team, is_after_leagues_cup) |> 
-  dplyr::mutate(
-    prop = dur / sum(dur),
-    .keep = 'unused'
-  ) |> 
-  dplyr::ungroup()
-
-pivoted_agg_game_state_xgd_leagues_cup <- agg_game_state_xgd_leagues_cup |> 
-  tidyr::pivot_wider(
-    names_from = pre_shot_game_state,
-    values_from = c(xgd, prop)
-  ) |> 
-  dplyr::filter(is_after_leagues_cup) |> 
   dplyr::select(
     team,
-    xgd_leading,
-    prop_leading
-  ) |> 
-  dplyr::arrange(desc(prop_leading))
-pivoted_agg_game_state_xgd_leagues_cup
-#> # A tibble: 29 × 5
-#>    team                xgd_leading dur_leading total_dur prop_leading
-#>    <chr>                     <dbl>       <dbl>     <dbl>        <dbl>
-#>  1 Houston Dynamo           2.37           655      1101        0.595
-#>  2 Sporting KC              4.87           467       903        0.517
-#>  3 Columbus Crew            3.78           527      1110        0.475
-#>  4 Atlanta United          -0.86           458       996        0.460
-#>  5 Charlotte FC            -1.5            423      1105        0.383
-#>  6 Orlando City             4.4            363      1077        0.337
-#>  7 Seattle Sounders FC     -1.28           314       962        0.326
-#>  8 Portland Timbers        -0.0500         330      1102        0.299
-#>  9 Los Angeles FC           5.75           308      1081        0.285
-#> 10 Philadelphia Union      -1.65           299      1079        0.277
-#> # ℹ 19 more rows
+    pre_shot_game_state,
+    n_shots,
+    xg,
+    xgd,
+    xg_per_shot,
+    xgd_p90,
+    prop_duration
+  )
+agg_game_state_xgd
 ```
 
 ```{r}
 #| label: tb_agg_game_state_xgd
-library(gt)
-library(gtExtras)
 
+PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
 get_team_urls <- function(...) {
   league_urls <- worldfootballR::fb_league_urls(...)
   team_urls <- worldfootballR::fb_teams_urls(league_urls)
   tibble::tibble(url = team_urls)
 }
+
 possibly_get_team_urls <- purrr::possibly(
   get_team_urls, 
   otherwise = tibble::tibble(), 
   quiet = TRUE
 )
-
-PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
 
 scrape_team_urls <- function(country, gender, season_end_year, tier) {
   path <- file.path(
@@ -906,78 +839,229 @@ get_team_logos <- function(
   res
 }
 
-params <- tidyr::crossing(
-  country = COUNTRIES,
-  gender = GENDERS,
-  tier = TIERS,
-  season_end_year = SEASON_END_YEARS
+team_logos <- get_team_logos(
+  country = COUNTRY,
+  gender = GENDER,
+  tier = TIER,
+  season_end_year = SEASON_END_YEAR
 )
 
-team_logos <- params |>
+team_order <- agg_game_state_xgd |> 
+  dplyr::filter(
+    pre_shot_game_state == 'Leading'
+  ) |> 
+  dplyr::arrange(prop_duration) |> 
+  dplyr::pull(team)
+
+agg_game_state_xgd_with_logos <- agg_game_state_xgd |> 
+  dplyr::inner_join(
+    team_logos,
+    by = dplyr::join_by(team)
+  ) |> 
   dplyr::mutate(
-    data = purrr::pmap(
-      list(country, gender, tier, season_end_year),
-      \(country, gender, tier, season_end_year) {
-        get_team_logos(
-          country = country,
-          gender = gender,
-          tier = tier,
-          season_end_year = season_end_year
-        )
-      }
+    label = glue::glue("{team} <img src='{path}'/>")
+  ) |> 
+  dplyr::mutate(
+    dplyr::across(
+      team,
+      \(.x) factor(.x, levels = team_order)
     )
-  ) |>
-  tidyr::unnest(data)
-
-
-max_xgd <- max(abs(agg_game_state_xgd$xgd))
-tb_agg_game_state_xgd <- pivoted_agg_game_state_xgd |> 
-  arrange(desc(prop_leading)) |> 
-  # filter(is_after_leagues_cup) |> 
-  select(-starts_with('prop_')) |> 
-  inner_join(
-    agg_game_state_xgd |> 
-      # filter(is_after_leagues_cup) |>
-      group_by(team) |> 
-      summarize(
-        props = list(prop)
-      ),
-    by = join_by(team)
   ) |> 
-  # select(-is_after_leagues_cup) |> 
-  gt() |> 
-  cols_label(
-    team = md('**Team**'),
-    xgd_trailing = 'Trailing',
-    xgd_neutral = 'Neutral',
-    xgd_leading = 'Leading'
+  dplyr::arrange(team, desc(pre_shot_game_state)) |> 
+  dplyr::group_by(team) |> 
+  dplyr::mutate(
+    cumu_prop_duration = cumsum(prop_duration)
   ) |> 
-  tab_spanner(
-    label = md('**xGD per 90**'),
-    columns = starts_with('xgd')
-  ) |> 
-  tab_spanner(
-    label = md('**% of Match**'),
-    columns = starts_with('prop')
-  ) |> 
-  fmt_number(
-    columns = starts_with('xgd'),
-    decimals = 2
-  ) |> 
-  gt_hulk_col_numeric(
-    columns = starts_with('xgd'),
-    domain = c(-max_xgd, max_xgd)
-  ) |>
-  gt_plt_bar_stack(
-    column = props,
-    labels = ORDERED_GAME_STATE_LABELS,
-    palette = c('#ef3e36', '#2e282a', '#17bebb'),
-    fmt_fn = scales::label_percent(accuracy = 1)
-  ) |> 
-  gt_theme_538() |> 
-  tab_header(
-    title = 'xGD per 90, by Game State',
-    subtitle = 'MLS 2023'
+  dplyr::ungroup() |> 
+  dplyr::mutate(
+    half_cumu_prop_duration = cumu_prop_duration - 0.5 * prop_duration
   )
-tb_agg_game_state_xgd
+
+library(ggplot2)
+library(sysfonts)
+library(showtext)
+library(ggtext)
+library(htmltools)
+
+TAG_LABEL <- htmltools::tagList(
+  htmltools::tags$span(htmltools::HTML(enc2utf8("&#xf099;")), style = 'font-family:fb'),
+  htmltools::tags$span("@TonyElHabr"),
+)
+CAPTION_LABEL <- '**Data**: Opta via fbref.'
+SUBTITLE_LABEL <- 'MLS, 2023 Season'
+PLOT_RESOLUTION <- 300
+WHITISH_FOREGROUND_COLOR <- 'white'
+COMPLEMENTARY_FOREGROUND_COLOR <- '#cbcbcb' # '#f1f1f1'
+BLACKISH_BACKGROUND_COLOR <- '#1c1c1c'
+COMPLEMENTARY_BACKGROUND_COLOR <- '#4d4d4d'
+FONT <- 'Titillium Web'
+sysfonts::font_add_google(FONT, FONT)
+## https://github.com/tashapiro/tanya-data-viz/blob/main/chatgpt-lensa/chatgpt-lensa.R for twitter logo
+sysfonts::font_add('fb', 'Font Awesome 6 Brands-Regular-400.otf')
+showtext::showtext_auto()
+showtext::showtext_opts(dpi = PLOT_RESOLUTION)
+
+ggplot2::theme_set(ggplot2::theme_minimal())
+ggplot2::theme_update(
+  text = ggplot2::element_text(family = FONT),
+  title = ggplot2::element_text(size = 20, color = WHITISH_FOREGROUND_COLOR),
+  plot.title = ggtext::element_markdown(face = 'bold', size = 20, color = WHITISH_FOREGROUND_COLOR),
+  plot.title.position = 'plot',
+  plot.subtitle = ggtext::element_markdown(size = 16, color = COMPLEMENTARY_FOREGROUND_COLOR),
+  axis.text = ggplot2::element_text(color = WHITISH_FOREGROUND_COLOR, size = 14),
+  axis.title.x = ggtext::element_markdown(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.99),
+  axis.title.y = ggtext::element_markdown(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.99),
+  axis.line = ggplot2::element_blank(),
+  strip.text = ggplot2::element_text(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0),
+  legend.position = 'top',
+  legend.text = ggplot2::element_text(size = 12, color = WHITISH_FOREGROUND_COLOR, face = 'plain'),
+  legend.title = ggplot2::element_text(size = 12, color = WHITISH_FOREGROUND_COLOR, face = 'bold'),
+  panel.grid.major = ggplot2::element_line(color = COMPLEMENTARY_BACKGROUND_COLOR),
+  panel.grid.minor = ggplot2::element_line(color = COMPLEMENTARY_BACKGROUND_COLOR),
+  panel.grid.minor.x = ggplot2::element_blank(),
+  panel.grid.minor.y = ggplot2::element_blank(),
+  plot.margin = ggplot2::margin(10, 20, 10, 20),
+  plot.background = ggplot2::element_rect(fill = BLACKISH_BACKGROUND_COLOR, color = BLACKISH_BACKGROUND_COLOR),
+  plot.caption = ggtext::element_markdown(size = 10, color = WHITISH_FOREGROUND_COLOR, hjust = 0, face = 'plain'),
+  plot.caption.position = 'plot',
+  plot.tag = ggtext::element_markdown(size = 10, color = WHITISH_FOREGROUND_COLOR, hjust = 1),
+  plot.tag.position = c(0.99, 0.01),
+  panel.spacing.x = grid::unit(2, 'lines'),
+  panel.background = ggplot2::element_rect(fill = BLACKISH_BACKGROUND_COLOR, color = BLACKISH_BACKGROUND_COLOR)
+)
+ggplot2::update_geom_defaults('text', list(color = WHITISH_FOREGROUND_COLOR, size = 12 / .pt))
+
+GAME_STATE_PAL <- c(
+  'Trailing' = '#ef3e36',
+  'Tied' = COMPLEMENTARY_FOREGROUND_COLOR,
+  'Leading' = '#17bebb'
+)
+
+xg_per_shot_plot <- agg_game_state_xgd_with_logos |> 
+  ggplot2::ggplot() +
+  ggplot2::aes(
+    x = prop_duration,
+    y = team
+  ) +
+  ggplot2::geom_col(
+    show.legend = FALSE,
+    alpha = 0.8,
+    ggplot2::aes(
+      fill = pre_shot_game_state
+    )
+  ) +
+  ggplot2::geom_text(
+    family = FONT,
+    size = 12 / ggplot2::.pt,
+    fontface = 'bold',
+    ggplot2::aes(
+      x = half_cumu_prop_duration,
+      y = team,
+      label = scales::number(xg_per_shot, accuracy = 0.01)
+    )
+  ) +
+  ggplot2::scale_x_continuous(
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  ggplot2::scale_fill_manual(
+    values = GAME_STATE_PAL
+  ) +
+  ggplot2::theme(
+    panel.grid.major.y = ggplot2::element_blank(),
+    panel.grid.major.x = ggplot2::element_blank(),
+    legend.position = 'top'
+  ) +
+  labs(
+    title = glue::glue("xG per Shot when <span style='color:{GAME_STATE_PAL[['Leading']]}'>Leading</span>, <span style='color:{GAME_STATE_PAL[['Tied']]}'>Tied</span>, or <span style='color:{GAME_STATE_PAL[['Trailing']]}'>Trailing</spna>"),
+    subtitle = SUBTITLE_LABEL,
+    y = NULL,
+    tag = TAG_LABEL,
+    caption = CAPTION_LABEL,
+    x = '% of Match Time'
+  )
+
+plot_dir <- file.path(PROJ_DIR, 'plots')
+dir.create(plot_dir, showWarnings = FALSE)
+ggplot2::ggsave(
+  xg_per_shot_plot,
+  filename = file.path(plot_dir, 'xg_per_shot.png'),
+  width = 8,
+  height = 8
+)
+
+
+xgd_p90_plot <- agg_game_state_xgd_with_logos |> 
+  ggplot2::ggplot() +
+  ggplot2::aes(
+    x = prop_duration,
+    y = team
+  ) +
+  # ggplot2::scale_y_discrete(
+  #   name = '',
+  #   labels = agg_game_state_xgd_with_logos |> 
+  #     dplyr::distinct(team, label) |> 
+  #     tibble::deframe()
+  # ) +
+  # ggplot2::theme(
+  #   axis.text.y = ggtext::element_markdown()
+  # ) +
+  ggplot2::geom_col(
+    show.legend = FALSE,
+    alpha = 0.8,
+    ggplot2::aes(
+      fill = pre_shot_game_state
+    )
+  ) +
+  ggplot2::geom_text(
+    family = FONT,
+    size = 12 / ggplot2::.pt,
+    fontface = 'bold',
+    color = WHITISH_FOREGROUND_COLOR,
+    data = dplyr::filter(agg_game_state_xgd_with_logos, xgd_p90 >= 0),
+    ggplot2::aes(
+      x = half_cumu_prop_duration,
+      y = team,
+      label = scales::number(xgd_p90, accuracy = 0.01, style_positive = 'plus')
+    )
+  ) +
+  ggplot2::geom_text(
+    family = FONT,
+    size = 12 / ggplot2::.pt,
+    fontface = 'bold.italic',
+    color = BLACKISH_BACKGROUND_COLOR,
+    data = dplyr::filter(agg_game_state_xgd_with_logos, xgd_p90 < 0),
+    ggplot2::aes(
+      x = half_cumu_prop_duration,
+      y = team,
+      label = scales::number(xgd_p90, accuracy = 0.01)
+    )
+  ) +
+  ggplot2::scale_x_continuous(
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  ggplot2::scale_fill_manual(
+    values = GAME_STATE_PAL
+  ) +
+  ggplot2::theme(
+    panel.grid.major.y = ggplot2::element_blank(),
+    panel.grid.major.x = ggplot2::element_blank(),
+    legend.position = 'top'
+  ) +
+  labs(
+    title = glue::glue("(xG - xG Conceded) per 90 when <span style='color:{GAME_STATE_PAL[['Leading']]}'>Leading</span>, <span style='color:{GAME_STATE_PAL[['Tied']]}'>Tied</span>, or <span style='color:{GAME_STATE_PAL[['Trailing']]}'>Trailing</spna>"),
+    subtitle = SUBTITLE_LABEL,
+    y = NULL,
+    tag = TAG_LABEL,
+    caption = CAPTION_LABEL,
+    x = '% of Match Time'
+  )
+
+plot_dir <- file.path(PROJ_DIR, 'plots')
+dir.create(plot_dir, showWarnings = FALSE)
+ggplot2::ggsave(
+  xgd_p90_plot,
+  filename = file.path(plot_dir, 'xgd_p90_plot.png'),
+  width = 8,
+  height = 8
+)
 ```
