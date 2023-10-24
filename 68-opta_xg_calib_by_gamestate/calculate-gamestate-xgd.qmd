@@ -733,7 +733,7 @@ agg_game_state_xgd_leagues_cup <- game_state_shots_and_durations |>
   dplyr::mutate(
     xgd = xgd * 90 / dur
   ) |> 
-  dplyr::group_by(team) |> 
+  dplyr::group_by(team, is_after_leagues_cup) |> 
   dplyr::mutate(
     prop = dur / sum(dur),
     .keep = 'unused'
@@ -773,17 +773,184 @@ pivoted_agg_game_state_xgd_leagues_cup
 #| label: tb_agg_game_state_xgd
 library(gt)
 library(gtExtras)
+
+get_team_urls <- function(...) {
+  league_urls <- worldfootballR::fb_league_urls(...)
+  team_urls <- worldfootballR::fb_teams_urls(league_urls)
+  tibble::tibble(url = team_urls)
+}
+possibly_get_team_urls <- purrr::possibly(
+  get_team_urls, 
+  otherwise = tibble::tibble(), 
+  quiet = TRUE
+)
+
+PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
+
+scrape_team_urls <- function(country, gender, season_end_year, tier) {
+  path <- file.path(
+    PROJ_DIR, 
+    'fbref-team-urls',
+    sprintf('%s-%s-%s-%s.qs', country, gender, season_end_year, tier)
+  )
+  dir.create(dirname(path), showWarnings = FALSE)
+  suffix <- glue::glue('for `country = {country}`, `gender = "{gender}"`, `season_end_year = "{season_end_year}"`, `tier = "{tier}"`.')
+  if(file.exists(path)) {
+    cli::cli_text('{Sys.time()}: Returning early {suffix}')
+    return(qs::qread(path))
+  }
+  res <- possibly_get_team_urls(country, gender, season_end_year, tier)
+  cli::cli_text('{Sys.time()}: Retrieved data {suffix}')
+  qs::qsave(res, path)
+  res
+}
+
+possibly_scrape_team_urls <- purrr::possibly(
+  scrape_team_urls,
+  otherwise = tibble::tibble(), 
+  quiet = FALSE
+)
+
+scrape_fbref_team_img <- function(url, name) {
+  img_dir <- file.path(
+    PROJ_DIR, 
+    'fbref-team-logos'
+  )
+  path_img <- file.path(
+    img_dir,
+    sprintf('%s.png', name)
+  )
+  path <- file.path(
+    img_dir,
+    sprintf('%s.qs', name)
+  )
+  dir.create(dirname(path), showWarnings = FALSE)
+  
+  suffix <- glue::glue('for `name = "{name}"`.')
+  if(file.exists(path)) {
+    cli::cli_text('{Sys.time()}: Returning early {suffix}')
+    return(qs::qread(path))
+  }
+  Sys.sleep(runif(1, 1, 3))
+  page <- rvest::read_html(url)
+  team_text <- page |> 
+    rvest::html_element(xpath = '//*[@id="inner_nav"]/ul/li[1]/a') |> 
+    rvest::html_text2()
+  team <- gsub('\\sStats & History', '', team_text)
+  img_url <- page |> 
+    rvest::html_element(xpath = '//*[@id="meta"]/div[1]/img') |>
+    rvest::html_attr('src')
+  if(!file.exists(path_img)) {
+    download.file(img_url, destfile = path_img, mode = 'wb', quiet = TRUE)
+  }
+  res <- tibble::tibble(
+    url = url,
+    name = name,
+    team = team,
+    path = path_img
+  )
+  cli::cli_text('{Sys.time()}: Retrieved data {suffix}')
+  qs::qsave(res, path)
+  res
+}
+
+possibly_scrape_fbref_team_img <- purrr::possibly(
+  scrape_fbref_team_img, 
+  otherwise = tibble::tibble(), 
+  quiet = FALSE
+)
+
+## logic used in worldfootballR
+extract_team_name <- function(url) {
+  last <- sub('.*\\/', '', url)
+  name <- gsub('-Stats', '', last)
+  gsub('-', ' ', name)
+}
+
+get_team_logos <- function(
+    country,
+    gender,
+    tier,
+    season_end_year
+) {
+  
+  path <- file.path(
+    PROJ_DIR,
+    'team-logos',
+    sprintf('%s-%s-%s-%s.qs', country, gender, tier, season_end_year)
+  )
+  
+  dir.create(dirname(path), showWarnings = FALSE)
+  if (file.exists(path)) {
+    return(qs::qread(path))
+  }
+  team_urls <- possibly_scrape_team_urls(
+    country = country,
+    gender = gender,
+    tier = tier,
+    season_end_year = season_end_year
+  )
+  
+  res <- team_urls |> 
+    dplyr::mutate(
+      season = basename(dirname(url)),
+      name = extract_team_name(url),
+      .before = 1
+    ) |> 
+    dplyr::group_by(name) |> 
+    dplyr::slice_max(season, n = 1, with_ties = FALSE) |> 
+    dplyr::ungroup() |> 
+    dplyr::distinct(name, url) |> 
+    tibble::deframe() |> 
+    purrr::imap_dfr(
+      \(.x, .y) {
+        possibly_scrape_fbref_team_img(.x, .y)
+      }
+    )
+  
+  qs::qsave(res, path)
+  res
+}
+
+params <- tidyr::crossing(
+  country = COUNTRIES,
+  gender = GENDERS,
+  tier = TIERS,
+  season_end_year = SEASON_END_YEARS
+)
+
+team_logos <- params |>
+  dplyr::mutate(
+    data = purrr::pmap(
+      list(country, gender, tier, season_end_year),
+      \(country, gender, tier, season_end_year) {
+        get_team_logos(
+          country = country,
+          gender = gender,
+          tier = tier,
+          season_end_year = season_end_year
+        )
+      }
+    )
+  ) |>
+  tidyr::unnest(data)
+
+
 max_xgd <- max(abs(agg_game_state_xgd$xgd))
 tb_agg_game_state_xgd <- pivoted_agg_game_state_xgd |> 
+  arrange(desc(prop_leading)) |> 
+  # filter(is_after_leagues_cup) |> 
   select(-starts_with('prop_')) |> 
   inner_join(
-    agg_game_state_xgd |>
+    agg_game_state_xgd |> 
+      # filter(is_after_leagues_cup) |>
       group_by(team) |> 
       summarize(
         props = list(prop)
       ),
     by = join_by(team)
   ) |> 
+  # select(-is_after_leagues_cup) |> 
   gt() |> 
   cols_label(
     team = md('**Team**'),
@@ -816,7 +983,7 @@ tb_agg_game_state_xgd <- pivoted_agg_game_state_xgd |>
   gt_theme_538() |> 
   tab_header(
     title = 'xGD per 90, by Game State',
-    subtitle = 'MLS, 2023'
+    subtitle = 'MLS 2023'
   )
 tb_agg_game_state_xgd
 ```
