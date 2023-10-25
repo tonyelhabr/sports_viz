@@ -708,163 +708,220 @@ agg_game_state_xgd
 #| label: tb_agg_game_state_xgd
 
 PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
-get_team_urls <- function(...) {
-  league_urls <- worldfootballR::fb_league_urls(...)
-  team_urls <- worldfootballR::fb_teams_urls(league_urls)
-  tibble::tibble(url = team_urls)
-}
+# get_team_urls <- function(...) {
+#   league_urls <- worldfootballR::fb_league_urls(...)
+#   team_urls <- worldfootballR::fb_teams_urls(league_urls)
+#   tibble::tibble(url = team_urls)
+# }
+# 
+# possibly_get_team_urls <- purrr::possibly(
+#   get_team_urls, 
+#   otherwise = tibble::tibble(), 
+#   quiet = TRUE
+# )
+# 
+# scrape_team_urls <- function(country, gender, season_end_year, tier) {
+#   path <- file.path(
+#     PROJ_DIR, 
+#     'fbref-team-urls',
+#     sprintf('%s-%s-%s-%s.qs', country, gender, season_end_year, tier)
+#   )
+#   dir.create(dirname(path), showWarnings = FALSE)
+#   if(file.exists(path)) {
+#     return(qs::qread(path))
+#   }
+#   res <- possibly_get_team_urls(country, gender, season_end_year, tier)
+#   qs::qsave(res, path)
+#   res
+# }
+# 
+# possibly_scrape_team_urls <- purrr::possibly(
+#   scrape_team_urls,
+#   otherwise = tibble::tibble(), 
+#   quiet = FALSE
+# )
+# 
+# scrape_fbref_team_img <- function(url, name) {
+#   img_dir <- file.path(
+#     PROJ_DIR, 
+#     'fbref-team-logos'
+#   )
+#   img_path <- file.path(
+#     img_dir,
+#     sprintf('%s.png', name)
+#   )
+#   path <- file.path(
+#     img_dir,
+#     sprintf('%s.qs', name)
+#   )
+#   dir.create(dirname(path), showWarnings = FALSE)
+#   
+#   # if(file.exists(path)) {
+#   #   return(qs::qread(path))
+#   # }
+#   Sys.sleep(runif(1, 0, 2))
+#   page <- rvest::read_html(url)
+#   team_text <- page |> 
+#     rvest::html_element(xpath = '//*[@id="inner_nav"]/ul/li[1]/a') |> 
+#     rvest::html_text2()
+#   team <- gsub('\\sStats & History', '', team_text)
+#   img_url <- page |> 
+#     rvest::html_element(xpath = '//*[@id="meta"]/div[1]/img') |>
+#     rvest::html_attr('src')
+#   # if(!file.exists(img_path)) {
+#   if(TRUE) {
+#     download.file(img_url, destfile = img_path, mode = 'wb', quiet = TRUE)
+#     # cropcircles::circle_crop(
+#     #   img_path,
+#     #   to = img_path,
+#     #   border_colour = BLACKISH_BACKGROUND_COLOR
+#     # )
+#     img <- magick::image_transparent(
+#       magick::image_read(img_path),
+#       color = 'white'
+#     )
+#     magick::image_write(img, img_path)
+#     ## https://themockup.blog/posts/2021-01-28-removing-image-backgrounds-with-magick/#clean-the-images
+#     # transparent_img <- img_path |>
+#     #   magick::image_read()  |>
+#     #   magick::image_crop(geometry = magick::geometry_area(0, 0, 0, 0))  |>
+#     #   magick::image_fill(
+#     #     color = 'transparent', 
+#     #     refcolor = 'white', 
+#     #     fuzz = 4,
+#     #     point = '+1+1'
+#     #   ) 
+#     # magick::image_write(transparent_img, path)
+#   }
+#   res <- tibble::tibble(
+#     url = url,
+#     name = name,
+#     team = team,
+#     path = img_path
+#   )
+#   qs::qsave(res, path)
+#   res
+# }
+# 
+# possibly_scrape_fbref_team_img <- purrr::possibly(
+#   scrape_fbref_team_img, 
+#   otherwise = tibble::tibble(), 
+#   quiet = FALSE
+# )
+# 
+# ## logic used in worldfootballR
+# extract_team_name <- function(url) {
+#   last <- sub('.*\\/', '', url)
+#   name <- gsub('-Stats', '', last)
+#   gsub('-', ' ', name)
+# }
+# 
+# get_team_logos <- function(
+#     country,
+#     gender,
+#     tier,
+#     season_end_year
+# ) {
+#   
+#   path <- file.path(
+#     PROJ_DIR,
+#     'team-logos',
+#     sprintf('%s-%s-%s-%s.qs', country, gender, tier, season_end_year)
+#   )
+#   
+#   dir.create(dirname(path), showWarnings = FALSE)
+#   # if (file.exists(path)) {
+#   #   return(qs::qread(path))
+#   # }
+#   team_urls <- possibly_scrape_team_urls(
+#     country = country,
+#     gender = gender,
+#     tier = tier,
+#     season_end_year = season_end_year
+#   )
+#   
+#   res <- team_urls |> 
+#     dplyr::mutate(
+#       season = basename(dirname(url)),
+#       name = extract_team_name(url),
+#       .before = 1
+#     ) |> 
+#     dplyr::group_by(name) |> 
+#     dplyr::slice_max(season, n = 1, with_ties = FALSE) |> 
+#     dplyr::ungroup() |> 
+#     dplyr::distinct(name, url) |> 
+#     tibble::deframe() |> 
+#     purrr::imap_dfr(
+#       \(.x, .y) {
+#         possibly_scrape_fbref_team_img(.x, .y)
+#       }
+#     )
+#   
+#   qs::qsave(res, path)
+#   res
+# }
+# 
+# team_logos <- get_team_logos(
+#   country = COUNTRY,
+#   gender = GENDER,
+#   tier = TIER,
+#   season_end_year = SEASON_END_YEAR
+# )
 
-possibly_get_team_urls <- purrr::possibly(
-  get_team_urls, 
-  otherwise = tibble::tibble(), 
-  quiet = TRUE
-)
-
-scrape_team_urls <- function(country, gender, season_end_year, tier) {
-  path <- file.path(
-    PROJ_DIR, 
-    'fbref-team-urls',
-    sprintf('%s-%s-%s-%s.qs', country, gender, season_end_year, tier)
-  )
-  dir.create(dirname(path), showWarnings = FALSE)
-  if(file.exists(path)) {
-    return(qs::qread(path))
-  }
-  res <- possibly_get_team_urls(country, gender, season_end_year, tier)
-  qs::qsave(res, path)
-  res
-}
-
-possibly_scrape_team_urls <- purrr::possibly(
-  scrape_team_urls,
-  otherwise = tibble::tibble(), 
-  quiet = FALSE
-)
-
-scrape_fbref_team_img <- function(url, name) {
-  img_dir <- file.path(
-    PROJ_DIR, 
-    'fbref-team-logos'
-  )
-  path_img <- file.path(
-    img_dir,
-    sprintf('%s.png', name)
-  )
-  path <- file.path(
-    img_dir,
-    sprintf('%s.qs', name)
-  )
-  dir.create(dirname(path), showWarnings = FALSE)
-  
-  if(file.exists(path)) {
-    return(qs::qread(path))
-  }
-  Sys.sleep(runif(1, 1, 3))
-  page <- rvest::read_html(url)
-  team_text <- page |> 
-    rvest::html_element(xpath = '//*[@id="inner_nav"]/ul/li[1]/a') |> 
-    rvest::html_text2()
-  team <- gsub('\\sStats & History', '', team_text)
-  img_url <- page |> 
-    rvest::html_element(xpath = '//*[@id="meta"]/div[1]/img') |>
-    rvest::html_attr('src')
-  if(!file.exists(path_img)) {
-    download.file(img_url, destfile = path_img, mode = 'wb', quiet = TRUE)
-  }
-  res <- tibble::tibble(
-    url = url,
-    name = name,
-    team = team,
-    path = path_img
-  )
-  qs::qsave(res, path)
-  res
-}
-
-possibly_scrape_fbref_team_img <- purrr::possibly(
-  scrape_fbref_team_img, 
-  otherwise = tibble::tibble(), 
-  quiet = FALSE
-)
-
-## logic used in worldfootballR
-extract_team_name <- function(url) {
-  last <- sub('.*\\/', '', url)
-  name <- gsub('-Stats', '', last)
-  gsub('-', ' ', name)
-}
-
-get_team_logos <- function(
-    country,
-    gender,
-    tier,
-    season_end_year
-) {
-  
-  path <- file.path(
-    PROJ_DIR,
-    'team-logos',
-    sprintf('%s-%s-%s-%s.qs', country, gender, tier, season_end_year)
-  )
-  
-  dir.create(dirname(path), showWarnings = FALSE)
-  if (file.exists(path)) {
-    return(qs::qread(path))
-  }
-  team_urls <- possibly_scrape_team_urls(
-    country = country,
-    gender = gender,
-    tier = tier,
-    season_end_year = season_end_year
-  )
-  
-  res <- team_urls |> 
-    dplyr::mutate(
-      season = basename(dirname(url)),
-      name = extract_team_name(url),
-      .before = 1
+get_fotmob_mls_standings <- function() {
+  url <- 'https://www.fotmob.com/api/leagues?id=130'
+  resp <- httr::GET(url)
+  cont <- httr::content(resp, as = 'text')
+  result <- jsonlite::fromJSON(cont)
+  table_init <- result$table$data
+  tables <- dplyr::bind_rows(table_init$tables)
+  tables$table$all[[3]] |> 
+    dplyr::transmute(
+      team = name,
+      team_id = id,
+      pts,
+      logo_url = sprintf('https://images.fotmob.com/image_resources/logo/teamlogo/%s.png', team_id)
     ) |> 
-    dplyr::group_by(name) |> 
-    dplyr::slice_max(season, n = 1, with_ties = FALSE) |> 
-    dplyr::ungroup() |> 
-    dplyr::distinct(name, url) |> 
-    tibble::deframe() |> 
-    purrr::imap_dfr(
-      \(.x, .y) {
-        possibly_scrape_fbref_team_img(.x, .y)
-      }
-    )
-  
-  qs::qsave(res, path)
-  res
+    tibble::as_tibble()
 }
 
-team_logos <- get_team_logos(
-  country = COUNTRY,
-  gender = GENDER,
-  tier = TIER,
-  season_end_year = SEASON_END_YEAR
-)
+fotmob_mls_standings <- get_fotmob_mls_standings()
+team_logos <- agg_game_state_xgd |> 
+  dplyr::distinct(team) |> 
+  dplyr::arrange(team) |> 
+  ## Lucky for us, MLS team names line up with the fotmob names alphabetically.
+  dplyr::bind_cols(
+    fotmob_mls_standings |> 
+      dplyr::arrange(team) |> 
+      dplyr::select(path = logo_url)
+  )
 
-team_order <- agg_game_state_xgd |> 
+agg_game_state_xgd_with_logos <- agg_game_state_xgd |> 
+  dplyr::inner_join(
+    team_logos |> 
+      dplyr::select(
+        team,
+        path
+      ),
+    by = dplyr::join_by(team)
+  ) |> 
+  dplyr::mutate(
+    label = glue::glue("{team} <img src='{path}' width='15' height='15'/>")
+  ) |> 
+  dplyr::select(-path)
+
+team_label_order <- agg_game_state_xgd_with_logos |> 
   dplyr::filter(
     pre_shot_game_state == 'Leading'
   ) |> 
   dplyr::arrange(prop_duration) |> 
   dplyr::pull(team)
 
-agg_game_state_xgd_with_logos <- agg_game_state_xgd |> 
-  dplyr::inner_join(
-    team_logos,
-    by = dplyr::join_by(team)
-  ) |> 
-  dplyr::mutate(
-    label = glue::glue("{team} <img src='{path}'/>")
-  ) |> 
+prepped_agg_game_state_xgd <- agg_game_state_xgd_with_logos |> 
   dplyr::mutate(
     dplyr::across(
       team,
-      \(.x) factor(.x, levels = team_order)
+      \(.x) factor(.x, levels = team_label_order)
     )
   ) |> 
   dplyr::arrange(team, desc(pre_shot_game_state)) |> 
@@ -937,74 +994,21 @@ GAME_STATE_PAL <- c(
   'Leading' = '#17bebb'
 )
 
-xg_per_shot_plot <- agg_game_state_xgd_with_logos |> 
+xgd_p90_plot <- prepped_agg_game_state_xgd |> 
   ggplot2::ggplot() +
   ggplot2::aes(
     x = prop_duration,
     y = team
   ) +
-  ggplot2::geom_col(
-    show.legend = FALSE,
-    alpha = 0.8,
-    ggplot2::aes(
-      fill = pre_shot_game_state
-    )
-  ) +
-  ggplot2::geom_text(
-    family = FONT,
-    size = 12 / ggplot2::.pt,
-    fontface = 'bold',
-    ggplot2::aes(
-      x = half_cumu_prop_duration,
-      y = team,
-      label = scales::number(xg_per_shot, accuracy = 0.01)
-    )
-  ) +
-  ggplot2::scale_x_continuous(
-    labels = scales::percent_format(accuracy = 1)
-  ) +
-  ggplot2::scale_fill_manual(
-    values = GAME_STATE_PAL
+  ggplot2::scale_y_discrete(
+    name = '',
+    labels = prepped_agg_game_state_xgd |>
+      dplyr::distinct(team, label) |>
+      tibble::deframe()
   ) +
   ggplot2::theme(
-    panel.grid.major.y = ggplot2::element_blank(),
-    panel.grid.major.x = ggplot2::element_blank(),
-    legend.position = 'top'
+    axis.text.y = ggtext::element_markdown(margin = grid::unit(c(0, 0, 0, 0), 'pt')),
   ) +
-  labs(
-    title = glue::glue("xG per Shot when <span style='color:{GAME_STATE_PAL[['Leading']]}'>Leading</span>, <span style='color:{GAME_STATE_PAL[['Tied']]}'>Tied</span>, or <span style='color:{GAME_STATE_PAL[['Trailing']]}'>Trailing</spna>"),
-    subtitle = SUBTITLE_LABEL,
-    y = NULL,
-    tag = TAG_LABEL,
-    caption = CAPTION_LABEL,
-    x = '% of Match Time'
-  )
-
-plot_dir <- file.path(PROJ_DIR, 'plots')
-dir.create(plot_dir, showWarnings = FALSE)
-ggplot2::ggsave(
-  xg_per_shot_plot,
-  filename = file.path(plot_dir, 'xg_per_shot.png'),
-  width = 8,
-  height = 8
-)
-
-
-xgd_p90_plot <- agg_game_state_xgd_with_logos |> 
-  ggplot2::ggplot() +
-  ggplot2::aes(
-    x = prop_duration,
-    y = team
-  ) +
-  # ggplot2::scale_y_discrete(
-  #   name = '',
-  #   labels = agg_game_state_xgd_with_logos |> 
-  #     dplyr::distinct(team, label) |> 
-  #     tibble::deframe()
-  # ) +
-  # ggplot2::theme(
-  #   axis.text.y = ggtext::element_markdown()
-  # ) +
   ggplot2::geom_col(
     show.legend = FALSE,
     alpha = 0.8,
@@ -1017,7 +1021,7 @@ xgd_p90_plot <- agg_game_state_xgd_with_logos |>
     size = 12 / ggplot2::.pt,
     fontface = 'bold',
     color = WHITISH_FOREGROUND_COLOR,
-    data = dplyr::filter(agg_game_state_xgd_with_logos, xgd_p90 >= 0),
+    data = dplyr::filter(prepped_agg_game_state_xgd, xgd_p90 >= 0),
     ggplot2::aes(
       x = half_cumu_prop_duration,
       y = team,
@@ -1029,7 +1033,7 @@ xgd_p90_plot <- agg_game_state_xgd_with_logos |>
     size = 12 / ggplot2::.pt,
     fontface = 'bold.italic',
     color = BLACKISH_BACKGROUND_COLOR,
-    data = dplyr::filter(agg_game_state_xgd_with_logos, xgd_p90 < 0),
+    data = dplyr::filter(prepped_agg_game_state_xgd, xgd_p90 < 0),
     ggplot2::aes(
       x = half_cumu_prop_duration,
       y = team,
@@ -1037,7 +1041,8 @@ xgd_p90_plot <- agg_game_state_xgd_with_logos |>
     )
   ) +
   ggplot2::scale_x_continuous(
-    labels = scales::percent_format(accuracy = 1)
+    labels = scales::percent_format(accuracy = 1),
+    expand = c(0.01, 0.01)
   ) +
   ggplot2::scale_fill_manual(
     values = GAME_STATE_PAL
@@ -1048,20 +1053,32 @@ xgd_p90_plot <- agg_game_state_xgd_with_logos |>
     legend.position = 'top'
   ) +
   labs(
-    title = glue::glue("(xG - xG Conceded) per 90 when <span style='color:{GAME_STATE_PAL[['Leading']]}'>Leading</span>, <span style='color:{GAME_STATE_PAL[['Tied']]}'>Tied</span>, or <span style='color:{GAME_STATE_PAL[['Trailing']]}'>Trailing</spna>"),
+    title = glue::glue("(xG - xG Conceded) per 90 when <span style='color:{GAME_STATE_PAL[['Leading']]}'>Leading</span>, <span style='color:{GAME_STATE_PAL[['Tied']]}'>Tied</span>, and <span style='color:{GAME_STATE_PAL[['Trailing']]}'>Trailing</spna>"),
     subtitle = SUBTITLE_LABEL,
     y = NULL,
     tag = TAG_LABEL,
     caption = CAPTION_LABEL,
     x = '% of Match Time'
   )
+xgd_p90_plot
 
 plot_dir <- file.path(PROJ_DIR, 'plots')
 dir.create(plot_dir, showWarnings = FALSE)
+xgd_plot_path <- file.path(plot_dir, 'xgd_p90_plot.png')
 ggplot2::ggsave(
   xgd_p90_plot,
-  filename = file.path(plot_dir, 'xgd_p90_plot.png'),
+  filename = xgd_plot_path,
   width = 8,
   height = 8
+)
+
+add_logo(
+  xgd_plot_path,
+  path_logo = file.path(PROJ_DIR, 'mls-logo-black-and-white.png'),
+  delete = FALSE,
+  logo_scale = 0.06,
+  idx_x = 0.00,
+  idx_y = 0.99,
+  adjust_y = FALSE
 )
 ```
