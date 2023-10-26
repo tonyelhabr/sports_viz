@@ -100,7 +100,7 @@ match_results <- match_summaries |>
   )
 qsave(match_results, file.path(PROJ_DIR, 'match_results.qs'))
 
-long_shots <- raw_shots |> 
+shots <- raw_shots |> 
   transmute(
     rn = row_number(),
     match_id = basename(dirname(MatchURL)),
@@ -121,11 +121,17 @@ long_shots <- raw_shots |>
     is_goal = Outcome == 'Goal',
     xg = as.double(xG),
     is_penalty = coalesce((Distance == '13' & round(xg, 2) == 0.79), FALSE),
+    distance = as.integer(Distance),
+    body_part = `Body Part`,
+    notes = Notes,
+    ## seems that they started to exclusively use Take-On instead of Dribble in 2022
+    sca1 = ifelse(Event_SCA_1 == 'Dribble', 'Take-On', Event_SCA_1),
+    sca2 = ifelse(Event_SCA_2 == 'Dribble', 'Take-On', Event_SCA_2),
     time_key = generate_time_key(period, min, min_added)
   )
 
-synthetic_rn_base <- 10^(ceiling(log10(max(long_shots$rn))))
-long_shots_with_own_goals <- long_shots |> 
+synthetic_rn_base <- 10^(ceiling(log10(max(shots$rn))))
+shots_with_own_goals <- shots |> 
   mutate(
     is_own_goal = FALSE
   ) |> 
@@ -152,7 +158,7 @@ long_shots_with_own_goals <- long_shots |>
       )
   )
 
-clean_shots <- long_shots_with_own_goals |> 
+clean_shots <- shots_with_own_goals |> 
   inner_join(
     match_summaries |>
       distinct(match_id, season, date, home_team, away_team),
@@ -248,6 +254,10 @@ restacked_shots <- bind_rows(
       g_conceded = away_g,
       xg = home_xg,
       xg_conceded = away_xg,
+      distance,
+      body_part,
+      sca1,
+      sca2,
       summary_g = summary_home_g,
       summary_g_conceded = summary_away_g
     ),
@@ -272,6 +282,10 @@ restacked_shots <- bind_rows(
       g_conceded = home_g,
       xg = away_xg,
       xg_conceded = home_xg,
+      distance,
+      body_part,
+      sca1,
+      sca2,
       summary_g = summary_away_g,
       summary_g_conceded = summary_home_g,
     )

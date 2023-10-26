@@ -38,6 +38,12 @@ match_teams <- raw_shots |>
     by = dplyr::join_by(date, away_team)
   )
 
+elo_quantiles <- quantile(
+  c(match_teams$home_elo, match_teams$away_elo), 
+  c(0.25, 0.75), 
+  na.rm = TRUE
+)
+
 ORDERED_GAME_STATE_LABELS <- c('trailing', 'neutral', 'leading')
 # ORDERED_GAME_STATE_LABELS <- c('<-1', '-1', 'neutral', '+1', '>+1')
 shots <- raw_shots |> 
@@ -65,6 +71,16 @@ shots <- raw_shots |>
     g_conceded,
     g_cumu,
     g_conceded_cumu,
+    across(
+      distance,
+      ~cut(
+        .x,
+        breaks = c(seq(0, 18, by = 2), 20, 25, 30, 35, Inf)
+      )
+    ),
+    body_part,
+    # sca1,
+    # sca2,
     # .pred_yes = xg,
     # .pred_no = 1 - xg,
     dplyr::across(xg, \(.x) ifelse(.x <= 0, 0.01, .x)),
@@ -85,21 +101,47 @@ shots <- raw_shots |>
     pre_shot_game_state = dplyr::lag(game_state, default = ORDERED_GAME_STATE_LABELS[2])
   ) |> 
   dplyr::ungroup()
-shots |> filter(match_id == '0014076a', team == 'Arsenal')
+shots |> dplyr::filter(match_id == '0014076a', team == 'Arsenal')
 
-glm_model <- glm(
-  is_goal ~ xg + pre_shot_game_state + elo_d + elo:elo_d, # + xg:elo_d + elo:elo_d,
-  data = shots,
-  # offset = shots$xg
+np_shots <- dplyr::filter(shots, !is_penalty)
+
+np_shots_std <- np_shots |> 
+  dplyr::mutate(
+    elo_std = scales::rescale(
+      elo,
+      from = c(unname(elo_quantiles)),
+      to = c(-1, 1)
+    )
+  )
+base_model <- glm(
+  is_goal ~ 0 + elo_d + elo:elo_d,
+  data = np_shots,
+  offset = np_shots$xg,
   family = binomial(link = 'logit')
 )
-# glm_model
-broom::tidy(glm_model)
+broom::tidy(base_model)
 
-cal_shots <- shots
+robust_model <- glm(
+  is_goal ~ 0 + distance + body_part + pre_shot_game_state + elo_d + elo:elo_d,
+  data = np_shots,
+  offset = np_shots$xg,
+  family = binomial(link = 'logit')
+)
+broom::tidy(robust_model)
+
+# glm_model <- glm(
+#   is_goal ~ xg + pre_shot_game_state + elo_d + elo:elo_d, # + xg:elo_d + elo:elo_d,
+#   data = shots,
+#   # offset = shots$xg
+#   family = binomial(link = 'logit')
+# )
+# # glm_model
+# broom::tidy(glm_model)
+
+cal_shots <- np_shots
 cal_shots$.pred_glm <- predict(
-  glm_model,
-  data = cal_shots,
+  base_model,
+  newdata = cal_shots,
   type = 'response'
 )
 
@@ -146,4 +188,18 @@ yardstick::roc_auc_vec(
   truth = cal_shots$is_goal,
   estimate = cal_shots$xg
 )
+
+cal_shots |> 
+  ggplot() +
+  aes(
+    x = xg,
+    y = .pred_glm,
+    color = elo_d
+  ) +
+  scale_color_viridis_c(
+    option = 'H'
+  ) +
+  geom_point() +
+  geom_abline(linetype = 2)
+
 

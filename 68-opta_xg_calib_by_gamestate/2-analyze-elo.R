@@ -96,7 +96,7 @@ broom::tidy(glm_model)
 cal_shots <- shots
 cal_shots$.pred_glm <- predict(
   glm_model,
-  data = cal_shots,
+  cal_shots,
   type = 'response'
 )
 
