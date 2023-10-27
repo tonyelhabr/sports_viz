@@ -269,7 +269,7 @@ cumu_doublecounted_restacked_shots <- doublecounted_restacked_shots |>
     gamestate = g_cumu - g_conceded_cumu
   )
 
-ORDERED_gamestate_LABELS <- c('Trailing', 'Tied', 'Leading')
+ORDERED_GAMESTATE_LABELS <- c('Trailing', 'Tied', 'Leading')
 gamestate_shots <- cumu_doublecounted_restacked_shots |> 
   dplyr::inner_join(
     match_summaries |> 
@@ -301,13 +301,13 @@ gamestate_shots <- cumu_doublecounted_restacked_shots |>
     gamestate = cut(
       gamestate,
       breaks = c(-Inf, -1, 0, Inf),
-      labels = ORDERED_gamestate_LABELS
+      labels = ORDERED_GAMESTATE_LABELS
     )
   ) |> 
   dplyr::group_by(match_id, team) |> 
   dplyr::arrange(shot_id, .by_group = TRUE) |> 
   dplyr::mutate(
-    pre_shot_gamestate = dplyr::lag(gamestate, default = ORDERED_gamestate_LABELS[2])
+    pre_shot_gamestate = dplyr::lag(gamestate, default = ORDERED_GAMESTATE_LABELS[2])
   ) |> 
   dplyr::ungroup()
 
@@ -534,12 +534,6 @@ agg_gamestate_xgd_with_logos <- agg_gamestate_xgd |>
 #     desc(abs(d))
 #   )
 
-team_label_order <- agg_gamestate_xgd_with_logos |> 
-  dplyr::filter(
-    pre_shot_gamestate == 'Leading'
-  ) |> 
-  dplyr::arrange(prop_duration) |> 
-  dplyr::pull(team)
 
 raw_table <- worldfootballR::fb_season_team_stats(
   country = COUNTRY,
@@ -548,6 +542,15 @@ raw_table <- worldfootballR::fb_season_team_stats(
   season_end_year = SEASON_END_YEAR,
   stat_type = 'league_table'
 )
+
+
+team_label_order <- agg_gamestate_xgd_with_logos |> 
+  dplyr::filter(
+    pre_shot_gamestate == 'Leading'
+  ) |> 
+  dplyr::arrange(prop_duration) |> 
+  dplyr::pull(team)
+team_label_order <- c(team_label_order, '')
 
 table <- raw_table |> 
   dplyr::select(
@@ -565,6 +568,12 @@ table <- raw_table |>
   )
 
 prepped_agg_gamestate_xgd <- agg_gamestate_xgd_with_logos |> 
+  dplyr::bind_rows(
+    tibble::tibble(
+      team = '',
+      pre_shot_gamestate = factor(ORDERED_GAMESTATE_LABELS, levels = ORDERED_GAMESTATE_LABELS)
+    )
+  ) |>
   dplyr::mutate(
     dplyr::across(
       team,
@@ -616,7 +625,8 @@ xgd_p90_plot <- prepped_agg_gamestate_xgd |>
     fontface = 'plain',
     color = COMPLEMENTARY_FOREGROUND_COLOR,
     data = table |> dplyr::arrange(desc(team)) |> head(1),
-    vjust = -0.5,
+    vjust = -1,
+    lineheight = 1,
     ggplot2::aes(
       x = 1.05,
       y = team,
@@ -675,7 +685,7 @@ xgd_p90_plot <- prepped_agg_gamestate_xgd |>
   ggplot2::theme(
     panel.grid.major.y = ggplot2::element_blank(),
     panel.grid.major.x = ggplot2::element_blank(),
-    axis.title.x = ggtext::element_markdown(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.9),
+    axis.title.x = ggtext::element_markdown(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.85),
     legend.position = 'top'
   ) +
   ggplot2::labs(

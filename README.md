@@ -4,13 +4,27 @@ title: README
 
 This repo stores my code and plots for sports-related plots. Any "small" data is stored in the repo. Otherwise, it's saved locally and git-ignored here.
 
-The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I scraped.
+The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I did not end up finishing.
 
-# 74. 2023 Women's World Cup xG Calibration
+# 77. [2023/24 EPL xGD by Game State](https://tonyelhabr.rbind.io/posts/fbref-gamestate-expected-goal-difference/)
+
+![](77-gamestate_xgd/2023-epl-xgd-p90.png)
+
+# 76. 2023 (Personal) Fantasy Football League Luck
+
+![](76-2023_ff_luck/agg-scores-plot.png)
+
+![](76-2023_ff_luck/all-play-record-2023.png)
+
+# 75. [Soccer Meta-Analytics](https://tonyelhabr.rbind.io/posts/soccer-meta-analytics/)
+
+![](https://tonyelhabr.rbind.io/posts/soccer-meta-analytics/discrimination-vs-stability.png)
+
+# 74. [2023 Women's World Cup xG Calibration](https://gist.github.com/tonyelhabr/335b54fb1d937c0f8a817defe2c5ab6b)
 
 ![](74-2023_womens_world_cup_xg/wwc_2023_xg_source_calibration.png "Comparison of Opta's and StatsBomb's xG model calibration for non-penalty shots in the 2023 FIFA Womens' World Cup")
 
-# 73. "Exceeding Expected Goals" Replication
+# 73. ["Exceeding Expected Goals" Replication](https://tonyelhabr.rbind.io/posts/xg-ratio-empirical-bayes/)
 
 ![](73-exceeding_expected_goals_replication/beyond-replication.png "Top 20 shooting overperformers in the EPL, 2021/22 and 2022/23 seasons")
 
@@ -22,7 +36,7 @@ The projects are listed in reverse chronological order. A skipped number corresp
 
 ![](73-exceeding_expected_goals_replication/adj-g-xg-ratio-stability.png "Year-over-year stability of adjusted G/xG for the MLS 2013-2023 seasons")
 
-# 72. 2023 Women's World Cup
+# 72. [2023 Women's World Cup](https://gist.github.com/tonyelhabr/b058e49f0d8d6a0005f1ae982df8f8c4)
 
 ![](72-2023_womens_world_cup/top_distance_high_speed_sprinting.png "Most distance (m) covered while high speed sprinting, FIFA Women's World Cup 2023")
 
