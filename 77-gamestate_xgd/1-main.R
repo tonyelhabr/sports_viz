@@ -454,7 +454,7 @@ GAMESTATE_PAL <- c(
 ##   better, scalable strategy for binding team names between sources is to
 ##   order teams by points / placement in the standings.
 
-get_fotmob_epl_standings <- function() {
+get_fotmob_standings <- function() {
   url <- 'https://www.fotmob.com/api/leagues?id=47'
   resp <- httr::GET(url)
   cont <- httr::content(resp, as = 'text')
@@ -470,11 +470,23 @@ get_fotmob_epl_standings <- function() {
     )
 }
 
-fotmob_standings <- get_fotmob_epl_standings()
+fotmob_standings <- get_fotmob_standings()
 
-team_logos <- agg_gamestate_xgd |> 
-  dplyr::distinct(team) |> 
-  dplyr::arrange(team) |> 
+team_names <- agg_gamestate_xgd |> 
+  dplyr::distinct(old_team = team) |> 
+  dplyr::arrange(old_team) |> 
+  dplyr::mutate(
+    team = dplyr::case_match(
+      old_team,
+      'Brighton & Hove Albion' ~ 'Brighton',
+      'Wolverhampton Wanderers' ~ 'Wolves',
+      'Tottenham Hotspur' ~ 'Tottenham',
+      'West Ham United' ~ 'West Ham',
+      .default = old_team
+    )
+  )
+
+team_logos <- team_names |> 
   dplyr::bind_cols(
     fotmob_standings |> 
       dplyr::transmute(
@@ -490,6 +502,11 @@ team_logos <- agg_gamestate_xgd |>
   )
 
 agg_gamestate_xgd_with_logos <- agg_gamestate_xgd |> 
+  dplyr::rename(old_team = team) |> 
+  dplyr::left_join(
+    team_names,
+    by = dplyr::join_by(old_team)
+  ) |> 
   dplyr::inner_join(
     team_logos |> 
       dplyr::select(
@@ -523,6 +540,29 @@ team_label_order <- agg_gamestate_xgd_with_logos |>
   ) |> 
   dplyr::arrange(prop_duration) |> 
   dplyr::pull(team)
+
+raw_table <- worldfootballR::fb_season_team_stats(
+  country = COUNTRY,
+  gender = GENDER,
+  tier = TIER,
+  season_end_year = SEASON_END_YEAR,
+  stat_type = 'league_table'
+)
+
+table <- raw_table |> 
+  dplyr::select(
+    team_short = Squad,
+    xgd_p90_total = xGD.90
+  ) |> 
+  dplyr::bind_cols(
+    team_names |> dplyr::select(team)
+  ) |> 
+  dplyr::mutate(
+    dplyr::across(
+      team,
+      \(.x) factor(.x, levels = team_label_order)
+    )
+  )
 
 prepped_agg_gamestate_xgd <- agg_gamestate_xgd_with_logos |> 
   dplyr::mutate(
@@ -561,7 +601,7 @@ xgd_p90_plot <- prepped_agg_gamestate_xgd |>
   ggplot2::theme(
     axis.text.y = ggtext::element_markdown(
       margin = grid::unit(c(0, 0, 0, 0), 'pt')
-    ),
+    )
   ) +
   ggplot2::geom_col(
     show.legend = FALSE,
@@ -572,7 +612,36 @@ xgd_p90_plot <- prepped_agg_gamestate_xgd |>
   ) +
   ggplot2::geom_text(
     family = FONT,
-    size = 12 / ggplot2::.pt,
+    size = 9 / ggplot2::.pt,
+    fontface = 'plain',
+    color = COMPLEMENTARY_FOREGROUND_COLOR,
+    data = table |> dplyr::arrange(desc(team)) |> head(1),
+    vjust = -0.5,
+    ggplot2::aes(
+      x = 1.05,
+      y = team,
+      label = 'Overall xGD\nper 90'
+    )
+  ) +
+  ggplot2::geom_text(
+    family = FONT,
+    size = 10 / ggplot2::.pt,
+    fontface = 'plain',
+    color = COMPLEMENTARY_FOREGROUND_COLOR,
+    data = table,
+    ggplot2::aes(
+      x = 1.05,
+      y = team,
+      label = scales::number(
+        xgd_p90_total, 
+        accuracy = 0.01, 
+        style_positive = 'plus'
+      )
+    )
+  ) +
+  ggplot2::geom_text(
+    family = FONT,
+    size = 11 / ggplot2::.pt,
     fontface = 'bold',
     color = WHITISH_FOREGROUND_COLOR,
     data = dplyr::filter(prepped_agg_gamestate_xgd, xgd_p90 >= 0),
@@ -584,7 +653,7 @@ xgd_p90_plot <- prepped_agg_gamestate_xgd |>
   ) +
   ggplot2::geom_text(
     family = FONT,
-    size = 12 / ggplot2::.pt,
+    size = 11 / ggplot2::.pt,
     fontface = 'bold.italic',
     color = BLACKISH_BACKGROUND_COLOR,
     data = dplyr::filter(prepped_agg_gamestate_xgd, xgd_p90 < 0),
@@ -596,6 +665,8 @@ xgd_p90_plot <- prepped_agg_gamestate_xgd |>
   ) +
   ggplot2::scale_x_continuous(
     labels = scales::percent_format(accuracy = 1),
+    breaks = c(0, 0.25, 0.5, 0.75, 1),
+    limits = c(0, 1.15),
     expand = c(0.01, 0.01)
   ) +
   ggplot2::scale_fill_manual(
@@ -604,6 +675,7 @@ xgd_p90_plot <- prepped_agg_gamestate_xgd |>
   ggplot2::theme(
     panel.grid.major.y = ggplot2::element_blank(),
     panel.grid.major.x = ggplot2::element_blank(),
+    axis.title.x = ggtext::element_markdown(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.9),
     legend.position = 'top'
   ) +
   ggplot2::labs(
