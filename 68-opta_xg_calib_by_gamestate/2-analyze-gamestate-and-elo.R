@@ -114,12 +114,22 @@ np_shots_std <- np_shots |>
     )
   )
 base_model <- glm(
-  is_goal ~ 0 + elo_d + elo:elo_d,
+  is_goal ~ xg, #  + elo_d + xg:elo_d + elo:elo_d,
   data = np_shots,
-  offset = np_shots$xg,
+  # offset = np_shots$xg,
   family = binomial(link = 'logit')
 )
 broom::tidy(base_model)
+calibrator <- probably::cal_estimate_isotonic(
+  np_shots |> mutate(.pred_yes = xg, .pred_no = 1 - xg),
+  truth = is_goal,
+  estimate = dplyr::starts_with('.pred')
+)
+
+new_xg <- probably::cal_apply(
+  np_shots |> mutate(.pred_yes = xg, .pred_no = 1 - xg),
+  calibrator
+)
 
 robust_model <- glm(
   is_goal ~ 0 + distance + body_part + pre_shot_game_state + elo_d + elo:elo_d,
@@ -141,31 +151,31 @@ broom::tidy(robust_model)
 cal_shots <- np_shots
 cal_shots$.pred_glm <- predict(
   base_model,
-  newdata = cal_shots,
+  # newdata = cal_shots,
   type = 'response'
 )
+hist(cal_shots$.pred_glm)
 
 
 library(ggplot2)
-cal_shots |> 
+new_xg |> 
   ggplot() +
   aes(
     x = xg,
-    y = .pred_glm,
+    y = .pred_yes,
     color = elo_d
   ) +
   scale_color_viridis_c(
     option = 'H'
   ) +
   geom_point() +
-  geom_abline(linetype = 2) +
-  facet_wrap(~pre_shot_game_state)
+  geom_abline(linetype = 2)
 
-cal_shots |> 
+new_xg |> 
   ggplot() +
   aes(
-    x = .pred_glm,
-    y = xg - .pred_glm,
+    x = xg,
+    y = xg - .pred_yes,
     color = elo_d
   ) +
   scale_color_viridis_c(

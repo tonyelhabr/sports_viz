@@ -5,7 +5,7 @@ library(purrr)
 PROJ_DIR <- '68-opta_xg_calib_by_gamestate'
 raw_shots <- qs::qread(file.path(PROJ_DIR, 'shots.qs')) |> 
   dplyr::filter(
-    country == 'USA',
+    # country == 'USA',
     pov == 'primary',
     # season %in% c('2020/21', '2021/22', '2022/23'),
     !is_own_goal
@@ -95,7 +95,7 @@ cal_shots |>
   ggplot() +
   aes(
     x = .pred_glm,
-    x = xg - .pred_glm,
+    y = xg - .pred_glm,
     color = pre_shot_game_state
   ) +
   geom_point() +

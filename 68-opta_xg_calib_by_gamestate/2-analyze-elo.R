@@ -66,6 +66,16 @@ shots <- raw_shots |>
     away_team,
     home_elo,
     away_elo,
+    home_elo_std = scales::rescale(
+      home_elo,
+      from = c(unname(elo_quantiles)),
+      to = c(-1, 1)
+    ),
+    away_elo_std = scales::rescale(
+      away_elo,
+      from = c(unname(elo_quantiles)),
+      to = c(-1, 1)
+    ),
     team,
     player,
     shot_id,
@@ -80,25 +90,38 @@ shots <- raw_shots |>
     g_conceded_cumu,
     dplyr::across(xg, \(.x) ifelse(.x <= 0, 0.01, .x)),
     elo = ifelse(team == home_team, home_elo, away_elo),
-    elo_d = elo - ifelse(team == home_team, away_elo, home_elo)
+    elo_std = ifelse(team == home_team, home_elo_std, away_elo_std),
+    elo_d = elo - ifelse(team == home_team, away_elo, home_elo),
+    elo_d_std = elo_std - ifelse(team == home_team, away_elo_std, home_elo_std),
+    better_elo = ifelse(
+      (team == home_team & home_elo > away_elo) |
+        (team == away_team & home_elo < away_elo),
+      'yes',
+      'no'
+    ) |> factor(levels = c('no', 'yes'))
   )
 shots |> filter(match_id == '0014076a', team == 'Arsenal')
 
+np_shots <- dplyr::filter(shots, !is_penalty)
+
 glm_model <- glm(
-  is_goal ~ 0 + xg + elo_d + elo:elo_d, # + xg:elo_d + elo:elo_d,
-  data = shots,
+  is_goal ~ 0 + xg:better_elo + better_elo, # + xg:elo_d + elo:elo_d,
+  data = np_shots,
   family = binomial(link = 'logit'),
-  offset = shots$xg
+  offset = np_shots$xg
 )
 glm_model
 broom::tidy(glm_model)
 
-cal_shots <- shots
-cal_shots$.pred_glm <- predict(
+cal_shots <- np_shots
+cal_shots$.pred_yes<- predict(
   glm_model,
-  cal_shots,
+  data = cal_shots,
   type = 'response'
 )
+# hist(cal_shots$elo_std)
+# hist(cal_shots$elo_d_std)
+hist(cal_shots$.pred_yes)
 
 # library(betareg)
 ## doesn't really make sense to do betaregression if we don't have access to underlying features
@@ -117,11 +140,8 @@ cal_shots |>
   ggplot() +
   aes(
     x = xg,
-    y = .pred_glm,
-    color = elo_d
-  ) +
-  scale_color_viridis_c(
-    option = 'H'
+    y = .pred_yes,
+    color = better_elo
   ) +
   geom_point() +
   geom_abline(linetype = 2)
@@ -129,12 +149,9 @@ cal_shots |>
 cal_shots |> 
   ggplot() +
   aes(
-    x = .pred_glm,
-    y = xg - .pred_glm,
-    color = elo_d
-  ) +
-  scale_color_viridis_c(
-    option = 'H'
+    x = .pred_yes,
+    y = xg - .pred_yes,
+    color = better_elo
   ) +
   geom_point() +
   geom_hline(
@@ -146,7 +163,7 @@ cal_shots |>
 
 yardstick::roc_auc_vec(
   truth = cal_shots$is_goal,
-  estimate = cal_shots$.pred_glm
+  estimate = cal_shots$.pred_yes
 )
 
 yardstick::roc_auc_vec(
