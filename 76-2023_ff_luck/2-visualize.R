@@ -93,6 +93,20 @@ latest_week <- scores |>
   dplyr::slice_max(week, n = 1, with_ties = FALSE) |> 
   dplyr::pull(week)
 
+actual_records <- clean_scores |> 
+  dplyr::mutate(
+    w = user_score > opponent_score,
+    l = user_score < opponent_score
+  ) |> 
+  dplyr::arrange(season, week) |> 
+  dplyr::group_by(season, user_name) |> 
+  dplyr::mutate(
+    dplyr::across(
+      c(w, l),
+      cumsum
+    )
+  ) |> 
+  dplyr::ungroup()
 
 all_h2h_records <- tidyr::crossing(
   'season' = seasons,
@@ -130,29 +144,72 @@ all_h2h_records <- tidyr::crossing(
   dplyr::ungroup() |> 
   dplyr::arrange(season, dplyr::desc(w))
 
-all_h2h_latest_table <- all_h2h_records |> 
-  dplyr::filter(season == current_season) |>
+compared_records <- all_h2h_records |> 
+  transmute(
+    season,
+    user_name,
+    all_play_season = season,
+    all_play_w = w,
+    all_play_l = l,
+    all_play_w_prop = w / (w + l)
+  ) |> 
+  inner_join(
+    actual_records |> 
+      filter(week == latest_week) |> 
+      transmute(
+        season,
+        user_name,
+        actual_w = w,
+        actual_l = l,
+        actual_w_prop = w / (w + l)
+      ),
+    by = join_by(season, user_name),
+    relationship = 'many-to-many'
+  ) |> 
+  mutate(
+    w_prop_d = actual_w_prop - all_play_w_prop
+  ) |> 
+  arrange(w_prop_d)
+
+unluckiest_records <- compared_records |> 
+  arrange(w_prop_d) |> 
+  slice_min(w_prop_d, n = 10) |> 
   dplyr::transmute(
+    `Season` = season,
     `Player` = user_name,
-    `W` = w,
-    `L` = l,
-    `Win %` = w / (w + l)
+    `W` = actual_w,
+    `L` = actual_l,
+    `Win %` = actual_w_prop,
+    `All Play Win %` = all_play_w_prop,
+    `Win % - All Play Win %` = w_prop_d
   ) |> 
   gt::gt() |> 
   gtExtras::gt_theme_538() |> 
   gt::fmt_percent(
-    `Win %`,
+    matches('[%]$'),
     decimals = 0
   ) |> 
+  gtExtras::gt_highlight_rows(
+    rows = `Season` == .env$current_season,
+    fill = 'gold'
+  ) |> 
   gt::tab_header(
-    title = gt::md(sprintf('**%s "All Play" record**', current_season)),
-    subtitle = gt::md('Your record this season if your team<br/>played all other teams every week.')
+    title = gt::md(sprintf('**%s seasons**', 'Unluckiest')),
+    subtitle = gt::md(
+      sprintf(
+        '%s %s records through week %s, since %s', 
+        TOP_N_FOR_TABLES, 
+        tolower('Unluckiest'), 
+        latest_week, 
+        min(seasons)
+      )
+    )
   )
-all_h2h_latest_table
+unluckiest_records
 
 gt::gtsave(
-  all_h2h_latest_table,
-  filename = file.path(PROJ_DIR, sprintf('all-play-record-%s.png', current_season)),
+  unluckiest_records,
+  filename = file.path(PROJ_DIR, sprintf('2023-11-21-unluckiest-records-%s.png', current_season)),
   zoom = GTSAVE_ZOOM
 )
 
@@ -202,7 +259,7 @@ tabulate_and_save_all_h2h_records <- function(df, which = c('top', 'bottom')) {
     )
   gt::gtsave(
     tb,
-    filename = file.path(PROJ_DIR, sprintf('%s-all-play-records.png', which)),
+    filename = file.path(PROJ_DIR, sprintf('2023-11-21-%s-all-play-records.png', which)),
     zoom = GTSAVE_ZOOM
   )
   invisible(tb)
