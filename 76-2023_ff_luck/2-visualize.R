@@ -1,57 +1,20 @@
-library(qs)
+library(readr)
 library(dplyr)
 library(tidyr)
 
 library(gt)
 library(gtExtras)
 
-library(ggplot2)
 library(ggforce)
-library(sysfonts)
 library(ggrepel)
-library(ggtext)
-library(grid)
-
-WHITISH_FOREGROUND_COLOR <- 'white'
-COMPLEMENTARY_FOREGROUND_COLOR <- '#cbcbcb' # '#f1f1f1'
-BLACKISH_BACKGROUND_COLOR <- '#1c1c1c'
-COMPLEMENTARY_BACKGROUND_COLOR <- '#4d4d4d'
-FONT <- 'Lato'
-sysfonts::font_add_google(FONT, FONT)
-
-ggplot2::theme_set(ggplot2::theme_minimal())
-ggplot2::theme_update(
-  text = ggplot2::element_text(family = FONT),
-  title = ggplot2::element_text(size = 26, color = WHITISH_FOREGROUND_COLOR),
-  plot.title = ggplot2::element_text(face = 'bold', size = 20, color = WHITISH_FOREGROUND_COLOR),
-  plot.title.position = 'plot',
-  plot.subtitle = ggplot2::element_text(size = 16, color = COMPLEMENTARY_FOREGROUND_COLOR),
-  axis.text = ggplot2::element_text(color = WHITISH_FOREGROUND_COLOR, size = 14),
-  # axis.title = ggplot2::element_text(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.99),
-  axis.title.x = ggplot2::element_text(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.99),
-  axis.title.y = ggplot2::element_text(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.99),
-  axis.line = ggplot2::element_blank(),
-  strip.text = ggplot2::element_text(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0),
-  panel.grid.major = ggplot2::element_line(color = COMPLEMENTARY_BACKGROUND_COLOR),
-  panel.grid.minor = ggplot2::element_line(color = COMPLEMENTARY_BACKGROUND_COLOR),
-  panel.grid.minor.x = ggplot2::element_blank(),
-  panel.grid.minor.y = ggplot2::element_blank(),
-  plot.margin = ggplot2::margin(10, 20, 10, 20),
-  plot.background = ggplot2::element_rect(fill = BLACKISH_BACKGROUND_COLOR, color = BLACKISH_BACKGROUND_COLOR),
-  plot.caption = ggplot2::element_text(color = WHITISH_FOREGROUND_COLOR, hjust = 0, size = 10, face = 'plain'),
-  plot.caption.position = 'plot',
-  plot.tag = ggplot2::element_text(size = 10, color = WHITISH_FOREGROUND_COLOR, hjust = 1),
-  plot.tag.position = c(0.99, 0.99),
-  panel.spacing.x = grid::unit(2, 'lines'),
-  panel.background = ggplot2::element_rect(fill = BLACKISH_BACKGROUND_COLOR, color = BLACKISH_BACKGROUND_COLOR)
-)
 
 PROJ_DIR <- '76-2023_ff_luck'
+DATA_DIR <- file.path(PROJ_DIR, 'data')
 TOP_N_FOR_TABLES <- 10
 GTSAVE_ZOOM <- 1.5
 
 ## data ----
-scores <- qs::qread(file.path(PROJ_DIR, 'seasons.qs'))
+scores <- readr::read_csv(file.path(DATA_DIR, 'team-scores-all.csv'))
 seasons <- unique(scores$season)
 
 clean_scores <- scores |> 
@@ -145,7 +108,7 @@ all_h2h_records <- tidyr::crossing(
   dplyr::arrange(season, dplyr::desc(w))
 
 compared_records <- all_h2h_records |> 
-  transmute(
+  dplyr::transmute(
     season,
     user_name,
     all_play_season = season,
@@ -153,27 +116,26 @@ compared_records <- all_h2h_records |>
     all_play_l = l,
     all_play_w_prop = w / (w + l)
   ) |> 
-  inner_join(
+  dplyr::inner_join(
     actual_records |> 
-      filter(week == latest_week) |> 
-      transmute(
+      dplyr::filter(week == latest_week) |> 
+      dplyr::transmute(
         season,
         user_name,
         actual_w = w,
         actual_l = l,
         actual_w_prop = w / (w + l)
       ),
-    by = join_by(season, user_name),
+    by = dplyr::join_by(season, user_name),
     relationship = 'many-to-many'
   ) |> 
-  mutate(
+  dplyr::mutate(
     w_prop_d = actual_w_prop - all_play_w_prop
   ) |> 
-  arrange(w_prop_d)
+  dplyr::arrange(w_prop_d)
 
 unluckiest_records <- compared_records |> 
-  arrange(w_prop_d) |> 
-  slice_min(w_prop_d, n = 10) |> 
+  dplyr::arrange(w_prop_d) |> 
   dplyr::transmute(
     `Season` = season,
     `Player` = user_name,
