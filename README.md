@@ -12,9 +12,9 @@ The projects are listed in reverse chronological order. A skipped number corresp
 
 # 76. 2023 (Personal) Fantasy Football League Luck
 
-![](76-2023_ff_luck/agg-scores-plot.png)
+![](76-2023_ff_luck/plots/agg-scores-plot.png)
 
-![](76-2023_ff_luck/all-play-record-2023.png)
+![](76-2023_ff_luck/plots/all-play-record-2023.png)
 
 # 75. [Soccer Meta-Analytics](https://tonyelhabr.rbind.io/posts/soccer-meta-analytics/)
 
@@ -74,7 +74,7 @@ The projects are listed in reverse chronological order. A skipped number corresp
 
 ![](65-opta_xg_calib/footedness_calibration.png "Opta npxG calibration, by body part and footedness | 2017/18 - 2021/22 seasons, Big 5 and other leagues")
 
-# 64. Comparison of FBref’s new and old data providers
+# 64. Comparison of FBref's new and old data providers
 
 ![](64-fbref_xg_sources/fbref_xg_sources_w_logo.png "FBRef non-penalty goals - xG for Big 5 European leagues")
 
@@ -148,13 +148,13 @@ The projects are listed in reverse chronological order. A skipped number corresp
 
 # 47. [Pass Network Max Cut](https://tonyelhabr.rbind.io/post/soccer-pass-network-max-cut/)
 
-![pass networks for Liverpool vs. Manchester City 2021-10-03 match, showing weighted max cut values](47-formation_symmetry/network-game_id=1549604-max_cut_weighted_norm_w_logo.png "Liverpool vs. Manchester City 2021-10-03 pass networks")
+![pass networks for Liverpool vs. Manchester City 2021-10-03 match, showing weighted max cut values](47-formation_symmetry/network-game_id=1549604-max_cut_weighted_norm_w_logo.png "Liverpool vs. Manchester City 2021-10-03 pass networks")
 
 ![table showing correlations of various traditional and network stats with xG and xT diff. / 90, showing that weighted max cut is stronger than other network stats and has similar strength to pass-derived stats](47-formation_symmetry/game_x_cors_table.png "Game-level Correlations with xG and xT Diff. / 90")
 
 ![horizontal error bars facetted on regression type (with or without confounders), showing that weighted max cut diff. / 90 effectively plays no role in describing match outcome in the presense of confounders](47-formation_symmetry/team_stat_coefs_w_logo.png "Effect of Weighted Max Cut Diff. / 90 is suppressed by confounders")
 
-# 46. EPL “Rage” Fouls
+# 46. EPL "Rage" Fouls
 
 ![spiral chart with minutes played on x-axis and count of rage fouls on y-axis. strands represent one player per sesaon.](46-euro_fouls/rage_quit_w_inset_and_cancelo.png "Who rage fouls most frequently?")
 
@@ -194,7 +194,7 @@ The projects are listed in reverse chronological order. A skipped number corresp
 
 ![venn diagram showing about 50 twiter accounts who post soccer viz, grouped by following, frequency of tweets, and frequency of images](38-soccer_twitter/venn/Slide1.JPG "Football viz twitter accounts venn diagram")
 
-# 37. CONCACAF’d
+# 37. CONCACAF'd
 
 ![geo-tile map showing average 2nd half stoppage time when matches end in a draw or with a 1 goal difference for CONCACAF, CONMEBOL, and UEFA teams in the Gold Cup, Copa America, and Euros since 2015. Brazil and South American teams (CONMEBOL) have the highest averages](37-concacaf/stoppage_time_map_w_img.png "CONCACAF geo-tile map")
 
@@ -202,7 +202,7 @@ The projects are listed in reverse chronological order. A skipped number corresp
 
 # 36. 2020-21 EPL Team Subreddit Activity
 
-![Chatter plot of most controversial posts on eac 2020-21 EPL Team’s Subreddit](36-202021_epl_reddit/viz_reddit_controversial_w_logo.png "Chatter plot of most controversial posts on eac 2020-21 EPL Team's Subreddit")
+![Chatter plot of most controversial posts on eac 2020-21 EPL Team's Subreddit](36-202021_epl_reddit/viz_reddit_controversial_w_logo.png "Chatter plot of most controversial posts on eac 2020-21 EPL Team's Subreddit")
 
 # 35. [Tired: PCA + kmeans, Wired: UMAP + GMM](https://tonyelhabr.rbind.io/post/dimensionality-reduction-and-clustering/)
 
@@ -244,17 +244,17 @@ The projects are listed in reverse chronological order. A skipped number corresp
 
 ![Example of how VAEP scores each action in a possession. Example comes from a 2021-04-04 match between Tottenham and Newcastle, in which Kane misses a shot and gets net negative VAEP.](28-202021_vaep/viz_vaep_ex_w_logo.png "Visual Example of VAEP")
 
-![VAEP vs. minutes played for the 2020/21 Premier League season. Subplots made for each of four position groupings (Forward/Attacker, Midfielder, Defender, Goalkeeper).](28-202021_vaep/viz_vaep_by_pos_w_logo.png "VAEP vs. minutes played, by position")
+![VAEP vs. minutes played for the 2020/21 Premier League season. Subplots made for each of four position groupings (Forward/Attacker, Midfielder, Defender, Goalkeeper).](28-202021_vaep/viz_vaep_by_pos_w_logo.png "VAEP vs. minutes played, by position")
 
-![VAEP vs. transfer market value for the 2020/21 Premier League season. Subplots made for each of four position groupings (Forward/Attacker, Midfielder, Defender, Goalkeeper).](28-202021_vaep/viz_vaep_mkt_by_pos_w_logo.png "VAEP vs. transfer market value, by position")
+![VAEP vs. transfer market value for the 2020/21 Premier League season. Subplots made for each of four position groupings (Forward/Attacker, Midfielder, Defender, Goalkeeper).](28-202021_vaep/viz_vaep_mkt_by_pos_w_logo.png "VAEP vs. transfer market value, by position")
 
-![VAEP vs. DAVIES for the 2020/21 Premier League season.](28-202021_vaep/viz_vaep_davies_compare_w_logo.png "VAEP vs. DAVIES, by position")
+![VAEP vs. DAVIES for the 2020/21 Premier League season.](28-202021_vaep/viz_vaep_davies_compare_w_logo.png "VAEP vs. DAVIES, by position")
 
 <img src="28-202021_vaep/metric_yoy_stability.png" title="Year-over-year correlations for VAEP and DAVIES" alt="Table showing year-over-year correlations for VAEP and DAVIES. Both average around 0.45." width="60%"/>
 
 # 27. Pep Guardiola Non-UCL Titles
 
-![Table with Pep Guardiola’s Non-UCL Titles Won Since His Las UCL Title](27-pep/pep.png "Table with Pep Guardiola's Non-UCL Titles Won Since His Las UCL Title")
+![Table with Pep Guardiola's Non-UCL Titles Won Since His Las UCL Title](27-pep/pep.png "Table with Pep Guardiola's Non-UCL Titles Won Since His Las UCL Title")
 
 ![Timeline Plot of Champions League Re-matches between Teams from the Same League](27-pep/viz_ucl_rematches_manual.png "Timeline Plot of Champions League Re-matches between Teams from the Same League")
 
@@ -272,7 +272,7 @@ The projects are listed in reverse chronological order. A skipped number corresp
 
 # 22. 2020-21 Chelsea Attack Under Tuchel Compared to Lampard
 
-![Heatmaps for Passes, Touches, and Take-Ons for Kai Havertz and Mason Mount under Tuchel vs. Lampard](22-202021_epl_tuchel/viz_tuchel_w_logo.png "Heatmaps for Passes, Touches, and Take-Ons for Kai Havertz and Mason Mount under Tuchel vs. Lampard")
+![Heatmaps for Passes, Touches, and Take-Ons for Kai Havertz and Mason Mount under Tuchel vs. Lampard](22-202021_epl_tuchel/viz_tuchel_w_logo.png "Heatmaps for Passes, Touches, and Take-Ons for Kai Havertz and Mason Mount under Tuchel vs. Lampard")
 
 ## 21. 2020-21 EPL Foul Tanaka Maps
 
@@ -304,7 +304,7 @@ The projects are listed in reverse chronological order. A skipped number corresp
 
 ![Brighton Engagement Over Expected Table](16-xGPhilosopy/tb_ex.png "Brighton Engagement Over Expected Table")
 
-![Brighton 2-3 Man U Actual vs. Predicted Favorites and Retweets Scatter Plot](16-xGPhilosopy/viz_preds_ex.png "Brighton 2-3 Man U Actual vs. Predicted Favorites and Retweets Scatter Plot")
+![Brighton 2-3 Man U Actual vs. Predicted Favorites and Retweets Scatter Plot](16-xGPhilosopy/viz_preds_ex.png "Brighton 2-3 Man U Actual vs. Predicted Favorites and Retweets Scatter Plot")
 
 ![Brighton 2-3 Man U Retweets SHAP Breakdown Bar Plot](16-xGPhilosopy/viz_shap_ex.png "Brighton 2-3 Man U Actual vs. Retweets SHAP Breakdown Bar Plot")
 
@@ -318,7 +318,7 @@ After regular season (week 12)
 
 After week 7
 
-![2020-21 Fantasy Football Points For vs. Points Against Scatter Plot](15-2020_ff/viz_scores_cusum_2020-07.png "2020-21 Fantasy Football Points For vs. Points Against Scatter Plot")
+![2020-21 Fantasy Football Points For vs. Points Against Scatter Plot](15-2020_ff/viz_scores_cusum_2020-07.png "2020-21 Fantasy Football Points For vs. Points Against Scatter Plot")
 
 ## 14. Non-Negative Matrix Factorization Heat Maps for Soccer Player Tracking
 
@@ -340,9 +340,9 @@ After week 7
 
 ## 10. Soccer Formation Pitch Ownership
 
-![Voronoi tessellation of a 4-3-3 False 9 vs. 5-4-1 Diamond Formation](10-soccer_formations/4-3-3-falsenineattack_v_5-4-1-diamond.png "Voronoi tessellation of a 4-3-3 False 9 vs. 5-4-1 Diamond Formation")
+![Voronoi tessellation of a 4-3-3 False 9 vs. 5-4-1 Diamond Formation](10-soccer_formations/4-3-3-falsenineattack_v_5-4-1-diamond.png "Voronoi tessellation of a 4-3-3 False 9 vs. 5-4-1 Diamond Formation")
 
-## 9. 2020 Champions League Finals, Bayern Munich’s Goal
+## 9. 2020 Champions League Finals, Bayern Munich's Goal
 
 ![PSG 0-1 Bayern Munich, UCL 2020 Finals, Animated Pitch Control and VAEP](09-2020_ucl_psg_mun_w_vaep/ucl_2020_psg_mun.gif "PSG 0-1 Bayern Munich, UCL 2020 Finals, Animated Pitch Control and VAEP")
 
@@ -356,7 +356,7 @@ As of 2020-09-06
 
 ![2020 NBA Playoffs Total Excitement Index Bar Chart](08-2020_nba_playoffs_excitement_index/2020_nba_playoffs_excitement_index_20200907.png "2020 NBA Playoffs Total Excitement Index Bar Chart")
 
-## 7. 2020 Champions League Quarter-Finals, PSG’s 2nd Goal
+## 7. 2020 Champions League Quarter-Finals, PSG's 2nd Goal
 
 ***Note: This gif really should have had some smoothing applied. The matrix inversion with `solve()` in the code returns some near infinite values for some inputs.***
 
@@ -364,7 +364,7 @@ As of 2020-09-06
 
 ## 6. Texas High School Football and Marching Band Success
 
-![Texas High School Football vs. Band Scatter Plot](06-tx_hs/tx_hs_fb_band.png "Texas High School Football vs. Band Scatter Plot")
+![Texas High School Football vs. Band Scatter Plot](06-tx_hs/tx_hs_fb_band.png "Texas High School Football vs. Band Scatter Plot")
 
 ## 5. NBA 3P% Stability Rate
 
@@ -384,9 +384,9 @@ As of 2020-09-06
 
 [2019-20 English Premier League First 30 Games Points Minus Expected Points Lollipop Chart](02-epl_since_break/epl_before_break_pts_minus_xpts.png "2019-20 English Premier League First 30 Games Points Minus Expected Points Lollipop Chart")
 
-![English Premier League 2019-20 First 30 Games Points vs. Expected Points Scatter Plot](02-epl_since_break/epl_before_break_pts_vs_xpts.png "English Premier League 2019-20 First 30 Games Points vs. Expected Points Scatter Plot")
+![English Premier League 2019-20 First 30 Games Points vs. Expected Points Scatter Plot](02-epl_since_break/epl_before_break_pts_vs_xpts.png "English Premier League 2019-20 First 30 Games Points vs. Expected Points Scatter Plot")
 
-![English Premier League 2019-20 Last 9 Games Simulated Points vs. Actual Points Ridge Plot](02-epl_since_break/epl_after_break_pts_sim.png "English Premier League 2019-20 Last 9 Games Simulated Points vs. Actual Points Ridge Plot")
+![English Premier League 2019-20 Last 9 Games Simulated Points vs. Actual Points Ridge Plot](02-epl_since_break/epl_after_break_pts_sim.png "English Premier League 2019-20 Last 9 Games Simulated Points vs. Actual Points Ridge Plot")
 
 ## 1. 2020 NBA Western Conference League Restart Playoff Seeding Probabilities
 
@@ -398,7 +398,7 @@ As of 2020-09-06
 
 -   In which sport is the leading team most likely to further their lead near the end of the game due to an opposition error, overly-aggressive tactics by the opposition, etc.? (End of game depends on the sport. Ideally, we could use a win probability model to help identify end-of-game context, although it would still need some adjustment.) Extension: In which sport are gamblers most likely to lose/win due to a back-door cover?
 
--   Decision tree to filter down players in a sport to just one player who has achieved a very specific set of career totals/averages (i.e. [inspiration](https://twitter.com/JacobEGoldstein/status/1296570734047686658))
+-   Decision tree to filter down players in a sport to just one player who has achieved a very specific set of career totals/averages (i.e. [inspiration](https://twitter.com/JacobEGoldstein/status/1296570734047686658))
 
 -   Playing time in career at current team sonar ([inspiration](https://twitter.com/reinhurdler/status/1432841015858188288?s=20))
 
