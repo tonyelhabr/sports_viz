@@ -18,6 +18,7 @@ CURRENT_SEASON <- max(SEASONS)
 
 clean_scores <- scores |> 
   dplyr::filter(!is.na(result)) |> 
+  # filter(user_name == 'Juan Pineda') |> 
   dplyr::mutate(
     dplyr::across(
       c(
@@ -29,6 +30,7 @@ clean_scores <- scores |>
         .x == 'Andrew ElHabr' ~ 'Andrew E.',
         .x == 'Andrew Lara' ~ 'Andrew L.',
         .x == 'Manuel Espinosa' ~ 'Manny',
+        .x == 'Juan Pineda' ~ 'JP',
         TRUE ~ gsub('\\s.*$', '', .x)
       )
     )
@@ -38,6 +40,7 @@ clean_scores <- scores |>
     max_week = max(week)
   ) |> 
   dplyr::ungroup() |> 
+  dplyr::filter(week < max_week) |> 
   dplyr::mutate(
     n_games = ifelse(season < CURRENT_SEASON & week >= (max_week - 1), 2L, 1L)
   ) |> 
@@ -47,6 +50,8 @@ clean_scores <- scores |>
 league_avg_projected_scores <- clean_scores |> 
   group_by(season) |> 
   summarize(
+    mean_d = mean((user_score - user_projected_score) / n_games, na.rm = TRUE),
+    sd_d = sd((user_score - user_projected_score) / n_games, na.rm = TRUE),
     n_games = sum(n_games),
     across(
       matches('user.*score'),
@@ -82,22 +87,28 @@ agg_scores <- clean_scores |>
     opponent_d = opponent_score - opponent_projected_score,
     user_d_per_game = user_d / n_games,
     opponent_d_per_game = opponent_d / n_games
-  ) |> 
+  )
+
+adj_agg_scores <- agg_scores |> 
   left_join(
     league_avg_projected_scores |> 
       select(
         season,
-        league_avg_d_per_game = user_d_per_game
+        league_avg_d_per_game = user_d_per_game,
+        league_avg_d = mean_d,
+        league_avg_sd = sd_d
       ),
     by = join_by(season)
   ) |> 
   mutate(
-    adj_user_d_per_game = user_d_per_game - league_avg_d_per_game,
-    adj_opponent_d_per_game = opponent_d_per_game - league_avg_d_per_game
+    z_user_d_per_game = (user_d_per_game - league_avg_d) / league_avg_sd,
+    z_opponent_d_per_game = (opponent_d_per_game - league_avg_d) / league_avg_sd,
+    total_z_d_per_game = z_user_d_per_game - z_opponent_d_per_game
   )
 
-agg_scores |> 
-  arrange(adj_user_d_per_game) |> 
+## Most underperforming individual
+adj_agg_scores |> 
+  arrange(z_user_d_per_game) |> 
   select(
     season,
     user_name,
@@ -105,11 +116,14 @@ agg_scores |>
     user_projected_score,
     user_d_per_game,
     league_avg_d_per_game,
-    adj_user_d_per_game
+    league_avg_d,
+    league_avg_sd,
+    z_user_d_per_game
   )
 
-agg_scores |> 
-  arrange(desc(adj_user_d_per_game)) |> 
+## Most overperforming individual
+adj_agg_scores |> 
+  arrange(desc(z_user_d_per_game)) |> 
   select(
     season,
     user_name,
@@ -117,11 +131,38 @@ agg_scores |>
     user_projected_score,
     user_d_per_game,
     league_avg_d_per_game,
-    adj_user_d_per_game
+    league_avg_d,
+    league_avg_sd,
+    z_user_d_per_game
   )
 
-agg_scores |> 
-  arrange(opponent_d_per_game)
-agg_scores |> 
-  arrange(desc(opponent_d_per_game))
+## Most underperforming + unluckiest
+adj_agg_scores |> 
+  arrange(total_z_d_per_game) |> 
+  select(
+    season,
+    user_name,
+    user_score,
+    user_projected_score,
+    user_d_per_game,
+    # league_avg_d_per_game,
+    z_user_d_per_game,
+    z_opponent_d_per_game,
+    total_z_d_per_game
+  )
+
+## Most overperforming + luckiest
+adj_agg_scores |> 
+  arrange(desc(total_z_d_per_game)) |> 
+  select(
+    season,
+    user_name,
+    user_score,
+    user_projected_score,
+    user_d_per_game,
+    # league_avg_d_per_game,
+    z_user_d_per_game,
+    z_opponent_d_per_game,
+    total_z_d_per_game
+  )
 
