@@ -104,7 +104,7 @@ slowly_scrape_espn_season <- purrr::slowly(
 scores <- purrr::map_dfr(
   SEASONS,
   \(season) {
-    overwrite <- ifelse(season == max(SEASON), TRUE, FALSE)
+    overwrite <- ifelse(season == max(SEASONS), TRUE, FALSE)
     slowly_scrape_espn_season(season, overwrite = overwrite)
   }
 )
