@@ -2,12 +2,6 @@ library(readr)
 library(dplyr)
 library(tidyr)
 
-library(gt)
-library(gtExtras)
-
-library(ggforce)
-library(ggrepel)
-
 PROJ_DIR <- '76-2023_ff_luck'
 DATA_DIR <- file.path(PROJ_DIR, 'data')
 
@@ -18,7 +12,6 @@ CURRENT_SEASON <- max(SEASONS)
 
 clean_scores <- scores |> 
   dplyr::filter(!is.na(result)) |> 
-  # filter(user_name == 'Juan Pineda') |> 
   dplyr::mutate(
     dplyr::across(
       c(
@@ -40,7 +33,6 @@ clean_scores <- scores |>
     max_week = max(week)
   ) |> 
   dplyr::ungroup() |> 
-  dplyr::filter(week < max_week) |> 
   dplyr::mutate(
     n_games = ifelse(season < CURRENT_SEASON & week >= (max_week - 1), 2L, 1L)
   ) |> 
