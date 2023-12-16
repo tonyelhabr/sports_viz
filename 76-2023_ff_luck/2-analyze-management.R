@@ -92,115 +92,122 @@ cumu_bench_scores <- bench_scores |>
   ) |> 
   dplyr::ungroup()
 
-cumu_scores <- cumu_starter_scores |> 
+nested_cumu_scores <- dplyr::left_join(
+  cumu_starter_scores |> 
+    dplyr::select(
+      season,
+      week,
+      franchise_id,
+      lineup_slot,
+      player_id,
+      player_score
+    ) |> 
+    tidyr::nest(
+      starters = c(player_id, player_score)
+    ) |> 
+    dplyr::mutate(
+      starters = purrr::map(starters, tibble::deframe)
+    ),
+  cumu_bench_scores |> 
+    dplyr::select(
+      season,
+      week,
+      franchise_id,
+      lineup_slot,
+      player_id,
+      player_score
+    ) |> 
+    tidyr::nest(
+      bench = c(player_id, player_score)
+    ) |> 
+    dplyr::mutate(
+      bench = purrr::map(bench, tibble::deframe)
+    ),
+  by = dplyr::join_by(
+    season,
+    week,
+    franchise_id,
+    lineup_slot
+  )
+)
+
+swap_bench_and_starters <- function(starters, bench) {
+  if (is.null(bench)) {
+    return(starters)
+  }
+
+  new_starters <- vector('double', length = length(starters))
+  nms <- vector('character', length = length(starters))
+  for (i in seq_along(starters)) {
+    # Find bench values greater than the current starter
+    eligible_bench <- bench[bench > starters[i]]
+    
+    if (length(eligible_bench) > 0) {
+      # Find the maximum eligible bench value
+      max_bench_value <- max(eligible_bench)
+      max_bench_name <- names(eligible_bench[which.max(eligible_bench)])
+      
+      # Swap the values
+      new_starters[i] <- max_bench_value
+      nms[i] <- max_bench_name
+      
+      # Remove the used bench value
+      bench[bench == max_bench_value] <- -Inf
+    } else {
+      new_starters[i] <- starters[i]
+      nms[i] <- names(starters[i])
+    }
+  }
+
+  stats::setNames(new_starters, nms)
+}
+
+replacement_scores <- nested_cumu_scores |> 
+  dplyr::mutate(
+    best = purrr::map2(
+      starters,
+      bench,
+      swap_bench_and_starters
+    )
+  ) |> 
   dplyr::select(
     season,
     week,
     franchise_id,
     lineup_slot,
-    starter_rn = rn,
-    starter_player_id = player_id,
-    starter_player_score = player_score,
-    starter_cumu_score = cumu_score
+    starters,
+    best
   ) |> 
-  dplyr::inner_join(
-    cumu_bench_scores |> 
-      dplyr::select(
-        season,
-        week,
-        franchise_id,
-        lineup_slot,
-        bench_rn = rn,
-        bench_player_id = player_id,
-        bench_player_score = player_score,
-        bench_cumu_score = cumu_score
-      ),
-    by = dplyr::join_by(
-      season,
-      week,
-      franchise_id,
-      lineup_slot
-    ),
-    relationship = 'many-to-many'
+  dplyr::mutate(
+    starter_player_id = purrr::map(starters, \(.x) names(.x)),
+    starter_player_score = purrr::map(starters, \(.x) unname(.x)),
+    best_player_id = purrr::map(best, \(.x) names(.x)),
+    best_player_score = purrr::map(best, \(.x) unname(.x)),
+    .keep = 'unused'
+  ) |> 
+  tidyr::unnest(
+    c(
+      starter_player_id, 
+      starter_player_score, 
+      best_player_id, 
+      best_player_score
+    )
+  ) |> 
+  dplyr::mutate(
+    dplyr::across(c(starter_player_id, best_player_id), as.integer),
+    is_replacement = starter_player_id != best_player_id,
+    score_improvement = best_player_score - starter_player_score
   )
 
-
-cumu_scores |> 
-  dplyr::filter(
-    bench_cumu_score > starter_cumu_score,
-    bench_player_score > starter_player_score
-  ) |> 
-  filter(
-    season == 2023,
-    week == 2,
-    franchise_id == 5
-  ) |> 
-  dplyr::group_by(
-    season,
-    week,
-    franchise_id,
-    lineup_slot,
-    starter_rn
-  ) |> 
-  dplyr::slice_max(
-    bench_rn,
-    n = 1,
-    with_ties = FALSE
-  ) |> 
-  dplyr::ungroup() |> 
-  dplyr::group_by(
-    season,
-    week,
-    franchise_id,
-    lineup_slot,
-    bench_rn
-  ) |> 
-  dplyr::slice_min(
-    starter_rn,
-    n = 1,
-    with_ties = FALSE
-  ) |> 
-  dplyr::ungroup()
-
-weekly_replacements <- cumu_scores |> 
-  dplyr::filter(
-    bench_cumu_score > starter_cumu_score,
-    bench_player_score > starter_player_score
-  ) |> 
-  filter(
-    season == 2023,
-    week == 2,
-    franchise_id == 5
-  ) |> 
-  dplyr::group_by(
-    season,
-    week,
-    franchise_id,
-    lineup_slot,
-    starter_rn
-  ) |> 
-  dplyr::slice_max(
-    bench_rn,
-    n = 1,
-    with_ties = FALSE
-  ) |> 
-  dplyr::ungroup()
-weekly_replacements |> 
-  filter(
-    season == 2023,
-    week == 2,
-    franchise_id == 5
-  )
-
-agg_weekly_replacements <- weekly_replacements |> 
+agg_weekly_replacements <- replacement_scores |> 
   dplyr::group_by(
     season,
     week,
     franchise_id
   ) |> 
   dplyr::summarize(
-    n_optimal_replacements = dplyr::n(),
-    score_improvement = sum(bench_player_score - starter_player_score)
+    n_replacements = sum(is_replacement),
+    score_improvement = sum(score_improvement)
   ) |> 
   dplyr::ungroup()
 
@@ -209,7 +216,7 @@ agg_season_replacements <- agg_weekly_replacements |>
   dplyr::summarize(
     dplyr::across(
       c(
-        n_optimal_replacements,
+        n_replacements,
         score_improvement
       ),
       \(.x) sum(.x)
@@ -224,12 +231,12 @@ agg_season_replacements <- agg_weekly_replacements |>
   dplyr::select(
     season,
     user_name,
-    n_optimal_replacements,
+    n_replacements,
     score_improvement
   )
 
 ## worst managed weeks
-weekly_replacements |> 
+agg_weekly_replacements |> 
   dplyr::left_join(
     team_mapping,
     by = dplyr::join_by(season, franchise_id)
@@ -240,6 +247,7 @@ weekly_replacements |>
     week,
     user_name,
     franchise_id,
-    n_optimal_replacements,
+    n_replacements,
     score_improvement
   )
+
