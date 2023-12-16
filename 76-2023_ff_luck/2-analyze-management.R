@@ -214,6 +214,7 @@ agg_weekly_replacements <- replacement_scores |>
 agg_season_replacements <- agg_weekly_replacements |> 
   dplyr::group_by(season, franchise_id) |> 
   dplyr::summarize(
+    n_games = dplyr::n_distinct(week),
     dplyr::across(
       c(
         n_replacements,
@@ -228,12 +229,69 @@ agg_season_replacements <- agg_weekly_replacements |>
     by = dplyr::join_by(season, franchise_id)
   ) |> 
   dplyr::arrange(dplyr::desc(score_improvement)) |> 
-  dplyr::select(
+  dplyr::transmute(
     season,
     user_name,
     n_replacements,
-    score_improvement
+    score_improvement,
+    dplyr::across(
+      c(
+        n_replacements,
+        score_improvement
+      ),
+      list(
+        avg = \(.x) .x / n_games
+      ),
+      .names = 'avg_{.col}'
+    )
   )
+
+MAX_WEEK <- agg_weekly_replacements |> 
+  filter(season == CURRENT_SEASON) |> 
+  pull(week) |> 
+  max()
+
+tb_mismanagement_underperformance <- agg_season_replacements |> 
+  inner_join(
+    franchises |> select(season, user_name, logo)
+  ) |> 
+  select(
+    logo,
+    user_name,
+    # avg_n_replacements,
+    avg_score_improvement
+  ) |> 
+  gt::gt() |> 
+  gt::cols_label(
+    logo = ' ',
+    user_name = 'Player',
+    # avg_n_replacements = gt::html('Avg. # of players<br/>who should have been<br/>swapped with bench<br/>player'),
+    avg_score_improvement = gt::html('Avg. score improvement<br/>with optimal lineup choice')
+  ) |> 
+  gtExtras::gt_theme_538() |> 
+  gt::fmt_image(
+    columns = 'logo'
+  ) |> 
+  gt::fmt_number(
+    columns = starts_with('avg'),
+    decimals = 1
+  ) |> 
+  gt::tab_header(
+    title = gt::md('Who mismanaged their roster the most?'),
+    subtitle = gt::md(
+      sprintf(
+        'Through week %s, %s season', 
+        MAX_WEEK, 
+        CURRENT_SEASON
+      )
+    )
+  )
+
+gt::gtsave(
+  tb_mismanagement_underperformance,
+  filename = file.path(PLOTS_DIR, sprintf('%s-mismanagement-underperformance.png', format(Sys.Date(), '%Y-%m-%d'))),
+  zoom = 1.5
+)
 
 ## worst managed weeks
 agg_weekly_replacements |> 
