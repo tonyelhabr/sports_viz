@@ -99,9 +99,11 @@ scrape_weekly_team_scores <- function(conn, player_scores) {
     dplyr::transmute(
       season = as.integer(conn$season),
       week,
+      franchise_id,
       user_name,
       opponent_user_name,
       user_score,
+      opponent_id,
       opponent_score,
       user_projected_score,
       opponent_projected_score,
@@ -113,7 +115,7 @@ weekly_scores <- purrr::map(
   SEASONS,
   \(season) {
     overwrite <- ifelse(season == max(SEASONS), TRUE, FALSE)
-    
+
     conn <- ffscrapr::espn_connect(
       season = season,
       league_id = ESPN_LEAGUE_ID,
@@ -143,14 +145,36 @@ weekly_scores <- purrr::map(
   }
 )
 
+clean_team_name <- function(x) {
+  dplyr::case_when(
+    x == 'Andrew ElHabr' ~ 'Andrew E.',
+    x == 'Andrew Lara' ~ 'Andrew L.',
+    x == 'Manuel Espinosa' ~ 'Manny',
+    x == 'Juan Pineda' ~ 'JP',
+    TRUE ~ gsub('\\s.*$', '', x)
+  )
+}
+
 weekly_scores |> 
-  purrr::map_dfr(\(.x) .x[['team']]) |> 
+  purrr::map_dfr(\(.x) .x[['team']]) |>
+  dplyr::mutate(
+    dplyr::across(
+      c(
+        user_name,
+        opponent_user_name
+      ),
+      \(.x) clean_team_name(.x)
+    )
+  ) |> 
   readr::write_csv(
     file.path(DATA_DIR, 'team-scores-all.csv')
   )
 
 weekly_scores |> 
   purrr::map_dfr(\(.x) .x[['player']]) |> 
+  dplyr::mutate(
+    franchise_name  = clean_team_name(franchise_name)
+  ) |> 
   qs::qsave(
     file.path(DATA_DIR, 'player-scores-all.qs')
   )
