@@ -58,13 +58,45 @@ y <- read_socceraction_parquet_releases('y')
 actions <- read_socceraction_parquet_releases('actions')
 players <- read_socceraction_parquet_releases('players')
 games <- read_socceraction_parquet_releases('games')
+games <- dplyr::mutate(
+  games,
+  date = lubridate::date(game_date)
+)
 team_elo <- read_socceraction_parquet('data/final/8/2013-2022/clubelo-ratings')
+
+players |> 
+  dplyr::filter(
+    starting_position != 'Sub'
+  ) |> 
+  dplyr::inner_join(
+    games |> dplyr::select(game_id, game_date),
+    by = dplyr::join_by(game_id)
+  ) |> 
+  dplyr::inner_join(
+    position_mapping,
+    by = dplyr::join_by(starting_position == opta_position)
+  ) |> 
+  dplyr::group_by(player_id, player_name, position) |> 
+  dplyr::arrange()
+dplyr::summarize(
+  minutes_played = cumsum(minutes_played)
+) |> 
+  dplyr::ungroup() |> 
+  dplyr::group_by(player_id, player_name) |> 
+  dplyr::slice_max(minutes_played, n = 1, with_ties = FALSE) |> 
+  dplyr::ungroup() |> 
+  dplyr::select(
+    player_id,
+    player_name,
+    primary_position
+  )
+
 
 open_play_shots <- games |>
   dplyr::transmute(
     season_id,
     game_id,
-    date = lubridate::date(game_date),
+    date,
     home_team_id,
     away_team_id
   ) |> 
@@ -121,10 +153,20 @@ open_play_shots <- games |>
         game_id,
         team_id,
         player_id,
-        player_name
-      ),
+        player_name,
+        starting_position
+      ) |> 
+      dplyr::left_join(
+        position_mapping,
+        by = dplyr::join_by(starting_position == opta_position)
+      ) |> 
+      dplyr::filter(position != 'K'),
     by = dplyr::join_by(game_id, team_id, player_id)
   ) |> 
+  dplyr::group_by(player_id) |> 
+  dplyr::arrange(date, action_id, .by_group = TRUE) |> 
+  tidyr::fill(position, .direction = 'down') |> 
+  dplyr::ungroup() |> 
   dplyr::left_join(
     team_elo |> dplyr::select(date, home_team_id = team_id, home_elo = elo),
     by = dplyr::join_by(date, home_team_id)
@@ -138,13 +180,20 @@ open_play_shots <- games |>
     season_id,
     game_id,
     team_id,
+    opponent_team_id = ifelse(team_id == home_team_id, away_team_id, home_team_id),
     action_id,
     player_id,
     player_name,
-    opponent_team_id = ifelse(team_id == home_team_id, away_team_id, home_team_id),
+    position,
+    set = dplyr::case_when(
+      season_id %in% c(2013:2016) ~ 'training',
+      season_id %in% c(2017:2019) ~ 'validation',
+      season_id %in% c(2020:2022) ~ 'test'
+    ),
     
     scores,
-
+    
+    prev_xg_minus_g = NA_real_, ## TODO
     elo = ifelse(team_id == home_team_id, home_elo, away_elo),
     opponent_elo = ifelse(team_id == home_team_id, away_elo, home_elo),
     elo_diff = elo - opponent_elo,
@@ -163,17 +212,13 @@ open_play_shots <- games |>
     bodypart_other_a0
   )
 
-train_game_ids <- games |> dplyr::filter(season_id %in% c(2013:2019)) |> dplyr::pull(game_id)
-test_game_ids <- games |> dplyr::filter(season_id %in% c(2020:2022)) |> dplyr::pull(game_id)
-train <- open_play_shots |> dplyr::filter(game_id %in% train_game_ids)
-test <- open_play_shots |> dplyr::filter(game_id %in% test_game_ids)
+train <- open_play_shots |> dplyr::filter(set == 'training')
+val <- open_play_shots |> dplyr::filter(set == 'validation')
+test <- open_play_shots |> dplyr::filter(set == 'testing')
 
-split <- rsample::make_splits(train, test)
-train <- rsample::training(split)
-test <- rsample::testing(split)
-
-rec_elo <- recipes::recipe(
+rec_full <- recipes::recipe(
   scores ~ 
+    prev_xg_minus_g +
     elo +
     elo_diff +
     start_x_a0 +
@@ -191,6 +236,9 @@ rec_elo <- recipes::recipe(
     bodypart_other_a0,
   data = train
 )
+
+rec_elo <- rec_full |> 
+  recipes::step_rm(prev_xg_minus_g)
 
 rec_base <- rec_elo |> 
   recipes::step_rm(elo, elo_diff)
@@ -238,22 +286,96 @@ met_set <- yardstick::metric_set(
   yardstick::sensitivity
 )
 
+val_and_test <- dplyr::bind_rows(val, test)
 final_fit_base <- tune::last_fit(
   wf_base,
-  split = split,
+  split = rsample::make_splits(
+    train,
+    val_and_test
+  ),
   metrics = met_set
 )
 
-fit_base <- fit(
-  wf_base,
-  train
+# fit_base <- parsnip::fit(
+#   wf_base,
+#   train
+# )
+
+tune::collect_metrics(final_fit_base)
+
+train_preds <- dplyr::bind_cols(
+  train |> 
+    dplyr::select(
+      set,
+      season_id, 
+      game_id, 
+      date, 
+      action_id, 
+      team_id, 
+      player_id,
+      position,
+      scores
+    ),
+  final_fit_base |> 
+    extract_workflow() |> 
+    predict(train, type = 'prob') |> 
+    dplyr::select(
+      xg_base = .pred_yes
+    )
 )
 
-yardstick::collect_metrics(fit_base)
+train_preds |> 
+  dplyr::group_by(player_id) |> 
+  dplyr::arrange(date, action_id, .by_group = TRUE) |> 
+  dplyr::mutate(
+    prev_g = slider::slide_sum(scores == 'yes', before = 10L, complete = TRUE),
+    prev_xg = slider::slide_sum(xg_base, before = 10L, complete = TRUE)
+  ) |> 
+  dplyr::ungroup() |> 
+  dplyr::transmute(
+    position,
+    date,
+    game_id,
+    action_id,
+    player_id,
+    prev_g,
+    prev_xg,
+    prev_xg_minus_g = prev_g - prev_xg 
+  ) |> 
+  dplyr::filter(!is.na(prev_xg_minus_g)) |> 
+  dplyr::group_by(position) |> 
+  dplyr::summarize(
+    dplyr::across(
+      c(
+        prev_g,
+        prev_xg,
+        prev_xg_minus_g
+      ),
+      mean
+    )
+  )
 
-fit_base |> 
-  tune::collect_predictions() |>
-  yardstick::roc_curve(scores, .pred_yes) |>
+val_and_test_preds <- dplyr::bind_cols(
+  val_and_test |> 
+    dplyr::select(
+      set,
+      season_id, 
+      game_id, 
+      date, 
+      action_id, 
+      team_id, 
+      player_id,
+      scores
+    ),
+  final_fit_base |> 
+    tune::collect_predictions() |> 
+    dplyr::select(
+      xg_base = .pred_yes
+    )
+)
+
+val_and_test_preds |> 
+  yardstick::roc_curve(scores, xg_base) |>
   ggplot2::ggplot() +
   ggplot2::aes(
     x = 1 - specificity, 
@@ -263,10 +385,45 @@ fit_base |>
   ggplot2::geom_point() +
   ggplot2::coord_equal()
 
-fit_base |> 
+n_features <- final_fit_base |>
+  dplyr::pull(.workflow) |> 
+  purrr::pluck(1) |> 
+  workflows::extract_recipe() |> 
+  base::summary() |> 
+  dplyr::filter(role == 'predictor') |> 
+  nrow()
+
+final_fit_base |> 
   workflows::extract_fit_parsnip() |>
-  vip::vip(geom = 'point', include_type = TRUE, num_features = 100) + 
+  vip::vip(geom = 'point', include_type = TRUE, num_features = n_features) + 
   ggplot2::geom_text(
     ggplot2::aes(label = scales::percent(Importance, accuracy = 1)),
     nudge_y = 0.02
   )
+
+# final_fit_base |> 
+#   broom::augment(train, type = 'prob') |> 
+#   dplyr::rename(xg_base = .pred_yes)
+
+player_finishing_feature <- val_and_test_preds |> 
+  dplyr::group_by(player_id) |> 
+  dplyr::arrange(date, action_id, .by_group = TRUE) |> 
+  dplyr::mutate(
+    prev_g = slider::slide_sum(scores == 'yes', before = 5L, complete = FALSE),
+    prev_xg = slider::slide_sum(xg_base, before = 5L, complete = FALSE)
+  ) |> 
+  dplyr::ungroup() |> 
+  dplyr::transmute(
+    set,
+    date,
+    game_id,
+    action_id,
+    player_id,
+    prev_g,
+    prev_xg,
+    prev_xg_minus_g = prev_g - prev_xg 
+  )
+player_finishing_feature |> dplyr::filter(is.na(prev_xg))
+player_finishing_feature |> dplyr::count(set, is.na(prev_xg))
+player_finishing_feature |> dplyr::arrange(desc(prev_xg_minus_g))
+hist(player_finishing_feature$prev_xg_minus_g)
