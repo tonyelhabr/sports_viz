@@ -25,6 +25,35 @@ clean_team_scores <- team_scores |>
   ) |> 
   dplyr::select(-max_week)
 
+median_scoring <- clean_team_scores |> 
+  group_by(season, week) |> 
+  mutate(
+    median_score = median(user_score)
+  ) |> 
+  ungroup() |> 
+  mutate(
+    median_result = ifelse(user_score > median_score, 'W', 'L')
+  ) |> 
+  filter(week <= max_week) |> 
+  group_by(season, user_name) |> 
+  summarize(
+    reg_wins = sum(result == 'W'),
+    median_wins = sum(median_result == 'W')
+  ) |> 
+  ungroup() |> 
+  mutate(
+    total_wins = reg_wins + median_wins
+  ) |> 
+  group_by(season) |> 
+  mutate(
+    reg_placing = row_number(desc(reg_wins)),
+    placing = row_number(desc(total_wins))
+  ) |> 
+  ungroup() |> 
+  arrange(season, reg_placing)
+median_scoring |> 
+  filter(season == 2020)
+
 ## data processing ----
 league_avg_projected_scores <- clean_team_scores |> 
   group_by(season) |> 
