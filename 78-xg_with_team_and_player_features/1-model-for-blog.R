@@ -55,6 +55,7 @@ position_mapping <- list(
 
 x <- read_socceraction_parquet_releases('x')
 y <- read_socceraction_parquet_releases('y')
+xt <- read_socceraction_parquet_releases('xt')
 actions <- read_socceraction_parquet_releases('actions')
 players <- read_socceraction_parquet_releases('players')
 games <- read_socceraction_parquet_releases('games')
@@ -63,33 +64,6 @@ games <- dplyr::mutate(
   date = lubridate::date(game_date)
 )
 team_elo <- read_socceraction_parquet('data/final/8/2013-2022/clubelo-ratings')
-
-# players |> 
-#   dplyr::filter(
-#     starting_position != 'Sub'
-#   ) |> 
-#   dplyr::inner_join(
-#     games |> dplyr::select(game_id, game_date),
-#     by = dplyr::join_by(game_id)
-#   ) |> 
-#   dplyr::inner_join(
-#     position_mapping,
-#     by = dplyr::join_by(starting_position == opta_position)
-#   ) |> 
-#   dplyr::group_by(player_id, player_name, position) |> 
-#   dplyr::arrange() |> 
-#   dplyr::summarize(
-#     minutes_played = cumsum(minutes_played)
-#   ) |> 
-#   dplyr::ungroup() |> 
-#   dplyr::group_by(player_id, player_name) |> 
-#   dplyr::slice_max(minutes_played, n = 1, with_ties = FALSE) |> 
-#   dplyr::ungroup() |> 
-#   dplyr::select(
-#     player_id,
-#     player_name,
-#     primary_position
-#   )
 
 open_play_shots <- games |>
   dplyr::transmute(
@@ -146,6 +120,15 @@ open_play_shots <- games |>
       ),
     by = dplyr::join_by(game_id, action_id)
   ) |> 
+  dplyr::left_join(
+    xt |> 
+      dplyr::select(
+        game_id,
+        action_id,
+        xt
+      ),
+    by = dplyr::join_by(game_id, action_id)
+  ) |> 
   dplyr::inner_join(
     players |> 
       dplyr::select(
@@ -192,10 +175,12 @@ open_play_shots <- games |>
     
     scores,
     
+    xt,
     rolling_xgd = NA_real_, ## TODO
     elo = ifelse(team_id == home_team_id, home_elo, away_elo),
     opponent_elo = ifelse(team_id == home_team_id, away_elo, home_elo),
     elo_diff = elo - opponent_elo,
+    
     start_x_a0,
     start_y_a0,
     start_dist_to_goal_a0,
@@ -296,8 +281,18 @@ last_fit_base <- tune::last_fit(
   metrics = met_set
 )
 
+last_fit_elo <- tune::last_fit(
+  wf_elo,
+  split = rsample::make_splits(
+    train,
+    val_and_test
+  ),
+  metrics = met_set
+)
+
 ## diagnostics ----
 tune::collect_metrics(last_fit_base)
+tune::collect_metrics(last_fit_elo)
 
 extract_n_features_from_last_fit <- function(last_fit) {
   last_fit |>
@@ -309,19 +304,24 @@ extract_n_features_from_last_fit <- function(last_fit) {
     nrow()
 }
 
-n_features_base <- extract_n_features_from_last_fit(last_fit_base)
+plot_var_imp_from_last_importance <- function(last_fit) {
+  
+  n_features <- extract_n_features_from_last_fit(last_fit)
+  last_fit |> 
+    workflows::extract_fit_parsnip() |>
+    vip::vip(
+      geom = 'point',
+      include_type = TRUE, 
+      num_features = n_features
+    ) + 
+    ggplot2::geom_text(
+      ggplot2::aes(label = scales::percent(Importance, accuracy = 1)),
+      nudge_y = 0.02
+    )
+}
 
-last_fit_base |> 
-  workflows::extract_fit_parsnip() |>
-  vip::vip(
-    geom = 'point',
-    include_type = TRUE, 
-    num_features = n_features_base
-  ) + 
-  ggplot2::geom_text(
-    ggplot2::aes(label = scales::percent(Importance, accuracy = 1)),
-    nudge_y = 0.02
-  )
+plot_var_imp_from_last_importance(last_fit_base)
+plot_var_imp_from_last_importance(last_fit_elo)
 
 ## rolling xgd ----
 train_preds <- last_fit_base |> 
@@ -332,7 +332,7 @@ train_preds <- last_fit_base |>
     action_id, 
     player_id,
     position,
-    g = as.integer(scores == 'yes')
+    scores,
     xg_base = .pred_yes
   )
 
@@ -341,7 +341,7 @@ init_rolling_xgd_per_shot_by_position <- train_preds |>
   dplyr::arrange(date, action_id, .by_group = TRUE) |> 
   dplyr::mutate(
     rn = dplyr::row_number(),
-    rolling_g = base::cumsum(g)/ rn,
+    rolling_g = base::cumsum(as.integer(scores == 'yes'))/ rn,
     rolling_xg = base::cumsum(xg_base) / rn
   ) |> 
   dplyr::ungroup() |> 
@@ -384,32 +384,28 @@ rolling_xgd_per_shot_by_position <- dplyr::bind_rows(
     )
 )
 
-val_and_test_preds_base <- dplyr::bind_cols(
-  val_and_test |> 
-    dplyr::transmute(
-      set,
-      season_id, 
-      game_id, 
-      date, 
-      action_id, 
-      team_id, 
-      player_id,
-      position,
-      g = as.integer(scores == 'yes'),
-      scores
-    ),
-  last_fit_base |> 
-    hardhat::extract_workflow() |> 
-    stats::predict(val_and_test, type = 'prob') |> 
-    dplyr::select(xg_base = .pred_yes)
-)
+val_and_test_preds_base <- last_fit_base |> 
+  hardhat::extract_workflow() |> 
+  broom::augment(val_and_test, type = 'prob') |> 
+  dplyr::select(
+    set,
+    season_id, 
+    game_id, 
+    date, 
+    action_id, 
+    team_id, 
+    player_id,
+    position,
+    scores,
+    xg_base = .pred_yes
+  )
 
 val_and_test_rolling_xgd <- val_and_test_preds_base |> 
   dplyr::group_by(player_id, position) |> 
   dplyr::arrange(date, action_id, .by_group = TRUE) |> 
   dplyr::mutate(
     rn = dplyr::row_number(),
-    rolling_g = slider::slide_mean(g, before = 10L, complete = TRUE),
+    rolling_g = slider::slide_mean(as.integer(scores == 'yes'), before = 10L, complete = TRUE),
     rolling_xg = slider::slide_mean(xg_base, before = 10L, complete = TRUE)
   ) |> 
   dplyr::ungroup() |> 
@@ -441,7 +437,6 @@ val_and_test_rolling_xgd <- val_and_test_preds_base |>
     rolling_xgd = dplyr::coalesce(rolling_xgd, init_rolling_xgd)
   )
 
-
 updated_val_and_test <- dplyr::rows_update(
   val_and_test,
   val_and_test_rolling_xgd,
@@ -449,18 +444,73 @@ updated_val_and_test <- dplyr::rows_update(
 )
 
 ## full ----
+library(lightgbm)
+library(bonsai)
 spec_full <- parsnip::boost_tree(
   trees = 500,
   learn_rate = 0.01,
-  tree_depth = 13,
-  min_n = 31, 
-  loss_reduction = 0.0006153,
-  sample_size = 0.3222589,
-  mtry = 12,
-  stop_iter = 47
+  tree_depth = tune(),
+  min_n = tune(), 
+  loss_reduction = tune(),
+  sample_size = tune(), 
+  mtry = tune(),
+  stop_iter = tune()
 ) |>
-  parsnip::set_engine('xgboost') |> 
+  parsnip::set_engine('lightgbm') |> 
   parsnip::set_mode('classification')
+
+library(dials)
+library(workflowsets)
+library(finetune)
+grid <- grid_latin_hypercube(
+  # trees(),
+  # learn_rate(),
+  tree_depth(),
+  min_n(),
+  loss_reduction(),
+  sample_size = sample_prop(),
+  finalize(mtry(), train),
+  stop_iter(range = c(10L, 50L)),
+  size = 50
+)
+
+wf_sets <- workflow_set(
+  preproc = list(
+    full = rec_full
+  ),
+  models = list(model = spec_full),
+  cross = TRUE
+)
+
+control <- control_race(
+  save_pred = TRUE,
+  parallel_over = 'everything',
+  save_workflow = TRUE,
+  verbose = TRUE,
+  verbose_elim = TRUE
+)
+
+val_folds <- updated_val_and_test |> 
+  dplyr::filter(set == 'validation') |> 
+  rsample::vfold_cv(v = 5, strata = scores)
+
+options(tidymodels.dark = TRUE)
+t1 <- Sys.time()
+tuned_results <- workflow_map(
+  wf_sets,
+  fn = 'tune_race_anova',
+  grid = grid,
+  control = control,
+  metrics = met_set,
+  resamples = val_folds,
+  seed = 42
+)
+t2 <- Sys.time()
+t2 - t1
+best_set <- tuned_results |>
+  extract_workflow_set_result('full_model') |> 
+  select_best(metric = 'f_meas')
+knitr::kable(best_set)
 
 wf_full <- workflows::workflow(
   preprocessor = rec_full,
