@@ -241,6 +241,10 @@ spec_base <- parsnip::boost_tree(
   parsnip::set_engine('xgboost') |> 
   parsnip::set_mode('classification')
 
+recipe_features <- rec_elo |> prep() |> juice() |> colnames()
+sign_lgl <- recipe_features %in% c('elo', 'elo_diff')
+constraints <- ifelse(sign_lgl, 1, 0)
+
 spec_elo <- parsnip::boost_tree(
   trees = 500,
   learn_rate = 0.01,
@@ -251,7 +255,7 @@ spec_elo <- parsnip::boost_tree(
   mtry = 12,
   stop_iter = 47
 ) |>
-  parsnip::set_engine('xgboost') |> 
+  parsnip::set_engine('xgboost', monotone_constraints = !!constraints) |> 
   parsnip::set_mode('classification')
 
 wf_base <- workflows::workflow(
@@ -265,6 +269,7 @@ wf_elo <- workflows::workflow(
 )
 
 met_set <- yardstick::metric_set(
+  fixed_brier_skill_score,
   yardstick::f_meas,
   yardstick::accuracy, 
   yardstick::roc_auc, 
@@ -293,6 +298,36 @@ last_fit_elo <- tune::last_fit(
 ## diagnostics ----
 tune::collect_metrics(last_fit_base)
 tune::collect_metrics(last_fit_elo)
+
+sampled_val_and_test <- val_and_test |> 
+  filter(season_id == 2022)
+
+baked_elo_data <- rec_elo |>
+  prep() |>
+  bake(new_data = sampled_updated_val_and_test) |>
+  select(-scores)
+
+elo_model_object <- hardhat::extract_fit_engine(last_fit_elo)
+pdp::partial(
+  elo_model_object,
+  train = baked_elo_data,
+  pred.var = 'elo',
+  type = 'classification',
+  plot = TRUE,
+  prob = TRUE,
+  trim.outliers = TRUE
+)
+
+pdp::partial(
+  elo_model_object,
+  train = baked_elo_data,
+  pred.var = 'elo_diff',
+  type = 'classification',
+  plot = TRUE,
+  prob = TRUE,
+  trim.outliers = TRUE
+)
+
 
 extract_n_features_from_last_fit <- function(last_fit) {
   last_fit |>
@@ -444,104 +479,37 @@ updated_val_and_test <- dplyr::rows_update(
 )
 
 ## full ----
-library(lightgbm)
-library(bonsai)
 spec_full <- parsnip::boost_tree(
   trees = 500,
   learn_rate = 0.01,
-  tree_depth = tune(),
-  min_n = tune(), 
-  loss_reduction = tune(),
-  sample_size = tune(), 
-  mtry = tune(),
-  stop_iter = tune()
+  tree_depth = 10,
+  min_n = 32, 
+  loss_reduction = 0.0048179,
+  sample_size = 0.1744129, 
+  mtry = 9,
+  stop_iter = 17
 ) |>
-  parsnip::set_engine('lightgbm') |> 
+  parsnip::set_engine('xgboost') |> 
   parsnip::set_mode('classification')
-
-library(dials)
-library(workflowsets)
-library(finetune)
-grid <- grid_latin_hypercube(
-  # trees(),
-  # learn_rate(),
-  tree_depth(),
-  min_n(),
-  loss_reduction(),
-  sample_size = sample_prop(),
-  finalize(mtry(), train),
-  stop_iter(range = c(10L, 50L)),
-  size = 50
-)
-
-wf_sets <- workflow_set(
-  preproc = list(
-    full = rec_full
-  ),
-  models = list(model = spec_full),
-  cross = TRUE
-)
-
-control <- control_race(
-  save_pred = TRUE,
-  parallel_over = 'everything',
-  save_workflow = TRUE,
-  verbose = TRUE,
-  verbose_elim = TRUE
-)
-
-val_folds <- updated_val_and_test |> 
-  dplyr::filter(set == 'validation') |> 
-  rsample::vfold_cv(v = 5, strata = scores)
-
-options(tidymodels.dark = TRUE)
-t1 <- Sys.time()
-tuned_results <- workflow_map(
-  wf_sets,
-  fn = 'tune_race_anova',
-  grid = grid,
-  control = control,
-  metrics = met_set,
-  resamples = val_folds,
-  seed = 42
-)
-t2 <- Sys.time()
-t2 - t1
-best_set <- tuned_results |>
-  extract_workflow_set_result('full_model') |> 
-  select_best(metric = 'f_meas')
-knitr::kable(best_set)
 
 wf_full <- workflows::workflow(
   preprocessor = rec_full,
   spec = spec_full
 )
 
+updated_val <- updated_val_and_test |> dplyr::filter(set == 'validation')
+updated_test <- updated_val_and_test |> dplyr::filter(set == 'test')
+
 last_fit_full <- tune::last_fit(
   wf_full,
   split = rsample::make_splits(
-    updated_val_and_test |> dplyr::filter(set == 'validation'),
-    updated_val_and_test |> dplyr::filter(set == 'test')
+    updated_val,
+    updated_test
   ),
   metrics = met_set
 )
 
-n_features_full <- extract_n_features_from_last_fit(last_fit_full)
-
-last_fit_full |> 
-  workflows::extract_fit_parsnip() |>
-  vip::vip(
-    geom = 'point', 
-    include_type = TRUE, 
-    num_features = n_features_full
-  ) + 
-  dplyr::select(
-    
-  )
-ggplot2::geom_text(
-  ggplot2::aes(label = scales::percent(Importance, accuracy = 1)),
-  nudge_y = 0.02
-)
+plot_var_imp_from_last_importance(last_fit_full)
 
 test_preds_full <- last_fit_full |> 
   hardhat::extract_workflow() |> 
@@ -555,7 +523,6 @@ test_preds_full <- last_fit_full |>
     team_id, 
     player_id,
     position,
-    g = as.integer(scores == 'yes'),
     scores,
     xg_full = .pred_yes
   )
@@ -601,3 +568,54 @@ updated_test_preds |>
   ggplot2::geom_abline(lty = 2, linewidth = 1.5) +
   ggplot2::geom_point() +
   ggplot2::coord_equal()
+
+sampled_updated_val_and_test <- updated_val_and_test |> 
+  filter(season_id == 2022)
+
+baked_full_data <- rec_full |>
+  prep() |>
+  bake(new_data = sampled_updated_val_and_test) |>
+  select(-scores)
+
+full_model_object <- hardhat::extract_fit_engine(last_fit_full)
+res <- pdp::partial(
+  full_model_object,
+  train = baked_full_data,
+  pred.var = 'rolling_xgd',
+  type = 'classification',
+  plot = TRUE,
+  prob = TRUE,
+  trim.outliers = TRUE
+)
+res
+
+pdp::partial(
+  full_model_object,
+  train = baked_full_data,
+  pred.var = 'elo',
+  type = 'classification',
+  plot = TRUE,
+  prob = TRUE,
+  trim.outliers = TRUE
+)
+
+pdp::partial(
+  full_model_object,
+  train = baked_full_data,
+  pred.var = c('elo', 'elo_diff'),
+  type = 'classification',
+  plot = TRUE,
+  prob = TRUE,
+  trim.outliers = TRUE
+)
+
+elo_ice <- pdp::partial(
+  full_model_object,
+  train = baked_full_data,
+  pred.var = 'elo',
+  type = 'classification',
+  ice = TRUE,
+  plot = FALSE,
+  prob = TRUE,
+  trim.outliers = TRUE
+)

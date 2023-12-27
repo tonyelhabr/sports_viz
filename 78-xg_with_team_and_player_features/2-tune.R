@@ -69,3 +69,14 @@ knitr::kable(best_set)
 ##   | mtry| min_n| tree_depth| loss_reduction| sample_size| stop_iter|.config               |
 ##   |----:|-----:|----------:|--------------:|-----------:|---------:|:---------------------|
 ##   |    9|    32|         10|      0.0048179|   0.1744129|        17|Preprocessor1_Model26 |
+best_last_fit <- tuned_results |>
+  extract_workflow('full_model') |>
+  finalize_workflow(best_set) |> 
+  last_fit(
+    split = rsample::make_splits(
+      updated_val_and_test |> dplyr::filter(set == 'validation'),
+      updated_val_and_test |> dplyr::filter(set == 'test')
+    ),
+    metrics = met_set
+  )
+plot_var_imp_from_last_importance(best_last_fit)
