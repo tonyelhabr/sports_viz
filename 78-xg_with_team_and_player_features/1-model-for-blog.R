@@ -65,6 +65,9 @@ games <- dplyr::mutate(
 )
 team_elo <- read_socceraction_parquet('data/final/8/2013-2022/clubelo-ratings')
 
+quantile(team_elo$elo, c(0.25, 0.5, 0.75))
+hist(team_elo$elo)
+
 open_play_shots <- games |>
   dplyr::transmute(
     season_id,
@@ -298,6 +301,29 @@ last_fit_elo <- tune::last_fit(
 ## diagnostics ----
 tune::collect_metrics(last_fit_base)
 tune::collect_metrics(last_fit_elo)
+
+val_and_test_preds_base |> 
+  inner_join(
+    val_and_test |> 
+      transmute(
+        game_id,
+        action_id,
+        elo,
+        elo_bucket = 100 * (elo %/% 100),
+        elo_diff,
+        elo_diff_bucket = 100 * (elo_diff %/% 100)
+      )
+  ) |> 
+  group_by(elo_bucket, elo_diff_bucket) |> 
+  summarize(
+    shots = n(),
+    g = sum(scores == 'yes'),
+    xg = sum(xg_base)
+  ) |> 
+  ungroup() |> 
+  mutate(
+    xgd = g - xg
+  )
 
 sampled_val_and_test <- val_and_test |> 
   filter(season_id == 2022)
