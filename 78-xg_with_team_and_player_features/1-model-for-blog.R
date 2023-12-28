@@ -13,8 +13,6 @@ library(pdp)
 library(ggplot2)
 library(scales)
 library(pdp)
-library(furrr)
-library(future)
 
 read_parquet_from_url <- function(url) {
   load <- curl::curl_fetch_memory(url)
@@ -275,8 +273,7 @@ met_set <- yardstick::metric_set(
   fixed_brier_skill_score,
   yardstick::f_meas,
   yardstick::accuracy, 
-  yardstick::roc_auc, 
-  yardstick::sensitivity
+  yardstick::roc_auc
 )
 
 val_and_test <- dplyr::bind_rows(val, test)

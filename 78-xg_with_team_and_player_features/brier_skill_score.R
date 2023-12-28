@@ -134,13 +134,6 @@ fixed_brier_skill_score <- function(data, ...) {
 #   dplyr::pull(goal_rate)
 REF_ESTIMATE <- 0.12
 
-# fixed_brier_skill_score_vec <- function(...) {
-#   brier_skill_score_vec(
-#     ref_estimate = REF_ESTIMATE,
-#     ...
-#   )
-# }
-
 fixed_brier_skill_score.data.frame <- function(...) {
   brier_skill_score(
     ref_estimate = REF_ESTIMATE,
