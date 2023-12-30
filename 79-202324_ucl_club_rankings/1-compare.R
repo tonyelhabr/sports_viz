@@ -13,7 +13,7 @@ library(htmltools)
 library(ggpath)
 library(scales)
 
-PROJ_DIR <- '79-2023_eoy_club_rankings'
+PROJ_DIR <- '79-202324_ucl_club_rankings'
 
 TAG_LABEL <- htmltools::tagList(
   htmltools::tags$span(htmltools::HTML(enc2utf8('&#xf099;')), style = 'font-family:fb'),
@@ -82,11 +82,11 @@ CLUBELO_TEAMS <- c(
 
 TEAM_NAMES <- c(
   'Arsenal' = 'Arsenal',
-  'Atletico' = 'Atlético',
+  'Atletico' = 'Atlï¿½tico',
   'Barcelona' = 'Barcelona',
   'Bayern' = 'Bayern',
   'Dortmund' = 'Dortmund',
-  'FC Kobenhavn' = 'København',
+  'FC Kobenhavn' = 'Kï¿½benhavn',
   'Inter' = 'Inter',
   'Lazio' = 'Lazio',
   'Man City' = 'Man City',
@@ -101,11 +101,11 @@ TEAM_NAMES <- c(
 
 PAL <- c(
   'Arsenal' = '#f83a6c',
-  'Atlético' = '#724cff',
+  'Atlï¿½tico' = '#724cff',
   'Barcelona' = '#c94870',
   'Bayern' = '#ff346a',
   'Dortmund' = '#ffe600',
-  'København' = '#3c6bb6',
+  'Kï¿½benhavn' = '#3c6bb6',
   'Inter' = '#1e73be',
   'Lazio' = '#d6f4ff',
   'Man City' = '#00b7db',
