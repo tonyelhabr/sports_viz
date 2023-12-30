@@ -233,7 +233,6 @@ plot <- weekly_compared_rankings |>
         last_week |> select(team, last_week_rerank_opta = rerank_opta),
         by = join_by(team)
       ) |> 
-      rowwise() |> 
       mutate(
         label = paste0(
           "<b><span style='font-size:12pt'>", 
@@ -249,7 +248,7 @@ plot <- weekly_compared_rankings |>
           ),
           ';</span> ',
           last_week_rerank_opta,
-          ')'
+          ')</span>'
         )
       ) |> 
       pull(label) |> 
