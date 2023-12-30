@@ -10,11 +10,11 @@ The projects are listed in reverse chronological order. A skipped number corresp
 
 ![](79-202324_ucl_club_rankings/ucl-opta-rankings-bump.png)
 
-# 78. [xG Model with Team Quality Features]((https://tonyelhabr.rbind.io/posts/xg-team-quality)
+# 78. [xG Model with Team Quality Features](https://tonyelhabr.rbind.io/posts/xg-team-quality)
 
-![](https://tonyelhabr.rbind.io/posts/fbref-gamestate-expected-goal-difference/var-imp-compared.png)
+![](https://tonyelhabr.rbind.io/posts/xg-team-quality/var-imp-compared.png)
 
-![](https://tonyelhabr.rbind.io/posts/fbref-gamestate-expected-goal-difference/compared-calibration.png)
+![](https://tonyelhabr.rbind.io/posts/xg-team-quality/compared-calibration.png)
 
 # 77. [2023/24 EPL xGD by Game State](https://tonyelhabr.rbind.io/posts/fbref-gamestate-expected-goal-difference/)
 
