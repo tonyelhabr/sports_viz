@@ -12,6 +12,7 @@ library(ggtext)
 library(htmltools)
 library(ggpath)
 library(scales)
+library(glue)
 
 PROJ_DIR <- '79-202324_ucl_club_rankings'
 
@@ -27,7 +28,8 @@ COMPLEMENTARY_BACKGROUND_COLOR <- '#4d4d4d'
 FONT <- 'Titillium Web'
 sysfonts::font_add_google(FONT, FONT)
 ## https://github.com/tashapiro/tanya-data-viz/blob/main/chatgpt-lensa/chatgpt-lensa.R for twitter logo
-sysfonts::font_add('fb', 'Font Awesome 6 Brands-Regular-400.otf')
+sysfonts::font_add('fa-brands', 'Font Awesome 6 Brands-Regular-400.otf')
+sysfonts::font_add('fa-solid', 'fonts/Font Awesome 6 Free-Solid-900.otf')
 showtext::showtext_auto()
 showtext::showtext_opts(dpi = PLOT_RESOLUTION)
 
@@ -82,11 +84,11 @@ CLUBELO_TEAMS <- c(
 
 TEAM_NAMES <- c(
   'Arsenal' = 'Arsenal',
-  'Atletico' = 'Atlï¿½tico',
+  'Atletico' = 'Atlético',
   'Barcelona' = 'Barcelona',
   'Bayern' = 'Bayern',
   'Dortmund' = 'Dortmund',
-  'FC Kobenhavn' = 'Kï¿½benhavn',
+  'FC Kobenhavn' = 'København',
   'Inter' = 'Inter',
   'Lazio' = 'Lazio',
   'Man City' = 'Man City',
@@ -101,11 +103,11 @@ TEAM_NAMES <- c(
 
 PAL <- c(
   'Arsenal' = '#f83a6c',
-  'Atlï¿½tico' = '#724cff',
+  'Atlético' = '#724cff',
   'Barcelona' = '#c94870',
   'Bayern' = '#ff346a',
   'Dortmund' = '#ffe600',
-  'Kï¿½benhavn' = '#3c6bb6',
+  'København' = '#3c6bb6',
   'Inter' = '#1e73be',
   'Lazio' = '#d6f4ff',
   'Man City' = '#00b7db',
@@ -210,7 +212,7 @@ plot <- weekly_compared_rankings |>
   ) +
   scale_color_manual(
     values = PAL
-  ) ++
+  ) +
   geom_from_path(
     aes(
       path = logo_path
@@ -234,14 +236,21 @@ plot <- weekly_compared_rankings |>
       rowwise() |> 
       mutate(
         label = paste0(
-            "<b><span style='font-size:12pt'>", 
-            team, 
-            "</span></b> <span style='font-size:9pt'>(", 
-            first_week_rerank_opta,
-            ' -> ',
-            last_week_rerank_opta,
-            ')</span>'
-          )
+          "<b><span style='font-size:12pt'>", 
+          team, 
+          "</span></b> <span style='font-size:9pt'>(", 
+          first_week_rerank_opta,
+          ## https://albert-rapp.de/posts/ggplot2-tips/08_fonts_and_icons/08_fonts_and_icons.html
+          " <span style='font-family:fa-solid'>&#x",
+          case_when(
+            first_week_rerank_opta > last_week_rerank_opta ~ 'e098',
+            first_week_rerank_opta < last_week_rerank_opta ~ 'e097',
+            TRUE ~ 'f061'
+          ),
+          ';</span> ',
+          last_week_rerank_opta,
+          ')'
+        )
       ) |> 
       pull(label) |> 
       rev()
@@ -253,7 +262,7 @@ plot <- weekly_compared_rankings |>
   labs(
     title = 'Weekly changes in relative Opta ranking',
     subtitle = 'UCL 2023/24 R16 Teams, since Sep. 2023',
-    caption = '**Data**: Opta. Dotted lines mark international break weekends.',
+    caption = glue('**Data**: Opta. Last updated at {Sys.Date()}.<br/>Dotted lines mark international break weekends.'),
     tag = TAG_LABEL,
     y = NULL,
     x = NULL
