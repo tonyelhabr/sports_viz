@@ -6,6 +6,20 @@ This repo stores my code and plots for sports-related plots. Any "small" data is
 
 The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I did not end up finishing.
 
+# 79. 2023/24 UCL Round of 16 Relative Opta Rankings
+
+![](79-202324_ucl_club_rankings/ucl-opta-rankings-bump.png)
+
+# 78. [xG Model with Team Quality Features]((https://tonyelhabr.rbind.io/posts/xg-team-quality)
+
+![](https://tonyelhabr.rbind.io/posts/fbref-gamestate-expected-goal-difference/var-imp-compared.png)
+
+![](https://tonyelhabr.rbind.io/posts/fbref-gamestate-expected-goal-difference/compared-calibration.png)
+
+# 77. [2023/24 EPL xGD by Game State](https://tonyelhabr.rbind.io/posts/fbref-gamestate-expected-goal-difference/)
+
+![](77-gamestate_xgd/2023-epl-xgd-p90.png)
+
 # 77. [2023/24 EPL xGD by Game State](https://tonyelhabr.rbind.io/posts/fbref-gamestate-expected-goal-difference/)
 
 ![](77-gamestate_xgd/2023-epl-xgd-p90.png)
