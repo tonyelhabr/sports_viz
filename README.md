@@ -1,6 +1,3 @@
----
-title: README
----
 
 This repo stores my code and plots for sports-related plots. Any "small" data is stored in the repo. Otherwise, it's saved locally and git-ignored here.
 
