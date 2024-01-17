@@ -16,10 +16,6 @@ library(glue)
 
 PROJ_DIR <- '79-202324_ucl_club_rankings'
 
-TAG_LABEL <- htmltools::tagList(
-  htmltools::tags$span(htmltools::HTML(enc2utf8('&#xf099;')), style = 'font-family:fb'),
-  htmltools::tags$span('@TonyElHabr'),
-)
 PLOT_RESOLUTION <- 300
 WHITISH_FOREGROUND_COLOR <- 'white'
 COMPLEMENTARY_FOREGROUND_COLOR <- '#cbcbcb'
@@ -27,7 +23,6 @@ BLACKISH_BACKGROUND_COLOR <- '#1c1c1c'
 COMPLEMENTARY_BACKGROUND_COLOR <- '#4d4d4d'
 FONT <- 'Titillium Web'
 sysfonts::font_add_google(FONT, FONT)
-## https://github.com/tashapiro/tanya-data-viz/blob/main/chatgpt-lensa/chatgpt-lensa.R for twitter logo
 sysfonts::font_add('fa-brands', 'Font Awesome 6 Brands-Regular-400.otf')
 sysfonts::font_add('fa-solid', 'fonts/Font Awesome 6 Free-Solid-900.otf')
 showtext::showtext_auto()
@@ -189,6 +184,11 @@ logo_paths <- set_names(
 
 weekly_compared_rankings$logo_path <- logo_paths[weekly_compared_rankings$id_opta]
 
+CHANGE_PAL <- c(
+  'up' = '#2feaa8',
+  'down' = '#fb3640'
+)
+
 plot <- weekly_compared_rankings |> 
   ggplot() +
   aes(
@@ -240,7 +240,13 @@ plot <- weekly_compared_rankings |>
           "</span></b> <span style='font-size:9pt'>(", 
           first_week_rerank_opta,
           ## https://albert-rapp.de/posts/ggplot2-tips/08_fonts_and_icons/08_fonts_and_icons.html
-          " <span style='font-family:fa-solid'>&#x",
+          " <span style='font-family:fa-solid",
+          dplyr::case_when(
+            first_week_rerank_opta > last_week_rerank_opta ~ paste0(';color:', CHANGE_PAL[['up']]),
+            first_week_rerank_opta < last_week_rerank_opta ~ paste0(';color:', CHANGE_PAL[['down']]),
+            TRUE ~ ''
+          ),
+          "'>&#x",
           case_when(
             first_week_rerank_opta > last_week_rerank_opta ~ 'e098',
             first_week_rerank_opta < last_week_rerank_opta ~ 'e097',
@@ -262,7 +268,7 @@ plot <- weekly_compared_rankings |>
     title = 'Weekly changes in relative Opta ranking',
     subtitle = 'UCL 2023/24 R16 Teams, since Sep. 2023',
     caption = glue('**Data**: Opta. Last updated at {Sys.Date()}.<br/>Dotted lines mark international break weekends.'),
-    tag = TAG_LABEL,
+    tag = "<span style='font-family:fa-brands'>&#xf099;</span> @Tony ElHabr",
     y = NULL,
     x = NULL
   )
