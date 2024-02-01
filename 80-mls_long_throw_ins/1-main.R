@@ -25,7 +25,7 @@ theme_asa <- function(...) {
       axis.ticks = element_blank(),
       panel.grid.minor = element_blank(),
       legend.position = 'top',
-      plot.title = element_markdown(size = 24, hjust = 0),
+      plot.title = element_markdown(size = 20, hjust = 0),
       plot.title.position = 'plot',
       plot.caption.position = 'plot',
       plot.subtitle = element_text(color = 'white', size = 14),
@@ -84,23 +84,26 @@ prop_thrown_into_box <- long_throw_ins |>
 ## https://github.com/etmckinley/goals_added_wheels_itscalledsoccer
 team_info <- read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vTiZfW7pSUWPttpHSMlAwgMyXwdAeLAW6HuoHwZa69FrNpfzqVkM_0DaeAveTG7hvbCSK-HBh31QxIM/pub?gid=95813594&single=true&output=csv')
 
-team_logos <- team_info |> 
-  filter(league == 'mls') |> 
-  filter(!is.na(Squad)) |> 
-  arrange(team_short_name) |> 
-  transmute(
-    asa_team_name = team_name,
-    asa_team_short_name = team_short_name,
-    # team_short_name,
-    logo = paste0(
-      #"https://app.americansocceranalysis.com/club_logos/",
-      "https://american-soccer-analysis-headshots.s3.amazonaws.com/club_logos/",
-      team_id,
-      ".png"
-    )
+table <- fotmob::fotmob_get_league_tables(league_id = 130, season = '2023') |> 
+  filter(table_type == 'all')
+
+team_logos <- table |> 
+  distinct(
+    fotmob_team_name = table_short_name,
+    logo = sprintf('https://images.fotmob.com/image_resources/logo/teamlogo/%s.png', table_id)
   ) |> 
+  arrange(fotmob_team_name) |> 
   bind_cols(
-    teams |> arrange(team_name) |> select(team_id, team_name)
+    teams |> 
+      mutate(
+        team_name = case_match(
+          team_name,
+          'Kansas City' ~ 'Sporting KC',
+          .default = team_name
+        )
+      ) |> 
+      arrange(team_name) |> 
+      select(team_id, team_name)
   )
 
 df <- prop_thrown_into_box |> 
@@ -111,13 +114,15 @@ df <- prop_thrown_into_box |>
     n_attacking_throw_ins_per_game = n_attacking_throw_ins / n_games,
     n_attacking_throw_ins_per_game_into_box = prop_thrown_into_box * n_attacking_throw_ins_per_game,
     n_attacking_throw_ins_per_game_not_into_box = n_attacking_throw_ins_per_game - n_attacking_throw_ins_per_game_into_box,
-    team_name = fct_reorder(team_name, n_attacking_throw_ins_per_game)
+    fotmob_team_name = fct_reorder(fotmob_team_name, n_attacking_throw_ins_per_game)
   )
-df
+df |> 
+  arrange(desc(n_attacking_throw_ins)) |> 
+  glimpse()
 
 long <- df |> 
   select(
-    team_name,
+    fotmob_team_name,
     logo,
     n_attacking_throw_ins_per_game_into_box,
     n_attacking_throw_ins_per_game_not_into_box
@@ -151,7 +156,7 @@ long_throw_ins_plot <- long |>
   ggplot() +
   aes(
     x = value,
-    y = team_name
+    y = fotmob_team_name
   ) +
   geom_col(
     aes(
@@ -160,7 +165,7 @@ long_throw_ins_plot <- long |>
     show.legend = FALSE
   ) +
   geom_text(
-    data = df |> filter(prop_thrown_into_box > 0.1),
+    data = df |> filter(prop_thrown_into_box >= 0.12),
     aes(
       x = n_attacking_throw_ins_per_game_into_box,
       label = scales::percent(prop_thrown_into_box, accuracy = 1)
@@ -177,7 +182,7 @@ long_throw_ins_plot <- long |>
   ) +
   theme_asa() +
   theme(
-    axis.text.y = element_markdown(size = 10),
+    axis.text.y = element_markdown(),
     panel.grid.major.x = element_blank()
   ) +
   labs(
@@ -186,17 +191,14 @@ long_throw_ins_plot <- long |>
     y = NULL,
     caption = 'Attacking throw: any throw-in taken in the final quarter of the pitch.<br/>Inspiration: The Athletic',
     x = '# of attacking throw-ins per game'
-  )
-long_throw_ins_plot
-
-long_throw_ins_plot +
+  ) +
   scale_y_discrete(
     name = '',
     labels = df |>
       mutate(
-        label = glue("<span style='font-size:11px;color:white'>{team_name}</span><img src='{logo}' width='15' height='15'/>")
+        label = glue("<span style='font-size:14px;color:white'>{fotmob_team_name}</span>  <img src='{logo}' width='13' height='13'/>")
       ) |> 
-      distinct(team_name, label) |>
+      distinct(fotmob_team_name, label) |>
       deframe()
   )
 
@@ -205,8 +207,8 @@ ggsave(
   long_throw_ins_plot,
   filename = long_throw_ins_plot_path,
   units = 'in',
-  width = 7,
-  height = 7
+  width = 6,
+  height = 8
 )
 
 ## https://themockup.blog/posts/2019-01-09-add-a-logo-to-your-plot/
