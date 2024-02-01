@@ -1,23 +1,61 @@
 library(dplyr)
+library(readr)
+library(tidyr)
+library(ggplot2)
+library(forcats)
+library(tidyr)
+library(ggtext)
+library(glue)
+library(tibble)
+
+PROJ_DIR <- '80-mls_long_throw_ins'
+
+# https://theathletic.com/4297050/2023/03/11/get-it-launched-explaining-why-long-throw-ins-into-the-box-are-undervalued/
+FONT <- 'Oswald'
+GRAYISH_COLOR <- '#9f9f9f'
+BLACKISH_COLOR <- '#15202B'
+theme_asa <- function(...) {
+  list(
+    ...,
+    theme_minimal(base_family = FONT),
+    theme(
+      text = element_text(color = 'white', size = 20),
+      axis.text.y = element_text(color = 'white'),
+      axis.text.x = element_text(color = 'white', size = 11),
+      axis.ticks = element_blank(),
+      panel.grid.minor = element_blank(),
+      legend.position = 'top',
+      plot.title = element_markdown(size = 24, hjust = 0),
+      plot.title.position = 'plot',
+      plot.caption.position = 'plot',
+      plot.subtitle = element_text(color = 'white', size = 14),
+      plot.caption = element_markdown(color = GRAYISH_COLOR, size = 11),
+      panel.border = element_blank(),
+      panel.grid.major.y = element_blank(),
+      panel.grid.major.x = element_line(color = GRAYISH_COLOR),
+      panel.background = element_rect(fill = BLACKISH_COLOR, color = BLACKISH_COLOR),
+      plot.background = element_rect(fill = BLACKISH_COLOR, color = BLACKISH_COLOR)
+    )
+  )
+}
 
 setwd('../socceraction-streamlined')
 source(file.path('R', 'helpers.R'))
 games <- import_parquet('games')
+players <- import_parquet('players')
 teams <- import_parquet('teams')
 
 x <- import_parquet(add_suffix('x', suffix = '')) |> 
   select(-matches('_a[1-2]$'))
 
 xy <- import_xy(suffix = '', games = games)
-x
-xy |> filter(type_shot_penalty_a0 == 1) |> select(start_x_a0, start_y_a0)
-xy |> filter(type_shot_a0 == 1) |> pull(start_x_a0) |> range()
+setwd(file.path('../sports_viz'))
 
 long_throw_ins <- xy |> 
   filter(type_throw_in_a0 == 1) |> 
   count(
     team_id, 
-    final_third_throw_in = start_x_a0 >= (2 * 105 / 3),
+    attacking_throw_in = start_x_a0 >= (3 * 105 / 4),
     thrown_into_box = (end_x_a0 >= (105 - 16.5)) & (end_y_a0 >= (34 - 20.15) & end_y_a0 <= (34 + 20.15))
   )
 
@@ -27,7 +65,7 @@ n_games <- xy |>
 
 prop_thrown_into_box <- long_throw_ins |> 
   filter(
-    final_third_throw_in 
+    attacking_throw_in 
   ) |> 
   group_by(team_id) |> 
   mutate(
@@ -39,41 +77,193 @@ prop_thrown_into_box <- long_throw_ins |>
   select(
     team_id,
     prop_thrown_into_box,
-    n_final_third_throw_ins = total,
-    n_final_third_throw_ins_into_box = n
+    n_attacking_throw_ins = total,
+    n_attacking_throw_ins_into_box = n
+  )
+
+## https://github.com/etmckinley/goals_added_wheels_itscalledsoccer
+team_info <- read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vTiZfW7pSUWPttpHSMlAwgMyXwdAeLAW6HuoHwZa69FrNpfzqVkM_0DaeAveTG7hvbCSK-HBh31QxIM/pub?gid=95813594&single=true&output=csv')
+
+team_logos <- team_info |> 
+  filter(league == 'mls') |> 
+  filter(!is.na(Squad)) |> 
+  arrange(team_short_name) |> 
+  transmute(
+    asa_team_name = team_name,
+    asa_team_short_name = team_short_name,
+    # team_short_name,
+    logo = paste0(
+      #"https://app.americansocceranalysis.com/club_logos/",
+      "https://american-soccer-analysis-headshots.s3.amazonaws.com/club_logos/",
+      team_id,
+      ".png"
+    )
+  ) |> 
+  bind_cols(
+    teams |> arrange(team_name) |> select(team_id, team_name)
   )
 
 df <- prop_thrown_into_box |> 
   inner_join(n_games, by = join_by(team_id)) |> 
-  inner_join(teams, by = join_by(team_id)) |> 
+  inner_join(team_logos, by = join_by(team_id)) |> 
   arrange(desc(prop_thrown_into_box)) |> 
   mutate(
-    n_final_third_throw_ins_per_game = n_final_third_throw_ins / n_games
+    n_attacking_throw_ins_per_game = n_attacking_throw_ins / n_games,
+    n_attacking_throw_ins_per_game_into_box = prop_thrown_into_box * n_attacking_throw_ins_per_game,
+    n_attacking_throw_ins_per_game_not_into_box = n_attacking_throw_ins_per_game - n_attacking_throw_ins_per_game_into_box,
+    team_name = fct_reorder(team_name, n_attacking_throw_ins_per_game)
   )
 df
 
-library(gt)
-library(gtExtras)
-
-
-?gtExtras::gt_double_table
-prop_thrown_into_box |> 
+long <- df |> 
   select(
     team_name,
-    prop_thrown_into_box
+    logo,
+    n_attacking_throw_ins_per_game_into_box,
+    n_attacking_throw_ins_per_game_not_into_box
   ) |> 
-  slice_max(prop_thrown_into_box, n = 10) |> 
-  gt::gt() |>
-  gt::cols_label(
-    'team_name' = 'Team',
-    'prop_thrown_into_box' = gt::md('% of Final Third</br>Throw-ins into the Box')
+  tidyr::pivot_longer(
+    starts_with('n_'),
+    names_to = 'stat',
+    values_to = 'value'
   ) |> 
-  gt::fmt_percent(
-    columns = prop_thrown_into_box,
-    decimals = 0
-  ) |> 
-  gt::tab_options(
-    table.font.names = c('Roboto')
+  mutate(
+    across(
+      stat,
+      \(.x) 
+      factor(
+        .x, 
+        levels = c(
+          'n_attacking_throw_ins_per_game_not_into_box', 
+          'n_attacking_throw_ins_per_game_into_box'
+        )
+      )
+    )
   )
 
+PAL <- c(
+  'n_attacking_throw_ins_per_game_into_box' = '#01C4E7',
+  'n_attacking_throw_ins_per_game_not_into_box' = '#9f9f9f'
+)
 
+
+long_throw_ins_plot <- long |> 
+  ggplot() +
+  aes(
+    x = value,
+    y = team_name
+  ) +
+  geom_col(
+    aes(
+      fill = stat
+    ),
+    show.legend = FALSE
+  ) +
+  geom_text(
+    data = df |> filter(prop_thrown_into_box > 0.1),
+    aes(
+      x = n_attacking_throw_ins_per_game_into_box,
+      label = scales::percent(prop_thrown_into_box, accuracy = 1)
+    ),
+    color = 'white',
+    family = FONT,
+    hjust = 1.1
+  ) +
+  scale_fill_manual(
+    values = PAL
+  ) +
+  scale_x_continuous(
+    limits = c(0, 6)
+  ) +
+  theme_asa() +
+  theme(
+    axis.text.y = element_markdown(size = 10),
+    panel.grid.major.x = element_blank()
+  ) +
+  labs(
+    title = glue('Attacking throw-ins <span style="color:{PAL["n_attacking_throw_ins_per_game_into_box"]}">into the box</span> and <span style="color:{PAL["n_attacking_throw_ins_per_game_not_into_box"]}">outside the box</span>'),
+    subtitle = 'MLS, 2023',
+    y = NULL,
+    caption = 'Attacking throw: any throw-in taken in the final quarter of the pitch.<br/>Inspiration: The Athletic',
+    x = '# of attacking throw-ins per game'
+  )
+long_throw_ins_plot
+
+long_throw_ins_plot +
+  scale_y_discrete(
+    name = '',
+    labels = df |>
+      mutate(
+        label = glue("<span style='font-size:11px;color:white'>{team_name}</span><img src='{logo}' width='15' height='15'/>")
+      ) |> 
+      distinct(team_name, label) |>
+      deframe()
+  )
+
+long_throw_ins_plot_path <- file.path(PROJ_DIR, 'long-throw-ins-mls-2023.png')
+ggsave(
+  long_throw_ins_plot,
+  filename = long_throw_ins_plot_path,
+  units = 'in',
+  width = 7,
+  height = 7
+)
+
+## https://themockup.blog/posts/2019-01-09-add-a-logo-to-your-plot/
+add_logo <- function(
+    plot_path,
+    logo_path,
+    logo_scale = 0.1,
+    idx_x = 0.01, ## right-hand side
+    idx_y = 0.99, ## top of plot
+    adjust_x = ifelse(idx_x < 0.5, TRUE, FALSE),
+    adjust_y = ifelse(idx_y < 0.5, TRUE, FALSE)
+) {
+  plot <- magick::image_read(plot_path)
+  logo_raw <- magick::image_read(logo_path)
+  
+  plot_height <- magick::image_info(plot)$height
+  plot_width <- magick::image_info(plot)$width
+  
+  logo <- magick::image_scale(
+    logo_raw,
+    as.character(round(plot_width * logo_scale))
+  )
+  
+  info <- magick::image_info(logo)
+  logo_width <- info$width
+  logo_height <- info$height
+  
+  x_pos <- plot_width - idx_x * plot_width
+  y_pos <- plot_height - idx_y * plot_height
+  
+  if (isTRUE(adjust_x)) {
+    x_pos <- x_pos - logo_width
+  }
+  
+  if (isTRUE(adjust_y)) {
+    y_pos <- y_pos - logo_height
+  }
+  
+  offset <- paste0('+', x_pos, '+', y_pos)
+  
+  new_plot <- magick::image_composite(plot, logo, offset = offset)
+  ext <- tools::file_ext(plot_path)
+  rgx_ext <- sprintf('[.]%s$', ext)
+  
+  magick::image_write(
+    new_plot,
+    plot_path
+  )
+}
+
+asa_logo_path <- file.path(PROJ_DIR, 'ASAlogo.png')
+add_logo(
+  long_throw_ins_plot_path,
+  asa_logo_path,
+  logo_scale = 0.3,
+  idx_x = 0.98,
+  idx_y = 0.07,
+  adjust_x = FALSE,
+  adjust_y = FALSE
+)
