@@ -595,6 +595,7 @@ prepped_agg_gamestate_xgd <- agg_gamestate_xgd_with_logos |>
     )
   )
 
+update_date <- Sys.Date()
 xgd_p90_plot <- prepped_agg_gamestate_xgd |> 
   ggplot2::ggplot() +
   ggplot2::aes(
@@ -663,7 +664,7 @@ xgd_p90_plot <- prepped_agg_gamestate_xgd |>
   ) +
   ggplot2::geom_text(
     family = FONT,
-    size = 11 / ggplot2::.pt,
+    size = 12 / ggplot2::.pt,
     fontface = 'bold.italic',
     color = BLACKISH_BACKGROUND_COLOR,
     data = dplyr::filter(prepped_agg_gamestate_xgd, xgd_p90 < 0),
@@ -693,12 +694,12 @@ xgd_p90_plot <- prepped_agg_gamestate_xgd |>
     subtitle = 'English Premier League, 2023/2024 Season',
     y = NULL,
     tag = TAG_LABEL,
-    caption = glue::glue('**Data**: Opta via fbref *(last updated on 2023-10-25)*<br/>**xGD**: Expected goals for minus expected goals conceded'),
+    caption = glue::glue('**Data**: Opta via fbref *(last updated on {update_date})*<br/>**xGD**: Expected goals for minus expected goals conceded'),
     x = '% of Match Time'
   )
 xgd_p90_plot
 
-xgd_p90_plot_path <- file.path(PROJ_DIR, '2023-epl-xgd-p90.png')
+xgd_p90_plot_path <- file.path(PROJ_DIR, sprintf('2023-epl-xgd-p90-%s.png', update_date))
 ggplot2::ggsave(
   xgd_p90_plot,
   filename = xgd_p90_plot_path,
