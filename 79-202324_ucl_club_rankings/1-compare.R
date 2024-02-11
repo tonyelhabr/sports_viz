@@ -32,31 +32,27 @@ ggplot2::theme_set(ggplot2::theme_minimal())
 ggplot2::theme_update(
   text = ggplot2::element_text(family = FONT),
   title = ggplot2::element_text(size = 20, color = WHITISH_FOREGROUND_COLOR),
-  plot.title = ggtext::element_markdown(face = 'bold', size = 20, color = WHITISH_FOREGROUND_COLOR),
+  plot.title = ggtext::element_markdown(face = 'bold', size = 32, color = WHITISH_FOREGROUND_COLOR),
   plot.title.position = 'plot',
-  plot.subtitle = ggtext::element_markdown(size = 16, color = COMPLEMENTARY_FOREGROUND_COLOR),
+  plot.subtitle = ggtext::element_markdown(size = 24, color = COMPLEMENTARY_FOREGROUND_COLOR),
   axis.text = ggplot2::element_text(color = WHITISH_FOREGROUND_COLOR, size = 14),
   axis.title.x = ggtext::element_markdown(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.99),
   axis.title.y = ggtext::element_markdown(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.99),
   axis.line = ggplot2::element_blank(),
-  strip.text = ggplot2::element_text(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0),
-  legend.position = 'top',
-  legend.text = ggplot2::element_text(size = 12, color = WHITISH_FOREGROUND_COLOR, face = 'plain'),
-  legend.title = ggplot2::element_text(size = 12, color = WHITISH_FOREGROUND_COLOR, face = 'bold'),
   panel.grid.major = ggplot2::element_line(color = COMPLEMENTARY_BACKGROUND_COLOR),
   panel.grid.minor = ggplot2::element_line(color = COMPLEMENTARY_BACKGROUND_COLOR),
   panel.grid.minor.x = ggplot2::element_blank(),
   panel.grid.minor.y = ggplot2::element_blank(),
   plot.margin = ggplot2::margin(10, 20, 10, 20),
   plot.background = ggplot2::element_rect(fill = BLACKISH_BACKGROUND_COLOR, color = BLACKISH_BACKGROUND_COLOR),
-  plot.caption = ggtext::element_markdown(size = 10, color = WHITISH_FOREGROUND_COLOR, hjust = 0, face = 'plain'),
+  plot.caption = ggtext::element_markdown(size = 16, color = WHITISH_FOREGROUND_COLOR, hjust = 0, face = 'plain'),
   plot.caption.position = 'plot',
-  plot.tag = ggtext::element_markdown(size = 10, color = WHITISH_FOREGROUND_COLOR, hjust = 1),
+  plot.tag = ggtext::element_markdown(size = 16, color = WHITISH_FOREGROUND_COLOR, hjust = 1),
   plot.tag.position = c(0.99, 0.01),
   panel.spacing.x = grid::unit(2, 'lines'),
   panel.background = ggplot2::element_rect(fill = BLACKISH_BACKGROUND_COLOR, color = BLACKISH_BACKGROUND_COLOR)
 )
-ggplot2::update_geom_defaults('text', list(color = WHITISH_FOREGROUND_COLOR, size = 12 / .pt))
+ggplot2::update_geom_defaults('text', list(color = WHITISH_FOREGROUND_COLOR, size = 14 / .pt))
 
 CLUBELO_TEAMS <- c(
   'Arsenal',
@@ -128,7 +124,7 @@ compared_rankings <- read_csv(
 daily_compared_rankings <- compared_rankings |> 
   filter(
     team_clubelo %in% CLUBELO_TEAMS,
-    date >= ymd('2023-09-04')
+    date >= ymd('2023-09-18')
   ) |> 
   transmute(
     date,
@@ -143,7 +139,7 @@ daily_compared_rankings <- compared_rankings |>
   ) |> 
   ungroup()
 
-INTERNATIONAL_BREAK_SATURDAYS <- ymd(c('2023-09-09', '2023-10-14', '2023-11-18'))
+INTERNATIONAL_BREAK_SATURDAYS <- ymd(c('2023-10-14', '2023-11-18'))
 weekly_compared_rankings <- daily_compared_rankings |> 
   filter(
     ## arbitrarily choose Tuesday to capture Monday games
@@ -235,9 +231,9 @@ plot <- weekly_compared_rankings |>
       ) |> 
       mutate(
         label = paste0(
-          "<b><span style='font-size:12pt'>", 
+          "<b><span style='font-size:16pt'>", 
           team, 
-          "</span></b> <span style='font-size:9pt'>(", 
+          "</span></b> <span style='font-size:12pt'>(", 
           first_week_rerank_opta,
           ## https://albert-rapp.de/posts/ggplot2-tips/08_fonts_and_icons/08_fonts_and_icons.html
           " <span style='font-family:fa-solid",
@@ -262,7 +258,8 @@ plot <- weekly_compared_rankings |>
   ) +
   theme(
     panel.grid.major.y = element_blank(),
-    axis.text.y = element_markdown()
+    axis.text.y = element_markdown(),
+    axis.text.x = element_text(size = 16)
   ) +
   labs(
     title = 'Weekly changes in relative Opta ranking',
@@ -276,6 +273,6 @@ plot <- weekly_compared_rankings |>
 ggsave(
   plot,
   filename = file.path(PROJ_DIR, 'ucl-opta-rankings-bump.png'),
-  height = 8,
-  width = 8
+  height = 12,
+  width = 12
 )
