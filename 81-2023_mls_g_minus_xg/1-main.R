@@ -3,11 +3,44 @@ library(itscalledsoccer)
 library(readr)
 library(dplyr)
 library(ggplot2)
+library(ggtext)
+library(ggimage)
+library(tibble)
+
+PROJ_DIR <- '81-2023_mls_g_minus_xg'
+
+FONT <- 'Oswald'
+GRAYISH_COLOR <- '#9f9f9f'
+BLACKISH_COLOR <- '#15202B'
+theme_asa <- function(...) {
+  list(
+    ...,
+    theme_minimal(base_family = FONT),
+    theme(
+      text = element_text(color = 'white', size = 20),
+      axis.text.y = element_text(color = 'white', size = 12),
+      axis.text.x = element_text(color = 'white', size = 12),
+      axis.ticks = element_blank(),
+      panel.grid.minor = element_blank(),
+      legend.position = 'top',
+      plot.title = element_markdown(size = 20, hjust = 0),
+      plot.title.position = 'plot',
+      plot.caption.position = 'plot',
+      plot.subtitle = element_text(color = 'white', size = 14),
+      plot.caption = element_markdown(color = GRAYISH_COLOR, size = 11),
+      panel.border = element_blank(),
+      panel.grid.major.y = element_line(color = GRAYISH_COLOR, linetype = 'dashed', linewidth = 0.2),
+      panel.grid.major.x = element_line(color = GRAYISH_COLOR, linetype = 'dashed', linewidth = 0.2),
+      panel.background = element_rect(fill = BLACKISH_COLOR, color = BLACKISH_COLOR),
+      plot.background = element_rect(fill = BLACKISH_COLOR, color = BLACKISH_COLOR)
+    )
+  )
+}
 
 client <- AmericanSoccerAnalysis$new()
 
 team_info <- read_csv(
-  "https://docs.google.com/spreadsheets/d/e/2PACX-1vTiZfW7pSUWPttpHSMlAwgMyXwdAeLAW6HuoHwZa69FrNpfzqVkM_0DaeAveTG7hvbCSK-HBh31QxIM/pub?gid=95813594&single=true&output=csv"
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiZfW7pSUWPttpHSMlAwgMyXwdAeLAW6HuoHwZa69FrNpfzqVkM_0DaeAveTG7hvbCSK-HBh31QxIM/pub?gid=95813594&single=true&output=csv'
 )
 
 xg_by_team <- client$get_team_xgoals(
@@ -29,10 +62,9 @@ xg_by_team_ranks <- xg_by_team |>
   transmute(
     team,
     logo = paste0(
-      #"https://app.americansocceranalysis.com/club_logos/",
-      "https://american-soccer-analysis-headshots.s3.amazonaws.com/club_logos/",
+      'https://american-soccer-analysis-headshots.s3.amazonaws.com/club_logos/',
       team_id,
-      ".png"
+      '.png'
     ),
     g_minus_xg = goals_for - xgoals_for,
     g_minus_xg_conceded = goals_against - xgoals_against,
@@ -41,19 +73,80 @@ xg_by_team_ranks <- xg_by_team |>
   ) |> 
   arrange(offense_overperformance_rank)
 
-pmax(max(abs(xg_by_team_ranks$g_minus_xg)), max(abs(xg_by_team_ranks$g_minus_xg_conceded)))
-max_value <- 20
+# pmax(max(abs(xg_by_team_ranks$g_minus_xg)), max(abs(xg_by_team_ranks$g_minus_xg_conceded)))
+max_value <- 19
 xlims <- c(-max_value, max_value)
 ylims = c(-max_value, max_value)
 
 # create data frame with quadrant labels
 quadrant_labels <- tibble(
   label = c(
-    "Over-performing Offense &\nUnder-performing Defense",
-    "Under-performing Offense &\nUnder-performing Defense",
-    "Over-performing Offense &\nOver-performing Defense",
-    "Under-performing Offense &\nOver-performing Defense"
+    'Offense Over-performed &\nDefense Under-performed',
+    'Offense Under-performed &\nDefense Under-performed',
+    'Offense Over-performed &\nDefense Over-performed',
+    'Offense Under-performed &\nDefense Over-performed'
   ),
   x = c(xlims[2], xlims[1], xlims[2], xlims[1]),
   y = c(ylims[2], ylims[2], ylims[1], ylims[1])
+)
+
+p <- xg_by_team_ranks |> 
+  ggplot() +
+  aes(
+    x = g_minus_xg,
+    y = g_minus_xg_conceded
+  ) +
+  geom_text(
+    data = quadrant_labels,
+    aes(
+      x = x,
+      y = y,
+      label = label
+    ),
+    family = 'Oswald',
+    # fontface = 'bold',
+    size = 14 / .pt,
+    color = GRAYISH_COLOR, #  'white',
+    alpha = 1, # 0.7,
+    hjust = 'inward',
+    vjust = 'inward'
+  ) +
+  geom_vline(
+    data = data.frame(),
+    aes(
+      xintercept = 0
+    ),
+    color = 'white',
+    size = 1
+  ) +
+  geom_hline(
+    data = data.frame(),
+    aes(
+      yintercept = 0
+    ),
+    color = 'white',
+    size = 1
+  ) +
+  theme_asa() +
+  labs(
+    title = 'Actual vs. Expected Goal Scoring and Conceding Performance',
+    subtitle = 'MLS, 2023',
+    x = 'Goals - xG',
+    y = 'Goals Conceded - xG Conceded'
+  )
+
+p2 <- p +
+  ggimage::geom_image(
+    aes(
+      image = logo
+    ),
+    size = 0.08,
+    asp = 1
+  )
+
+ggsave(
+  p2,
+  width = 7,
+  height = 7,
+  filename = file.path(PROJ_DIR, '2023_mls_g_minus_xg.png')
 )
