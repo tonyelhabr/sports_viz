@@ -1,12 +1,17 @@
 library(dplyr)
 library(readr)
 library(tidyr)
-library(ggplot2)
 library(forcats)
 library(tidyr)
+library(tibble)
+
+library(ggplot2)
 library(ggtext)
 library(glue)
-library(tibble)
+library(scales)
+library(magick)
+
+library(fotmob)
 
 PROJ_DIR <- '80-mls_long_throw_ins'
 
@@ -44,6 +49,7 @@ source(file.path('R', 'helpers.R'))
 games <- import_parquet('games')
 players <- import_parquet('players')
 teams <- import_parquet('teams')
+actions <- import_parquet('actions')
 
 x <- import_parquet(add_suffix('x', suffix = '')) |> 
   select(-matches('_a[1-2]$'))
@@ -53,8 +59,12 @@ setwd(file.path('../sports_viz'))
 
 long_throw_ins <- xy |> 
   filter(type_throw_in_a0 == 1) |> 
+  inner_join(
+    actions
+  ) |> 
   count(
     team_id, 
+    player_id,
     attacking_throw_in = start_x_a0 >= (3 * 105 / 4),
     thrown_into_box = (end_x_a0 >= (105 - 16.5)) & (end_y_a0 >= (34 - 20.15) & end_y_a0 <= (34 + 20.15))
   )
@@ -81,8 +91,54 @@ prop_thrown_into_box <- long_throw_ins |>
     n_attacking_throw_ins_into_box = n
   )
 
-## https://github.com/etmckinley/goals_added_wheels_itscalledsoccer
-team_info <- read_csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vTiZfW7pSUWPttpHSMlAwgMyXwdAeLAW6HuoHwZa69FrNpfzqVkM_0DaeAveTG7hvbCSK-HBh31QxIM/pub?gid=95813594&single=true&output=csv')
+## Debug by looking at player-level
+prop_thrown_into_box_by_player <- long_throw_ins |> 
+  filter(
+    attacking_throw_in 
+  ) |> 
+  group_by(team_id, player_id) |> 
+  mutate(
+    total = sum(n),
+    prop_thrown_into_box = n / sum(n)
+  ) |> 
+  ungroup() |> 
+  filter(thrown_into_box) |> 
+  select(
+    team_id,
+    player_id,
+    prop_thrown_into_box,
+    n_attacking_throw_ins = total,
+    n_attacking_throw_ins_into_box = n
+  ) |> 
+  inner_join(
+    teams |> select(team_id, team_name),
+    by = join_by(team_id)
+  ) |> 
+  inner_join(
+    players |>
+      ## There are sometimes dup player names where one name has an accent and another doesn't
+      group_by(team_id, player_id) |> 
+      mutate(n = n()) |> 
+      slice_max(n, n = 1, with_ties = FALSE) |> 
+      ungroup() |> 
+      select(team_id, player_id, player_name),
+    by = join_by(team_id, player_id)
+  ) |> 
+  arrange(desc(n_attacking_throw_ins))
+
+
+prop_thrown_into_box_by_player |> 
+  filter(n_attacking_throw_ins >= 20) |> 
+  arrange(desc(prop_thrown_into_box)) |> 
+  slice_max(prop_thrown_into_box, n = 20, with_ties = FALSE) |> 
+  select(
+    team_name, 
+    player_name, 
+    n_attacking_throw_ins, 
+    n_attacking_throw_ins_into_box, 
+    prop_thrown_into_box
+  ) |> 
+  knitr::kable(digits = 2)
 
 table <- fotmob::fotmob_get_league_tables(league_id = 130, season = '2023') |> 
   filter(table_type == 'all')
@@ -116,9 +172,6 @@ df <- prop_thrown_into_box |>
     n_attacking_throw_ins_per_game_not_into_box = n_attacking_throw_ins_per_game - n_attacking_throw_ins_per_game_into_box,
     fotmob_team_name = fct_reorder(fotmob_team_name, n_attacking_throw_ins_per_game)
   )
-df |> 
-  arrange(desc(n_attacking_throw_ins)) |> 
-  glimpse()
 
 long <- df |> 
   select(
@@ -127,7 +180,7 @@ long <- df |>
     n_attacking_throw_ins_per_game_into_box,
     n_attacking_throw_ins_per_game_not_into_box
   ) |> 
-  tidyr::pivot_longer(
+  pivot_longer(
     starts_with('n_'),
     names_to = 'stat',
     values_to = 'value'
@@ -151,7 +204,6 @@ PAL <- c(
   'n_attacking_throw_ins_per_game_not_into_box' = '#9f9f9f'
 )
 
-
 long_throw_ins_plot <- long |> 
   ggplot() +
   aes(
@@ -168,7 +220,7 @@ long_throw_ins_plot <- long |>
     data = df |> filter(prop_thrown_into_box >= 0.12),
     aes(
       x = n_attacking_throw_ins_per_game_into_box,
-      label = scales::percent(prop_thrown_into_box, accuracy = 1)
+      label = percent(prop_thrown_into_box, accuracy = 1)
     ),
     color = 'white',
     family = FONT,
