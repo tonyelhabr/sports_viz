@@ -6,6 +6,7 @@ library(ggplot2)
 library(ggtext)
 library(ggimage)
 library(tibble)
+library(cowplot)
 
 PROJ_DIR <- '81-2023_mls_g_minus_xg'
 
@@ -39,6 +40,7 @@ theme_asa <- function(...) {
 
 client <- AmericanSoccerAnalysis$new()
 
+# https://github.com/etmckinley/good-lucky-matrix
 team_info <- read_csv(
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vTiZfW7pSUWPttpHSMlAwgMyXwdAeLAW6HuoHwZa69FrNpfzqVkM_0DaeAveTG7hvbCSK-HBh31QxIM/pub?gid=95813594&single=true&output=csv'
 )
@@ -144,9 +146,95 @@ p2 <- p +
     asp = 1
   )
 
+p3 <- p2 +
+  ggforce::geom_mark_circle(
+    data = xg_by_team_ranks |> 
+      filter(team == 'Atlanta United') |> 
+      mutate(
+        label = 'Offense outperformed expectations in scoring, ranking above all teams. Defense underperformed, allowing more goals than all but five teams.'
+      ),
+    aes(
+      description = label,
+      group = label
+    ),
+    expand = unit(0.01, 'mm'),
+    con.type = 'straight',
+    con.colour = GRAYISH_COLOR,
+    con.cap = unit(8, 'mm'),
+    label.buffer = unit(10, 'mm'),
+    label.margin = margin(1, 1, 1, 1, 'mm'),
+    label.lineheight = 0.9,
+    label.family = 'Oswald',
+    label.fontsize = 9,
+    label.colour = 'white',
+    label.fill = 'transparent',
+    show.legend = FALSE
+  )
+
+# https://themockup.blog/posts/2019-01-09-add-a-logo-to-your-plot/
+add_logo <- function(
+    plot_path,
+    logo_path,
+    logo_scale = 0.1,
+    idx_x = 0.01, ## right-hand side
+    idx_y = 0.99, ## top of plot
+    adjust_x = ifelse(idx_x < 0.5, TRUE, FALSE),
+    adjust_y = ifelse(idx_y < 0.5, TRUE, FALSE)
+) {
+  plot <- magick::image_read(plot_path)
+  logo_raw <- magick::image_read(logo_path)
+  
+  plot_height <- magick::image_info(plot)$height
+  plot_width <- magick::image_info(plot)$width
+  
+  logo <- magick::image_scale(
+    logo_raw,
+    as.character(round(plot_width * logo_scale))
+  )
+  
+  info <- magick::image_info(logo)
+  logo_width <- info$width
+  logo_height <- info$height
+  
+  x_pos <- plot_width - idx_x * plot_width
+  y_pos <- plot_height - idx_y * plot_height
+  
+  if (isTRUE(adjust_x)) {
+    x_pos <- x_pos - logo_width
+  }
+  
+  if (isTRUE(adjust_y)) {
+    y_pos <- y_pos - logo_height
+  }
+  
+  offset <- paste0('+', x_pos, '+', y_pos)
+  
+  new_plot <- magick::image_composite(plot, logo, offset = offset)
+  ext <- tools::file_ext(plot_path)
+  rgx_ext <- sprintf('[.]%s$', ext)
+  
+  magick::image_write(
+    new_plot,
+    plot_path
+  )
+}
+
+plot_path <- file.path(PROJ_DIR, '2023_mls_g_minus_xg.png')
+asa_logo_path <- file.path(PROJ_DIR, 'ASALogo.png')
 ggsave(
-  p2,
+  p3,
+  filename = plot_path,
   width = 7,
-  height = 7,
-  filename = file.path(PROJ_DIR, '2023_mls_g_minus_xg.png')
+  height = 7
 )
+
+add_logo(
+  plot_path,
+  asa_logo_path,
+  logo_scale = 0.18,
+  idx_x = 0.98,
+  idx_y = 0.01,
+  adjust_x = FALSE,
+  adjust_y = TRUE
+)
+
