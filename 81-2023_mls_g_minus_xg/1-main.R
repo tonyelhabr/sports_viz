@@ -134,7 +134,8 @@ p <- xg_by_team_ranks |>
     title = 'Actual vs. Expected Goal Scoring and Conceding Performance',
     subtitle = 'MLS, 2023',
     x = 'Goals - xG',
-    y = 'Goals Conceded - xG Conceded'
+    y = 'Goals Conceded - xG Conceded',
+    caption = 'Data: American Soccer Analysis'
   )
 
 p2 <- p +
