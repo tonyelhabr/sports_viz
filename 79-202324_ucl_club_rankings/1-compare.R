@@ -124,7 +124,7 @@ compared_rankings <- read_csv(
 daily_compared_rankings <- compared_rankings |> 
   filter(
     team_clubelo %in% CLUBELO_TEAMS,
-    date >= ymd('2023-09-18')
+    date >= ymd('2023-11-01')
   ) |> 
   transmute(
     date,
@@ -139,7 +139,7 @@ daily_compared_rankings <- compared_rankings |>
   ) |> 
   ungroup()
 
-INTERNATIONAL_BREAK_SATURDAYS <- ymd(c('2023-10-14', '2023-11-18'))
+INTERNATIONAL_BREAK_SATURDAYS <- ymd(c('2023-11-18'))
 weekly_compared_rankings <- daily_compared_rankings |> 
   filter(
     ## arbitrarily choose Tuesday to capture Monday games
@@ -263,7 +263,7 @@ plot <- weekly_compared_rankings |>
   ) +
   labs(
     title = 'Weekly changes in relative Opta ranking',
-    subtitle = 'UCL 2023/24 R16 Teams, since Sep. 2023',
+    subtitle = 'UCL 2023/24 R16 Teams, since Nov. 2023',
     caption = glue('**Data**: Opta. Last updated at {Sys.Date()}.<br/>Dotted lines mark international break weekends.'),
     tag = "<span style='font-family:fa-brands'>&#xf099;</span> @Tony ElHabr",
     y = NULL,
