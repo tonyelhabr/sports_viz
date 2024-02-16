@@ -3,6 +3,16 @@ This repo stores my code and plots for sports-related plots. Any "small" data is
 
 The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I did not end up finishing.
 
+# 81. 2024 MLS Atlanta United Preview
+
+![](81-2023_mls_g_minus_xg/2023_mls_g_minus_xg.png)
+
+![](81-2023_mls_g_minus_xg/2023_mls_prop_duration_init_gamestate.png)
+
+# 80. 2023 MLS Attacking Throw-ins
+
+![](80-mls_long_throw_ins/long-throw-ins-mls-2023.png)
+
 # 79. 2023/24 UCL Round of 16 Relative Opta Rankings
 
 ![](79-202324_ucl_club_rankings/ucl-opta-rankings-bump.png)
