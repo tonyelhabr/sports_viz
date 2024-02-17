@@ -119,7 +119,7 @@ p <- xg_by_team_ranks |>
       xintercept = 0
     ),
     color = 'white',
-    size = 1
+    linewidth = 1
   ) +
   geom_hline(
     data = data.frame(),
@@ -127,14 +127,15 @@ p <- xg_by_team_ranks |>
       yintercept = 0
     ),
     color = 'white',
-    size = 1
+    linewidth = 1
   ) +
   theme_asa() +
   labs(
     title = 'Actual vs. Expected Goal Scoring and Conceding Performance',
     subtitle = 'MLS, 2023',
     x = 'Goals - xG',
-    y = 'Goals Conceded - xG Conceded'
+    y = 'Goals Conceded - xG Conceded',
+    caption = 'Data: American Soccer Analysis'
   )
 
 p2 <- p +
@@ -151,7 +152,7 @@ p3 <- p2 +
     data = xg_by_team_ranks |> 
       filter(team == 'Atlanta United') |> 
       mutate(
-        label = 'Offense outperformed expectations in scoring, ranking above all teams. Defense underperformed, allowing more goals than all but five teams.'
+        label = 'Offense outperformed expectations in scoring, ranking above all teams in `Goals - xG`. Defense underperformed, allowing more goals than expected, worse than all but five teams.'
       ),
     aes(
       description = label,
