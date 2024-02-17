@@ -23,7 +23,7 @@ raw_match_summaries <- worldfootballR::load_fb_match_summary(
   country = COUNTRY,
   gender = GENDER,
   tier = TIER,
-  season_end_year = 2022
+  season_end_year = SEASON_END_YEAR
 )
 
 extract_fbref_match_id <- function(match_url) {
