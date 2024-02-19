@@ -192,8 +192,50 @@ yoy_adj_shooter_xg |>
   corrr::correlate()
 
 yoy_adj_shooter_xg |>
+  filter(shots >= 10, g >= 1) |> 
   select(
     prev_adj_ratio_mean,
     adj_ratio_mean
   ) |> 
   corrr::correlate()
+
+yoy_adj_shooter_xg |>
+  filter(
+    player %in% names(shaw_players)
+  ) |> 
+  mutate(
+    across(
+      c(
+        prev_adj_ratio_mean,
+        adj_ratio_mean
+      ),
+      \(.x) ifelse(.x > 1, 1, 0)
+    )
+  ) |> 
+  select(
+    prev_adj_ratio_mean,
+    adj_ratio_mean
+  ) |> 
+  corrr::correlate()
+
+yoy_adj_shooter_xg |> 
+  filter(player |> stringr::str_detect('Jesus'))
+
+yoy_adj_shooter_xg |> 
+  filter(adj_ratio_mean > 1.5) |> 
+  arrange(desc(shots))
+
+yoy_adj_shooter_xg |> 
+  filter(shots >= 10) |> 
+  ggplot() +
+  aes(
+    x = prev_adj_ratio_mean,
+    y = adj_ratio_mean
+  ) +
+  geom_point(
+    aes(
+      size = sqrt(shots)
+    )
+  ) +
+  geom_smooth() +
+  facet_wrap(~season)
