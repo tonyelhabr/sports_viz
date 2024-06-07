@@ -271,6 +271,7 @@ cumu_doublecounted_restacked_shots <- doublecounted_restacked_shots |>
 
 ORDERED_GAMESTATE_LABELS <- c('Trailing', 'Tied', 'Leading')
 gamestate_shots <- cumu_doublecounted_restacked_shots |> 
+  # dplyr::filter(row_number() == 13161) |> 
   dplyr::inner_join(
     match_summaries |> 
       dplyr::distinct(
@@ -552,18 +553,24 @@ team_label_order <- agg_gamestate_xgd_with_logos |>
   dplyr::pull(team)
 team_label_order <- c(team_label_order, '')
 
-table <- raw_table |> 
+init_table <- raw_table |> 
   dplyr::select(
     team_short = Squad,
-    xgd_p90_total = xGD.90
+    xgd_p90_total = xGD.90,
+    rank = Rk
   ) |> 
   dplyr::bind_cols(
     team_names |> dplyr::select(team)
   ) |> 
+  dplyr::arrange(rank)
+## One-off
+team_label_order <- c(rev(init_table$team), '')
+
+table <- init_table |> 
   dplyr::mutate(
     dplyr::across(
       team,
-      \(.x) factor(.x, levels = team_label_order)
+      \(.x) factor(.x, levels = setdiff(team_label_order, ''))
     )
   )
 
@@ -694,12 +701,13 @@ xgd_p90_plot <- prepped_agg_gamestate_xgd |>
     subtitle = 'English Premier League, 2023/2024 Season',
     y = NULL,
     tag = TAG_LABEL,
-    caption = glue::glue('**Data**: Opta via fbref *(last updated on {update_date})*<br/>**xGD**: Expected goals for minus expected goals conceded'),
+    # caption = glue::glue('**Data**: Opta via fbref *(last updated on {update_date})*<br/>**xGD**: Expected goals for minus expected goals conceded'),
+    caption = glue::glue('**Data**: Opta via fbref<br/>**xGD**: Expected goals for minus expected goals conceded'),
     x = '% of Match Time'
   )
 xgd_p90_plot
 
-xgd_p90_plot_path <- file.path(PROJ_DIR, sprintf('2023-epl-xgd-p90-%s.png', update_date))
+xgd_p90_plot_path <- file.path(PROJ_DIR, sprintf('2023-epl-xgd-p90-%s-ordered.png', update_date))
 ggplot2::ggsave(
   xgd_p90_plot,
   filename = xgd_p90_plot_path,
