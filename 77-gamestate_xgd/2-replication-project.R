@@ -1,4 +1,7 @@
 ## When not doing gamestate stuff, should just use higher-level raw data.
+## https://www.americansocceranalysis.com/home/2022/7/19/the-replication-project-is-xg-the-best-predictor-of-future-results
+## http://web.archive.org/web/20181112175811/http://www.11tegen11.com/2015/01/05/the-best-predictor-for-future-performance-is-expected-goals/
+## http://web.archive.org/web/20200818194545/https://jameswgrayson.wordpress.com/2011/04/10/predicting-future-performance/
 library(worldfootballR)
 library(dplyr)
 
