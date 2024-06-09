@@ -98,6 +98,10 @@ deduped_match_summaries <- match_summaries |>
 
 shots <- raw_shots |> 
   dplyr::transmute(
+    season = Season_End_Year,
+    country = Country,
+    gender = Gender,
+    tier = Tier,
     match_id = extract_fbref_match_id(MatchURL),
     period = as.integer(Match_Half),
     ## convert "45+2" to "45"
@@ -322,7 +326,7 @@ cumu_doublecounted_restacked_shots <- doublecounted_restacked_shots |>
   )
 
 ORDERED_GAMESTATE_LABELS <- c('trailing', 'tied', 'leading')
-init_gamestate_shots <- cumu_doublecounted_restacked_shots |> 
+gamestate_shots <- cumu_doublecounted_restacked_shots |> 
   dplyr::inner_join(
     deduped_match_summaries |> 
       dplyr::distinct(
@@ -340,6 +344,9 @@ init_gamestate_shots <- cumu_doublecounted_restacked_shots |>
   ) |> 
   dplyr::transmute(
     pov,
+    country,
+    gender,
+    tier,
     match_id,
     season,
     country,
@@ -374,32 +381,15 @@ init_gamestate_shots <- cumu_doublecounted_restacked_shots |>
   dplyr::mutate(
     pre_shot_gamestate = dplyr::lag(gamestate, default = ORDERED_GAMESTATE_LABELS[2])
   ) |> 
-  dplyr::ungroup()
-
-
-## different than match week, since match week can be not in sync with date if a match was postponed
-game_idxs <- init_gamestate_shots |> 
-  dplyr::distinct(season, team, match_id, match_week, date) |>
-  dplyr::arrange(season, team, date) |>
-  dplyr::group_by(season, team) |> 
-  dplyr::mutate(
-    season_game_count = dplyr::n(), ## non-trivial for Bundesliga
-    game_idx = dplyr::row_number(date)
-  ) |> 
-  dplyr::ungroup()
-
-gamestate_shots <- init_gamestate_shots |> 
-  dplyr::left_join(
-    game_idxs |> dplyr::select(match_id, team, season_game_count, game_idx),
-    by = dplyr::join_by(match_id, team)
-  ) |> 
-  dplyr::arrange(team, season, game_idx, shot_id)
+  dplyr::ungroup() |> 
+  dplyr::arrange(team, season, date, shot_id)
 
 LAST_MIN_BUFFER <- 3
 last_min_pad <- gamestate_shots |>
   dplyr::select(
     match_id,
     season,
+    country,
     gender,
     tier,
     match_week,
@@ -414,8 +404,9 @@ last_min_pad <- gamestate_shots |>
   dplyr::ungroup() |>
   dplyr::mutate(
     xg = 0,
-    xgd = 0,
+    xg_conceded = 0,
     xgot = 0,
+    xgot_conceded = 0,
     last_regular_min = ifelse(period == 1L, 45L, 90L),
     time = pmax(last_regular_min + LAST_MIN_BUFFER, time + 1)
   )
@@ -443,20 +434,31 @@ gamestate_shots_and_durations <- padded_gamestate_shots |>
 gamestate_shots_and_durations
 
 agg_shots_by_game_gamestate <- gamestate_shots_and_durations |> 
-  dplyr::group_by(team, season, match_id, game_idx, pre_shot_gamestate) |> 
+  dplyr::group_by(
+    country, 
+    gender,
+    tier,
+    team,
+    season, 
+    match_id, 
+    pre_shot_gamestate
+  ) |> 
   dplyr::summarize(
+    shots = sum(pov == 'primary'),
+    shots_conceded = sum(pov == 'secondary'),
+    sot = sum(pov == 'primary' & xgot > 0),
+    sot_conceded = sum(pov == 'primary' & xgot_conceded > 0),
     dplyr::across(
       c(
-        xgd,
+        g, g_conceded, xg, xg_conceded, xgot, xgot_conceded,
         duration
       ),
-      sum
+      \(.x) sum(.x)
     )
   ) |> 
   dplyr::ungroup() |> 
-  dplyr::arrange(team, season, game_idx, pre_shot_gamestate)
+  dplyr::arrange(country, gender, tier, team, season, match_id, pre_shot_gamestate)
 
-## debug these
 # agg_shots_by_game_gamestate |> 
 #   dplyr::group_by(team, season, match_id) |> 
 #   dplyr::summarize(duration = sum(duration)) |> 
@@ -465,155 +467,60 @@ agg_shots_by_game_gamestate <- gamestate_shots_and_durations |>
 #   dplyr::filter(duration < (90 + 2 * LAST_MIN_BUFFER)) |> 
 #   dplyr::distinct(season, match_id)
 
-cumu_gamestate_xgd <- agg_shots_by_game_gamestate |> 
-  dplyr::group_by(season, team, pre_shot_gamestate) |> 
+gamestate_by_game <- agg_shots_by_game_gamestate |> 
+  dplyr::distinct(
+    country,
+    gender,
+    tier,
+    team,
+    season,
+    match_id
+  ) |> 
+  tidyr::crossing(
+    pre_shot_gamestate = ORDERED_GAMESTATE_LABELS
+  ) |> 
+  dplyr::left_join(
+    agg_shots_by_game_gamestate,
+    by = dplyr::join_by(country, gender, tier, team, season, pre_shot_gamestate, match_id)
+  ) |> 
   dplyr::mutate(
     dplyr::across(
       c(
-        # shots,
-        xgd,
+        shots,
+        shots_conceded,
+        sot,
+        sot_conceded,
+        g, 
+        g_conceded, 
+        xg,
+        xg_conceded, 
+        xgot, 
+        xgot_conceded,
         duration
       ),
-      list(cumu = cumsum)
+      \(.x) coalesce(.x, 0)
     )
   ) |> 
-  dplyr::ungroup()
+  tidyr::pivot_wider(
+    names_from = pre_shot_gamestate,
+    values_from = c(
+      shots,
+      shots_conceded,
+      sot,
+      sot_conceded,
+      g, 
+      g_conceded, 
+      xg,
+      xg_conceded, 
+      xgot, 
+      xgot_conceded,
+      duration
+    ),
+    names_sort = TRUE
+  )
+gamestate_by_game
 
-accumulate_shots <- function(df, col, .prefix) {
-  df |> 
-    dplyr::arrange(team, season, op(game_idx)) |> 
-    dplyr::group_by(season, team) |> 
-    dplyr::mutate(
-      dplyr::across(
-        c(
-          # duration,
-          shots, shots_conceded, sot, sot_conceded,
-          g, g_conceded, xg, xg_conceded, xgot, xgot_conceded,
-          pts, pts_conceded
-        ),
-        \(.x) cumsum(.x)
-      )
-    ) |> 
-    dplyr::ungroup() |> 
-    dplyr::mutate(
-      shot_ratio = shots / (shots + shots_conceded),
-      sot_ratio = sot / (sot + sot_conceded),
-      g_ratio = g / (g + g_conceded),
-      xg_ratio = xg / (xg + xg_conceded),
-      xgot_ratio = xgot / (xgot + xgot_conceded),
-      pts_per_game = pts / game_idx
-    ) |> 
-    dplyr::rename_with(
-      .fn = \(.x) paste0(.prefix, '_', .x),
-      .cols = c(
-        shots, shots_conceded, sot, sot_conceded,
-        g, g_conceded, xg, xg_conceded, xgot, xgot_conceded,
-        pts, pts_conceded,
-        ends_with('ratio'),
-        pts_per_game
-      )
-    )
-}
-
-cumu_shots <- agg_shots_by_game |> 
-  accumulate_shots(game_idx, `+`, .prefix = 'pre')
-
-inv_cumu_shots <- agg_shots_by_game |> 
-  accumulate_shots(inv_game_idx, .prefix = 'post')
-
-pre_post_cumu_shots <- dplyr::full_join(
-  cumu_shots,
-  inv_cumu_shots,
-  by = dplyr::join_by(team, season, match_id, season_game_count, game_idx, inv_game_idx)
+qs::qsave(
+  gamestate_by_game,
+  file.path(PROJ_DIR, 'gamestate_by_game-big5+mls.qs')
 )
-
-rolling_cors <- pre_post_cumu_shots |> 
-  # dplyr::group_by(game_idx) |> 
-  tidyr::nest(data = -c(game_idx)) |> 
-  dplyr::mutate(
-    pre_shot_ratio_post_pts = purrr::map_dbl(
-      data,
-      \(.x) {
-        cor(
-          .x$pre_shot_ratio,
-          .x$post_pts
-        )^2
-      }
-    )
-  ) |> 
-  tidyr::hoist(
-    data,
-    'pre_shot_ratio', 'post_pts'
-  )
-
-rolling_cors <- pre_post_cumu_shots |> 
-  group_by(game_idx) |> 
-  slice_sample(
-    n = 1000,
-    replace = TRUE
-  ) |> 
-  ungroup() |> 
-  # group_by(game_idx) |> 
-  # summarize(
-  #   pre_shot_ratio_post_pts = purrr::map2(
-  #     pre_shot_ratio,
-  #     post_pts,
-  #     \(.x, .y) cor(.x, .y)^2
-  #   )
-  # ) |> 
-  tidyr::nest(data = -c(game_idx)) |> 
-  dplyr::mutate(
-    pre_shot_ratio_post_pts = purrr::map_dbl(
-      data,
-      \(.x) {
-        cor(
-          .x$pre_shot_ratio,
-          .x$post_pts
-        )^2
-      }
-    )
-  ) |>
-  ungroup() |> 
-  tidyr::hoist(
-    data,
-    'pre_shot_ratio', 'post_pts'
-  )
-
-library(ggplot2)
-rolling_cors |> 
-  select(
-    game_idx,
-    pre_shot_ratio_post_pts
-  ) |> 
-  ggplot() +
-  aes(
-    x = game_idx,
-    y = pre_shot_ratio_post_pts
-  ) +
-  geom_point()
-
-
-pre_post_cumu_shots |>
-  filter(game_idx == 1) |> 
-  select(
-    team,
-    season,
-    pre_shots,
-    pre_shots_conceded,
-    pre_shot_ratio,
-    pre_pts,
-    post_g_ratio,
-    post_pts,
-    post_pts_per_game
-  ) |> 
-  ggplot() +
-  aes(
-    x = pre_shot_ratio,
-    y = post_g_ratio
-  ) +
-  geom_point() +
-  geom_smooth(
-    method = 'lm',
-    se = FALSE
-  ) +
-  facet_wrap(~season)

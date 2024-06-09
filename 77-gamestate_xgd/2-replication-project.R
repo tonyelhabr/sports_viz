@@ -10,10 +10,16 @@ extract_fbref_match_id <- function(match_url) {
   basename(dirname(match_url))
 }
 
+COUNTRY <- c('ENG', 'ESP', 'FRA', 'GER', 'ITA', 'USA')
+GENDER <- 'M'
+TIER <- '1st'
+SEASON_END_YEAR <- c(2018:2024)
+
 raw_team_summary <- load_fb_advanced_match_stats(
-  country = c('ENG', 'ESP', 'FRA', 'GER', 'ITA', 'USA'),
-  gender = 'M',
-  tier = '1st',
+  country = COUNTRY,
+  gender = GENDER,
+  tier = TIER,
+  season_end_year = SEASON_END_YEAR,
   stat_type = 'summary',
   team_or_player = 'team'
 )
@@ -31,11 +37,11 @@ team_summary <- raw_team_summary |>
   ##  Drop MLS 2020 entirely since it was heavily impacted by COVID.
   ##    Also, drop MLS 2024 since it's incomplete
   dplyr::filter(
-    !(Country == 'USA' & Season_End_Year %in% c(2020, 2024))
+    !(Country == 'USA' & Season_End_Year == 2024)
   ) |> 
   ## Drop Ligue 1 COVID year since each team has about 7 games missing
   dplyr::filter(
-    !(Country == 'FRA' & Season_End_Year == 2020)
+    Season_End_Year != 2020
   ) |>
   dplyr::transmute(
     season = Season_End_Year,
@@ -82,7 +88,7 @@ team_summary
 # team_summary |> dplyr::count(season, country, season_game_count, sort = TRUE) |> tibble::view()
 # team_summary |> dplyr::filter(team == 'Bayer Leverkusen') |> dplyr::filter(season == 2024) # |> tibble::view()
 
-team_summary_for_and_against <- dplyr::left_join(
+split_team_summary <- dplyr::left_join(
   team_summary,
   team_summary |> 
     dplyr::transmute(
@@ -111,9 +117,20 @@ team_summary_for_and_against <- dplyr::left_join(
   ) |> 
   dplyr::arrange(team, season, date)
 
-# team_summary_for_and_against |> 
-#   dplyr::count(season, country, team, date, sort = TRUE) |> 
-#   dplyr::filter(n > 1L) 
+## still some games i need to match
+# split_team_summary |> 
+#   dplyr::filter(country == 'ITA') |> 
+#   dplyr::anti_join(
+#     gamestate_by_game,
+#     by = dplyr::join_by(team, season, match_id)
+#   ) |> 
+#   dplyr::arrange(team, season, date)
+
+split_data <- split_team_summary |> 
+  dplyr::left_join(
+    gamestate_by_game,
+    by = dplyr::join_by(season, country, gender, tier, match_id, team)
+  )
 
 accumulate_team_summary <- function(df, op, .prefix) {
   df |> 
@@ -124,6 +141,8 @@ accumulate_team_summary <- function(df, op, .prefix) {
         c(
           shots, shots_conceded, sot, sot_conceded,
           g, g_conceded, xg, xg_conceded,
+          g_tied, g_conceded_tied, xg_tied, xg_conceded_tied, xgot_tied, xgot_conceded_tied,
+          duration_leading,
           pts, pts_conceded
         ),
         \(.x) cumsum(coalesce(.x, 0))
@@ -135,6 +154,14 @@ accumulate_team_summary <- function(df, op, .prefix) {
       sot_ratio = sot / (sot + sot_conceded),
       g_ratio = g / (g + g_conceded),
       xg_ratio = xg / (xg + xg_conceded),
+      
+      shot_tied_ratio = shots_tied / (shots_tied + shots_conceded_tied),
+      sot_tied_ratio = sot_tied / (sot_tied + sot_conceded_tied),
+      g_tied_ratio = g_tied / (g_tied + g_conceded_tied),
+      xg_tied_ratio = xg_tied / (xg_tied + xg_conceded_tied),
+      xgot_tied_ratio = xgot_tied / (xgot_tied + xgot_conceded_tied),
+      
+      duration_leading_per_game = duration_leading / game_idx,
       pts_per_game = pts / game_idx
     ) |> 
     dplyr::rename_with(
@@ -142,9 +169,12 @@ accumulate_team_summary <- function(df, op, .prefix) {
       .cols = c(
         shots, shots_conceded, sot, sot_conceded,
         g, g_conceded, xg, xg_conceded,
+        shots_tied, shots_conceded_tied, sot_tied, sot_conceded_tied,
+        g_tied, g_conceded_tied, xg_tied, xg_conceded_tied, xgot_tied, xgot_conceded_tied,
+        duration_leading,
         pts, pts_conceded,
         ends_with('ratio'),
-        pts_per_game
+        ends_with('per_game')
       )
     )
 }
@@ -217,13 +247,25 @@ calculate_rolling_r2s <- function(df) {
       past_sot_ratio__future_g_ratio = calculate_nested_r2(data, 'past_sot_ratio', 'future_g_ratio'),
       past_g_ratio__future_g_ratio = calculate_nested_r2(data, 'past_g_ratio', 'future_g_ratio'),
       past_xg_ratio__future_g_ratio = calculate_nested_r2(data, 'past_xg_ratio', 'future_g_ratio'),
+      past_shot_tied_ratio__future_g_ratio = calculate_nested_r2(data, 'past_shot_tied_ratio', 'future_g_ratio'),
+      past_sot_tied_ratio__future_g_ratio = calculate_nested_r2(data, 'past_sot_tied_ratio', 'future_g_ratio'),
+      past_g_tied_ratio__future_g_ratio = calculate_nested_r2(data, 'past_g_tied_ratio', 'future_g_ratio'),
+      past_xg_tied_ratio__future_g_ratio = calculate_nested_r2(data, 'past_xg_tied_ratio', 'future_g_ratio'),
+      past_xgot_tied_ratio__future_g_ratio = calculate_nested_r2(data, 'past_xgot_tied_ratio', 'future_g_ratio'),
+      past_duration_leading_per_game__future_g_ratio = calculate_nested_r2(data, 'past_duration_leading_per_game', 'future_g_ratio'),
       past_pts_per_game__future_g_ratio = calculate_nested_r2(data, 'past_pts_per_game', 'future_g_ratio'),
       
-      past_shot_ratio__future_pts = calculate_nested_r2(data, 'past_shot_ratio', 'future_pts'),
-      past_sot_ratio__future_pts = calculate_nested_r2(data, 'past_sot_ratio', 'future_pts'),
-      past_g_ratio__future_pts = calculate_nested_r2(data, 'past_g_ratio', 'future_pts'),
-      past_xg_ratio__future_pts = calculate_nested_r2(data, 'past_xg_ratio', 'future_pts'),
-      past_pts_per_game__future_pts = calculate_nested_r2(data, 'past_pts_per_game', 'future_pts')
+      past_shot_ratio__future_pts_per_game = calculate_nested_r2(data, 'past_shot_ratio', 'future_pts_per_game'),
+      past_sot_ratio__future_pts_per_game = calculate_nested_r2(data, 'past_sot_ratio', 'future_pts_per_game'),
+      past_g_ratio__future_pts_per_game = calculate_nested_r2(data, 'past_g_ratio', 'future_pts_per_game'),
+      past_xg_ratio__future_pts_per_game = calculate_nested_r2(data, 'past_xg_ratio', 'future_pts_per_game'),
+      past_shot_tied_ratio__future_pts_per_game = calculate_nested_r2(data, 'past_shot_tied_ratio', 'future_pts_per_game'),
+      past_sot_tied_ratio__future_pts_per_game = calculate_nested_r2(data, 'past_sot_tied_ratio', 'future_pts_per_game'),
+      past_g_tied_ratio__future_pts_per_game = calculate_nested_r2(data, 'past_g_tied_ratio', 'future_pts_per_game'),
+      past_xg_tied_ratio__future_pts_per_game = calculate_nested_r2(data, 'past_xg_tied_ratio', 'future_pts_per_game'),
+      past_xgot_tied_ratio__future_pts_per_game = calculate_nested_r2(data, 'past_xgot_tied_ratio', 'future_pts_per_game'),
+      past_duration_leading_per_game__future_pts_per_game = calculate_nested_r2(data, 'past_duration_leading_per_game', 'future_pts_per_game'),
+      past_pts_per_game__future_pts_per_game = calculate_nested_r2(data, 'past_pts_per_game', 'future_pts_per_game')
     ) |> 
     dplyr::select(-data)
 }
@@ -258,11 +300,11 @@ calculate_resampled_rolling_r2s <- function(df, resamples = 10) {
     )
 }
 
-rolling_r2s <- team_summary_for_and_against |> 
+rolling_r2s <- split_data |> 
   calculate_rolling_r2s() |> 
   pivot_rolling_r2s()
 
-resampled_rolling_r2s <- team_summary_for_and_against |> 
+resampled_rolling_r2s <- split_data |> 
   calculate_resampled_rolling_r2s(resamples = 2) |> 
   pivot_rolling_r2s()
 
