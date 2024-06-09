@@ -18,6 +18,9 @@ raw_team_summary <- load_fb_advanced_match_stats(
   team_or_player = 'team'
 )
 
+## Known, valid missing match xG
+## https://fbref.com/en/matches/e0a20cfe/Hellas-Verona-Roma-September-19-2020-Serie-A: awarded to Hellas Verona
+## https://fbref.com/en/matches/c34bbc21/Bochum-Monchengladbach-March-18-2022-Bundesliga: awarded to Monchengladbach
 team_summary <- raw_team_summary |>
   dplyr::filter(
     ## choose non-playoff/relegation weeks
@@ -52,25 +55,24 @@ team_summary <- raw_team_summary |>
   dplyr::group_by(season, team) |> 
   dplyr::mutate(
     season_game_count = dplyr::n(),
-    game_idx = dplyr::row_number(date),
-    inv_game_idx = dplyr::row_number(dplyr::desc(date))
+    game_idx = dplyr::row_number(date)
   ) |> 
   dplyr::ungroup()
 team_summary
 
-raw_team_summary |> filter(Team == 'Bayern Munich', Match_Date == '2023-09-15') |> glimpse()
-
-raw_team_summary |> 
-  dplyr::filter(Team == 'Bayern Munich', Match_Date == '2023-09-15') |> 
-  dplyr::filter(
-    (Country == 'GER' & Season_End_Year == 2024 & stringr::str_detect(MatchURL, 'Bayer-Leverkusen', negate = FALSE))
-  )
-
-team_summary |> 
-  dplyr::filter(team == 'Bayern Munich', date == '2023-09-15')
-
-team_summary |> 
-  dplyr::filter(team == 'Bayer Leverkusen', season == 2024)
+# raw_team_summary |> filter(Team == 'Bayern Munich', Match_Date == '2023-09-15') |> glimpse()
+# 
+# raw_team_summary |> 
+#   dplyr::filter(Team == 'Bayern Munich', Match_Date == '2023-09-15') |> 
+#   dplyr::filter(
+#     (Country == 'GER' & Season_End_Year == 2024 & stringr::str_detect(MatchURL, 'Bayer-Leverkusen', negate = FALSE))
+#   )
+# 
+# team_summary |> 
+#   dplyr::filter(team == 'Bayern Munich', date == '2023-09-15')
+# 
+# team_summary |> 
+#   dplyr::filter(team == 'Bayer Leverkusen', season == 2024)
 
 ## todo:
 ## [x] ITA - 2024: no matches after 2024-03-17
@@ -92,7 +94,7 @@ team_summary_for_and_against <- dplyr::left_join(
       sot_conceded = sot
     ),
   by = dplyr::join_by(match_id),
-  relationship = "many-to-many"
+  relationship = 'many-to-many'
 ) |> 
   dplyr::filter(team != opponent) |> 
   dplyr::mutate(
@@ -113,9 +115,9 @@ team_summary_for_and_against <- dplyr::left_join(
 #   dplyr::count(season, country, team, date, sort = TRUE) |> 
 #   dplyr::filter(n > 1L) 
 
-accumulate_team_summary <- function(df, col, .prefix) {
+accumulate_team_summary <- function(df, op, .prefix) {
   df |> 
-    dplyr::arrange(team, season, {{ col }}) |> 
+    dplyr::arrange(team, season, op(game_idx)) |> 
     dplyr::group_by(season, team) |> 
     dplyr::mutate(
       dplyr::across(
@@ -124,7 +126,7 @@ accumulate_team_summary <- function(df, col, .prefix) {
           g, g_conceded, xg, xg_conceded,
           pts, pts_conceded
         ),
-        \(.x) cumsum(.x)
+        \(.x) cumsum(coalesce(.x, 0))
       )
     ) |> 
     dplyr::ungroup() |> 
@@ -133,7 +135,7 @@ accumulate_team_summary <- function(df, col, .prefix) {
       sot_ratio = sot / (sot + sot_conceded),
       g_ratio = g / (g + g_conceded),
       xg_ratio = xg / (xg + xg_conceded),
-      pts_per_game = pts / {{ col }}
+      pts_per_game = pts / game_idx
     ) |> 
     dplyr::rename_with(
       .fn = \(.x) paste0(.prefix, '_', .x),
@@ -147,14 +149,143 @@ accumulate_team_summary <- function(df, col, .prefix) {
     )
 }
 
-cumu_team_summary <- team_summary_for_and_against |> 
-  accumulate_team_summary(game_idx, .prefix = 'pre')
+calculate_nested_r2 <- function(data, col, target_col) {
+  purrr::map_dbl(
+    data,
+    \(.x) {
+      cor(
+        .x[[col]],
+        .x[[target_col]],
+        use = 'complete.obs'
+      )^2
+    }
+  )
+}
 
-inv_cumu_team_summary <- team_summary_for_and_against |> 
-  accumulate_team_summary(inv_game_idx, .prefix = 'post')
+pivot_rolling_r2s <- function(df) {
+  df |> 
+    tidyr::pivot_longer(
+      -c(league_group, game_idx),
+      names_pattern = '(^.*)__(.*$)',
+      names_to = c('predictor', 'target'),
+      values_to = 'r2'
+    )
+}
 
-pre_post_team_summary <- dplyr::inner_join(
-  cumu_team_summary,
-  inv_cumu_team_summary |> dplyr::select(-c(is_home, opponent, season, country, gender, tier, match_week, date, season_game_count)),
-  by = dplyr::join_by(match_id, team, game_idx, inv_game_idx)
-)
+calculate_rolling_r2s <- function(df) {
+  
+  cumu_team_summary <- df |> 
+    accumulate_team_summary(`+`, .prefix = 'past')
+  
+  inv_cumu_team_summary <- df |> 
+    accumulate_team_summary(`-`, .prefix = 'future')
+  
+  split_team_summary <- dplyr::inner_join(
+    cumu_team_summary |> 
+      dplyr::select(
+        season,
+        team,
+        country,
+        # gender,
+        # tier,
+        # match_week,
+        # date,
+        # match_id,
+        # is_home,
+        game_idx,
+        dplyr::starts_with('past')
+      ),
+    inv_cumu_team_summary |> 
+      dplyr::select(
+        season,
+        team,
+        game_idx,
+        dplyr::starts_with('future')
+      ),
+    by = dplyr::join_by(season, team, game_idx)
+  ) |> 
+    dplyr::mutate(
+      league_group = ifelse(country == 'USA', 'MLS', 'Big 5'),
+      .keep = 'unused',
+      .before = 1
+    )
+  
+  split_team_summary |> 
+    tidyr::nest(data = -c(league_group, game_idx)) |> 
+    dplyr::mutate(
+      past_shot_ratio__future_g_ratio = calculate_nested_r2(data, 'past_shot_ratio', 'future_g_ratio'),
+      past_sot_ratio__future_g_ratio = calculate_nested_r2(data, 'past_sot_ratio', 'future_g_ratio'),
+      past_g_ratio__future_g_ratio = calculate_nested_r2(data, 'past_g_ratio', 'future_g_ratio'),
+      past_xg_ratio__future_g_ratio = calculate_nested_r2(data, 'past_xg_ratio', 'future_g_ratio'),
+      past_pts_per_game__future_g_ratio = calculate_nested_r2(data, 'past_pts_per_game', 'future_g_ratio'),
+      
+      past_shot_ratio__future_pts = calculate_nested_r2(data, 'past_shot_ratio', 'future_pts'),
+      past_sot_ratio__future_pts = calculate_nested_r2(data, 'past_sot_ratio', 'future_pts'),
+      past_g_ratio__future_pts = calculate_nested_r2(data, 'past_g_ratio', 'future_pts'),
+      past_xg_ratio__future_pts = calculate_nested_r2(data, 'past_xg_ratio', 'future_pts'),
+      past_pts_per_game__future_pts = calculate_nested_r2(data, 'past_pts_per_game', 'future_pts')
+    ) |> 
+    dplyr::select(-data)
+}
+
+calculate_resampled_rolling_r2s <- function(df, resamples = 10) {
+  resampled_split_team_summary <- purrr::map(
+    1:resamples,
+    \(.i) {
+      message(sprintf('Resample %d.', .i))
+      resampled_df <- df |> 
+        dplyr::slice_sample(n = nrow(df), replace = FALSE) |> 
+        dplyr::group_by(team, season) |> 
+        dplyr::mutate(
+          game_idx = dplyr::row_number(),
+        ) |> 
+        dplyr::ungroup()
+
+      
+      resampled_df |> 
+        calculate_rolling_r2s()
+    }
+  ) |> 
+    purrr::list_rbind()
+  
+  resampled_split_team_summary |> 
+    dplyr::summarize(
+      .by = c(league_group, game_idx),
+      dplyr::across(
+        dplyr::matches('__'),
+        \(.x) mean(.x, na.rm = TRUE)
+      )
+    )
+}
+
+rolling_r2s <- team_summary_for_and_against |> 
+  calculate_rolling_r2s() |> 
+  pivot_rolling_r2s()
+
+resampled_rolling_r2s <- team_summary_for_and_against |> 
+  calculate_resampled_rolling_r2s(resamples = 2) |> 
+  pivot_rolling_r2s()
+
+library(ggplot2)
+rolling_r2s |> 
+  ggplot() +
+  aes(
+    x = game_idx,
+    y = r2
+  ) +
+  geom_line(
+    aes(color = predictor)
+  ) +
+  facet_grid(league_group~target)
+
+resampled_rolling_r2s |> 
+  ggplot() +
+  aes(
+    x = game_idx,
+    y = r2
+  ) +
+  geom_line(
+    aes(color = predictor)
+  ) +
+  facet_grid(league_group~target)
+
