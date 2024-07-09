@@ -94,14 +94,15 @@ fotmob_get_single_match_score <- function(match_id) {
   res <- get_and_save_match_details(match_id)
   status <- res$header$status
   tibble::tibble(
+    regular_score_line = status$scoreStr,
+    pen_score_line = ifelse(
+      status$reason$short == 'Pen',
+      gsub('Pen ', '', status$reason$long),
+      NA_character_
+    ),
     score_line = paste0(
       status$scoreStr,
-      ifelse(
-        status$reason$short == 'Pen',
-        paste0(' (', gsub('Pen ', '', status$reason$long), ')'),
-        ''
-      ),
-      ''
+      ifelse(!is.na(pen_score_line), paste0(' (', pen_score_line, ')'), '')
     )
   )
 }
@@ -112,9 +113,10 @@ get_and_save_match_score <- function(match_id) {
     match_id = match_id,
     .name = match_id,
     .data_dir = MATCH_SCORE_DATA_DIR,
-    .sleep = FALSE
+    .sleep = FALSE,
+    .overwrite = TRUE
   )
-} 
+}
 
 get_and_save_match_stats <- function(match_id) {
   manage_io_operations(
@@ -210,6 +212,10 @@ match_passes <- match_stats |>
     completed_matches |> dplyr::select(competition_name, match_id),
     by = dplyr::join_by(match_id)
   ) |>
+  dplyr::left_join(
+    match_score,
+    by = dplyr::join_by(match_id)
+  ) |> 
   dplyr::transmute(
     competition_name,
     match_id,
@@ -218,6 +224,9 @@ match_passes <- match_stats |>
     away_team_id,
     home_team,
     away_team,
+    regular_score_line,
+    pen_score_line,
+    score_line,
     had_extra_time, total_minutes_added, total_duration,
     home_passes = home_value,
     away_passes = away_value
@@ -226,57 +235,22 @@ match_passes <- match_stats |>
     dplyr::across(dplyr::ends_with('passes'), as.integer),
     total_passes = home_passes + away_passes,
     # total_passes_p90 = 90 * total_passes / total_duration,
-    passes_per_minute = total_passes / total_duration,
-    passes_per_minute_index = dplyr::row_number(dplyr::desc(passes_per_minute)),
-    passes_per_minute_index_inv = dplyr::row_number(passes_per_minute),
-    match_label = forcats::fct_reorder(sprintf('%s - %s', home_team, away_team), passes_per_minute)
+    passes_per_minute = total_passes / total_duration
   ) |> 
   dplyr::arrange(dplyr::desc(passes_per_minute))
 
+qs::qsave(match_passes, file.path(PROJ_DIR, 'match_passes.qs'))
 
-library(ggplot2)
-library(forcats)
-PALETTE <- c(
-  'Copa America 2024' = '#f1515e',
-  'EURO 2024' = '#1dbde6'
-)
-match_passes |> 
-  dplyr::mutate(
-    match_label = forcats::fct_reorder(sprintf('%s - %s', home_team, away_team), total_passes_p90)
+## average added time per period
+match_time |> 
+  dplyr::left_join(
+    completed_matches |> 
+      dplyr::select(match_id, competition_name),
+    by = dplyr::join_by(match_id)
   ) |> 
-  ggplot() +
-  aes(
-    x = total_passes_p90,
-    y = match_label
-  ) +
-  geom_col(
-    aes(fill = competition_name)
-  ) +
-  scale_fill_manual(
-    values = PALETTE
-  ) +
-  guides(
-    fill = 'none'
-  ) +
-  theme_minimal() +
-  theme(
-    legend.position = 'top',
-    plot.title.position = 'plot',
-    plot.subtitle = ggtext::element_markdown(),
-    panel.grid.major.y = element_blank(),
-    panel.grid.major.x = element_blank(),
-    panel.background = element_rect(fill = 'white', color = 'white'),
-    plot.background = element_rect(fill = 'white', color = 'white')
-  ) +
-  labs(
-    title = 'Total Match Passes per 90',
-    subtitle = glue::glue('<span style="color:{PALETTE["Copa America 2024"]}">Copa America 2024</span> and <span style="color:{PALETTE["EURO 2024"]}">EURO 2024</span>'),
-    y = NULL,
-    x = NULL
-  )
-
-ggsave(
-  filename = file.path(PROJ_DIR, 'copa-euro-2024-total-passes-p90.png'),
-  width = 7,
-  height = 7 * 1.5
-)
+  dplyr::filter(period %in% c(1L, 2L)) |> 
+  dplyr::group_by(competition_name, period) |> 
+  dplyr::summarize(
+    dplyr::across(minutes_added, \(.x) mean(.x, na.rm = TRUE))
+  ) |> 
+  dplyr::ungroup()
