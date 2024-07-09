@@ -173,7 +173,10 @@ completed_matches <- matches |>
 match_time <- map_fotmob_f(
   completed_matches$match_id,
   get_and_save_match_time
-)
+) |> 
+  dplyr::mutate(
+    minutes_added = ifelse(period <= 3, dplyr::coalesce(minutes_added, 0), minutes_added)
+  )
 
 agg_match_time <- match_time |> 
   dplyr::group_by(match_id) |> 
