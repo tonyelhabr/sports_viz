@@ -164,16 +164,87 @@ filt_match_passes |>
     scales = 'free_y'
   ) +
   ggplot2::labs(
-    title = 'Combined Passes per Minute',
-    subtitle = glue::glue('The pacing of <b><span style="color:{PALETTE["EURO 2024"]}">EURO 2024</span></b> and <b><span style="color:{PALETTE["Copa America 2024"]}">Copa America 2024</span></b> matches has been completely different.'),
+    title = 'Passes per Minute',
+    subtitle = glue::glue('The pacing of <b><span style="color:{PALETTE["EURO 2024"]}">EURO 2024</span></b> and <b><span style="color:{PALETTE["Copa America 2024"]}">Copa America 2024</span></b> matches has been very different.'),
     caption = '<i>Total of 76 matches played among the two tournaments through 2024-07-06.<br/>Added and extra time are accounted for.</i>',
     tag = TAG_LABEL,
     y = NULL,
     x = NULL
   )
 
+plot_path <-  file.path(PROJ_DIR, 'copa-euro-2024-passes.png')
 ggplot2::ggsave(
-  filename = file.path(PROJ_DIR, 'copa-euro-2024-passes.png'),
+  filename = plot_path,
   width = 7.5,
   height = 7.5
+)
+
+add_logo <- function(
+    plot_path,
+    logo_path,
+    logo_scale = 0.1,
+    idx_x = 0.01, ## right-hand side
+    idx_y = 0.99, ## top of plot
+    adjust_x = ifelse(idx_x < 0.5, TRUE, FALSE),
+    adjust_y = ifelse(idx_y < 0.5, TRUE, FALSE)
+) {
+  plot <- magick::image_read(plot_path)
+  logo_raw <- magick::image_read(logo_path)
+  
+  plot_height <- magick::image_info(plot)$height
+  plot_width <- magick::image_info(plot)$width
+  
+  logo <- magick::image_scale(
+    logo_raw,
+    as.character(round(plot_width * logo_scale))
+  )
+  
+  info <- magick::image_info(logo)
+  logo_width <- info$width
+  logo_height <- info$height
+  
+  x_pos <- plot_width - idx_x * plot_width
+  y_pos <- plot_height - idx_y * plot_height
+  
+  if (isTRUE(adjust_x)) {
+    x_pos <- x_pos - logo_width
+  }
+  
+  if (isTRUE(adjust_y)) {
+    y_pos <- y_pos - logo_height
+  }
+  
+  offset <- paste0('+', x_pos, '+', y_pos)
+  
+  new_plot <- magick::image_composite(plot, logo, offset = offset)
+  ext <- tools::file_ext(plot_path)
+  rgx_ext <- sprintf('[.]%s$', ext)
+  
+  magick::image_write(
+    new_plot,
+    plot_path
+  )
+}
+
+## downloaded from https://images.fotmob.com/image_resources/logo/leaguelogo/dark/{league_id}.png
+euro_logo_path <- file.path(PROJ_DIR, '44.png')
+copa_logo_path <- file.path(PROJ_DIR, '50.png')
+add_logo(
+  plot_path,
+  copa_logo_path,
+  logo_scale = 0.06,
+  idx_x = 0.01,
+  idx_y = 0.97,
+  adjust_x = TRUE,
+  adjust_y = FALSE
+)
+
+add_logo(
+  plot_path,
+  euro_logo_path,
+  logo_scale = 0.06,
+  idx_x = 0.07,
+  idx_y = 0.97,
+  adjust_x = TRUE,
+  adjust_y = FALSE
 )

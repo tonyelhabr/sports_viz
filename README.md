@@ -3,6 +3,15 @@ This repo stores my code and plots for sports-related plots. Any "small" data is
 
 The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I did not end up finishing.
 
+# 84. 2024 EURO and Copa America "Pacing"
+
+![](84-2024_euro_copa_style/copa-euro-2024-passes.png)
+
+
+# 82. 2023/24 EPL Points Won and Lost
+
+![](82-points_lost_from_winning_positions/2024-epl-points-won-and-lost.png)
+
 # 81. 2024 MLS Atlanta United Preview
 
 ![](81-2023_mls_g_minus_xg/2023_mls_g_minus_xg.png)

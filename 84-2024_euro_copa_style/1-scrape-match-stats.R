@@ -7,7 +7,7 @@ library(fotmob) ## tonyelhabr/fotmob
 
 library(qs)
 
-PROJ_DIR <- '84-2024_copa_reactions'
+PROJ_DIR <- '84-2024_euro_copa_style'
 source(file.path(PROJ_DIR, 'helpers.R'))
 DATA_DIR <- file.path(PROJ_DIR, 'data')
 LEAGUE_MATCHES_DATA_DIR <- file.path(DATA_DIR, 'league_matches')

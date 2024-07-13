@@ -8,7 +8,7 @@ library(fotmob) ## tonyelhabr/fotmob
 
 library(qs)
 
-PROJ_DIR <- '84-2024_copa_reactions'
+PROJ_DIR <- '84-2024_euro_copa_style'
 source(file.path(PROJ_DIR, 'helpers.R'))
 EMOTES_DATA_DIR <- file.path(PROJ_DIR, 'data', 'emotes')
 dir.create(EMOTES_DATA_DIR, showWarnings = FALSE, recursive = TRUE)
