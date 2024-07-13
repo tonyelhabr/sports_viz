@@ -9,15 +9,12 @@ library(qs)
 
 PROJ_DIR <- '84-2024_euro_copa_style'
 source(file.path(PROJ_DIR, 'helpers.R'))
-DATA_DIR <- file.path(PROJ_DIR, 'data')
-LEAGUE_MATCHES_DATA_DIR <- file.path(DATA_DIR, 'league_matches')
 MATCH_DETAILS_DATA_DIR <- file.path(DATA_DIR, 'match_details')
 MATCH_SCORE_DATA_DIR <- file.path(DATA_DIR, 'match_score')
 MATCH_TIME_DATA_DIR <- file.path(DATA_DIR, 'match_time')
 MATCH_STATS_DATA_DIR <- file.path(DATA_DIR, 'match_stats')
 purrr::walk(
   c(
-    LEAGUE_MATCHES_DATA_DIR,
     MATCH_DETAILS_DATA_DIR,
     MATCH_SCORE_DATA_DIR,
     MATCH_TIME_DATA_DIR,
