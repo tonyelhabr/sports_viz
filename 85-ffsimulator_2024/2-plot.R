@@ -1,7 +1,6 @@
 library(qs)
 
 library(ggplot2)
-library(ggtext)
 library(sysfonts)
 library(showtext)
 
@@ -12,8 +11,9 @@ library(tibble)
 PROJ_DIR <- '85-ffsimulator_2024'
 
 sim <- qs::qread(file.path(PROJ_DIR, 'sim.qs'))
-
-sim
+FILE_PREFIX <- '2024-ff-projected-team'
+TODAY <- Sys.Date()
+SIMULATIONS_NOTE <- sprintf('Per %s simulations',  sim$simulation_params$n_seasons)
 
 PLOT_RESOLUTION <- 300
 WHITISH_FOREGROUND_COLOR <- 'white'
@@ -35,13 +35,13 @@ plot_theme <- function(...) {
     ggplot2::theme(
       text = ggplot2::element_text(family = FONT),
       title = ggplot2::element_text(size = 16, color = WHITISH_FOREGROUND_COLOR),
-      plot.title = ggtext::element_markdown(face = 'bold', size = 18, color = WHITISH_FOREGROUND_COLOR),
+      plot.title = ggplot2::element_text(face = 'bold', size = 18, color = WHITISH_FOREGROUND_COLOR),
       plot.title.position = 'plot',
-      plot.subtitle = ggtext::element_markdown(size = 12, color = COMPLEMENTARY_FOREGROUND_COLOR),
+      plot.subtitle = ggplot2::element_text(size = 12, color = COMPLEMENTARY_FOREGROUND_COLOR),
       legend.text = ggplot2::element_text(size = 12, color = WHITISH_FOREGROUND_COLOR),
       axis.text = ggplot2::element_text(color = WHITISH_FOREGROUND_COLOR, size = 14),
-      axis.title.x = ggtext::element_markdown(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.99),
-      axis.title.y = ggtext::element_markdown(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.99),
+      axis.title.x = ggplot2::element_text(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.99),
+      axis.title.y = ggplot2::element_text(size = 14, color = WHITISH_FOREGROUND_COLOR, face = 'bold', hjust = 0.99),
       axis.line = ggplot2::element_blank(),
       panel.grid.major = ggplot2::element_line(color = COMPLEMENTARY_BACKGROUND_COLOR),
       panel.grid.minor = ggplot2::element_line(color = COMPLEMENTARY_BACKGROUND_COLOR),
@@ -49,9 +49,9 @@ plot_theme <- function(...) {
       panel.grid.minor.y = ggplot2::element_blank(),
       plot.margin = ggplot2::margin(10, 10, 10, 10),
       plot.background = ggplot2::element_rect(fill = BLACKISH_BACKGROUND_COLOR, color = BLACKISH_BACKGROUND_COLOR),
-      plot.caption = ggtext::element_markdown(size = 11, color = WHITISH_FOREGROUND_COLOR, hjust = 0, face = 'plain'),
+      plot.caption = ggplot2::element_text(size = 11, color = WHITISH_FOREGROUND_COLOR, hjust = 0, face = 'plain', margin = ggplot2::margin(t = 5)),
       plot.caption.position = 'plot',
-      plot.tag = ggtext::element_markdown(size = 12, color = WHITISH_FOREGROUND_COLOR, hjust = 1),
+      plot.tag = ggplot2::element_text(size = 12, color = WHITISH_FOREGROUND_COLOR, hjust = 1),
       plot.tag.position = c(0.99, 0.01),
       panel.spacing.x = grid::unit(2, 'lines'),
       panel.background = ggplot2::element_rect(fill = BLACKISH_BACKGROUND_COLOR, color = WHITISH_FOREGROUND_COLOR),
@@ -69,7 +69,7 @@ wins_plot <- ggplot2::autoplot(sim, type = 'wins') +
   plot_theme() +
   ggplot2::theme(legend.position = 'none') + 
   ggplot2::labs(
-    caption = paste0('Per ', sim$simulation_params$n_seasons, ' simulations'),
+    caption = SIMULATIONS_NOTE,
     subtitle = NULL,
     title = 'Projected Regular Season Win Totals'
   ) +
@@ -81,7 +81,7 @@ wins_plot <- ggplot2::autoplot(sim, type = 'wins') +
 
 ggplot2::ggsave(
   wins_plot,
-  filename = file.path(PROJ_DIR, 'wins.png'), 
+  filename = file.path(PROJ_DIR, sprintf('%s-wins-%s.png', FILE_PREFIX, TODAY)), 
   width = 8, 
   height = 8
 )
@@ -93,11 +93,12 @@ ranks_plot <- ggplot2::autoplot(sim, type = 'rank') +
     axis.text.x = ggplot2::element_blank(), 
     panel.grid.major.x = ggplot2::element_blank(), 
     # axis.text.x = ggplot2::element_blank(), 
-    panel.grid.major.y = ggplot2::element_blank()
+    panel.grid.major.y = ggplot2::element_blank(),
+    plot.caption = ggplot2::element_text(margin = margin(t = 20))
   ) +
   ggplot2::labs(caption = NULL) + 
   ggplot2::labs(
-    caption = paste0('Per ', sim$simulation_params$n_seasons, ' simulations'),
+    caption = SIMULATIONS_NOTE,
     subtitle = NULL,
     title = 'Projected Regular Season Rank'
   ) +
@@ -124,7 +125,7 @@ ranks_plot <- ggplot2::autoplot(sim, type = 'rank') +
 
 ggplot2::ggsave(
   ranks_plot,
-  filename = file.path(PROJ_DIR, 'ranks.png'), 
+  filename = file.path(PROJ_DIR, sprintf('%s-ranks-%s.png', FILE_PREFIX, TODAY)), 
   width = 8, 
   height = 8
 )
@@ -138,15 +139,7 @@ season_summary <- sim$summary_season |>
   ) |> 
   dplyr::ungroup()
 
-season_summary |> 
-  dplyr::group_by(franchise_name) |> 
-  dplyr::summarize(
-    playoff_prob = sum(season_rank <= 4) / dplyr::n()
-  ) |> 
-  dplyr::ungroup() |> 
-  dplyr::arrange(dplyr::desc(playoff_prob))
-
-season_summary |> 
+season_summary_probs <- season_summary |> 
   dplyr::group_by(franchise_name) |> 
   dplyr::summarize(
     playoff_prob = sum(season_rank <= 4) / dplyr::n(),
@@ -154,4 +147,31 @@ season_summary |>
     taco_prob = sum(season_rank == 10) / dplyr::n()
   ) |> 
   dplyr::ungroup() |> 
-  dplyr::arrange(dplyr::desc(playoff_prob))
+  dplyr::arrange(franchise_name)
+
+season_summary_probs_tb <- season_summary_probs |> 
+  dplyr::transmute(
+    `Player` = franchise_name,
+    `Playoff` = playoff_prob,
+    `Title` = title_prob,
+    `Taco` = taco_prob
+  ) |> 
+  dplyr::arrange(dplyr::desc(`Playoff`)) |> 
+  gt::gt() |> 
+  gtExtras::gt_theme_538() |> 
+  gt::fmt_percent(
+    c(`Playoff`, `Title`, `Taco`),
+    decimals = 1
+  ) |> 
+  gt::tab_header(
+    title = gt::md('2024 Simulated Season Outcomes')
+  ) |> 
+  gt::tab_source_note(
+    source_note = gt::md(SIMULATIONS_NOTE)
+  )
+
+gt::gtsave(
+  season_summary_probs_tb,
+  filename = file.path(PROJ_DIR, sprintf('%s-outcomes-%s.png', FILE_PREFIX, TODAY)), 
+  zoom = 1.5
+)
