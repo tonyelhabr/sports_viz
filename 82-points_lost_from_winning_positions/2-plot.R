@@ -57,10 +57,10 @@ ggplot2::theme_update(
 )
 ggplot2::update_geom_defaults('text', list(color = WHITISH_FOREGROUND_COLOR, size = 14 / .pt))
 
-points_won_and_lost <- qs::qread(file.path(PROJ_DIR, 'points-won-and-lost.qs'))
+points_won_and_lost <- qs::qread(file.path(PROJ_DIR, 'points-won-and-lost-20240817.qs'))
 
-get_fotmob_standings <- function() {
-  url <- 'https://www.fotmob.com/api/leagues?id=47'
+get_fotmob_standings <- function(season = '2023/2024') {
+  url <- paste0('https://www.fotmob.com/api/leagues?id=47&season=', season)
   resp <- httr::GET(url)
   cont <- httr::content(resp, as = 'text')
   result <- jsonlite::fromJSON(cont)
@@ -110,9 +110,9 @@ team_logos <- team_names |>
   dplyr::arrange(rn)
 
 agg_points_won_and_lost <- points_won_and_lost |> 
-  group_by(team) |> 
-  summarize(
-    across(
+  dplyr::group_by(team) |> 
+  dplyr::summarize(
+    dplyr::across(
       c(
         points_won,
         points_lost
@@ -120,16 +120,16 @@ agg_points_won_and_lost <- points_won_and_lost |>
       sum
     )
   ) |> 
-  arrange(desc(points_won + points_lost))
+  dplyr::arrange(dplyr::desc(points_won + points_lost))
 
 BUFFER <- 20
 long_agg_points_won_and_lost <- agg_points_won_and_lost |> 
-  select(
+  dplyr::select(
     team,
     `Points Won` = points_won,
     `Points Lost` = points_lost
   ) |> 
-  pivot_longer(
+  tidyr::pivot_longer(
     c(`Points Won`, `Points Lost`),
     names_to = 'outcome',
     values_to = 'points'
@@ -153,10 +153,10 @@ long_agg_points_won_and_lost <- agg_points_won_and_lost |>
     label = glue::glue("<img src='{path}' width='10' height='10'/> {ifelse(team == 'Tottenham', '<b>', '')}<span style='font-size:18px;color:{team_color}'>{paste0('   ', team)}</span>{ifelse(team == 'Tottenham', '</b>', '')} <span style='font-size:12px;color:{COMPLEMENTARY_FOREGROUND_COLOR}'>{pts} pt{ifelse(pts > 1, 's', '')}</span>")
   ) |> 
   dplyr::select(-path) |> 
-  mutate(
+  dplyr::mutate(
     points0 = ifelse(outcome == 'Points Lost', -BUFFER, BUFFER),
     points_buffered = ifelse(outcome == 'Points Lost', -points - BUFFER, BUFFER + points),
-    across(team, \(.x) factor(.x, rev(team_logos$team))),
+    dplyr::across(team, \(.x) factor(.x, rev(team_logos$team))),
     team_idx = as.integer(team)
   )
 
@@ -262,7 +262,7 @@ long_agg_points_won_and_lost |>
     y = NULL
   )
 
-plot_path <- file.path(PROJ_DIR, '2024-epl-points-won-and-lost.png')
+plot_path <- file.path(PROJ_DIR, '2024-epl-points-won-and-lost-20240817.png')
 ggsave(
   filename = plot_path,
   width = 8,

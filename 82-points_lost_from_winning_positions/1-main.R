@@ -151,4 +151,4 @@ points_won_and_lost <- ever_winning_or_losing |>
     )
   )
 
-qs::qsave(points_won_and_lost, file.path(PROJ_DIR, 'points-won-and-lost.qs'))
+qs::qsave(points_won_and_lost, file.path(PROJ_DIR, 'points-won-and-lost-20240817.qs'))
