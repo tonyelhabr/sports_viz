@@ -47,7 +47,7 @@ plot_theme <- function(...) {
       panel.grid.minor = ggplot2::element_line(color = COMPLEMENTARY_BACKGROUND_COLOR),
       panel.grid.minor.x = ggplot2::element_blank(),
       panel.grid.minor.y = ggplot2::element_blank(),
-      plot.margin = ggplot2::margin(10, 20, 30, 20),
+      plot.margin = ggplot2::margin(10, 10, 10, 10),
       plot.background = ggplot2::element_rect(fill = BLACKISH_BACKGROUND_COLOR, color = BLACKISH_BACKGROUND_COLOR),
       plot.caption = ggtext::element_markdown(size = 11, color = WHITISH_FOREGROUND_COLOR, hjust = 0, face = 'plain'),
       plot.caption.position = 'plot',
@@ -65,10 +65,19 @@ ggplot2::update_geom_defaults(
   list(color = WHITISH_FOREGROUND_COLOR, size = 14 / .pt)
 )
 
-wins_plot <- ggplot2::autoplot(sim, type = 'wins') +
+wins_plot <- ggplot2::autoplot(sim, type = 'wins') + 
+  plot_theme() +
   ggplot2::theme(legend.position = 'none') + 
-  ggplot2::labs(caption = NULL) + 
-  plot_theme()
+  ggplot2::labs(
+    caption = paste0('Per ', sim$simulation_params$n_seasons, ' simulations'),
+    subtitle = NULL,
+    title = 'Projected Regular Season Win Totals'
+  ) +
+  ggplot2::scale_fill_viridis_d(
+    option = 'H', 
+    begin = 0.1, 
+    end = 0.9
+  )
 
 ggplot2::ggsave(
   wins_plot,
@@ -78,22 +87,45 @@ ggplot2::ggsave(
 )
 
 ranks_plot <- ggplot2::autoplot(sim, type = 'rank') +
+  plot_theme() +
   ggplot2::theme(
     legend.position = 'top', 
     axis.text.x = ggplot2::element_blank(), 
-    panel.grid.major.x = ggplot2::element_blank()
+    panel.grid.major.x = ggplot2::element_blank(), 
+    # axis.text.x = ggplot2::element_blank(), 
+    panel.grid.major.y = ggplot2::element_blank()
   ) +
   ggplot2::labs(caption = NULL) + 
+  ggplot2::labs(
+    caption = paste0('Per ', sim$simulation_params$n_seasons, ' simulations'),
+    subtitle = NULL,
+    title = 'Projected Regular Season Rank'
+  ) +
+  ggplot2::scale_y_continuous(
+    expand = c(0.01, 0.01)
+  ) +
+  ggplot2::scale_color_viridis_d(
+    option = 'H',
+    begin = 0.1,
+    end = 0.9
+  ) +
+  # ggplot2::scale_color_manual(
+  #   values = rep('white', 10)
+  # ) +
+  ggplot2::scale_fill_viridis_d(
+    option = 'H', 
+    begin = 0.1, 
+    end = 0.9
+  ) +
   ggplot2::guides(
     fill = ggplot2::guide_legend(''), 
     color = 'none'
   )
-ranks_plot <- ranks_plot + plot_theme()
 
 ggplot2::ggsave(
   ranks_plot,
   filename = file.path(PROJ_DIR, 'ranks.png'), 
-  width = 12, 
+  width = 8, 
   height = 8
 )
 

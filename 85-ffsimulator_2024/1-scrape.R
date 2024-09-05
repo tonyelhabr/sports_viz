@@ -12,11 +12,11 @@ conn <- ffscrapr::espn_connect(
   league_id = 899513
 )
 
-n_seasons <- 100
+n_seasons <- 500
 n_weeks <- 14
 best_ball <- FALSE
 seed <- 42 # NULL
-gp_model <- 'simple'
+gp_model <- 'none' # 'simple' # use 'none' to reduce noise with injury guessing
 base_seasons <- 2018:2023
 actual_schedule <- TRUE
 replacement_level <- FALSE # non-default
@@ -36,15 +36,60 @@ custom_pos_filter <- c('QB', 'RB/WR/TE', 'K') # special
 
 if (!is.null(seed)) set.seed(seed)
 
-scoring_history <- ffscrapr::ff_scoringhistory(conn, seasons = base_seasons)
+## Notable players missing ESPN IDs
+ffscrapr::dp_playerids() |> 
+  dplyr::filter(is.na(espn_id)) |> 
+  dplyr::transmute(
+    player_name = nflreadr::clean_player_names(name, lowercase = TRUE),
+    pos = position,
+    team,
+    draft_year,
+    draft_round,
+    draft_pick
+  ) |> 
+  dplyr::filter(
+    draft_year >= 2020,
+    draft_round <= 2,
+    pos %in% pos_filter
+  ) |> 
+  dplyr::arrange(draft_pick)
+
+init_scoring_history <- ffscrapr::ff_scoringhistory(conn, seasons = base_seasons)
+
+scoring_history <- init_scoring_history |>
+  dplyr::filter(pos %in% pos_filter) |> 
+  dplyr::mutate(
+    player_name = nflreadr::clean_player_names(player_name, lowercase = TRUE)
+  )
 
 init_latest_rankings <- ffsimulator::ffs_latest_rankings(type = 'draft')
-latest_rankings <- init_latest_rankings |> 
+latest_rankings <- init_latest_rankings |>
+  dplyr::filter(pos %in% pos_filter) |> 
   dplyr::mutate(
     player = nflreadr::clean_player_names(player, lowercase = TRUE)
   )
 
-latest_rankings |> 
+latest_rankings_no_espn_id <- latest_rankings |> 
+  dplyr::inner_join(
+    ffscrapr::dp_playerids() |> 
+      dplyr::filter(is.na(espn_id)) |> 
+      dplyr::select(fantasypros_id),
+    by = dplyr::join_by(fantasypros_id)
+  )
+
+latest_rankings_redux <- latest_rankings |> 
+  dplyr::anti_join(
+    latest_rankings_no_espn_id |> 
+      dplyr::select(fantasypros_id),
+    by = dplyr::join_by(fantasypros_id)
+  ) |> 
+  dplyr::bind_rows(
+    latest_rankings_no_espn_id |> 
+      dplyr::mutate(fantasypros_id = player)
+  ) |> 
+  dplyr::arrange(pos, ecr)
+
+latest_rankings_redux |> 
   dplyr::filter(pos == 'RB') |> 
   dplyr::arrange(ecr)
 
@@ -55,10 +100,10 @@ nflreadr_players <- init_nflreadr_players |>
   dplyr::transmute(
     team = team_abbr,
     pos = position,
+    gsis_id,
     player_name = nflreadr::clean_player_names(display_name, lowercase = TRUE)
   )
-nflreadr_players |> 
-  filter(player_name == 'cj stroud')
+# nflreadr_players |> dplyr::filter(player_name == 'cj stroud')
 
 init_ff_ids <- nflreadr::load_ff_playerids()
 ff_ids <- init_ff_ids |> 
@@ -74,6 +119,7 @@ ff_ids <- init_ff_ids |>
 init_raw_rosters <- ffsimulator::ffs_rosters(conn)
 
 init_rosters <- init_raw_rosters |> 
+  tibble::as_tibble() |> 
   dplyr::mutate(
     player_name = nflreadr::clean_player_names(player_name, lowercase = TRUE),
     team = gsub('OAK', 'LVR', team)
@@ -102,7 +148,7 @@ rosters <- init_rosters |>
         pos = 'QB'
       ) |> 
       dplyr::inner_join(
-        latest_rankings |> 
+        latest_rankings_redux |> 
           dplyr::filter(pos == 'QB') |> 
           dplyr:: select(player_name = player, team, fantasypros_id),
         by = dplyr::join_by(team)
@@ -121,11 +167,11 @@ rosters <- init_rosters |>
   ) |> 
   dplyr::mutate(
     player_id = dplyr::coalesce(player_id, player_id_fallback),
-    fantasypros_id = dplyr::coalesce(fantasypros_id, fantasypros_id_fallback),
+    fantasypros_id = dplyr::coalesce(fantasypros_id, fantasypros_id_fallback, player_name),
     .keep = 'unused'
   )
 rosters |> 
-  tibble::as_tibble() |> 
+  dplyr::filter(pos != 'DST') |> 
   dplyr::filter(is.na(fantasypros_id))
 
 league_info <- ffscrapr::ff_league(conn)
@@ -142,6 +188,7 @@ lineup_constraints <- dplyr::bind_rows(
     max = 5
   )
 ) |> 
+  dplyr::filter(pos != 'DST') |> 
   tidyr::fill(
     offense_starters, 
     defense_starters,
@@ -164,22 +211,28 @@ adp_outcomes <- ffsimulator::ffs_adp_outcomes(
   scoring_history = scoring_history,
   gp_model = gp_model,
   pos_filter = pos_filter
-)
+) |> 
+  tibble::as_tibble()
 
 # debugonce(ffsimulator::ffs_generate_projections)
 projected_scores <- ffsimulator::ffs_generate_projections(
   adp_outcomes = adp_outcomes,
-  latest_rankings = latest_rankings,
+  latest_rankings = latest_rankings_redux,
   n_seasons = n_seasons,
   weeks = 1:n_weeks, 
   rosters = rosters_rl 
-)
+) |> 
+  tibble::as_tibble()
+
+init_rosters |> filter(pos == 'K')
+rosters_rl |> filter(pos == 'K')
 
 projected_scores_one_season_week <- projected_scores |> 
-  tibble::as_tibble() |>
-  dplyr::filter(season == 1) |> 
-  dplyr::filter(week == 1)
+  dplyr::filter(season == 1, week == 1)
 
+scoring_history |> dplyr::filter(player_name == 'cj stroud')
+adp_outcomes |> dplyr::filter(player_name == 'cj stroud')
+projected_scores_one_season_week |> dplyr::filter(player == 'cj stroud')
 projected_scores_one_season_week |> dplyr::filter(pos == 'QB')
 projected_scores_one_season_week |> dplyr::filter(pos == 'K')
 projected_scores_one_season_week |> dplyr::filter(pos == 'RB')
@@ -194,23 +247,21 @@ roster_scores <- ffsimulator::ffs_score_rosters(
     dplyr::mutate(
       pos = ifelse(pos %in% c('RB', 'WR', 'TE'), 'RB/WR/TE', pos)
     )
-)
+) |> 
+  tibble::as_tibble()
 
 roster_scores_one_season_week <- roster_scores |> 
-  tibble::as_tibble() |>
-  dplyr::filter(season == 1) |> 
-  dplyr::filter(week == 1)
+  dplyr::filter(season == 1, week == 1)
 
 roster_scores_one_season_week |> dplyr::filter(pos == 'QB')
 roster_scores_one_season_week |> dplyr::filter(pos == 'K')
 roster_scores_one_season_week |> dplyr::filter(pos == 'RB/WR/TE')
 roster_scores_one_season_week |> 
-  dplyr::filter(franchise_id == '8') |> 
+  dplyr::filter(franchise_id == '10') |> 
   dplyr::select(
     team,
     pos,
     player_id, 
-    player_name,
     ecr,
     projection, 
     gp_model, 
@@ -224,18 +275,47 @@ optimal_scores <- ffsimulator::ffs_optimise_lineups(
   roster_scores = roster_scores,
   lineup_constraints = lineup_constraints,
   pos_filter = custom_pos_filter
-)
+) |> 
+  tibble::as_tibble()
 
 optimal_scores_one_season_week <- optimal_scores |> 
-  tibble::as_tibble() |>
-  dplyr::filter(season == 1) |> 
-  dplyr::filter(week == 1)
+  dplyr::filter(season == 1, week == 1)
 
 optimal_scores_one_season_week |> 
-  dplyr::filter(
-    franchise_id == '8'
-  ) |> 
+  dplyr::filter(franchise_id == '10') |> 
+  dplyr::select(franchise_id, optimal_player_id, optimal_player_score) |> 
   tidyr::unnest_longer(c(optimal_player_id, optimal_player_score))
+
+## should be all 7 with gp_model = 'none'
+optimal_scores |> 
+  dplyr::select(season, week, franchise_id, optimal_player_id, optimal_player_score) |> 
+  tidyr::unnest_longer(c(optimal_player_id, optimal_player_score)) |> 
+  dplyr::count(season, week, franchise_id) |> 
+  dplyr::count(n)
+  
+optimal_scores |> 
+  filter(
+    season == 13, week == 12, franchise_id == '7'
+  ) |> 
+  # select(optimal_player_id, optimal_player_score)
+  dplyr::select(season, week, franchise_id, optimal_player_id, optimal_player_score) |> 
+  tidyr::unnest_longer(c(optimal_player_id, optimal_player_score))
+
+roster_scores |> 
+  filter(
+    season == 13, week == 12, franchise_id == '7'
+  ) |> 
+  dplyr::select(
+    team,
+    pos,
+    player_id, 
+    ecr,
+    projection, 
+    gp_model, 
+    projected_score,
+    pos_rank
+  ) |> 
+  dplyr::arrange(dplyr::desc(projection))
 
 if (actual_schedule) {
   schedule <- ffsimulator::ffs_schedule(conn)
