@@ -3,6 +3,14 @@ This repo stores my code and plots for sports-related plots. Any "small" data is
 
 The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I did not end up finishing.
 
+# 85. 2024 Fantasy Football Season Projections
+
+![](85-ffsimulator_2024/2024-ff-projected-team-wins-2024-09-05.png)
+
+![](85-ffsimulator_2024/2024-ff-projected-team-ranks-2024-09-05.png)
+
+![](85-ffsimulator_2024/2024-ff-projected-team-outcomes-2024-09-05.png)
+
 # 84. 2024 EURO and Copa America "Pacing"
 
 ![](84-2024_euro_copa_style/copa-euro-2024-passes.png)
