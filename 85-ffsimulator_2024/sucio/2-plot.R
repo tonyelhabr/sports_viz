@@ -1,6 +1,7 @@
 library(qs)
 
 library(ggplot2)
+library(ggtext)
 library(sysfonts)
 library(showtext)
 
@@ -8,12 +9,12 @@ library(ffsimulator)
 library(dplyr)
 library(tibble)
 
-PROJ_DIR <- '85-ffsimulator_2024'
+PROJ_DIR <- '85-ffsimulator_2024/sucio'
 
-sim <- qs::qread(file.path(PROJ_DIR, 'sim.qs'))
-FILE_PREFIX <- '2024-ff-projected-team'
 TODAY <- Sys.Date()
-SIMULATIONS_NOTE <- sprintf('Per %s simulations',  sim$simulation_params$n_seasons)
+sim <- qs::qread(file.path(PROJ_DIR, sprintf('sim-%s.qs', TODAY)))
+FILE_PREFIX <- '2024-ff-projected-team'
+SIMULATIONS_NOTE <- glue::glue('Per {sim$simulation_params$n_seasons} simulations. *(Updated on {TODAY}.).*')
 
 PLOT_RESOLUTION <- 300
 WHITISH_FOREGROUND_COLOR <- 'white'
@@ -49,7 +50,7 @@ plot_theme <- function(...) {
       panel.grid.minor.y = ggplot2::element_blank(),
       plot.margin = ggplot2::margin(10, 10, 10, 10),
       plot.background = ggplot2::element_rect(fill = BLACKISH_BACKGROUND_COLOR, color = BLACKISH_BACKGROUND_COLOR),
-      plot.caption = ggplot2::element_text(size = 11, color = WHITISH_FOREGROUND_COLOR, hjust = 0, face = 'plain', margin = ggplot2::margin(t = 5)),
+      plot.caption = ggtext::element_markdown(size = 11, color = WHITISH_FOREGROUND_COLOR, hjust = 0, face = 'plain', margin = ggplot2::margin(t = 5)),
       plot.caption.position = 'plot',
       plot.tag = ggplot2::element_text(size = 12, color = WHITISH_FOREGROUND_COLOR, hjust = 1),
       plot.tag.position = c(0.99, 0.01),
@@ -94,7 +95,7 @@ ranks_plot <- ggplot2::autoplot(sim, type = 'rank') +
     panel.grid.major.x = ggplot2::element_blank(), 
     # axis.text.x = ggplot2::element_blank(), 
     panel.grid.major.y = ggplot2::element_blank(),
-    plot.caption = ggplot2::element_text(margin = margin(t = 20))
+    plot.caption = ggtext::element_markdown(margin = margin(t = 20))
   ) +
   ggplot2::labs(caption = NULL) + 
   ggplot2::labs(
@@ -108,7 +109,8 @@ ranks_plot <- ggplot2::autoplot(sim, type = 'rank') +
   ggplot2::scale_color_viridis_d(
     option = 'H',
     begin = 0.1,
-    end = 0.9
+    end = 0.9,
+    direction = -1 # to align with other plot
   ) +
   # ggplot2::scale_color_manual(
   #   values = rep('white', 10)
@@ -116,7 +118,8 @@ ranks_plot <- ggplot2::autoplot(sim, type = 'rank') +
   ggplot2::scale_fill_viridis_d(
     option = 'H', 
     begin = 0.1, 
-    end = 0.9
+    end = 0.9,
+    direction = -1
   ) +
   ggplot2::guides(
     fill = ggplot2::guide_legend(''), 
