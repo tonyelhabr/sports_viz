@@ -7,7 +7,7 @@ library(lubridate)
 library(tidyr)
 
 PROJ_DIR <- '77-gamestate_xgd'
-COUNTRY <- 'ENG'
+COUNTRY <- 'USA'
 GENDER <- 'M'
 TIER <- '1st'
 SEASON_END_YEAR <- 2024
@@ -29,6 +29,15 @@ raw_match_summaries <- worldfootballR::load_fb_match_summary(
 ## Extract the from "47880eb7" from "https://fbref.com/en/matches/47880eb7/Liverpool-Manchester-City-November-10-2019-Premier-League"
 extract_fbref_match_id <- function(match_url) {
   basename(dirname(match_url))
+}
+
+fix_team <- function(x) {
+  dplyr::case_match(
+    x,
+    'Montreal Impact' ~ 'CF Montréal',
+    'Sporting Kansas City' ~ 'Sporting KC',
+    .default = x
+  )
 }
 
 match_summaries <- raw_match_summaries |> 
@@ -54,8 +63,8 @@ match_summaries <- raw_match_summaries |>
     gender = Gender,
     tier = Tier,
     date = lubridate::ymd(Match_Date),
-    home_team = Home_Team ,
-    away_team = Away_Team,
+    home_team = fix_team(Home_Team),
+    away_team = fix_team(Away_Team),
     period = as.integer(Event_Half),
     ## ensure that minutes always has a value
     minutes = dplyr::case_when(
@@ -71,7 +80,7 @@ match_summaries <- raw_match_summaries |>
     home_g = as.integer(gsub('[:].*$', '', Score_Progression)), ## after event
     away_g = as.integer(gsub('^.*[:]', '', Score_Progression)),
     is_own_goal = Event_Type == 'Own Goal',
-    team = Team,
+    team = fix_team(Team),
     player = Event_Players
   )
 
@@ -92,7 +101,7 @@ shots <- raw_shots |>
       NA_integer_
     ),
     is_home = Home_Away == 'Home',
-    team = Squad,
+    team = fix_team(Squad),
     player = Player,
     is_goal = Outcome == 'Goal',
     xg = as.double(xG)
@@ -137,7 +146,7 @@ clean_shots <- shots_with_own_goals |>
     match_summaries |>
       dplyr::distinct(match_id, home_team, away_team),
     by = dplyr::join_by(match_id),
-    relationship = 'many-to-one'
+    relationship = 'many-to-many'
   ) |> 
   dplyr::mutate(
     home_g = dplyr::case_when(
@@ -281,7 +290,8 @@ gamestate_shots <- cumu_doublecounted_restacked_shots |>
         home_team,
         away_team
       ),
-    by = dplyr::join_by(match_id)
+    by = dplyr::join_by(match_id),
+    relationship = 'many-to-many'
   ) |> 
   dplyr::transmute(
     pov,
@@ -455,27 +465,44 @@ GAMESTATE_PAL <- c(
 ##   better, scalable strategy for binding team names between sources is to
 ##   order teams by points / placement in the standings.
 
+# get_fotmob_standings <- function() {
+#   url <- 'https://www.fotmob.com/api/leagues?id=47'
+#   resp <- httr::GET(url)
+#   cont <- httr::content(resp, as = 'text')
+#   result <- jsonlite::fromJSON(cont)
+#   table_init <- result$table$data
+#   tables <- dplyr::bind_rows(table_init$table)
+#   tables$all[[1]] |> 
+#     dplyr::transmute(
+#       team = name,
+#       team_id = id,
+#       pts,
+#       logo_url = sprintf('https://images.fotmob.com/image_resources/logo/teamlogo/%s.png', team_id)
+#     )
+# }
+
 get_fotmob_standings <- function() {
-  url <- 'https://www.fotmob.com/api/leagues?id=47'
+  url <- 'https://www.fotmob.com/api/leagues?id=130'
   resp <- httr::GET(url)
   cont <- httr::content(resp, as = 'text')
   result <- jsonlite::fromJSON(cont)
   table_init <- result$table$data
-  tables <- dplyr::bind_rows(table_init$table)
-  tables$all[[1]] |> 
+  tables <- dplyr::bind_rows(table_init$tables)
+  tables$table$all[[3]] |> 
     dplyr::transmute(
       team = name,
       team_id = id,
       pts,
       logo_url = sprintf('https://images.fotmob.com/image_resources/logo/teamlogo/%s.png', team_id)
-    )
+    ) |> 
+    tibble::as_tibble()
 }
 
 fotmob_standings <- get_fotmob_standings()
 
-team_names <- agg_gamestate_xgd |> 
-  dplyr::distinct(old_team = team) |> 
-  dplyr::arrange(old_team) |> 
+team_names <- agg_gamestate_xgd |>
+  dplyr::distinct(old_team = team) |>
+  dplyr::arrange(old_team) |>
   dplyr::mutate(
     team = dplyr::case_match(
       old_team,
@@ -487,9 +514,9 @@ team_names <- agg_gamestate_xgd |>
     )
   )
 
-team_logos <- team_names |> 
+team_logos <- team_names |>
   dplyr::bind_cols(
-    fotmob_standings |> 
+    fotmob_standings |>
       dplyr::transmute(
         team_fotmob = gsub(
           'AFC Bournemouth',
@@ -498,16 +525,16 @@ team_logos <- team_names |>
         ),
         path = logo_url,
         pts
-      ) |> 
+      ) |>
       dplyr::arrange(team_fotmob)
   )
 
 agg_gamestate_xgd_with_logos <- agg_gamestate_xgd |> 
-  dplyr::rename(old_team = team) |> 
+  dplyr::rename(old_team = team) |>
   dplyr::left_join(
     team_names,
     by = dplyr::join_by(old_team)
-  ) |> 
+  ) |>
   dplyr::inner_join(
     team_logos |> 
       dplyr::select(
@@ -542,8 +569,8 @@ raw_table <- worldfootballR::fb_season_team_stats(
   tier = TIER,
   season_end_year = SEASON_END_YEAR,
   stat_type = 'league_table'
-)
-
+) |> 
+  tibble::as_tibble()
 
 team_label_order <- agg_gamestate_xgd_with_logos |> 
   dplyr::filter(
@@ -554,13 +581,17 @@ team_label_order <- agg_gamestate_xgd_with_logos |>
 team_label_order <- c(team_label_order, '')
 
 init_table <- raw_table |> 
-  dplyr::select(
+  dplyr::transmute(
     team_short = Squad,
     xgd_p90_total = xGD.90,
-    rank = Rk
+    # rank = Rk
+    rank = dplyr::row_number(desc(Pts * 1000 + GD))
   ) |> 
   dplyr::bind_cols(
     team_names |> dplyr::select(team)
+  ) |>
+  dplyr::mutate(
+    team = team_short
   ) |> 
   dplyr::arrange(rank)
 ## One-off
@@ -698,7 +729,7 @@ xgd_p90_plot <- prepped_agg_gamestate_xgd |>
   ) +
   ggplot2::labs(
     title = glue::glue("xGD per 90 when <span style='color:{GAMESTATE_PAL[['Leading']]}'>Leading</span>, <span style='color:{GAMESTATE_PAL[['Tied']]}'>Tied</span>, and <span style='color:{GAMESTATE_PAL[['Trailing']]}'>Trailing</spna>"),
-    subtitle = 'English Premier League, 2023/2024 Season',
+    subtitle = 'MLS, 2024 Season',
     y = NULL,
     tag = TAG_LABEL,
     # caption = glue::glue('**Data**: Opta via fbref *(last updated on {update_date})*<br/>**xGD**: Expected goals for minus expected goals conceded'),
@@ -707,7 +738,7 @@ xgd_p90_plot <- prepped_agg_gamestate_xgd |>
   )
 xgd_p90_plot
 
-xgd_p90_plot_path <- file.path(PROJ_DIR, sprintf('2023-epl-xgd-p90-%s-ordered.png', update_date))
+xgd_p90_plot_path <- file.path(PROJ_DIR, sprintf('2024-mls-xgd-p90-%s-ordered.png', update_date))
 ggplot2::ggsave(
   xgd_p90_plot,
   filename = xgd_p90_plot_path,
