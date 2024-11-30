@@ -7,7 +7,7 @@ library(qs)
 
 PROJ_DIR <- '76-2023_ff_luck'
 DATA_DIR <- file.path(PROJ_DIR, 'data')
-SEASONS <- 2018:2023
+SEASONS <- 2018:2024
 ESPN_LEAGUE_ID <- 899513
 ESPN_S2 <- Sys.getenv('FF_ESPN_S2')
 SWID <- Sys.getenv('FF_SWID')
