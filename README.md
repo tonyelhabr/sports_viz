@@ -3,6 +3,20 @@ This repo stores my code and plots for sports-related plots. Any "small" data is
 
 The projects are listed in reverse chronological order. A skipped number corresponds to an idea that I did not end up finishing.
 
+# 91. 2024/25 EPL "What If" Table
+
+![](91-whatif_table/2025-epl-counterfactual-pts.png)
+
+# 90. 2024 MLS Gamestate xGD
+
+![](90-gamestate_xgd/2024-mls-xgd-p90.png)
+
+![](90-gamestate_xgd/2024-mls-playoffs-xgd-p90.png)
+
+# 89. Shooting Overperformance Sensitivity
+
+![](89-shooting_thomas_bayes/shots-needed-overperformance-sensitivity.png)
+
 # 85. 2024 Fantasy Football Season Projections
 
 ![](85-ffsimulator_2024/2024-ff-projected-team-wins-2024-09-05.png)
