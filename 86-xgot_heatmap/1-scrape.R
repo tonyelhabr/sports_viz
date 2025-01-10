@@ -1,6 +1,10 @@
-library(purrr)
-library(readr)
+library(tibble)
+library(tidyr)
 library(dplyr)
+library(purrr)
+library(qs)
+
+PROJ_DIR <- '86-xgot_heatmap'
 
 league_id_values <- list(
   'big5' = list(
@@ -37,7 +41,6 @@ league_ids <- league_id_values |>
 
 
 load_fotmob_match_details <- function(league_id) {
-  
   url <- sprintf(
     'https://github.com/JaseZiv/worldfootballR_data/releases/download/fotmob_match_details/%s_match_details.rds',
     league_id
@@ -58,7 +61,5 @@ match_details <- league_ids |>
       purrr::list_rbind(), 
     by = dplyr::join_by(league_id)
   )
-by = dplyr::join_by(league_id)
-  )
-PROJ_DIR <- '86-xgot_heatmap'
+
 qs::qsave(match_details, file.path(PROJ_DIR, 'match_details.qs'))

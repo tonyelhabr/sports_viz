@@ -1,4 +1,6 @@
-
+library(dplyr)
+library(lubridate)
+library(qs)
 
 PROJ_DIR <- '86-xgot_heatmap'
 raw_match_details <- qs::qread( file.path(PROJ_DIR, 'match_details.qs'))
@@ -7,11 +9,27 @@ convert_ogs_y_to_z_g <- function(y) {
   y * 2.32 / 0.613
 }
 
-match_details <- raw_match_details |> 
+shot_details <- raw_match_details |> 
+  dplyr::filter(
+    league_id %in% c(
+      # big 5
+      47,
+      87,
+      53,
+      54,
+      55,
+      # MLS
+      130
+    )
+  ) |> 
   dplyr::transmute(
+    group,
+    country,
+    tier,
+    # gender,
     match_id,
     season = parent_league_season,
-    time = strptime(match_time_utc, format = '%a, %b %d, %Y, %H:%M UTC', tz = 'UTC') %>% lubridate::ymd_hms(),
+    time = strptime(match_time_utc, format = '%a, %b %d, %Y, %H:%M UTC', tz = 'UTC') |> lubridate::ymd_hms(),
     date = lubridate::date(time),
     
     home_id = home_team_id,
@@ -70,4 +88,20 @@ match_details <- raw_match_details |>
         TRUE ~ z_g
       )
     )
-  )
+
+shot_details |> 
+  filter(country == 'ITA') |> 
+  count(season)
+shot_details |> 
+  filter(country == 'GER') |> 
+  count(season)
+shot_details |> 
+  group_by(country) |> 
+  summarize(
+    season_count = n_distinct(season),
+    match_count = n_distinct(match_id),
+    shot_count = n(),
+    min_date = min(date, na.rm = TRUE),
+    max_date = max(date, na.rm = TRUE)
+  ) |> 
+  ungroup()
