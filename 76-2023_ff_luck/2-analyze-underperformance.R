@@ -22,8 +22,7 @@ clean_team_scores <- team_scores |>
   dplyr::ungroup() |> 
   dplyr::mutate(
     n_games = ifelse(season < CURRENT_SEASON & week >= (max_week - 1), 2L, 1L)
-  ) |> 
-  dplyr::select(-max_week)
+  )
 
 median_scoring <- clean_team_scores |> 
   group_by(season, week) |> 
@@ -51,8 +50,9 @@ median_scoring <- clean_team_scores |>
   ) |> 
   ungroup() |> 
   arrange(season, reg_placing)
+
 median_scoring |> 
-  filter(season == 2020)
+  filter(season == 2024)
 
 ## data processing ----
 league_avg_projected_scores <- clean_team_scores |> 
@@ -72,7 +72,7 @@ league_avg_projected_scores <- clean_team_scores |>
     user_d_per_game = user_d / n_games
   )
 
-agg_scores <- clean_scores |> 
+agg_scores <- clean_team_scores |> 
   group_by(season, user_name) |> 
   summarize(
     n_games = sum(n_games),

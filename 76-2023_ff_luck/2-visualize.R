@@ -22,6 +22,57 @@ scores <- readr::read_csv(file.path(DATA_DIR, 'team-scores-all.csv')) |>
   )
 seasons <- unique(scores$season)
 
+## hypothetical schedules ---
+target_user <- 'Brandon'
+scores |> 
+  filter(season == 2024, user_name == !!target_user) |> 
+  select(
+    season,
+    week,
+    actual_user_name = user_name,
+    actual_opponent_user_name = opponent_user_name,
+    actual_user_score = user_score,
+    actual_opponent_score = opponent_score
+  ) |> 
+  left_join(
+    scores |> 
+      filter(season == 2024, user_name != !!target_user) |> 
+      select(
+        season,
+        week,
+        hypo_user_schedule = user_name,
+        hypo_opponent_user_name = opponent_user_name,
+        hypo_user_score = user_score,
+        hypo_opponent_score = opponent_score
+      )
+  ) |> 
+  mutate(
+    maintain_actual = actual_user_name == hypo_user_schedule,
+    hypo_opponent_score = ifelse(
+      maintain_actual, 
+      actual_opponent_score,
+      hypo_opponent_score
+    ),
+    hypo_opponent_user_name = ifelse(
+      maintain_actual, 
+      actual_opponent_user_name,
+      hypo_opponent_user_name
+    ),
+    hypo_w = actual_user_score > hypo_opponent_score,
+    hypo_l = actual_user_score < hypo_opponent_score
+  ) |> 
+  group_by(actual_user_name, hypo_user_schedule) |> 
+  summarize(
+    across(
+      c(
+        hypo_w,
+        hypo_l
+      ),
+      \(.x) sum(.x)
+    )
+  ) |> 
+  arrange(desc(hypo_w))
+
 ## data processing ----
 current_season <- max(seasons)
 scores_current <- scores |> 
@@ -64,9 +115,12 @@ actual_records <- scores |>
     )
   ) |> 
   dplyr::ungroup() |> 
+  dplyr::mutate(
+    gp = w + l
+  ) |> 
   dplyr::group_by(season, week) |> 
   dplyr::mutate(
-    n = sum(!is.na(result)),
+    n_teams = sum(!is.na(result)),
     rnk = dplyr::row_number(dplyr::desc(w * 10000 + user_score))
   ) |> 
   dplyr::ungroup()
@@ -76,17 +130,17 @@ actual_pos_props_current <- actual_records |>
   dplyr::filter(!is.na(result)) |> 
   dplyr::group_by(user_name) |> 
   dplyr::summarize(
-    n = dplyr::n(),
+    gp = dplyr::n(),
     n_top4 = sum(rnk <= 4),
     n_bot2 = sum(rnk >= 9)
   ) |> 
   dplyr::ungroup() |> 
   dplyr::mutate(
-    prop_top4 = n_top4 / n,
-    prop_bot2 = n_bot2 / n
+    prop_top4 = n_top4 / gp,
+    prop_bot2 = n_bot2 / gp
   )
 
-all_h2h_records <- tidyr::crossing(
+all_h2h_games <- tidyr::crossing(
   'season' = seasons,
   'week' = 1:latest_week,
   'user_name' = sort(unique(scores$user_name)),
@@ -111,16 +165,24 @@ all_h2h_records <- tidyr::crossing(
   dplyr::mutate(
     w = user_score > opponent_score,
     l = user_score < opponent_score
-  ) |> 
+  )
+all_h2h_games |> 
+  filter(
+    season == 2024
+  )
+
+all_h2h_records <- all_h2h_games |> 
   dplyr::group_by(season, user_name) |> 
   dplyr::summarize(
-    n = dplyr::n(),
     dplyr::across(
       c(w, l),
       sum
     )
   ) |> 
   dplyr::ungroup() |> 
+  dplyr::mutate(
+    gp = w + l
+  ) |> 
   dplyr::arrange(season, dplyr::desc(w))
 
 compared_records <- all_h2h_records |> 
@@ -138,7 +200,7 @@ compared_records <- all_h2h_records |>
       dplyr::transmute(
         season,
         user_name,
-        actual_n = n,
+        actual_gp = gp,
         actual_w = w,
         actual_l = l,
         actual_w_prop = w / (w + l)
@@ -147,12 +209,13 @@ compared_records <- all_h2h_records |>
     relationship = 'many-to-many'
   ) |> 
   dplyr::mutate(
-    xw = actual_n * all_play_w_prop,
+    xw = actual_gp * all_play_w_prop,
     w_prop_d = actual_w_prop - all_play_w_prop,
     w_d = actual_w - xw
   ) |> 
   dplyr::arrange(w_prop_d)
 compared_records |> filter(season == 2024)
+all_h2h_records
 
 tabulate_unluckiest <- function(df, n = TOP_N_FOR_TABLES) {
   df |> 
@@ -196,10 +259,11 @@ tb_unluckiest_records_all <- compared_records |>
     title = gt::md(sprintf('**%s seasons**', 'Unluckiest')),
     subtitle = gt::md(
       sprintf(
-        '%s %s records through week %s, since %s', 
+        # '%s %s records, through week %s since %s', 
+        '%s %s records, since %s',
         TOP_N_FOR_TABLES, 
         tolower('Unluckiest'), 
-        latest_week, 
+        # latest_week, 
         min(seasons)
       )
     )
@@ -209,7 +273,7 @@ tb_unluckiest_records_all
 CURRENT_DATE <- Sys.Date()
 gt::gtsave(
   tb_unluckiest_records_all,
-  filename = file.path(PROJ_DIR, sprintf('%s-unluckiest-records.png', current_date)),
+  filename = file.path(PROJ_DIR, sprintf('%s-unluckiest-records.png', CURRENT_DATE)),
   zoom = GTSAVE_ZOOM
 )
 
@@ -218,11 +282,12 @@ tb_unluckiest_records_current <- compared_records |>
   tabulate_unluckiest() |> 
   gt::cols_hide('season') |> 
   gt::tab_header(
-    title = gt::md('Who has had bad schedule luck?'),
+    title = gt::md('Who had bad schedule luck?'),
     subtitle = gt::md(
       sprintf(
-        'Teams ordered by most unlucky<br/>(through week %s, %s)', 
-        latest_week, 
+        # 'Teams ordered by most unlucky<br/>(through week %s, %s)', 
+        'Teams ordered by most unlucky, %s',
+        # latest_week, 
         current_season
       )
     )
@@ -231,7 +296,7 @@ tb_unluckiest_records_current
 
 gt::gtsave(
   tb_unluckiest_records_current,
-  filename = file.path(PROJ_DIR, sprintf('%s-unluckiest-records-%s.png', current_date, current_season)),
+  filename = file.path(PROJ_DIR, sprintf('%s-unluckiest-records-%s.png', CURRENT_DATE, current_season)),
   zoom = GTSAVE_ZOOM
 )
 
@@ -240,8 +305,8 @@ tb_actual_pos_props_current <- actual_pos_props_current |>
   dplyr::arrange(dplyr::desc(prop_top4), prop_bot2, user_name) |> 
   dplyr::transmute(
     user_name,
-    prop_weeks_in_top4 = sprintf('%s (%d)', scales::percent(prop_top4), n_top4),
-    prop_weeks_in_bot2 = sprintf('%s (%d)', scales::percent(prop_bot2), n_bot2)
+    prop_weeks_in_top4 = sprintf('%s (%d)', scales::percent(prop_top4, accuracy = 1), n_top4),
+    prop_weeks_in_bot2 = sprintf('%s (%d)', scales::percent(prop_bot2, accuracy = 1), n_bot2)
   ) |> 
   gt::gt() |> 
   gtExtras::gt_theme_538() |> 
@@ -260,7 +325,7 @@ tb_actual_pos_props_current <- actual_pos_props_current |>
 tb_actual_pos_props_current
 gt::gtsave(
   tb_actual_pos_props_current,
-  filename = file.path(PROJ_DIR, sprintf('%s-top2-bottom4-props-%s.png', current_date, current_season)),
+  filename = file.path(PROJ_DIR, sprintf('%s-top2-bottom4-props-%s.png', CURRENT_DATE, current_season)),
   zoom = GTSAVE_ZOOM
 )
 
@@ -330,7 +395,7 @@ tabulate_and_save_all_h2h_records(
 max_score <- max(pmax(agg_scores_current$user_score, agg_scores_current$opponent_score))
 min_score <- min(pmin(agg_scores_current$user_score, agg_scores_current$opponent_score))
 label_buffer <- 5
-plot_buffer <- 50
+plot_buffer <- 100
 get_ceiling_value <- function(x, buffer, sign = 1) {
   buffer * ceiling(x / buffer) + buffer
 }
@@ -363,32 +428,9 @@ agg_scores_plot <- agg_scores_current |>
     linewidth = 1
   ) +
   ggplot2::geom_point(
+    data = agg_scores_current,
     color = WHITISH_FOREGROUND_COLOR
   ) +
-  ggrepel::geom_text_repel(
-    seed = 42,
-    size = 16 / .pt,
-    color = WHITISH_FOREGROUND_COLOR,
-    family = FONT,
-    ggplot2::aes(label = user_name)
-  ) +
-  # ggplot2::geom_text(
-  #   data = tidyr::tibble(
-  #     label = c('Good and\nUnlucky', 'Good and\nLucky', 'Bad and\nLucky', 'Bad and\nUnlucky'),
-  #     x = c(label_max, label_max, label_min, label_min),
-  #     y = c(label_max, label_min, label_min, label_max)
-  #   ),
-  #   size = 18 / .pt,
-  #   color = 'cyan',
-  #   family = FONT,
-  #   hjust = 0.5,
-  #   vjust = 0.5,
-  #   ggplot2::aes(
-  #     x = x,
-  #     y = y,
-  #     label = label
-  #   )
-  # ) +
   ggtext::geom_richtext(
     data = tidyr::tibble(
       label = c('Good and\nUnlucky', 'Good and\nLucky', 'Bad and\nLucky', 'Bad and\nUnlucky'),
@@ -398,6 +440,7 @@ agg_scores_plot <- agg_scores_current |>
     size = 18 / .pt,
     color = 'cyan',
     family = FONT,
+    alpha = 0.5,
     hjust = 0.5,
     vjust = 0.5,
     fill = BLACKISH_BACKGROUND_COLOR,
@@ -407,6 +450,14 @@ agg_scores_plot <- agg_scores_current |>
       y = y,
       label = label
     )
+  ) +
+  ggrepel::geom_text_repel(
+    seed = 42,
+    size = 16 / .pt,
+    color = WHITISH_FOREGROUND_COLOR,
+    family = FONT,
+    data = agg_scores_current,
+    ggplot2::aes(label = user_name)
   ) +
   ggplot2::scale_x_continuous(
     labels = scales::comma
@@ -420,7 +471,8 @@ agg_scores_plot <- agg_scores_current |>
   ) +
   ggplot2::labs(
     title = 'Is your team "good" (more points scored than average)?\nHave you been lucky (opponent has scored less than average)?',
-    subtitle = sprintf('%s season, through week %s', current_season, latest_week),
+    # subtitle = sprintf('%s season, through week %s', current_season, latest_week),
+    subtitle = sprintf('%s season', current_season),
     x = 'Points For',
     y = 'Points Against'
   )
