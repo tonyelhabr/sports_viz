@@ -11,7 +11,7 @@ library(tibble)
 
 PROJ_DIR <- '85-ffsimulator_2024/sucio'
 
-TODAY <- Sys.Date()
+TODAY <- '2024-09-08' # Sys.Date()
 sim <- qs::qread(file.path(PROJ_DIR, sprintf('sim-%s.qs', TODAY)))
 FILE_PREFIX <- '2024-ff-projected-team'
 SIMULATIONS_NOTE <- glue::glue('Per {sim$simulation_params$n_seasons} simulations. *(Updated on {TODAY}.).*')
@@ -153,11 +153,18 @@ season_summary_probs <- season_summary |>
   dplyr::arrange(franchise_name)
 
 season_summary_probs_tb <- season_summary_probs |> 
+  left_join(
+    tibble(
+      franchise_name = c('Enrique', 'Tony', 'Andrew E.', 'Drake', 'Juan', 'Alan', 'Manny', 'Luis', 'Brandon', 'Andrew L.'),
+      actual_placing = 1:10
+    )
+  ) |> 
   dplyr::transmute(
     `Player` = franchise_name,
     `Playoff` = playoff_prob,
     `Title` = title_prob,
-    `Taco` = taco_prob
+    `Taco` = taco_prob,
+    `Actual` = actual_placing
   ) |> 
   dplyr::arrange(dplyr::desc(`Playoff`)) |> 
   gt::gt() |> 
